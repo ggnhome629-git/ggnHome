@@ -1,0 +1,1311 @@
+import React, { useState, useEffect, useRef } from 'react';
+
+const UserPreferenceForm = () => {
+  const [formData, setFormData] = useState({
+    userName: '',
+    mobileNumber: '',
+    preferredLocation: '',
+    budgetRange: '',
+    bhkSize: '',
+    propertyType: '',
+    furnishingLevel: '',
+    moveInDate: '',
+    
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showFullScreenLoader, setShowFullScreenLoader] = useState(false);
+  const [fadeIn, setFadeIn] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
+  const [validFields, setValidFields] = useState({});
+  const [focusedField, setFocusedField] = useState(null);
+  const [submissionCount, setSubmissionCount] = useState(0);
+  const [avgResponseTime, setAvgResponseTime] = useState(0);
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  
+  const sectionRefs = useRef([]);
+
+  // Mock data - replace with actual API calls
+  const testimonials = [
+    {
+      name: "Priya Sharma",
+      location: "Gurgaon",
+      text: "Found my perfect 3BHK in just 3 days! The team was incredibly responsive.",
+      photo: "👩‍💼"
+    },
+    {
+      name: "Rahul Verma",
+      location: "Delhi",
+      text: "Verified listings saved me from visiting fake properties. Highly recommended!",
+      photo: "👨‍💼"
+    }
+  ];
+
+  const trustMetrics = {
+    submissionsThisWeek: 1203,
+    avgResponseHours: 2,
+    verifiedListings: 4500,
+    successRate: 98
+  };
+
+  useEffect(() => {
+    setFadeIn(true);
+    
+    // Mock API calls - replace with actual endpoints
+    setSubmissionCount(trustMetrics.submissionsThisWeek);
+    setAvgResponseTime(trustMetrics.avgResponseHours);
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    sectionRefs.current.forEach(ref => {
+      if (ref) observer.observe(ref);
+    });
+
+    // Rotate testimonials
+    const testimonialInterval = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+    }, 5000);
+
+    return () => {
+      observer.disconnect();
+      clearInterval(testimonialInterval);
+    };
+  }, []);
+
+  useEffect(() => {
+    const personalInfoFilled = formData.userName && formData.mobileNumber;
+    const preferencesFilled = formData.preferredLocation && formData.budgetRange && 
+                             formData.bhkSize && formData.propertyType && formData.furnishingLevel;
+    
+    if (preferencesFilled && formData.moveInDate) setCurrentStep(3);
+    else if (personalInfoFilled) setCurrentStep(2);
+    else setCurrentStep(1);
+  }, [formData]);
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+
+    if (type !== 'checkbox') {
+      setValidFields(prev => ({
+        ...prev,
+        [name]: value.trim() !== ''
+      }));
+    }
+  };
+
+  const handleDateSelect = (dateType) => {
+    let dateValue;
+    if (dateType === 'immediate') {
+      dateValue = 'Immediate';
+    } else if (dateType === 'flexible') {
+      dateValue = 'Flexible';
+    } else {
+      const today = new Date();
+      const futureDate = new Date(today);
+      futureDate.setDate(today.getDate() + parseInt(dateType));
+      dateValue = futureDate.toISOString().split('T')[0];
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      moveInDate: dateValue
+    }));
+    setValidFields(prev => ({ ...prev, moveInDate: true }));
+  };
+
+  const handleCustomDateSelect = (e) => {
+    const dateValue = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      moveInDate: dateValue
+    }));
+    setValidFields(prev => ({ ...prev, moveInDate: true }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setShowFullScreenLoader(true);
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/api/userpreferenceform`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          hasLoggedIn: false,
+          recaptchaToken: 'mock-recaptcha-token' // Replace with actual reCAPTCHA implementation
+        }),
+      });
+
+      if (response.ok) {
+        setShowSuccessModal(true);
+        setFormData({
+          userName: '',
+          mobileNumber: '',
+          preferredLocation: '',
+          budgetRange: '',
+          bhkSize: '',
+          propertyType: '',
+          furnishingLevel: '',
+          moveInDate: '',
+          emailOptIn: true,
+          smsOptIn: true,
+          marketingOptIn: false
+        });
+        setValidFields({});
+      } else {
+        console.error('Form submission failed');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+    } finally {
+      setIsSubmitting(false);
+      setShowFullScreenLoader(false);
+    }
+  };
+
+  const closeModal = () => {
+    setShowSuccessModal(false);
+  };
+
+  const isFormValid = () => {
+    return formData.userName && 
+           formData.mobileNumber && 
+           formData.preferredLocation && 
+           formData.budgetRange && 
+           formData.bhkSize && 
+           formData.propertyType && 
+           formData.furnishingLevel && 
+           formData.moveInDate;
+  };
+
+  const dateChips = [
+    { label: '🚀 Immediate', value: 'immediate' },
+    { label: 'Within 15 days', value: '15' },
+    { label: 'Within 30 days', value: '30' },
+    { label: '📅 Flexible', value: 'flexible' }
+  ];
+
+  const progressSteps = [
+    { number: 1, label: 'Personal Info' },
+    { number: 2, label: 'Preferences' },
+    { number: 3, label: 'Move-in Date' }
+  ];
+
+  const getIconForField = (fieldName) => {
+    const icons = {
+      userName: '👤',
+      mobileNumber: '📱',
+      preferredLocation: '📍',
+      budgetRange: '💰',
+      bhkSize: '🏠',
+      propertyType: '🏢',
+      furnishingLevel: '🛋️',
+      moveInDate: '📅'
+    };
+    return icons[fieldName] || '✏️';
+  };
+
+  // Trust & Security Components
+  const VerifiedBadge = () => (
+    <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px'}}>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M9 12L11 14L15 10M12 3L4.5 7.5L12 12L19.5 7.5L12 3Z" stroke="#00A79D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M12 22L4.5 17.5L12 13L19.5 17.5L12 22Z" stroke="#00A79D" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      <span style={{fontSize: '0.875rem', fontWeight: '600', color: '#00A79D'}}>
+        GGN Home — Verified Business
+      </span>
+    </div>
+  );
+
+  const TrustMetrics = () => (
+    <div style={{display: 'flex', justifyContent: 'center', gap: '24px', marginBottom: '16px', flexWrap: 'wrap'}}>
+      
+      <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+        <span style={{fontSize: '0.875rem', color: '#4A6A8A'}}>⏱️</span>
+        <span style={{fontSize: '0.75rem', color: '#4A6A8A', fontWeight: '500'}}>
+          Avg response: {avgResponseTime} hours
+        </span>
+      </div>
+      <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+        <span style={{fontSize: '0.875rem', color: '#4A6A8A'}}>🔒</span>
+        <span style={{fontSize: '0.75rem', color: '#4A6A8A', fontWeight: '500'}}>
+          256-bit TLS encrypted
+        </span>
+      </div>
+    </div>
+  );
+
+  const TestimonialCard = () => (
+    <div style={{
+      background: 'linear-gradient(135deg, #F8FAFC 0%, #FFFFFF 100%)',
+      border: '1px solid rgba(0, 167, 157, 0.1)',
+      borderRadius: '12px',
+      padding: '16px',
+      margin: '20px 0',
+      textAlign: 'center',
+      transition: 'all 0.3s ease'
+    }}>
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginBottom: '8px'}}>
+        <div style={{
+          width: '40px',
+          height: '40px',
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '1.25rem'
+        }}>
+          {testimonials[currentTestimonial].photo}
+        </div>
+        <div style={{textAlign: 'left'}}>
+          <div style={{fontWeight: '600', color: '#003366', fontSize: '0.875rem'}}>
+            {testimonials[currentTestimonial].name}
+          </div>
+          <div style={{color: '#4A6A8A', fontSize: '0.75rem'}}>
+            {testimonials[currentTestimonial].location}
+          </div>
+        </div>
+      </div>
+      <div style={{color: '#333333', fontSize: '0.875rem', fontStyle: 'italic'}}>
+        "{testimonials[currentTestimonial].text}"
+      </div>
+    </div>
+  );
+
+  const PrivacySummary = () => (
+    <div style={{textAlign: 'center', marginBottom: '16px'}}>
+      <div style={{fontSize: '0.75rem', color: '#4A6A8A'}}>
+        🔒 Your data is protected by our{' '}
+        <a 
+          href="/privacy-policy" 
+          style={{color: '#00A79D', fontWeight: '500', textDecoration: 'none'}}
+          onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+          onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+        >
+          Privacy Policy
+        </a>
+        . We never share your personal information with third parties.
+      </div>
+    </div>
+  );
+
+  const ContactInfo = () => (
+    <div style={{display: 'flex', justifyContent: 'center', gap: '20px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap'}}>
+      <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+        <span style={{fontSize: '0.875rem', color: '#4A6A8A'}}>📞</span>
+        <a 
+          href="tel:9310994032" 
+          style={{fontSize: '0.875rem', color: '#00A79D', fontWeight: '500', textDecoration: 'none'}}
+          onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+          onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+        >
+          +91 9310994032
+        </a>
+        <span style={{fontSize: '0.75rem', color: '#4A6A8A'}}>Mon-Fri 9AM-6PM</span>
+      </div>
+      <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+        <span style={{fontSize: '0.875rem', color: '#4A6A8A'}}>✉️</span>
+        <a 
+          href="mailto:support@ggnhome.com?subject=Property%20Inquiry&body=Hello%20GGN%20Home%20team,"
+          style={{fontSize: '0.875rem', color: '#00A79D', fontWeight: '500', textDecoration: 'none'}}
+          onMouseEnter={(e) => e.target.style.textDecoration = 'underline'}
+          onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+        >
+          support@ggnhome.com
+        </a>
+      </div>
+    </div>
+  );
+
+  const FieldTooltip = ({ fieldName }) => {
+    const tooltips = {
+      mobileNumber: "We use your number only to send property matches and coordinate visits. Never shared with agents without permission.",
+      budgetRange: "Helps us show you relevant properties within your comfortable price range.",
+      preferredLocation: "We'll match you with verified properties in your preferred neighborhoods."
+    };
+
+    return (
+      <div style={{position: 'relative', display: 'inline-block', marginLeft: '8px'}}>
+        <span style={{cursor: 'pointer', color: '#00A79D', fontSize: '0.875rem'}}>ℹ️</span>
+        <div style={{
+          position: 'absolute',
+          bottom: '100%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: '#003366',
+          color: 'white',
+          padding: '8px 12px',
+          borderRadius: '8px',
+          fontSize: '0.75rem',
+          width: '200px',
+          opacity: 0,
+          pointerEvents: 'none',
+          transition: 'opacity 0.3s ease',
+          zIndex: 1000
+        }}>
+          {tooltips[fieldName]}
+          <div style={{
+            position: 'absolute',
+            top: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            border: '6px solid transparent',
+            borderTopColor: '#003366'
+          }}></div>
+        </div>
+      </div>
+    );
+  };
+
+  // Inline Styles
+  const styles = {
+    container: {
+      minHeight: '100vh',
+      padding: '16px',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      fontFamily: "'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+      position: 'relative',
+      background: 'linear-gradient(180deg, #F4F7F9 0%, #EAF5F3 35%, #FFFFFF 100%)',
+      overflow: 'hidden',
+      // subtle textured overlay using a faint radial-gradient to add depth
+      backgroundImage: 'radial-gradient(rgba(0,0,0,0.01) 1px, transparent 1px)',
+      backgroundSize: '20px 20px'
+    },
+    brandingText: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%) rotate(-20deg)',
+      fontSize: '12rem',
+      fontWeight: '800',
+      color: 'rgba(0, 51, 102, 0.03)',
+      userSelect: 'none',
+      pointerEvents: 'none',
+      whiteSpace: 'nowrap',
+      letterSpacing: '8px'
+    },
+    card: {
+      background: 'linear-gradient(180deg, #FFFFFF 0%, #FBFFFF 100%)',
+      borderRadius: '20px',
+      boxShadow: '0 18px 40px rgba(0, 51, 102, 0.08)',
+      maxWidth: '680px',
+      width: '100%',
+      border: '1px solid rgba(0, 167, 157, 0.08)',
+      overflow: 'hidden'
+    },
+    stickyHeader: {
+      position: 'sticky',
+      top: 0,
+      background: 'linear-gradient(90deg, rgba(255,255,255,0.98) 0%, rgba(234,250,248,0.95) 100%)',
+      backdropFilter: 'blur(8px)',
+      padding: '32px 40px 20px 40px',
+      borderBottom: '1px solid rgba(74, 106, 138, 0.06)',
+      zIndex: 50
+    },
+    title: {
+      background: 'linear-gradient(135deg, #003366 0%, #00A79D 100%)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text',
+      fontSize: '2rem',
+      fontWeight: '700',
+      marginBottom: '4px',
+      textAlign: 'center',
+      letterSpacing: '-0.02em'
+    },
+    subtitle: {
+      color: '#4A6A8A',
+      fontSize: '1rem',
+      textAlign: 'center',
+      marginBottom: '16px',
+      lineHeight: '1.5',
+      fontWeight: '400'
+    },
+    credentials: {
+      color: '#00A79D',
+      fontSize: '0.875rem',
+      textAlign: 'center',
+      fontWeight: '600',
+      marginBottom: '16px',
+      letterSpacing: '0.02em'
+    },
+    progressContainer: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: '12px',
+      marginBottom: '8px'
+    },
+    progressStep: (active) => ({
+      width: '36px',
+      height: '36px',
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '0.875rem',
+      fontWeight: '600',
+      background: active ? 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)' : '#F8FAFC',
+      color: active ? '#FFFFFF' : '#4A6A8A',
+      transform: active ? 'scale(1.1)' : 'scale(1)',
+      transition: 'all 0.3s ease',
+      border: active ? 'none' : '1px solid #E8EEF3'
+    }),
+    progressLine: {
+      height: '3px',
+      width: '60px',
+      background: '#F1F5F9',
+      borderRadius: '2px',
+      position: 'relative',
+      overflow: 'hidden'
+    },
+    progressFill: (width) => ({
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      height: '100%',
+      width: width,
+      background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
+      transition: 'width 0.3s ease'
+    }),
+    formContent: {
+      padding: '0 40px 40px 40px',
+      maxHeight: '65vh',
+      overflowY: 'auto'
+    },
+    section: {
+      marginBottom: '32px',
+      opacity: 0,
+      transform: 'translateY(20px)',
+      transition: 'all 0.5s ease'
+    },
+    sectionHeader: {
+      background: 'linear-gradient(90deg, rgba(0, 167, 157, 0.03) 0%, rgba(34, 211, 238, 0.03) 100%)',
+      padding: '16px 20px',
+      borderLeft: '3px solid #00A79D',
+      borderRadius: '0 8px 8px 0',
+      marginBottom: '24px',
+      marginTop: '24px'
+    },
+    sectionTitle: {
+      color: '#003366',
+      fontSize: '1.125rem',
+      fontWeight: '600',
+      margin: 0,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px'
+    },
+    divider: {
+      height: '1px',
+      background: 'linear-gradient(90deg, transparent 0%, rgba(74, 106, 138, 0.1) 50%, transparent 100%)',
+      margin: '32px 0',
+      border: 'none'
+    },
+    inputGroup: {
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: '20px'
+    },
+    inputField: {
+      marginBottom: '24px',
+      position: 'relative'
+    },
+    inputContainer: {
+      position: 'relative'
+    },
+    input: (hasValue, isFocused) => ({
+      width: '100%',
+      height: '52px',
+      paddingLeft: '52px',
+      paddingRight: '44px',
+      border: `1.5px solid ${hasValue || isFocused ? '#00A79D' : '#E2E8F0'}`,
+      borderRadius: '10px',
+      fontSize: '0.9375rem',
+      background: hasValue || isFocused ? '#FFFFFF' : '#FBFFFF',
+      color: '#333333',
+      outline: 'none',
+      boxSizing: 'border-box',
+      transition: 'all 0.2s ease',
+      boxShadow: isFocused ? '0 6px 20px rgba(0, 167, 157, 0.08)' : 'none',
+      fontFamily: 'inherit'
+    }),
+    select: (hasValue, isFocused) => ({
+      width: '100%',
+      height: '52px',
+      paddingLeft: '52px',
+      paddingRight: '36px',
+      border: `1.5px solid ${hasValue || isFocused ? '#00A79D' : '#E2E8F0'}`,
+      borderRadius: '10px',
+      fontSize: '0.9375rem',
+      background: '#FFFFFF',
+      color: '#334155',
+      outline: 'none',
+      appearance: 'none',
+      boxSizing: 'border-box',
+      transition: 'all 0.2s ease',
+      boxShadow: isFocused ? '0 0 0 3px rgba(0, 167, 157, 0.1)' : 'none',
+      fontFamily: 'inherit'
+    }),
+    inputIcon: {
+      position: 'absolute',
+      left: '16px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      fontSize: '1.125rem',
+      zIndex: 2,
+      pointerEvents: 'none'
+    },
+    floatingLabel: (hasValue, isFocused) => ({
+      position: 'absolute',
+      left: '52px',
+      top: hasValue || isFocused ? '6px' : '50%',
+      transform: hasValue || isFocused ? 'translateY(0)' : 'translateY(-50%)',
+      color: hasValue || isFocused ? '#003366' : '#64748B',
+      fontSize: hasValue || isFocused ? '0.75rem' : '0.9375rem',
+      fontWeight: hasValue || isFocused ? '700' : '500',
+      background: hasValue || isFocused ? '#FFFFFF' : '#FBFFFF',
+      padding: '0 6px',
+      pointerEvents: 'none',
+      transition: 'all 0.2s ease',
+      fontFamily: 'inherit'
+    }),
+    validCheckmark: (visible) => ({
+      position: 'absolute',
+      right: '16px',
+      top: '50%',
+      transform: visible ? 'translateY(-50%) scale(1.1)' : 'translateY(-50%)',
+      color: '#00A79D',
+      fontSize: '1rem',
+      opacity: visible ? 1 : 0,
+      transition: 'all 0.3s ease'
+    }),
+    dropdownIcon: {
+      position: 'absolute',
+      right: '16px',
+      top: '50%',
+      transform: 'translateY(-50%)',
+      pointerEvents: 'none',
+      color: '#64748B'
+    },
+    dateChipsContainer: {
+      display: 'flex',
+      gap: '10px',
+      flexWrap: 'wrap',
+      marginBottom: '16px'
+    },
+    dateChip: (active) => ({
+      padding: '10px 18px',
+      border: active ? '1.5px solid transparent' : '1.5px solid #E2E8F0',
+      borderRadius: '20px',
+      background: active ? 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)' : '#FFFFFF',
+      color: active ? '#FFFFFF' : '#64748B',
+      fontSize: '0.8125rem',
+      fontWeight: '500',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease',
+      transform: active ? 'scale(1.02)' : 'scale(1)',
+      fontFamily: 'inherit'
+    }),
+    dateInput: (hasValue) => ({
+      width: '100%',
+      height: '52px',
+      padding: '16px',
+      border: `1.5px solid ${hasValue ? '#00A79D' : '#E2E8F0'}`,
+      borderRadius: '10px',
+      fontSize: '0.9375rem',
+      background: '#FFFFFF',
+      color: '#334155',
+      outline: 'none',
+      boxSizing: 'border-box',
+      transition: 'all 0.2s ease',
+      fontFamily: 'inherit'
+    }),
+    checkboxGroup: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '12px',
+      margin: '20px 0'
+    },
+    checkboxLabel: {
+      display: 'flex',
+      alignItems: 'flex-start',
+      gap: '12px',
+      fontSize: '0.875rem',
+      color: '#334155',
+      cursor: 'pointer'
+    },
+    checkbox: {
+      width: '18px',
+      height: '18px',
+      marginTop: '2px',
+      accentColor: '#00A79D'
+    },
+    checkboxMicrocopy: {
+      fontSize: '0.75rem',
+      color: '#64748B',
+      marginLeft: '30px',
+      marginTop: '-8px',
+      marginBottom: '8px'
+    },
+    submitBtn: (valid, submitting) => ({
+      width: '100%',
+      height: '52px',
+      background: valid && !submitting ? 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)' : '#94A3B8',
+      color: '#FFFFFF',
+      border: 'none',
+      borderRadius: '12px',
+      fontSize: '1rem',
+      fontWeight: '600',
+      cursor: valid && !submitting ? 'pointer' : 'not-allowed',
+      opacity: valid && !submitting ? 1 : 0.6,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '10px',
+      marginTop: '16px',
+      transition: 'all 0.3s ease',
+      fontFamily: 'inherit',
+      letterSpacing: '0.01em'
+    }),
+    spinner: {
+      width: '18px',
+      height: '18px',
+      border: '2px solid transparent',
+      borderTop: '2px solid #FFFFFF',
+      borderRadius: '50%',
+      animation: 'spin 1s linear infinite'
+    },
+    fullScreenLoader: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 51, 102, 0.95)',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 2000,
+      backdropFilter: 'blur(15px)'
+    },
+    loaderContent: {
+      textAlign: 'center',
+      color: '#FFFFFF'
+    },
+    loaderSpinner: {
+      width: '56px',
+      height: '56px',
+      border: '3px solid rgba(255, 255, 255, 0.3)',
+      borderTop: '3px solid #22D3EE',
+      borderRadius: '50%',
+      animation: 'spin 1s linear infinite',
+      marginBottom: '20px',
+      margin: '0 auto 20px'
+    },
+    loaderText: {
+      fontSize: '1.125rem',
+      fontWeight: '600',
+      marginBottom: '10px',
+      background: 'linear-gradient(135deg, #22D3EE 0%, #00A79D 100%)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text'
+    },
+    loaderSubtext: {
+      color: '#F1F5F9',
+      fontSize: '0.9375rem',
+      opacity: 0.8
+    },
+    progressBar: {
+      width: '200px',
+      height: '3px',
+      background: 'rgba(255, 255, 255, 0.2)',
+      borderRadius: '2px',
+      marginTop: '20px',
+      overflow: 'hidden'
+    },
+    progressBarFill: {
+      height: '100%',
+      background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
+      animation: 'progress 2s ease-in-out infinite'
+    },
+    modalOverlay: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'rgba(0, 51, 102, 0.6)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000,
+      backdropFilter: 'blur(20px)',
+      padding: '16px'
+    },
+    modalContent: {
+      background: 'linear-gradient(135deg, #FFFFFF 0%, #F4FBFA 100%)',
+      borderRadius: '20px',
+      padding: '40px',
+      maxWidth: '520px',
+      width: '100%',
+      textAlign: 'center',
+      boxShadow: '0 25px 50px rgba(0, 51, 102, 0.12)',
+      border: '1px solid rgba(0, 167, 157, 0.06)',
+      position: 'relative',
+      animation: 'modalSlideIn 0.4s ease-out'
+    },
+    modalIcon: {
+      width: '72px',
+      height: '72px',
+      background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      margin: '0 auto 20px',
+      fontSize: '2rem',
+      color: '#FFFFFF',
+      animation: 'bounce 0.6s ease-out'
+    },
+    modalTitle: {
+      color: '#003366',
+      fontSize: '1.75rem',
+      fontWeight: '700',
+      marginBottom: '12px',
+      background: 'linear-gradient(135deg, #003366 0%, #00A79D 100%)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text',
+      letterSpacing: '-0.02em'
+    },
+    modalSubtitle: {
+      color: '#4A6A8A',
+      fontSize: '1.125rem',
+      fontWeight: '600',
+      marginBottom: '8px'
+    },
+    modalText: {
+      color: '#334155',
+      fontSize: '0.9375rem',
+      lineHeight: '1.6',
+      marginBottom: '24px'
+    },
+    modalHighlight: {
+      color: '#00A79D',
+      fontWeight: '600',
+      background: 'rgba(0, 167, 157, 0.08)',
+      padding: '12px 20px',
+      borderRadius: '10px',
+      display: 'inline-block',
+      margin: '12px 0',
+      fontSize: '0.875rem',
+      border: '1px solid rgba(0, 167, 157, 0.1)'
+    },
+    modalButtonGroup: {
+      display: 'flex',
+      gap: '12px',
+      justifyContent: 'center',
+      flexWrap: 'wrap'
+    },
+    primaryButton: {
+      background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
+      color: '#FFFFFF',
+      border: 'none',
+      padding: '14px 28px',
+      fontSize: '1rem',
+      fontWeight: '600',
+      borderRadius: '12px',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      textDecoration: 'none',
+      display: 'inline-block',
+      fontFamily: 'inherit'
+    },
+    secondaryButton: {
+      background: 'transparent',
+      color: '#64748B',
+      border: '1.5px solid #CBD5E1',
+      padding: '12px 26px',
+      fontSize: '0.9375rem',
+      fontWeight: '600',
+      borderRadius: '12px',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      fontFamily: 'inherit'
+    },
+    closeButton: {
+      position: 'absolute',
+      top: '16px',
+      right: '16px',
+      background: 'none',
+      border: 'none',
+      fontSize: '1.5rem',
+      color: '#94A3B8',
+      cursor: 'pointer',
+      width: '36px',
+      height: '36px',
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      transition: 'all 0.3s ease',
+      fontFamily: 'inherit'
+    },
+    trustFooter: {
+      padding: '20px 40px',
+      borderTop: '1px solid rgba(74, 106, 138, 0.06)',
+      background: '#F8FAFC'
+    },
+    socialProof: {
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: '24px',
+      marginBottom: '16px',
+      flexWrap: 'wrap'
+    },
+    socialLogo: {
+      fontSize: '1.125rem',
+      filter: 'grayscale(100%)',
+      opacity: 0.6,
+      transition: 'all 0.3s ease'
+    },
+    securityBadge: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '8px',
+      fontSize: '0.75rem',
+      color: '#64748B',
+      marginTop: '12px'
+    },
+    keyframes: `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes modalSlideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-40px) scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+      @keyframes bounce {
+        0%, 20%, 53%, 80%, 100% {
+          transform: translate3d(0,0,0);
+        }
+        40%, 43% {
+          transform: translate3d(0,-6px,0);
+        }
+        70% {
+          transform: translate3d(0,-3px,0);
+        }
+        90% {
+          transform: translate3d(0,-1px,0);
+        }
+      }
+      @keyframes progress {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
+      input[type="date"]::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        filter: invert(0.5);
+      }
+      @media (max-width: 768px) {
+        .input-group {
+          grid-template-columns: 1fr !important;
+        }
+        .sticky-header {
+          padding: 24px 20px 16px 20px !important;
+        }
+        .form-content {
+          padding: 0 20px 32px 20px !important;
+        }
+        .trust-footer {
+          padding: 16px 20px !important;
+        }
+      }
+    `
+  };
+
+  return (
+    <>
+      <style>{styles.keyframes}</style>
+
+      {/* Full Screen Loader */}
+      {showFullScreenLoader && (
+        <div style={styles.fullScreenLoader}>
+          <div style={styles.loaderContent}>
+            <div style={styles.loaderSpinner}></div>
+            <div style={styles.loaderText}>Finding Your Perfect Home</div>
+            <div style={styles.loaderSubtext}>We're processing your preferences...</div>
+            <div style={styles.progressBar}>
+              <div style={styles.progressBarFill}></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <button
+              style={styles.closeButton}
+              onClick={closeModal}
+            >
+              ×
+            </button>
+
+            <div style={styles.modalIcon}>✓</div>
+
+            <h2 style={styles.modalTitle}>Preferences Saved Successfully!</h2>
+            <p style={styles.modalSubtitle}>Your dream home search is now active! 🎉</p>
+            <p style={styles.modalText}>We've securely saved your preferences and are already searching for perfect matches.</p>
+
+            <div style={styles.modalHighlight}>
+              Confirmation email & SMS sent • Avg response: {avgResponseTime} hours
+            </div>
+
+            <div style={styles.modalButtonGroup}>
+              <a
+                href="/dashboard"
+                style={styles.primaryButton}
+              >
+                📱 View Your Dashboard
+              </a>
+
+              <button style={styles.secondaryButton} onClick={closeModal}>Edit Preferences</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Form - centered card with subtle brand watermark */}
+      <div style={{ ...styles.container, padding: '28px 16px' }}>
+        <div style={{ position: 'relative', width: '100%', maxWidth: 860, margin: '0 auto' }}>
+          {/* subtle watermark (reduced size) */}
+          <div style={{ ...styles.brandingText, fontSize: '6.5rem', opacity: 0.04 }}>GGN HOME</div>
+
+          <div style={{ ...styles.card, borderRadius: 16, overflow: 'hidden', maxWidth: '100%' }}>
+            {/* Sticky Header */}
+            <div style={{ ...styles.stickyHeader, padding: '20px 28px' }} className="sticky-header">
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexDirection: 'column' }}>
+                <VerifiedBadge />
+                <h2 style={{ ...styles.title, fontSize: '1.75rem' }}>Find Your Perfect Home</h2>
+                <div style={{ ...styles.credentials, marginTop: 4 }}>Trusted real-estate matches since 2018</div>
+                <p style={{ ...styles.subtitle, marginTop: 8 }}>Tell us your preferences and we'll find verified matches for you</p>
+
+                <div style={{ width: '100%', marginTop: 12 }}>
+                  <PrivacySummary />
+                  <ContactInfo />
+                  <TrustMetrics />
+                </div>
+
+                {/* Progress Indicator (compact) */}
+                <div style={{ ...styles.progressContainer, marginTop: 8 }}>
+                  {progressSteps.map((step, index) => (
+                    <React.Fragment key={step.number}>
+                      <div style={styles.progressStep(currentStep >= step.number)}>{step.number}</div>
+                      {index < progressSteps.length - 1 && (
+                        <div style={styles.progressLine}>
+                          <div style={styles.progressFill(currentStep > step.number ? '100%' : '0%')}></div>
+                        </div>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handleSubmit} style={{ ...styles.formContent, padding: '20px 28px 32px 28px' }} className="form-content">
+              {/* Personal Information Section */}
+              <div ref={el => sectionRefs.current[0] = el} style={styles.section}>
+                <div style={styles.sectionHeader}>
+                  <h3 style={styles.sectionTitle}>👤 Personal Information</h3>
+                </div>
+
+                <div style={{ ...styles.inputGroup, marginBottom: 6 }} className="input-group">
+                  {/* Full Name */}
+                  <div style={styles.inputField}>
+                    <div style={styles.inputContainer}>
+                      <span style={styles.inputIcon}>👤</span>
+                      <input
+                        type="text"
+                        id="userName"
+                        name="userName"
+                        value={formData.userName}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField('userName')}
+                        onBlur={() => setFocusedField(null)}
+                        required
+                        placeholder=""
+                        style={styles.input(formData.userName, focusedField === 'userName')}
+                      />
+                      <label htmlFor="userName" style={styles.floatingLabel(formData.userName, focusedField === 'userName')}>Full Name</label>
+                      <span style={styles.validCheckmark(validFields.userName)}>✓</span>
+                    </div>
+                  </div>
+
+                  {/* Mobile Number */}
+                  <div style={styles.inputField}>
+                    <div style={styles.inputContainer}>
+                      <span style={styles.inputIcon}>📱</span>
+                      <input
+                        type="tel"
+                        id="mobileNumber"
+                        name="mobileNumber"
+                        value={formData.mobileNumber}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField('mobileNumber')}
+                        onBlur={() => setFocusedField(null)}
+                        required
+                        placeholder=""
+                        style={styles.input(formData.mobileNumber, focusedField === 'mobileNumber')}
+                      />
+                      <label htmlFor="mobileNumber" style={styles.floatingLabel(formData.mobileNumber, focusedField === 'mobileNumber')}>Mobile Number</label>
+                      <span style={styles.validCheckmark(validFields.mobileNumber)}>✓</span>
+                      <FieldTooltip fieldName="mobileNumber" />
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '6px' }}>
+                      We'll never share your number. Used only for property matches.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <hr style={styles.divider} />
+
+              {/* Property Preferences Section */}
+              <div ref={el => sectionRefs.current[1] = el} style={styles.section}>
+                <div style={styles.sectionHeader}>
+                  <h3 style={styles.sectionTitle}>🏠 Property Preferences</h3>
+                </div>
+
+                {/* Preferred Location */}
+                <div style={styles.inputField}>
+                  <div style={styles.inputContainer}>
+                    <span style={styles.inputIcon}>📍</span>
+                    <input
+                      type="text"
+                      id="preferredLocation"
+                      name="preferredLocation"
+                      value={formData.preferredLocation}
+                      onChange={handleChange}
+                      onFocus={() => setFocusedField('preferredLocation')}
+                      onBlur={() => setFocusedField(null)}
+                      required
+                      placeholder=""
+                      style={styles.input(formData.preferredLocation, focusedField === 'preferredLocation')}
+                    />
+                    <label htmlFor="preferredLocation" style={styles.floatingLabel(formData.preferredLocation, focusedField === 'preferredLocation')}>Preferred Location</label>
+                    <span style={styles.validCheckmark(validFields.preferredLocation)}>✓</span>
+                    <FieldTooltip fieldName="preferredLocation" />
+                  </div>
+                </div>
+
+                <div style={{ ...styles.inputGroup, marginTop: 8 }} className="input-group">
+                  {/* Budget Range */}
+                  <div style={styles.inputField}>
+                    <div style={styles.inputContainer}>
+                      <span style={styles.inputIcon}>💰</span>
+                      <input
+                        type="text"
+                        id="budgetRange"
+                        name="budgetRange"
+                        value={formData.budgetRange}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField('budgetRange')}
+                        onBlur={() => setFocusedField(null)}
+                        required
+                        placeholder=""
+                        style={styles.input(formData.budgetRange, focusedField === 'budgetRange')}
+                      />
+                      <label htmlFor="budgetRange" style={styles.floatingLabel(formData.budgetRange, focusedField === 'budgetRange')}>Budget Range (₹)</label>
+                      <span style={styles.validCheckmark(validFields.budgetRange)}>✓</span>
+                      <FieldTooltip fieldName="budgetRange" />
+                    </div>
+                  </div>
+
+                  {/* BHK Size */}
+                  <div style={styles.inputField}>
+                    <div style={styles.inputContainer}>
+                      <span style={styles.inputIcon}>🏠</span>
+                      <select
+                        id="bhkSize"
+                        name="bhkSize"
+                        value={formData.bhkSize}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField('bhkSize')}
+                        onBlur={() => setFocusedField(null)}
+                        required
+                        style={styles.select(formData.bhkSize, focusedField === 'bhkSize')}
+                      >
+                        <option value="">Select BHK</option>
+                        <option value="1BHK">1 BHK</option>
+                        <option value="2BHK">2 BHK</option>
+                        <option value="3BHK">3 BHK</option>
+                        <option value="4BHK">4 BHK</option>
+                        <option value="4BHK+">4+ BHK</option>
+                      </select>
+                      <label htmlFor="bhkSize" style={styles.floatingLabel(formData.bhkSize, focusedField === 'bhkSize')}>BHK Size</label>
+                      <div style={styles.dropdownIcon} />
+                      {validFields.bhkSize && <span style={{ ...styles.validCheckmark(validFields.bhkSize), right: '36px' }}>✓</span>}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ ...styles.inputGroup, marginTop: 12 }} className="input-group">
+                  {/* Property Type */}
+                  <div style={styles.inputField}>
+                    <div style={styles.inputContainer}>
+                      <span style={styles.inputIcon}>🏢</span>
+                      <input
+                        type="text"
+                        id="propertyType"
+                        name="propertyType"
+                        value={formData.propertyType}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField('propertyType')}
+                        onBlur={() => setFocusedField(null)}
+                        required
+                        placeholder=""
+                        style={styles.input(formData.propertyType, focusedField === 'propertyType')}
+                      />
+                      <label htmlFor="propertyType" style={styles.floatingLabel(formData.propertyType, focusedField === 'propertyType')}>Property Type</label>
+                      <span style={styles.validCheckmark(validFields.propertyType)}>✓</span>
+                    </div>
+                  </div>
+
+                  {/* Furnishing Level */}
+                  <div style={styles.inputField}>
+                    <div style={styles.inputContainer}>
+                      <span style={styles.inputIcon}>🛋️</span>
+                      <select
+                        id="furnishingLevel"
+                        name="furnishingLevel"
+                        value={formData.furnishingLevel}
+                        onChange={handleChange}
+                        onFocus={() => setFocusedField('furnishingLevel')}
+                        onBlur={() => setFocusedField(null)}
+                        required
+                        style={styles.select(formData.furnishingLevel, focusedField === 'furnishingLevel')}
+                      >
+                        <option value="">Select Furnishing</option>
+                        <option value="fully-furnished">Fully Furnished</option>
+                        <option value="semi-furnished">Semi Furnished</option>
+                        <option value="unfurnished">Unfurnished</option>
+                      </select>
+                      <label htmlFor="furnishingLevel" style={styles.floatingLabel(formData.furnishingLevel, focusedField === 'furnishingLevel')}>Furnishing Level</label>
+                      <div style={styles.dropdownIcon} />
+                      {validFields.furnishingLevel && <span style={{ ...styles.validCheckmark(validFields.furnishingLevel), right: '36px' }}>✓</span>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <hr style={styles.divider} />
+
+              {/* Move-in Date Section */}
+              <div ref={el => sectionRefs.current[2] = el} style={styles.section}>
+                <div style={styles.sectionHeader}><h3 style={styles.sectionTitle}>📅 Move-in Timeline</h3></div>
+
+                <div style={styles.dateChipsContainer}>
+                  {dateChips.map((chip) => (
+                    <button
+                      key={chip.value}
+                      type="button"
+                      style={styles.dateChip(formData.moveInDate === chip.value)}
+                      onClick={() => handleDateSelect(chip.value)}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ marginTop: '12px' }}>
+                  <input type="date" value={formData.moveInDate} onChange={handleCustomDateSelect} style={styles.dateInput(formData.moveInDate)} />
+                </div>
+              </div>
+
+              {/* Testimonial */}
+              <TestimonialCard />
+
+              {/* Submit Button */}
+              <button type="submit" style={styles.submitBtn(isFormValid(), isSubmitting)} disabled={!isFormValid() || isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <div style={styles.spinner}></div>
+                    Finding Your Dream Home...
+                  </>
+                ) : (
+                  '🔍 Find My Perfect Home'
+                )}
+              </button>
+
+              {/* reCAPTCHA Notice */}
+              <div style={{ textAlign: 'center', marginTop: '12px' }}>
+                <div style={{ fontSize: '0.75rem', color: '#64748B' }}>Protected by reCAPTCHA • Privacy • Terms</div>
+              </div>
+            </form>
+
+            {/* Trust Footer - responsive two column */}
+            <div style={{ ...styles.trustFooter }} className="trust-footer">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 20 }}>✅</span>
+                  <div style={{ fontSize: 13, color: '#4A6A8A' }}>We respond within 24 hours · 98% user satisfaction</div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <a href="tel:9310994032" style={{ color: '#00A79D', fontWeight: 600, textDecoration: 'none' }}>9310994032</a>
+                  <a href="mailto:support@ggnhome.com" style={{ color: '#00A79D', fontWeight: 600, textDecoration: 'none' }}>support@ggnhome.com</a>
+                </div>
+              </div>
+
+              <div style={{ marginTop: 12, display: 'flex', justifyContent: 'center', gap: 16, flexWrap: 'wrap' }}>
+                <span style={styles.socialLogo}>🔍 Google</span>
+                <span style={styles.socialLogo}>📱 Apple</span>
+                <span style={styles.socialLogo}>🏆 Trustpilot</span>
+                <span style={styles.socialLogo}>📰 Economic Times</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default UserPreferenceForm;

@@ -1,0 +1,485 @@
+import { useState } from 'react';
+import { CreditCard, Smartphone, Building2, MapPin, DollarSign, X } from 'lucide-react';
+
+export default function PropertyCheckout() {
+  const [showPayment, setShowPayment] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState('');
+  
+  const property = { name: 'Luxury Villa Palm Grove', price: '$450,000', location: 'Miami Beach, FL', image: 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=400&h=300&fit=crop' };
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)', padding: '20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <div style={{ maxWidth: '500px', margin: '0 auto' }}>
+        <div style={{ background: '#FFFFFF', borderRadius: '16px', padding: '20px', marginBottom: '20px', boxShadow: '0 10px 40px rgba(0,0,0,0.15)' }}>
+          <h2 style={{ color: '#003366', fontSize: '24px', fontWeight: '700', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}><Building2 size={28} />Your Property</h2>
+          <div style={{ display: 'flex', gap: '15px', background: '#F4F7F9', borderRadius: '12px', padding: '15px', border: '2px solid #22D3EE' }}>
+            <img src={property.image} alt={property.name} style={{ width: '100px', height: '100px', borderRadius: '10px', objectFit: 'cover' }} />
+            <div style={{ flex: 1 }}>
+              <h3 style={{ color: '#003366', fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>{property.name}</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4A6A8A', fontSize: '14px', marginBottom: '8px' }}><MapPin size={16} />{property.location}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#00A79D', fontSize: '20px', fontWeight: '700' }}><DollarSign size={20} />{property.price}</div>
+            </div>
+          </div>
+        </div>
+
+        <button onClick={() => setShowPayment(true)} style={{ width: '100%', background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)', color: '#FFFFFF', padding: '18px', borderRadius: '12px', border: 'none', fontSize: '18px', fontWeight: '700', cursor: 'pointer', boxShadow: '0 8px 24px rgba(34,211,238,0.4)', transition: 'transform 0.2s' }} onMouseEnter={e => e.target.style.transform = 'translateY(-2px)'} onMouseLeave={e => e.target.style.transform = 'translateY(0)'}>Proceed to Payment</button>
+
+        {showPayment && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,51,102,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', zIndex: 1000 }} onClick={() => setShowPayment(false)}>
+            <div style={{ background: '#FFFFFF', borderRadius: '20px', padding: '30px', maxWidth: '450px', width: '100%', position: 'relative', animation: 'slideUp 0.3s ease' }} onClick={e => e.stopPropagation()}>
+              <button onClick={() => setShowPayment(false)} style={{ position: 'absolute', top: '15px', right: '15px', background: '#F4F7F9', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#333333' }}><X size={20} /></button>
+              
+              <h2 style={{ color: '#003366', fontSize: '24px', fontWeight: '700', marginBottom: '10px' }}>Choose Payment Method</h2>
+              <p style={{ color: '#4A6A8A', fontSize: '14px', marginBottom: '25px' }}>Total Amount: <span style={{ color: '#00A79D', fontWeight: '700', fontSize: '18px' }}>{property.price}</span></p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {[
+                  { id: 'upi', icon: <Smartphone size={24} />, title: 'UPI Payment', desc: 'Pay via Google Pay, PhonePe, Paytm' },
+                  { id: 'card', icon: <CreditCard size={24} />, title: 'Credit/Debit Card', desc: 'Visa, Mastercard, Amex' },
+                  { id: 'netbanking', icon: <Building2 size={24} />, title: 'Net Banking', desc: 'All major banks supported' },
+                  { id: 'wallet', icon: <Smartphone size={24} />, title: 'Digital Wallet', desc: 'Paytm, Amazon Pay, etc.' }
+                ].map(method => (
+                  <div key={method.id} onClick={() => setSelectedPayment(method.id)} style={{ padding: '16px', background: selectedPayment === method.id ? 'linear-gradient(135deg, #00A79D15, #22D3EE15)' : '#F4F7F9', border: selectedPayment === method.id ? '2px solid #22D3EE' : '2px solid transparent', borderRadius: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '15px', transition: 'all 0.2s' }}>
+                    <div style={{ color: selectedPayment === method.id ? '#00A79D' : '#4A6A8A' }}>{method.icon}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ color: '#003366', fontWeight: '600', fontSize: '16px' }}>{method.title}</div>
+                      <div style={{ color: '#4A6A8A', fontSize: '13px' }}>{method.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button disabled={!selectedPayment} style={{ width: '100%', marginTop: '25px', background: selectedPayment ? 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)' : '#4A6A8A', color: '#FFFFFF', padding: '16px', borderRadius: '12px', border: 'none', fontSize: '16px', fontWeight: '700', cursor: selectedPayment ? 'pointer' : 'not-allowed', opacity: selectedPayment ? 1 : 0.5 }}>Confirm & Pay {property.price}</button>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      <style>{`@keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
+    </div>
+  );
+}
+
+
+
+
+
+
+
+
+import React, { useState } from 'react';
+import { MapPin, X, CheckCircle, Home, DollarSign } from 'lucide-react';
+
+// Mock data for demonstration
+const mockProperty = {
+  _id: '123',
+  images: ['https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400'],
+  address: '123 Main Street, Downtown',
+  localAmenities: 'Near Metro, Schools & Shopping',
+  propertyType: '3 BHK Apartment',
+  monthlyRent: 1500,
+  securityDeposit: 3000
+};
+
+const mockUser = { name: 'John Doe' };
+const mockNavItems = ['Home', 'Properties', 'Payments'];
+
+const TopNavigationBar = ({ navItems, user, handleLogout }) => (
+  <div style={{ background: '#003366', color: '#FFFFFF', padding: '16px 24px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ fontSize: '20px', fontWeight: '700' }}>PropertyHub</div>
+      <div style={{ fontSize: '14px' }}>{user.name}</div>
+    </div>
+  </div>
+);
+
+export default function CheckoutPage() {
+  const [property] = useState(mockProperty);
+  const [user] = useState(mockUser);
+  const [paymentOption, setPaymentOption] = useState('both');
+  const [showModal, setShowModal] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
+
+  const navItems = mockNavItems;
+  const handleLogout = () => console.log('Logout');
+
+  const calculateTotal = () => {
+    if (paymentOption === 'both') return (property.monthlyRent || 0) + (Number(property.securityDeposit) || 0);
+    if (paymentOption === 'rent') return property.monthlyRent || 0;
+    if (paymentOption === 'deposit') return Number(property.securityDeposit) || 0;
+    return 0;
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#F4F7F9', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <TopNavigationBar navItems={navItems} user={user} handleLogout={handleLogout} />
+
+      <div style={{ padding: '24px 16px', maxWidth: '800px', margin: '0 auto' }}>
+        {/* Breadcrumb */}
+        <div style={{ fontSize: '13px', color: '#4A6A8A', marginBottom: '20px' }}>
+          Home / Properties / <span style={{ color: '#003366', fontWeight: '500' }}>Checkout</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px', marginBottom: '100px' }}>
+          {/* Left Column - Property & Payment Details */}
+          <div>
+            {/* Property Card */}
+            <div style={{ background: '#FFFFFF', borderRadius: '12px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+              <div style={{ background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)', padding: '16px', color: '#FFFFFF' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: '600', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Home size={20} /> Property Details
+                </h2>
+              </div>
+              
+              <div style={{ padding: '20px' }}>
+                <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+                  <img 
+                    src={property.images?.[0] || 'https://via.placeholder.com/120'} 
+                    alt={property.address} 
+                    style={{ width: '120px', height: '120px', borderRadius: '8px', objectFit: 'cover', border: '2px solid #F4F7F9' }} 
+                  />
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <h3 style={{ color: '#003366', fontSize: '16px', fontWeight: '600', margin: 0, lineHeight: '1.4' }}>
+                      {property.address}
+                    </h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4A6A8A', fontSize: '14px' }}>
+                      <MapPin size={16} strokeWidth={2} />
+                      {property.localAmenities || 'N.A'}
+                    </div>
+                    <div style={{ display: 'inline-block', background: '#F4F7F9', color: '#003366', padding: '4px 12px', borderRadius: '6px', fontSize: '13px', fontWeight: '500', width: 'fit-content' }}>
+                      {property.propertyType || 'N.A'}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ borderTop: '2px dashed #F4F7F9', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: '#4A6A8A', fontSize: '14px', fontWeight: '500' }}>Monthly Rent</span>
+                  <span style={{ color: '#00A79D', fontSize: '24px', fontWeight: '700' }}>
+                    {property.monthlyRent ? `$${property.monthlyRent}` : 'N.A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Options */}
+            <div style={{ background: '#FFFFFF', borderRadius: '12px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+              <div style={{ background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)', padding: '16px', color: '#FFFFFF' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <DollarSign size={20} /> Select Payment Option
+                </h3>
+              </div>
+              
+              <div style={{ padding: '20px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  {[
+                    { value: 'both', label: 'Rent + Deposit' },
+                    { value: 'rent', label: 'Rent Only' },
+                    { value: 'deposit', label: 'Deposit Only' },
+                    { value: 'none', label: 'None' }
+                  ].map(option => (
+                    <label 
+                      key={option.value}
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        padding: '14px', 
+                        border: `2px solid ${paymentOption === option.value ? '#00A79D' : '#E5E7EB'}`,
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        background: paymentOption === option.value ? '#F0FDFA' : '#FFFFFF',
+                        transition: 'all 0.2s',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        color: paymentOption === option.value ? '#003366' : '#4A6A8A'
+                      }}
+                    >
+                      <input 
+                        type="radio" 
+                        value={option.value} 
+                        checked={paymentOption === option.value}
+                        onChange={(e) => setPaymentOption(e.target.value)}
+                        style={{ marginRight: '8px', accentColor: '#00A79D' }}
+                      />
+                      {option.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Bill Summary */}
+            <div style={{ background: '#FFFFFF', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.06)', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
+              <div style={{ background: '#003366', padding: '16px', color: '#FFFFFF' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', margin: 0 }}>Payment Summary</h3>
+              </div>
+              
+              <div style={{ padding: '20px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {(paymentOption === 'both' || paymentOption === 'rent') && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#F4F7F9', borderRadius: '6px' }}>
+                      <span style={{ color: '#4A6A8A', fontSize: '14px', fontWeight: '500' }}>Monthly Rent</span>
+                      <span style={{ color: '#333333', fontSize: '16px', fontWeight: '600' }}>
+                        {property.monthlyRent ? `$${property.monthlyRent}` : 'N.A'}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {(paymentOption === 'both' || paymentOption === 'deposit') && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: '#F4F7F9', borderRadius: '6px' }}>
+                      <span style={{ color: '#4A6A8A', fontSize: '14px', fontWeight: '500' }}>Security Deposit</span>
+                      <span style={{ color: '#333333', fontSize: '16px', fontWeight: '600' }}>
+                        {property.securityDeposit ? `$${property.securityDeposit}` : 'N.A'}
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div style={{ borderTop: '2px solid #F4F7F9', paddingTop: '16px', marginTop: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '16px', fontWeight: '600', color: '#003366' }}>Total Amount</span>
+                      <span style={{ fontSize: '28px', fontWeight: '700', color: '#00A79D' }}>
+                        ${calculateTotal()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Fixed Checkout Bar */}
+        <div style={{ 
+          position: 'fixed', 
+          bottom: 0, 
+          left: 0, 
+          right: 0, 
+          background: '#FFFFFF', 
+          borderTop: '2px solid #E5E7EB',
+          boxShadow: '0 -4px 12px rgba(0,0,0,0.08)',
+          zIndex: 999
+        }}>
+          <div style={{ 
+            maxWidth: '800px', 
+            margin: '0 auto', 
+            padding: '20px 16px', 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center' 
+          }}>
+            <div>
+              <div style={{ fontSize: '13px', color: '#4A6A8A', marginBottom: '4px' }}>Amount Payable</div>
+              <div style={{ fontSize: '24px', fontWeight: '700', color: '#003366' }}>
+                ${calculateTotal()}
+              </div>
+            </div>
+            <button 
+              style={{ 
+                background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)', 
+                color: '#FFFFFF', 
+                padding: '14px 40px', 
+                borderRadius: '8px', 
+                fontSize: '16px', 
+                fontWeight: '600', 
+                border: 'none', 
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(0,167,157,0.3)',
+                transition: 'transform 0.2s'
+              }}
+              onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
+              onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}
+              onClick={() => setShowModal(true)}
+            >
+              Proceed to Pay
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Modal */}
+      {showModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            padding: '32px',
+            width: '90%',
+            maxWidth: '450px',
+            position: 'relative',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            textAlign: 'center',
+          }}>
+            <button
+              onClick={() => setShowModal(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: '#F4F7F9',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#4A6A8A',
+              }}
+              aria-label="Close modal"
+            >
+              <X size={20} />
+            </button>
+            
+            <h2 style={{ marginBottom: '8px', color: '#003366', fontSize: '22px', fontWeight: '700' }}>
+              Complete Payment
+            </h2>
+            <p style={{ color: '#4A6A8A', fontSize: '14px', marginBottom: '24px' }}>
+              Scan QR code to complete the transaction
+            </p>
+            
+            <div style={{ 
+              background: '#F4F7F9', 
+              padding: '20px', 
+              borderRadius: '12px', 
+              marginBottom: '24px',
+              border: '2px solid #E5E7EB'
+            }}>
+              <p style={{ fontSize: '14px', color: '#4A6A8A', marginBottom: '8px' }}>Amount to Pay</p>
+              <p style={{ fontSize: '32px', fontWeight: '700', color: '#00A79D', margin: 0 }}>
+                ${calculateTotal()}
+              </p>
+            </div>
+            
+            <div style={{ 
+              padding: '16px', 
+              background: '#FFFFFF', 
+              borderRadius: '12px', 
+              marginBottom: '24px',
+              border: '2px solid #E5E7EB'
+            }}>
+              <img 
+                src="/QR Code.jpeg" 
+                alt="QR Code" 
+                style={{ width: '100%', maxWidth: '280px', height: 'auto', objectFit: 'contain' }} 
+              />
+            </div>
+            
+            <button
+              onClick={async () => {
+                try {
+                  console.log('Payment completed for:', calculateTotal());
+                  setShowModal(false);
+                  setShowApprovalModal(true);
+                } catch (error) {
+                  console.error('Error sending payment:', error);
+                  alert('Payment failed. Please try again.');
+                }
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
+                color: '#FFFFFF',
+                padding: '14px 32px',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '600',
+                border: 'none',
+                cursor: 'pointer',
+                width: '100%',
+                boxShadow: '0 4px 12px rgba(0,167,157,0.3)'
+              }}
+            >
+              Confirm Payment
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Approval Modal */}
+      {showApprovalModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1100,
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            padding: '40px',
+            width: '90%',
+            maxWidth: '400px',
+            position: 'relative',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            textAlign: 'center',
+          }}>
+            <button
+              onClick={() => setShowApprovalModal(false)}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: '#F4F7F9',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#4A6A8A',
+              }}
+              aria-label="Close approval modal"
+            >
+              <X size={20} />
+            </button>
+            
+            <div style={{ 
+              width: '80px', 
+              height: '80px', 
+              background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)', 
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 24px'
+            }}>
+              <CheckCircle size={48} color="#FFFFFF" />
+            </div>
+            
+            <h2 style={{ marginBottom: '12px', color: '#003366', fontSize: '22px', fontWeight: '700' }}>
+              Payment Received
+            </h2>
+            <p style={{ fontSize: '16px', color: '#4A6A8A', lineHeight: '1.6' }}>
+              Your payment has been received successfully. Waiting for owner approval.
+            </p>
+            
+            <div style={{ 
+              marginTop: '24px', 
+              padding: '16px', 
+              background: '#F4F7F9', 
+              borderRadius: '8px',
+              fontSize: '14px',
+              color: '#4A6A8A'
+            }}>
+              You will be notified once the owner approves your application.
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

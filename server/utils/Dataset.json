@@ -1,0 +1,772 @@
+[
+  {
+    "id": 1,
+    "question": "Hello, how can I use ggnHome chatbot?",
+    "response": "Hi! You can ask me any questions related to renting properties, legal advice, property types, prices, and more. Just type your query and I'll assist you.",
+    "followUps": [
+      {
+        "id": 2,
+        "question": "What kind of questions can I ask?",
+        "response": "You can ask about property listings, rental prices, legal documentation, amenities, local laws, and the advantages of using ggnHome.",
+        "followUps": [
+          {
+            "id": 3,
+            "question": "Can you help me with legal documentation?",
+            "response": "Yes, I can guide you through the necessary documents required for renting or buying properties, including lease agreements and property registration papers.",
+            "followUps": [
+              {
+                "id": 4,
+                "question": "What documents do I need for renting a property?",
+                "response": "Typically, you'll need identity proof, address proof, passport-sized photographs, and a signed rental agreement. I can provide a detailed checklist if you want.",
+                "followUps": [
+                  {
+                    "id": 5,
+                    "question": "Yes, please provide the checklist.",
+                    "response": "Sure! The checklist includes: 1) Valid ID proof (Aadhar, Passport), 2) Address proof, 3) Passport size photos, 4) Security deposit receipt, 5) Signed rental agreement, and 6) NOC from society if applicable."
+                  },
+                  {
+                    "id": 6,
+                    "question": "Are there any legal protections for tenants?",
+                "response": "Yes, ggnHome ensures legal protection by verifying property documents and offering assistance with agreements to protect tenants' rights."
+                  }
+                ]
+              },
+              {
+                "id": 7,
+                "question": "Can you assist with property registration?",
+                "response": "Absolutely, I can guide you through the registration process, required documents, and fees applicable in Gurgaon."
+              }
+            ]
+          },
+          {
+            "id": 8,
+            "question": "Can I get help with property prices?",
+            "response": "Yes, I can provide current rental and sale price trends based on property type and location in Gurgaon.",
+            "followUps": [
+              {
+                "id": 9,
+                "question": "What are the average rental prices in Gurgaon?",
+                "response": "Rental prices vary by area and property type. For example, a 2BHK apartment in sectors like 56 or 57 typically ranges from ₹15,000 to ₹25,000 per month."
+              },
+              {
+                "id": 10,
+                "question": "How do prices differ for villas and apartments?",
+                "response": "Villas tend to be more expensive due to larger space and amenities, often starting around ₹40,000 per month, whereas apartments are more affordable."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "question": "How do I start searching for properties?",
+        "response": "You can specify your preferences like location, budget, property type, and I will help you find suitable listings on ggnHome.",
+        "followUps": [
+          {
+            "id": 12,
+            "question": "Can you explain property types available?",
+            "response": "Sure! We have apartments, villas, independent floors, studio apartments, and commercial spaces.",
+            "followUps": [
+              {
+                "id": 13,
+                "question": "What is an independent floor?",
+                "response": "An independent floor is a single-floor unit in a building, giving more privacy than an apartment but less than a villa."
+              },
+              {
+                "id": 14,
+                "question": "Are studio apartments available?",
+                "response": "Yes, studio apartments are compact units ideal for singles or couples, often with combined living and sleeping areas."
+              }
+            ]
+          },
+          {
+            "id": 15,
+            "question": "Can I filter properties by amenities?",
+            "response": "Yes, you can filter by amenities such as parking, gym, swimming pool, security, and more."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 16,
+    "question": "What are the advantages of using ggnHome?",
+    "response": "ggnHome offers verified listings, legal document checks, PPR verification, and customer support to ensure a secure and hassle-free rental experience.",
+    "followUps": [
+      {
+        "id": 17,
+        "question": "What is PPR verification?",
+        "response": "PPR stands for Property Possession Record. Our PPR verification confirms the legal ownership and possession status of the property.",
+        "followUps": [
+          {
+            "id": 18,
+            "question": "Why is PPR verification important?",
+            "response": "It protects you from fraudulent listings and ensures the property is legally owned and available for rent or sale.",
+            "followUps": [
+          {
+            "id": 19,
+            "question": "How does ggnHome perform PPR checks?",
+            "response": "We collaborate with local authorities to verify property records and cross-check ownership documents before listing."
+          },
+              {
+                "id": 20,
+                "question": "Can I get a copy of the PPR report?",
+                "response": "Yes, upon request, we can provide you with a verified PPR report for your selected property."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": 21,
+        "question": "Does ggnHome offer legal protection?",
+        "response": "Yes, we assist with drafting and reviewing rental agreements to ensure compliance with local laws and protect your rights.",
+        "followUps": [
+          {
+            "id": 22,
+            "question": "Are rental agreements customized?",
+            "response": "Yes, agreements are tailored to the specifics of the property and the parties involved, ensuring clarity and legal compliance."
+          },
+          {
+            "id": 23,
+            "question": "Can ggnHome help resolve disputes?",
+            "response": "We provide guidance and support for dispute resolution between tenants and landlords when required."
+          }
+        ]
+      },
+      {
+        "id": 24,
+        "question": "What other goodies does ggnHome offer?",
+        "response": "We offer customer support, easy search filters, verified agents, and timely updates on new listings.",
+        "followUps": [
+          {
+            "id": 25,
+            "question": "Are there any discounts or offers?",
+            "response": "Occasionally, we have special promotions on brokerage fees or documentation services. Keep an eye on our updates."
+          },
+          {
+            "id": 26,
+            "question": "Is there support for first-time renters?",
+            "response": "Yes, we provide detailed guides and assistance to help first-time renters understand the process fully."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 27,
+    "question": "How do I convert area units for properties?",
+    "response": "I can help convert common area units like square feet, square meters, and acres used in property measurements.",
+    "followUps": [
+      {
+        "id": 28,
+        "question": "How do I convert square feet to square meters?",
+        "response": "To convert square feet to square meters, multiply the area in square feet by 0.092903.",
+        "followUps": [
+          {
+            "id": 29,
+            "question": "Can you convert 1000 sq ft to sq meters?",
+            "response": "1000 sq ft equals approximately 92.9 square meters."
+          }
+        ]
+      },
+      {
+        "id": 30,
+        "question": "What is the conversion from acres to square feet?",
+        "response": "1 acre equals 43,560 square feet."
+      },
+      {
+        "id": 31,
+        "question": "How many square feet are in 1 square meter?",
+        "response": "1 square meter equals approximately 10.764 square feet."
+      }
+    ]
+  },
+  {
+    "id": 32,
+    "question": "What types of properties are available on ggnHome?",
+    "response": "We list apartments, villas, independent floors, studio apartments, and commercial properties.",
+    "followUps": [
+      {
+        "id": 33,
+        "question": "What is the difference between an apartment and a villa?",
+        "response": "Apartments are units in a multi-story building, while villas are independent houses with private gardens and more space.",
+        "followUps": [
+          {
+            "id": 34,
+            "question": "Are villas more expensive than apartments?",
+            "response": "Generally, yes, due to larger size, privacy, and amenities."
+          }
+        ]
+      },
+      {
+        "id": 35,
+        "question": "Do you have commercial properties listed?",
+        "response": "Yes, we list shops, offices, and warehouses for rent and sale."
+      }
+    ]
+  },
+  {
+    "id": 36,
+    "question": "What amenities can I expect in rental properties?",
+    "response": "Common amenities include parking, security, power backup, gym, swimming pool, and children's play area.",
+    "followUps": [
+      {
+        "id": 37,
+        "question": "Are amenities included in the rent?",
+        "response": "Usually yes, but it depends on the property. Always confirm with the landlord or agent.",
+        "followUps": [
+          {
+            "id": 38,
+            "question": "Can I request specific amenities?",
+            "response": "You can specify your preferences when searching, and I will filter listings accordingly."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 39,
+    "question": "What is RERA and how does it affect property rentals in Gurgaon?",
+    "response": "RERA is the Real Estate Regulatory Authority, a government body that regulates real estate transactions to protect buyers and tenants.",
+    "followUps": [
+      {
+        "id": 40,
+        "question": "Is RERA applicable to rental properties?",
+        "response": "RERA primarily regulates sale properties, but many rental agreements benefit from its guidelines for transparency and fairness.",
+        "followUps": [
+          {
+            "id": 41,
+            "question": "How can I check if a property is RERA registered?",
+            "response": "You can check the RERA registration number on the official Haryana RERA website or ask us to verify it for you."
+          },
+          {
+            "id": 42,
+            "question": "Does ggnRentalDeals verify RERA registration?",
+        "response": "Yes, we verify RERA registration for listed properties to ensure legitimacy."
+          }
+        ]
+      },
+      {
+        "id": 43,
+        "question": "What are the benefits of RERA registration?",
+        "response": "It ensures project transparency, timely possession, and protects you from fraud."
+      }
+    ]
+  },
+  {
+    "id": 44,
+    "question": "What are the common steps in buying a property?",
+    "response": "The steps include property search, verification, negotiation, agreement signing, payment, and registration.",
+    "followUps": [
+      {
+        "id": 45,
+        "question": "What documents are needed for buying?",
+        "response": "You'll need ID proof, sale deed, property tax receipts, encumbrance certificate, and NOCs.",
+        "followUps": [
+          {
+            "id": 46,
+            "question": "What is an encumbrance certificate?",
+            "response": "It certifies the property is free from legal dues or mortgages."
+          }
+        ]
+      },
+      {
+        "id": 47,
+        "question": "How long does registration take?",
+        "response": "Usually it takes 1-2 weeks after payment and document submission."
+      }
+    ]
+  },
+  {
+    "id": 48,
+    "question": "What is the process for renting a property?",
+    "response": "The process involves property search, document verification, agreement signing, security deposit payment, and possession.",
+    "followUps": [
+      {
+        "id": 49,
+        "question": "What is usually the security deposit amount?",
+        "response": "Typically 2-3 months' rent, but it can vary based on landlord agreement."
+      },
+      {
+        "id": 50,
+        "question": "Can I negotiate rent?",
+        "response": "Yes, negotiations are common before finalizing the agreement."
+      }
+    ]
+  },
+  {
+    "id": 51,
+    "question": "What are the local property regulations in Gurgaon?",
+    "response": "Gurgaon follows Haryana government property laws including RERA, property tax rules, and building codes.",
+    "followUps": [
+      {
+        "id": 52,
+        "question": "Are there restrictions on property resale?",
+        "response": "Some properties have resale lock-in periods depending on the developer's agreement."
+      },
+      {
+        "id": 53,
+        "question": "Is property tax applicable on rentals?",
+        "response": "Yes, property tax is levied on owners but may affect rental pricing."
+      }
+    ]
+  },
+  {
+    "id": 54,
+    "question": "What financial documents do I need for property transactions?",
+    "response": "You'll need bank statements, income proof, PAN card, and credit history for loan or rental approvals.",
+    "followUps": [
+      {
+        "id": 55,
+        "question": "Can ggnHome help with loan documentation?",
+        "response": "We can guide you through the required documents and connect you with financial partners."
+      },
+      {
+        "id": 56,
+        "question": "What is the typical loan approval time?",
+        "response": "It varies but generally takes 7-15 working days after document submission."
+      }
+    ]
+  },
+  {
+    "id": 57,
+    "question": "How do I verify property ownership?",
+    "response": "You can check ownership via sale deed, PPR records, and RERA registration status.",
+    "followUps": [
+      {
+        "id": 58,
+        "question": "Can ggnHome verify ownership for me?",
+        "response": "Yes, we perform ownership verification as part of our listing process."
+      }
+    ]
+  },
+  {
+    "id": 59,
+    "question": "Are brokerage fees applicable on ggnHome?",
+    "response": "Brokerage fees vary; some listings are direct from owners with no brokerage, while others involve agent fees.",
+    "followUps": [
+      {
+        "id": 60,
+        "question": "What is the typical brokerage percentage?",
+        "response": "Usually 1 month's rent or 1-2% of the sale price."
+      }
+    ]
+  },
+  {
+    "id": 61,
+    "question": "How can I list my property on ggnHome?",
+    "response": "You can register as a property owner or agent and submit your property details through our platform.",
+    "followUps": [
+      {
+        "id": 62,
+        "question": "Is there a fee for listing?",
+        "response": "Basic listings are free; premium listings with more visibility may have charges."
+      },
+      {
+        "id": 63,
+        "question": "How long does it take for my listing to go live?",
+        "response": "After verification, listings typically go live within 24-48 hours."
+      }
+    ]
+  },
+  {
+    "id": 64,
+    "question": "What is the minimum lease period for rentals?",
+    "response": "Minimum lease periods generally range from 11 months to 3 years, depending on landlord preference.",
+    "followUps": [
+      {
+        "id": 65,
+        "question": "Can I get a short-term rental?",
+        "response": "Short-term rentals are available but may be limited and costlier."
+      }
+    ]
+  },
+  {
+    "id": 66,
+    "question": "How do I terminate a rental agreement?",
+    "response": "Termination depends on the agreement terms; usually requires prior notice and settlement of dues.",
+    "followUps": [
+      {
+        "id": 67,
+        "question": "What is the usual notice period?",
+        "response": "Typically 1-3 months' written notice is required."
+      }
+    ]
+  },
+  {
+    "id": 68,
+    "question": "Are pets allowed in rental properties?",
+    "response": "Pet policies vary by landlord; you should confirm before finalizing the rental.",
+    "followUps": [
+      {
+        "id": 69,
+        "question": "Can ggnHome filter pet-friendly properties?",
+        "response": "Yes, you can specify pet-friendly as a filter in your property search."
+      }
+    ]
+  },
+  {
+    "id": 70,
+    "question": "What is the process for renewing a lease?",
+    "response": "Lease renewal involves mutual agreement, signing a renewal document, and updating rent if applicable.",
+    "followUps": [
+      {
+        "id": 71,
+        "question": "Can rent be increased on renewal?",
+        "response": "Yes, landlords may increase rent as per agreement and local laws."
+      }
+    ]
+  },
+  {
+    "id": 72,
+    "question": "How do I report a problem with my rental property?",
+    "response": "You can contact the landlord or ggnHome customer support for assistance.",
+    "followUps": [
+      {
+        "id": 73,
+        "question": "Does ggnHome offer maintenance services?",
+        "response": "We can connect you with trusted service providers for repairs and maintenance."
+      }
+    ]
+  },
+  {
+    "id": 74,
+    "question": "What safety measures are in place for tenants?",
+    "response": "Properties listed with ggnHome undergo verification, and many have security features like CCTV and guards.",
+    "followUps": [
+      {
+        "id": 75,
+        "question": "Can I verify safety features before renting?",
+        "response": "Yes, property details include information on safety and security amenities."
+      }
+    ]
+  },
+  {
+    "id": 76,
+    "question": "Can I get help with property tax queries?",
+    "response": "Yes, I can provide information on property tax rates, payment schedules, and exemptions.",
+    "followUps": [
+      {
+        "id": 77,
+        "question": "How do I pay property tax in Gurgaon?",
+        "response": "You can pay online on the Municipal Corporation Gurgaon website or at designated offices."
+      }
+    ]
+  },
+  {
+    "id": 78,
+    "question": "What is the role of a property agent?",
+    "response": "Agents help find properties, negotiate deals, and assist with documentation.",
+    "followUps": [
+      {
+        "id": 79,
+        "question": "Are agents on ggnHome verified?",
+        "response": "Yes, all agents are verified to ensure trustworthy service."
+      }
+    ]
+  },
+  {
+    "id": 80,
+    "question": "How do I know if a property is ready to move in?",
+    "response": "Property listings specify if they are ready to move or under construction.",
+    "followUps": [
+      {
+        "id": 81,
+        "question": "Can I get possession dates for properties?",
+        "response": "Yes, possession dates are provided in the property details."
+      }
+    ]
+  },
+  {
+    "id": 82,
+    "question": "What is the importance of a No Objection Certificate (NOC)?",
+    "response": "NOC certifies that the property has no legal or financial dues and is clear for sale or rent.",
+    "followUps": [
+      {
+        "id": 83,
+        "question": "Who issues the NOC?",
+        "response": "The local municipal authority or society management issues the NOC."
+      }
+    ]
+  },
+  {
+    "id": 84,
+    "question": "How can I dispute a property-related issue?",
+    "response": "You can approach consumer courts, RERA authorities, or seek legal advice for disputes.",
+    "followUps": [
+      {
+        "id": 85,
+        "question": "Does ggnHome offer legal support?",
+        "response": "We provide guidance and connect you with legal experts when needed."
+      }
+    ]
+  },
+  {
+    "id": 86,
+    "question": "What are common property scams to watch out for?",
+    "response": "Beware of fake listings, forged documents, and unverified agents.",
+    "followUps": [
+      {
+        "id": 87,
+        "question": "How does ggnHome prevent scams?",
+        "response": "We verify all listings and documents before publishing and monitor agent activities."
+      }
+    ]
+  },
+  {
+    "id": 88,
+    "question": "Can I get assistance with property valuation?",
+    "response": "Yes, we provide estimated market values based on recent transactions and property features.",
+    "followUps": [
+      {
+        "id": 89,
+        "question": "Is property valuation free?",
+        "response": "Basic valuation is free; detailed reports may involve a fee."
+      }
+    ]
+  },
+  {
+    "id": 90,
+    "question": "What is the importance of a rent agreement?",
+    "response": "It legally binds tenant and landlord, specifying terms and protecting both parties.",
+    "followUps": [
+      {
+        "id": 91,
+        "question": "Can ggnHome help draft rent agreements?",
+        "response": "Yes, we provide templates and legal review services."
+      }
+    ]
+  },
+  {
+    "id": 92,
+    "question": "How do I renew my rent agreement?",
+    "response": "Renewal involves mutual consent and signing a new or extended agreement.",
+    "followUps": [
+      {
+        "id": 93,
+        "question": "Is registration required for rent agreement renewal?",
+        "response": "Registration is recommended for agreements longer than 11 months."
+      }
+    ]
+  },
+  {
+    "id": 94,
+    "question": "Can I sublet a rental property?",
+    "response": "Subletting depends on landlord permission and terms in the rental agreement.",
+    "followUps": [
+      {
+        "id": 95,
+        "question": "What are the risks of subletting without permission?",
+        "response": "It can lead to eviction or legal action from the landlord."
+      }
+    ]
+  },
+  {
+    "id": 96,
+    "question": "What is the process to transfer property ownership?",
+    "response": "It involves sale deed execution, payment of stamp duty, and registration at the sub-registrar office.",
+    "followUps": [
+      {
+        "id": 97,
+        "question": "How much is the stamp duty in Gurgaon?",
+        "response": "Stamp duty varies but is typically around 5-7% of the property value."
+      }
+    ]
+  },
+  {
+    "id": 98,
+    "question": "Can I get a property inspection before renting?",
+    "response": "Yes, we recommend inspecting the property physically or via a trusted agent.",
+    "followUps": [
+      {
+        "id": 99,
+        "question": "Does ggnRentalDeals arrange inspections?",
+        "response": "We can connect you with professionals for property inspections."
+      }
+    ]
+  },
+  {
+    "id": 100,
+    "question": "How do I update my profile on ggnHome?",
+    "response": "You can update your profile details by logging into your account and editing your information.",
+    "followUps": [
+      {
+        "id": 101,
+        "question": "Can I change my contact details?",
+        "response": "Yes, contact details can be updated anytime in your profile settings."
+      }
+    ]
+  }
+,
+{
+  "id": 102,
+  "question": "Can ggnHome predict property prices using AI?",
+  "response": "Yes! ggnHome uses AI models to predict property prices by analyzing market data, demand, amenities, and location trends.",
+  "followUps": [
+    {
+      "id": 103,
+      "question": "How accurate are ggnHome’s predictions?",
+      "response": "Our AI predictions are based on extensive datasets and are typically within 5-10% accuracy of market value."
+    },
+    {
+      "id": 104,
+      "question": "Can I use the price predictor for my own property?",
+      "response": "Absolutely! You can input your property details in the Price Predictor section to get an estimated value instantly."
+    }
+  ]
+},
+{
+  "id": 105,
+  "question": "Does ggnHome help with home loan assistance?",
+  "response": "Yes, ggnHome connects you with verified banking partners to simplify home loan applications and approvals.",
+  "followUps": [
+    {
+      "id": 106,
+      "question": "What documents are needed for a home loan?",
+      "response": "You’ll need ID proof, income proof, property documents, and recent bank statements."
+    },
+    {
+      "id": 107,
+      "question": "Can I check my loan eligibility on ggnHome?",
+      "response": "Yes, use our eligibility checker tool to get pre-approved insights instantly."
+    }
+  ]
+},
+{
+  "id": 108,
+  "question": "Does ggnHome support eco-friendly housing?",
+  "response": "Yes! We promote eco-conscious listings that include solar panels, rainwater harvesting, and energy-efficient designs.",
+  "followUps": [
+    {
+      "id": 109,
+      "question": "Can I filter properties by sustainability features?",
+      "response": "Yes, you can filter listings by eco-friendly features under Advanced Filters."
+    },
+    {
+      "id": 110,
+      "question": "Are there government incentives for green housing?",
+      "response": "Yes, several Indian states offer tax rebates and interest subsidies for eco-friendly homes."
+    }
+  ]
+},
+{
+  "id": 111,
+  "question": "How can I invest in real estate using ggnHome?",
+  "response": "ggnHome provides verified investment properties and detailed ROI insights to help you make smarter decisions.",
+  "followUps": [
+    {
+      "id": 112,
+      "question": "Does ggnHome show projected returns?",
+      "response": "Yes, our investment listings display projected ROI and growth potential based on market analysis."
+    },
+    {
+      "id": 113,
+      "question": "Can I compare investment properties?",
+      "response": "Absolutely! You can compare properties based on price, location, and yield to make informed choices."
+    }
+  ]
+},
+{
+  "id": 114,
+  "question": "Does ggnHome provide property management services?",
+  "response": "Yes, we offer end-to-end property management for owners, including tenant management, maintenance, and rent collection.",
+  "followUps": [
+    {
+      "id": 115,
+      "question": "Can I track my property’s performance online?",
+      "response": "Yes, the owner dashboard provides real-time data on occupancy, income, and maintenance requests."
+    },
+    {
+      "id": 116,
+      "question": "Does ggnHome handle maintenance issues?",
+      "response": "Yes, our partner service team manages cleaning, plumbing, and electrical maintenance."
+    }
+  ]
+},
+{
+  "id": 117,
+  "question": "How does ggnHome help with interior design?",
+  "response": "We collaborate with professional interior designers to offer personalized space planning and furnishing services.",
+  "followUps": [
+    {
+      "id": 118,
+      "question": "Can I book a design consultation through ggnHome?",
+      "response": "Yes, you can schedule a consultation directly through the Interiors section on our website."
+    },
+    {
+      "id": 119,
+      "question": "Are design services available for rentals too?",
+      "response": "Yes, we also offer budget-friendly design packages for rented homes."
+    }
+  ]
+},
+{
+  "id": 120,
+  "question": "Does ggnHome provide real estate market insights?",
+  "response": "Yes, we regularly publish market trends, price indexes, and sector reports for informed decision-making.",
+  "followUps": [
+    {
+      "id": 121,
+      "question": "Can I subscribe to market updates?",
+      "response": "Yes, you can subscribe to our newsletter for weekly updates on property trends and investments."
+    },
+    {
+      "id": 122,
+      "question": "Do you provide city-wise comparisons?",
+      "response": "Yes, we provide comparative data for major cities like Gurgaon, Delhi, Noida, and Mumbai."
+    }
+  ]
+},
+{
+  "id": 123,
+  "question": "Can ggnHome help me understand property taxes?",
+  "response": "Yes, ggnHome provides tools and articles that explain property tax calculations, payments, and exemptions.",
+  "followUps": [
+    {
+      "id": 124,
+      "question": "Are there online tools for tax calculation?",
+      "response": "Yes, our tax calculator lets you estimate property tax for your area."
+    },
+    {
+      "id": 125,
+      "question": "Does ggnHome offer reminders for tax deadlines?",
+      "response": "Yes, you can set up alerts in your profile for upcoming tax and rent due dates."
+    }
+  ]
+},
+{
+  "id": 126,
+  "question": "What government housing schemes does ggnHome cover?",
+  "response": "We provide detailed information and eligibility guidance for schemes like PMAY and Haryana Affordable Housing.",
+  "followUps": [
+    {
+      "id": 127,
+      "question": "Can ggnHome help me apply for PMAY?",
+      "response": "Yes, we guide you through the application and documentation process for PMAY benefits."
+    },
+    {
+      "id": 128,
+      "question": "Are there income limits for these schemes?",
+      "response": "Yes, eligibility depends on your income bracket, family size, and property value."
+    }
+  ]
+},
+{
+  "id": 129,
+  "question": "Does ggnHome support smart home listings?",
+  "response": "Yes, we feature smart homes equipped with IoT-enabled security, lighting, and energy control systems.",
+  "followUps": [
+    {
+      "id": 130,
+      "question": "Can I install smart systems in my existing home?",
+      "response": "Yes, we can connect you with certified installers for smart devices like cameras, sensors, and thermostats."
+    },
+    {
+      "id": 131,
+      "question": "Are smart homes costlier than regular ones?",
+      "response": "They may have slightly higher upfront costs but offer long-term savings in energy and maintenance."
+    }
+  ]
+}
+]

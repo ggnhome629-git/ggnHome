@@ -1,0 +1,3149 @@
+// import React, { useEffect, useRef, useState } from "react";
+// import TopNavigationBar from "../../Dashboard/TopNavigationBar";
+// import { useNavigate, useLocation } from "react-router-dom";
+
+// const VoiceAssistantRent = () => {
+//   // Scroll to top on mount
+//   useEffect(() => {
+//     try {
+//       if (typeof window !== "undefined" && window.scrollTo) {
+//         window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+//       }
+//     } catch (e) {}
+//   }, []);
+
+//   // UI / state
+//   const [sessionId, setSessionId] = useState(null);
+//   const [listening, setListening] = useState(false);
+//   const [messages, setMessages] = useState([]);
+//   const [waveform, setWaveform] = useState(Array(20).fill(0));
+//   const [conversationState, setConversationState] = useState("idle");
+//   const [autoStartAttempted, setAutoStartAttempted] = useState(false);
+//   const [suggestions, setSuggestions] = useState([]);
+//   const [showHelp, setShowHelp] = useState(false);
+//   const [isOnline, setIsOnline] = useState(navigator.onLine);
+//   const [isThinking, setIsThinking] = useState(false);
+
+//   // Refs for audio/recognition/speech states
+//   const recognitionRef = useRef(null);
+//   const isRecognizingRef = useRef(false);
+//   const speakingRef = useRef(false);
+//   const isBotSpeakingRef = useRef(false);
+//   const messagesEndRef = useRef(null);
+//   const waveIntervalRef = useRef(null);
+//   const collectedPrefsRef = useRef([]);
+//   const audioContextRef = useRef(null);
+//   const lastProcessedSpeechRef = useRef("");
+//   const currentQuestionIndexRef = useRef(0);
+//   const autoStartTimeoutRef = useRef(null);
+//   const retryCountRef = useRef(0);
+//   const touchStartRef = useRef(null);
+
+//   // Save queue for failed network saves
+//   const SAVE_QUEUE_KEY = "aria_save_queue_v1";
+//   const PREFS_KEY = "aria_collected_prefs_v1";
+//   const CONVERSATION_STATE_KEY = "aria_conversation_state";
+
+//   const [user, setUser] = useState(null);
+//   const navigate = useNavigate();
+//   const location = useLocation();
+
+//   // Conversation questions
+//   const questions = [
+//     "Hello! I'm Aria, your AI rental assistant. Let's find your ideal rental property. First, which sector or area are you interested in?",
+//     "What's your preferred budget range for rent?",
+//     "How many bedrooms or what size property are you looking for?",
+//     "Any specific amenities or features you'd like to have?",
+//     "Perfect! I've got all your preferences. Let me find the best properties for you.",
+//   ];
+
+//   // Visual helpers
+//   const scrollToBottom = () => {
+//     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+//   };
+//   useEffect(scrollToBottom, [messages]);
+
+//   // Fetch user info
+//   useEffect(() => {
+//     const fetchUser = async () => {
+//       try {
+//         const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+//           method: "GET",
+//           credentials: "include",
+//         });
+//         if (!res.ok) {
+//           return;
+//         }
+//         const data = await res.json();
+//         setUser(data);
+//       } catch (err) {
+//         console.error("Error fetching user:", err);
+//       }
+//     };
+//     fetchUser();
+//   }, []);
+
+//   // Waveform visuals
+//   useEffect(() => {
+//     if (listening) {
+//       waveIntervalRef.current = setInterval(() => {
+//         setWaveform(Array(20).fill(0).map(() => Math.random() * 100));
+//       }, 100);
+//     } else {
+//       if (waveIntervalRef.current) clearInterval(waveIntervalRef.current);
+//       setWaveform(Array(20).fill(0));
+//     }
+//     return () => {
+//       if (waveIntervalRef.current) clearInterval(waveIntervalRef.current);
+//     };
+//   }, [listening]);
+
+//   // Network status
+//   useEffect(() => {
+//     const handleOnline = () => setIsOnline(true);
+//     const handleOffline = () => setIsOnline(false);
+    
+//     window.addEventListener('online', handleOnline);
+//     window.addEventListener('offline', handleOffline);
+    
+//     return () => {
+//       window.removeEventListener('online', handleOnline);
+//       window.removeEventListener('offline', handleOffline);
+//     };
+//   }, []);
+
+//   // Auto-save conversation every 30 seconds
+//   useEffect(() => {
+//     const interval = setInterval(saveConversationState, 30000);
+//     return () => clearInterval(interval);
+//   }, [messages]);
+
+//   // ---------------------------
+//   // Professional Haptic Feedback
+//   // ---------------------------
+//   const provideHapticFeedback = () => {
+//     if ('vibrate' in navigator) {
+//       navigator.vibrate(30); // Short subtle vibration
+//     }
+//   };
+
+//   // ---------------------------
+//   // Conversation State Management
+//   // ---------------------------
+//   const saveConversationState = () => {
+//     const state = {
+//       messages,
+//       currentQuestionIndex: currentQuestionIndexRef.current,
+//       collectedPrefs: collectedPrefsRef.current,
+//       timestamp: Date.now()
+//     };
+//     try {
+//       localStorage.setItem(CONVERSATION_STATE_KEY, JSON.stringify(state));
+//     } catch (e) {
+//       console.warn("Failed to save conversation state");
+//     }
+//   };
+
+//   const resumeConversation = () => {
+//     try {
+//       const saved = localStorage.getItem(CONVERSATION_STATE_KEY);
+//       if (saved) {
+//         const state = JSON.parse(saved);
+//         // Check if conversation is recent (within 1 hour)
+//         if (Date.now() - state.timestamp < 3600000) {
+//           setMessages(state.messages);
+//           currentQuestionIndexRef.current = state.currentQuestionIndex;
+//           collectedPrefsRef.current = state.collectedPrefs;
+//           speak("Welcome back! Let's continue where we left off.");
+//           return true;
+//         }
+//       }
+//     } catch (e) {
+//       console.warn("Failed to resume conversation");
+//     }
+//     return false;
+//   };
+
+//   // ---------------------------
+//   // Smart Suggestions System
+//   // ---------------------------
+//   const getSuggestions = (currentQuestionIndex) => {
+//     const suggestionMap = {
+//       0: ["Sector 45", "Sector 50", "DLF Phase 2", "Gurgaon Central", "Near metro station"],
+//       1: ["10,000-15,000", "15,000-20,000", "20,000-25,000", "25,000-30,000", "30,000-40,000"],
+//       2: ["1 BHK", "2 BHK", "3 BHK", "Studio apartment", "1000 sq ft", "1500 sq ft"],
+//       3: ["Swimming pool", "Gym", "Parking", "Security", "Garden", "Power backup", "Lift"]
+//     };
+//     return suggestionMap[currentQuestionIndex] || [];
+//   };
+
+//   const handleSuggestionSelect = async (suggestion) => {
+//     provideHapticFeedback();
+//     await processUserResponse(suggestion);
+//   };
+
+//   // ---------------------------
+//   // Voice Command System
+//   // ---------------------------
+//   const voiceCommands = {
+//     'repeat': () => {
+//       speak(questions[currentQuestionIndexRef.current]);
+//       return true;
+//     },
+//     'start over': () => {
+//       startConversation();
+//       return true;
+//     },
+//     'go back': () => {
+//       if (currentQuestionIndexRef.current > 0) {
+//         currentQuestionIndexRef.current--;
+//         const prevQuestion = questions[currentQuestionIndexRef.current];
+//         speak("Going back. " + prevQuestion);
+//         return true;
+//       }
+//       return false;
+//     },
+//     'help': () => {
+//       setShowHelp(true);
+//       return true;
+//     },
+//     'stop': () => {
+//       stopRecognition();
+//       return true;
+//     },
+//     'skip': () => {
+//       handleSkipQuestion();
+//       return true;
+//     }
+//   };
+
+//   const checkForVoiceCommands = (userSpeech) => {
+//     const command = userSpeech.toLowerCase().trim();
+//     for (const [key, action] of Object.entries(voiceCommands)) {
+//       if (command.includes(key)) {
+//         provideHapticFeedback();
+//         return action();
+//       }
+//     }
+//     return false;
+//   };
+
+//   // ---------------------------
+//   // Quick Actions
+//   // ---------------------------
+//   const handleRepeatQuestion = () => {
+//     provideHapticFeedback();
+//     speak(questions[currentQuestionIndexRef.current]);
+//   };
+
+//   const handleSkipQuestion = () => {
+//     provideHapticFeedback();
+//     const nextIndex = currentQuestionIndexRef.current + 1;
+//     if (nextIndex < questions.length) {
+//       currentQuestionIndexRef.current = nextIndex;
+//       const botMsg = { type: "bot", text: questions[nextIndex] };
+//       setMessages(prev => [...prev, botMsg]);
+//       speak(questions[nextIndex]);
+//     }
+//   };
+
+//   // ---------------------------
+//   // Swipe Gestures
+//   // ---------------------------
+//   const handleTouchStart = (e) => {
+//     touchStartRef.current = e.touches[0].clientX;
+//   };
+
+//   const handleTouchEnd = (e) => {
+//     if (!touchStartRef.current) return;
+    
+//     const touchEnd = e.changedTouches[0].clientX;
+//     const diff = touchStartRef.current - touchEnd;
+    
+//     if (Math.abs(diff) > 50) {
+//       provideHapticFeedback();
+//       if (diff > 0) {
+//         // Swipe left - skip question
+//         handleSkipQuestion();
+//       } else {
+//         // Swipe right - go back
+//         if (currentQuestionIndexRef.current > 0) {
+//           currentQuestionIndexRef.current--;
+//           const prevQuestion = questions[currentQuestionIndexRef.current];
+//           speak("Going back. " + prevQuestion);
+//         }
+//       }
+//     }
+//     touchStartRef.current = null;
+//   };
+
+//   // ---------------------------
+//   // Persistence & message saving
+//   // ---------------------------
+//   async function saveMessageToServer(message) {
+//     if (!message || !isOnline) return;
+//     try {
+//       await fetch(process.env.REACT_APP_SAVE_ASSISTANT_MESSAGE_API, {
+//         method: "POST",
+//         credentials: "include",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({
+//           sessionId: sessionId || null,
+//           message,
+//           timestamp: new Date().toISOString(),
+//         }),
+//       });
+//     } catch (err) {
+//       console.warn("Save message failed, queueing for retry:", err);
+//       try {
+//         const q = JSON.parse(localStorage.getItem(SAVE_QUEUE_KEY) || "[]");
+//         q.push({ message, timestamp: Date.now() });
+//         localStorage.setItem(SAVE_QUEUE_KEY, JSON.stringify(q));
+//       } catch (e) {
+//         console.warn("Failed to push to local save queue:", e);
+//       }
+//     }
+//   }
+
+//   // Persist collected prefs locally to avoid data loss on reload
+//   useEffect(() => {
+//     try {
+//       const saved = JSON.parse(localStorage.getItem(PREFS_KEY) || "[]");
+//       if (Array.isArray(saved) && saved.length) {
+//         collectedPrefsRef.current = saved;
+//       }
+//     } catch (e) {}
+//   }, []);
+
+//   const pushCollectedPref = (txt) => {
+//     collectedPrefsRef.current.push(txt);
+//     try {
+//       localStorage.setItem(PREFS_KEY, JSON.stringify(collectedPrefsRef.current));
+//     } catch (e) {}
+//   };
+
+//   // Clear prefs when final saved
+//   const clearCollectedPrefs = () => {
+//     collectedPrefsRef.current = [];
+//     try {
+//       localStorage.removeItem(PREFS_KEY);
+//       localStorage.removeItem(CONVERSATION_STATE_KEY);
+//     } catch (e) {}
+//   };
+
+//   // ---------------------------
+//   // Audio Context Management
+//   // ---------------------------
+//   const primeAudioContext = async () => {
+//     try {
+//       if (!audioContextRef.current && (window.AudioContext || window.webkitAudioContext)) {
+//         const AudioContext = window.AudioContext || window.webkitAudioContext;
+//         audioContextRef.current = new AudioContext();
+//       }
+//       if (!audioContextRef.current) return false;
+
+//       if (audioContextRef.current.state === "suspended") {
+//         await audioContextRef.current.resume().catch(() => {});
+//       }
+//       return true;
+//     } catch (e) {
+//       console.warn("primeAudioContext failed:", e);
+//       return false;
+//     }
+//   };
+
+//   // ---------------------------
+//   // Speech Recognition
+//   // ---------------------------
+//   const initializeRecognition = () => {
+//     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+//     if (!SpeechRecognition) {
+//       alert("Speech recognition not supported in this browser!");
+//       return null;
+//     }
+
+//     const recognition = new SpeechRecognition();
+//     recognition.lang = "en-IN";
+//     recognition.interimResults = false;
+//     recognition.continuous = false;
+    
+//     recognition.onstart = () => {
+//       console.log("🎤 Recognition started");
+//       isRecognizingRef.current = true;
+//       setListening(true);
+//       setConversationState("listening");
+//       retryCountRef.current = 0;
+//       provideHapticFeedback();
+//     };
+
+//     recognition.onend = () => {
+//       console.log("🎤 Recognition ended");
+//       isRecognizingRef.current = false;
+//       setListening(false);
+      
+//       if (conversationState === "listening" && !speakingRef.current) {
+//         setTimeout(() => {
+//           if (recognitionRef.current && !isRecognizingRef.current && conversationState === "listening") {
+//             safeStartRecognition();
+//           }
+//         }, 800);
+//       }
+//     };
+
+//     recognition.onerror = (event) => {
+//       console.error("🎤 Recognition error:", event.error);
+//       isRecognizingRef.current = false;
+//       setListening(false);
+      
+//       handleRecognitionError(event.error);
+//     };
+
+//     recognition.onresult = async (event) => {
+//       try {
+//         const userSpeech = event.results[0][0].transcript.trim();
+//         console.log("🎤 Recognized speech:", userSpeech);
+
+//         await processUserResponse(userSpeech);
+        
+//       } catch (err) {
+//         console.error("Speech result error:", err);
+//       }
+//     };
+
+//     return recognition;
+//   };
+
+//   const safeStartRecognition = async () => {
+//     if (!recognitionRef.current || isRecognizingRef.current) return;
+    
+//     try {
+//       await primeAudioContext();
+//       recognitionRef.current.start();
+//       return true;
+//     } catch (err) {
+//       console.warn("Recognition start error:", err?.message || err);
+//       return false;
+//     }
+//   };
+
+//   const stopRecognition = () => {
+//     if (recognitionRef.current && isRecognizingRef.current) {
+//       try {
+//         recognitionRef.current.stop();
+//       } catch (err) {
+//         console.warn("Recognition stop error:", err);
+//       }
+//     }
+//     isRecognizingRef.current = false;
+//     setListening(false);
+//   };
+
+//   // ---------------------------
+//   // Smart Error Handling
+//   // ---------------------------
+//   const handleRecognitionError = (error) => {
+//     switch (error) {
+//       case 'no-speech':
+//         speak("I didn't hear anything. Please speak clearly into your microphone.");
+//         break;
+//       case 'audio-capture':
+//         speak("I'm having trouble accessing your microphone. Please check your permissions.");
+//         break;
+//       case 'network':
+//         speak("There seems to be a network issue. Please check your connection.");
+//         break;
+//       default:
+//         speak("I'm having trouble understanding. Could you please try again?");
+//     }
+    
+//     setTimeout(() => {
+//       if (conversationState === 'waiting') {
+//         safeStartRecognition();
+//       }
+//     }, 3000);
+//   };
+
+//   // ---------------------------
+//   // Auto-start functionality
+//   // ---------------------------
+//   const attemptAutoStart = async () => {
+//     if (autoStartAttempted || !recognitionRef.current) return;
+    
+//     console.log("🚀 Attempting auto-start...");
+//     setAutoStartAttempted(true);
+    
+//     const startRecognition = async (attempt = 1) => {
+//       if (attempt > 3) {
+//         console.log("❌ Auto-start failed after 3 attempts");
+//         return;
+//       }
+      
+//       if (!speakingRef.current && conversationState === "waiting") {
+//         console.log(`🔄 Auto-start attempt ${attempt}`);
+//         const success = await safeStartRecognition();
+//         if (!success && attempt < 3) {
+//           setTimeout(() => startRecognition(attempt + 1), 1000);
+//         }
+//       } else {
+//         setTimeout(() => startRecognition(attempt), 500);
+//       }
+//     };
+    
+//     setTimeout(() => startRecognition(1), 1500);
+//   };
+
+//   // ---------------------------
+//   // Text-to-Speech (TTS)
+//   // ---------------------------
+//   const speak = (text) => {
+//     return new Promise((resolve) => {
+//       try {
+//         window.speechSynthesis.cancel();
+//         isBotSpeakingRef.current = true;
+//         speakingRef.current = true;
+//         setConversationState("speaking");
+
+//         const utterance = new SpeechSynthesisUtterance(text);
+//         utterance.lang = "en-IN";
+//         utterance.rate = 0.95;
+//         utterance.pitch = 1.05;
+
+//         const voices = window.speechSynthesis.getVoices();
+//         const preferredVoice =
+//           voices.find((v) => v.name.includes("Google UK English Female")) ||
+//           voices.find((v) => v.name.includes("Google US English")) ||
+//           voices.find((v) => v.name.includes("Microsoft")) ||
+//           voices.find((v) => v.lang === "en-IN") ||
+//           voices[0];
+        
+//         if (preferredVoice) {
+//           utterance.voice = preferredVoice;
+//         }
+
+//         utterance.onend = () => {
+//           console.log("🗣️ Bot finished speaking");
+//           isBotSpeakingRef.current = false;
+//           speakingRef.current = false;
+//           setConversationState("waiting");
+          
+//           setTimeout(() => {
+//             attemptAutoStart();
+//           }, 800);
+          
+//           resolve();
+//         };
+
+//         utterance.onerror = (err) => {
+//           console.error("Speech synthesis error:", err);
+//           isBotSpeakingRef.current = false;
+//           speakingRef.current = false;
+//           setConversationState("waiting");
+          
+//           setTimeout(() => {
+//             attemptAutoStart();
+//           }, 800);
+          
+//           resolve();
+//         };
+
+//         window.speechSynthesis.speak(utterance);
+//       } catch (e) {
+//         console.error("Speech synthesis error:", e);
+//         speakingRef.current = false;
+//         setConversationState("waiting");
+//         resolve();
+//       }
+//     });
+//   };
+
+//   // ---------------------------
+//   // Conversation Flow Management
+//   // ---------------------------
+//   const isValidResponse = (userSpeech, currentQuestion) => {
+//     const speech = userSpeech.toLowerCase().trim();
+    
+//     if (speech.length < 2) return false;
+    
+//     // Check for voice commands first
+//     if (checkForVoiceCommands(userSpeech)) {
+//       return false;
+//     }
+    
+//     const commonErrors = ["hello", "hi", "hey", "ok", "okay", "yes", "no", "thank you", "thanks"];
+//     if (commonErrors.includes(speech)) return false;
+    
+//     const questionWords = currentQuestion.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+//     const userWords = speech.split(/\s+/);
+//     const commonWords = userWords.filter(word => 
+//       questionWords.some(qWord => qWord.includes(word) || word.includes(qWord))
+//     );
+//     const similarity = commonWords.length / Math.max(questionWords.length, 1);
+    
+//     if (similarity > 0.4) {
+//       console.log("❌ Response too similar to question, ignoring");
+//       return false;
+//     }
+    
+//     return true;
+//   };
+
+//   const processUserResponse = async (userSpeech) => {
+//     const currentQuestionIndex = currentQuestionIndexRef.current;
+//     const currentQuestion = questions[currentQuestionIndex];
+    
+//     console.log("🔄 Processing response:", {
+//       userSpeech,
+//       currentQuestionIndex,
+//       currentQuestion: currentQuestion.substring(0, 50) + "..."
+//     });
+
+//     // Validate response
+//     if (!isValidResponse(userSpeech, currentQuestion)) {
+//       return;
+//     }
+
+//     setConversationState("processing");
+//     setIsThinking(true);
+//     stopRecognition();
+
+//     // Simulate thinking delay for better UX
+//     await new Promise(resolve => setTimeout(resolve, 1000));
+//     setIsThinking(false);
+
+//     // Save user message
+//     pushCollectedPref(userSpeech);
+//     const userMsg = { type: "user", text: userSpeech };
+//     setMessages(prev => [...prev, userMsg]);
+//     saveMessageToServer(userMsg);
+
+//     // Move to next question
+//     const nextIndex = currentQuestionIndex + 1;
+//     currentQuestionIndexRef.current = nextIndex;
+
+//     console.log("📝 Moving to next question:", nextIndex);
+
+//     if (nextIndex < questions.length) {
+//       // Update suggestions
+//       setSuggestions(getSuggestions(nextIndex));
+
+//       // Show bot message immediately
+//       const botMsg = { type: "bot", text: questions[nextIndex] };
+//       setMessages(prev => [...prev, botMsg]);
+//       saveMessageToServer(botMsg);
+
+//       // Speak the next question
+//       await speak(questions[nextIndex]);
+//     } else {
+//       // Final question - save preferences and redirect
+//       await handleFinalStep();
+//     }
+//   };
+
+//   const startConversation = async () => {
+//     currentQuestionIndexRef.current = 0;
+//     const firstMsg = { type: "bot", text: questions[0] };
+//     setMessages([firstMsg]);
+//     saveMessageToServer(firstMsg);
+//     setSuggestions(getSuggestions(0));
+    
+//     // Start with TTS
+//     await speak(questions[0]);
+//   };
+
+//   const handleFinalStep = async () => {
+//     const orderedPrefs = {
+//       location: collectedPrefsRef.current[0] || "",
+//       budget: collectedPrefsRef.current[1] || "",
+//       size: collectedPrefsRef.current[2] || "",
+//       amenities: collectedPrefsRef.current[3] ? [collectedPrefsRef.current[3]] : [],
+//       furnishing: "",
+//       propertyType: "",
+//     };
+
+//     const searchQuery = encodeURIComponent(`${orderedPrefs.size || ""} in ${orderedPrefs.location}`.trim());
+//     const botMsg = { type: "bot", text: questions[questions.length - 1] };
+//     setMessages(prev => [...prev, botMsg]);
+//     saveMessageToServer(botMsg);
+
+//     // Speak final message
+//     await speak(questions[questions.length - 1]);
+
+//     // Save preferences
+//     try {
+//       const resp = await fetch(process.env.REACT_APP_RENTAL_PROPERTY_PREFERENCE_ARIA, {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({
+//           email: user?.email || null,
+//           assistantType: "rental",
+//           preferences: orderedPrefs,
+//         }),
+//         credentials: "include",
+//       });
+      
+//       if (resp.ok) {
+//         clearCollectedPrefs();
+//         setTimeout(() => {
+//           navigate(`/search/${searchQuery}`);
+//         }, 2000);
+//       }
+//     } catch (err) {
+//       console.error("❌ Error saving user preferences:", err);
+//     }
+//   };
+
+//   // ---------------------------
+//   // Main Effect for Recognition Setup
+//   // ---------------------------
+//   useEffect(() => {
+//     if (!sessionId) return;
+
+//     recognitionRef.current = initializeRecognition();
+//     if (!recognitionRef.current) return;
+
+//     // Try to resume previous conversation
+//     if (!resumeConversation()) {
+//       startConversation();
+//     }
+
+//     return () => {
+//       if (recognitionRef.current) {
+//         try {
+//           recognitionRef.current.stop();
+//         } catch (e) {}
+//       }
+//       if (autoStartTimeoutRef.current) {
+//         clearTimeout(autoStartTimeoutRef.current);
+//       }
+//     };
+//   }, [sessionId]);
+
+//   // ---------------------------
+//   // Manual Mic Control (Fallback)
+//   // ---------------------------
+//   const handleMicToggle = async () => {
+//     if (!recognitionRef.current) {
+//       alert("Speech recognition not set up in this browser.");
+//       return;
+//     }
+
+//     if (isRecognizingRef.current) {
+//       stopRecognition();
+//       setConversationState("waiting");
+//     } else {
+//       await primeAudioContext();
+//       provideHapticFeedback();
+      
+//       window.speechSynthesis.cancel();
+//       isBotSpeakingRef.current = false;
+//       speakingRef.current = false;
+      
+//       setConversationState("listening");
+//       safeStartRecognition();
+//     }
+//   };
+
+//   // Stop mic & speech if user navigates away
+//   useEffect(() => {
+//     const allowedPath = "/AIassistant-Rent";
+//     if (location.pathname !== allowedPath) {
+//       try {
+//         if (recognitionRef.current) {
+//           recognitionRef.current.onstart = null;
+//           recognitionRef.current.onend = null;
+//           recognitionRef.current.onresult = null;
+//           recognitionRef.current.onerror = null;
+//           recognitionRef.current.stop();
+//         }
+//       } catch {}
+//       try {
+//         window.speechSynthesis.cancel();
+//       } catch {}
+//       isRecognizingRef.current = false;
+//       isBotSpeakingRef.current = false;
+//       speakingRef.current = false;
+//       setListening(false);
+//       setConversationState("idle");
+//     }
+//   }, [location]);
+
+//   // Ensure TTS voices loaded
+//   useEffect(() => {
+//     window.speechSynthesis.onvoiceschanged = () => {
+//       window.speechSynthesis.getVoices();
+//     };
+//   }, []);
+
+//   // Cleanup
+//   useEffect(() => {
+//     return () => {
+//       try {
+//         if (audioContextRef.current && audioContextRef.current.close) {
+//           audioContextRef.current.close();
+//         }
+//       } catch {}
+//       if (autoStartTimeoutRef.current) {
+//         clearTimeout(autoStartTimeoutRef.current);
+//       }
+//     };
+//   }, []);
+
+//   // Logout handler
+//   const handleLogout = async () => {
+//     try {
+//       await fetch(process.env.REACT_APP_LOGOUT_API, { method: "POST", credentials: "include" });
+//     } catch (e) {}
+//     setUser(null);
+//     navigate("/");
+//   };
+
+//   // ---------------------------
+//   // UI Components
+//   // ---------------------------
+//   const PulseAnimation = () => (
+//     <div style={{
+//       position: 'absolute',
+//       top: 0,
+//       left: 0,
+//       right: 0,
+//       bottom: 0,
+//       borderRadius: '50%',
+//       border: '2px solid #22D3EE',
+//       animation: 'pulse 1.5s infinite',
+//     }} />
+//   );
+
+//   const TypingIndicator = () => (
+//     <div style={{
+//       display: 'flex',
+//       alignItems: 'center',
+//       gap: '8px',
+//       padding: '12px 16px',
+//       background: 'rgba(74, 106, 138, 0.3)',
+//       borderRadius: '18px',
+//       color: '#F4F7F9',
+//       fontSize: '14px',
+//       marginBottom: '16px',
+//       alignSelf: 'flex-start',
+//     }}>
+//       <div style={{display: 'flex', gap: '4px'}}>
+//         <div style={{
+//           width: '6px',
+//           height: '6px',
+//           borderRadius: '50%',
+//           background: '#22D3EE',
+//           animation: 'typing 1.4s infinite'
+//         }} />
+//         <div style={{
+//           width: '6px',
+//           height: '6px',
+//           borderRadius: '50%',
+//           background: '#22D3EE',
+//           animation: 'typing 1.4s infinite 0.2s'
+//         }} />
+//         <div style={{
+//           width: '6px',
+//           height: '6px',
+//           borderRadius: '50%',
+//           background: '#22D3EE',
+//           animation: 'typing 1.4s infinite 0.4s'
+//         }} />
+//       </div>
+//       Aria is thinking...
+//     </div>
+//   );
+
+//   const SuggestionChips = () => (
+//     <div style={{
+//       display: 'flex',
+//       flexWrap: 'wrap',
+//       gap: '8px',
+//       padding: '12px 0',
+//       marginBottom: '16px',
+//       justifyContent: 'center',
+//     }}>
+//       {suggestions.map((suggestion, index) => (
+//         <button
+//           key={index}
+//           onClick={() => handleSuggestionSelect(suggestion)}
+//           style={{
+//             padding: '8px 16px',
+//             background: 'rgba(34, 211, 238, 0.1)',
+//             border: '1px solid #22D3EE',
+//             borderRadius: '20px',
+//             color: '#22D3EE',
+//             fontSize: '12px',
+//             cursor: 'pointer',
+//             transition: 'all 0.2s',
+//             fontWeight: '500',
+//           }}
+//           onTouchStart={provideHapticFeedback}
+//         >
+//           {suggestion}
+//         </button>
+//       ))}
+//     </div>
+//   );
+
+//   const ProgressBar = () => (
+//     <div style={{
+//       width: '100%',
+//       height: '4px',
+//       background: 'rgba(74, 106, 138, 0.3)',
+//       borderRadius: '2px',
+//       overflow: 'hidden',
+//       marginBottom: '16px'
+//     }}>
+//       <div style={{
+//         width: `${((currentQuestionIndexRef.current + 1) / questions.length) * 100}%`,
+//         height: '100%',
+//         background: 'linear-gradient(90deg, #00A79D, #22D3EE)',
+//         transition: 'width 0.5s ease',
+//         borderRadius: '2px'
+//       }} />
+//     </div>
+//   );
+
+//   const QuickActions = () => (
+//     <div style={{
+//       position: 'fixed',
+//       top: '80px',
+//       right: '10px',
+//       display: 'flex',
+//       flexDirection: 'column',
+//       gap: '8px',
+//       zIndex: 100
+//     }}>
+//       <button
+//         onClick={handleRepeatQuestion}
+//         style={{
+//           width: '44px',
+//           height: '44px',
+//           borderRadius: '50%',
+//           background: 'rgba(0, 167, 157, 0.9)',
+//           border: 'none',
+//           color: 'white',
+//           fontSize: '16px',
+//           cursor: 'pointer',
+//           boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+//           display: 'flex',
+//           alignItems: 'center',
+//           justifyContent: 'center',
+//         }}
+//         onTouchStart={provideHapticFeedback}
+//       >
+//         🔄
+//       </button>
+      
+//       <button
+//         onClick={handleSkipQuestion}
+//         style={{
+//           width: '44px',
+//           height: '44px',
+//           borderRadius: '50%',
+//           background: 'rgba(74, 106, 138, 0.9)',
+//           border: 'none',
+//           color: 'white',
+//           fontSize: '16px',
+//           cursor: 'pointer',
+//           boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+//           display: 'flex',
+//           alignItems: 'center',
+//           justifyContent: 'center',
+//         }}
+//         onTouchStart={provideHapticFeedback}
+//       >
+//         ⏭️
+//       </button>
+
+//       <button
+//         onClick={() => setShowHelp(true)}
+//         style={{
+//           width: '44px',
+//           height: '44px',
+//           borderRadius: '50%',
+//           background: 'rgba(34, 211, 238, 0.9)',
+//           border: 'none',
+//           color: 'white',
+//           fontSize: '16px',
+//           cursor: 'pointer',
+//           boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+//           display: 'flex',
+//           alignItems: 'center',
+//           justifyContent: 'center',
+//         }}
+//         onTouchStart={provideHapticFeedback}
+//       >
+//         ❓
+//       </button>
+//     </div>
+//   );
+
+//   const HelpOverlay = () => (
+//     <div style={{
+//       position: 'fixed',
+//       top: 0,
+//       left: 0,
+//       right: 0,
+//       bottom: 0,
+//       background: 'rgba(0, 13, 26, 0.95)',
+//       zIndex: 2000,
+//       padding: '20px',
+//       color: '#F4F7F9',
+//       display: 'flex',
+//       flexDirection: 'column',
+//       justifyContent: 'center',
+//       alignItems: 'center',
+//     }}>
+//       <div style={{
+//         background: 'rgba(0, 29, 61, 0.9)',
+//         borderRadius: '20px',
+//         padding: '30px',
+//         maxWidth: '400px',
+//         width: '90%',
+//         border: '1px solid rgba(34, 211, 238, 0.3)',
+//       }}>
+//         <h3 style={{color: '#22D3EE', marginBottom: '20px', textAlign: 'center'}}>
+//           Voice Commands & Tips
+//         </h3>
+//         <div style={{lineHeight: '2', fontSize: '14px'}}>
+//           <div>🎙️ <strong>"Repeat"</strong> - Hear the question again</div>
+//           <div>🔄 <strong>"Start over"</strong> - Begin from beginning</div>
+//           <div>↩️ <strong>"Go back"</strong> - Previous question</div>
+//           <div>⏭️ <strong>"Skip"</strong> - Skip this question</div>
+//           <div>❌ <strong>"Stop"</strong> - Stop listening</div>
+//           <div>💡 <strong>Swipe left/right</strong> - Skip/Go back</div>
+//           <div>👆 <strong>Tap suggestions</strong> - Quick responses</div>
+//         </div>
+//         <button
+//           onClick={() => setShowHelp(false)}
+//           style={{
+//             marginTop: '30px',
+//             padding: '12px 24px',
+//             background: 'linear-gradient(135deg, #00A79D, #22D3EE)',
+//             color: 'white',
+//             border: 'none',
+//             borderRadius: '25px',
+//             cursor: 'pointer',
+//             width: '100%',
+//             fontSize: '16px',
+//             fontWeight: '600',
+//           }}
+//           onTouchStart={provideHapticFeedback}
+//         >
+//           Got it!
+//         </button>
+//       </div>
+//     </div>
+//   );
+
+//   return (
+//     <>
+//       {/* Top Navigation Bar */}
+//       <div
+//         style={{
+//           position: "fixed",
+//           top: 0,
+//           left: 0,
+//           width: "100%",
+//           zIndex: 999,
+//           backgroundColor: "#FFFFFF",
+//           boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+//         }}
+//       >
+//         <TopNavigationBar user={user} handleLogout={handleLogout} navItems={[
+//           "For Buyers",
+//           "For Tenants",
+//           "For Owners",
+//           "For Dealers / Builders",
+//           "Insights",
+//         ]} />
+//       </div>
+
+//       <div
+//         style={{
+//           minHeight: "100vh",
+//           background: "linear-gradient(135deg, #000814 0%, #001d3d 25%, #003566 50%, #001d3d 75%, #000814 100%)",
+//           backgroundSize: "400% 400%",
+//           animation: "gradientShift 15s ease infinite",
+//           display: "flex",
+//           flexDirection: "column",
+//           padding: "0",
+//           fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+//           position: "relative",
+//           overflow: "hidden",
+//           paddingTop: "70px",
+//           paddingBottom: "140px",
+//         }}
+//         onTouchStart={handleTouchStart}
+//         onTouchEnd={handleTouchEnd}
+//       >
+//         <style>{`
+//           @keyframes gradientShift { 
+//             0%, 100% { background-position: 0% 50%; } 
+//             50% { background-position: 100% 50%; } 
+//           }
+//           @keyframes pulse { 
+//             0%, 100% { transform: scale(1); opacity: 1; } 
+//             50% { transform: scale(1.05); opacity: 0.8; } 
+//           }
+//           @keyframes typing {
+//             0%, 60%, 100% { transform: scale(1); }
+//             30% { transform: scale(1.2); }
+//           }
+//         `}</style>
+
+//         {/* Floating particles */}
+//         {[...Array(10)].map((_, i) => (
+//           <div key={i} style={{
+//             position: "absolute",
+//             width: "4px",
+//             height: "4px",
+//             background: `rgba(${i % 2 === 0 ? "34, 211, 238" : "0, 167, 157"}, 0.6)`,
+//             borderRadius: "50%",
+//             left: `${Math.random() * 100}%`,
+//             bottom: "0",
+//             animation: `particle ${8 + Math.random() * 10}s linear infinite`,
+//             animationDelay: `${Math.random() * 8}s`,
+//           }} />
+//         ))}
+
+//         {/* Main Content */}
+//         <div style={{
+//           width: "100%",
+//           height: "100%",
+//           background: "rgba(0, 13, 26, 0.85)",
+//           borderRadius: "0",
+//           flex: 1,
+//           display: "flex",
+//           flexDirection: "column",
+//           backdropFilter: "blur(20px)",
+//           border: "1px solid rgba(34, 211, 238, 0.2)",
+//         }}>
+          
+//           {/* Header */}
+//           {sessionId && (
+//             <div style={{
+//               padding: "16px 20px",
+//               background: "rgba(0, 29, 61, 0.9)",
+//               color: "#F4F7F9",
+//               textAlign: "center",
+//               borderBottom: "1px solid rgba(34, 211, 238, 0.2)",
+//               position: 'relative',
+//             }}>
+//               <div style={{ fontSize: "16px", fontWeight: "700", marginBottom: "4px", color: "#22D3EE" }}>
+//                 Aria Rental Assistant
+//               </div>
+//               <div style={{ fontSize: "11px", opacity: 0.9, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+//                 <div style={{
+//                   width: '6px',
+//                   height: '6px',
+//                   borderRadius: '50%',
+//                   background: isOnline ? '#00A79D' : '#4A6A8A',
+//                 }} />
+//                 {isOnline ? 'Online' : 'Offline'} • 
+//                 {conversationState === "speaking" ? " Aria is speaking..." :
+//                  listening ? " Listening..." : 
+//                  autoStartAttempted ? " Ready - Auto mic active" : " Tap microphone to speak"}
+//               </div>
+//               <ProgressBar />
+//             </div>
+//           )}
+
+//           {/* If session hasn't started, show "Initiate AI Session" flow */}
+//           {!sessionId ? (
+//             <div style={{ 
+//               textAlign: "center", 
+//               padding: "60px 20px", 
+//               flex: 1, 
+//               display: "flex", 
+//               flexDirection: "column", 
+//               justifyContent: "center", 
+//               alignItems: "center",
+//             }}>
+//               <div style={{ 
+//                 position: "relative", 
+//                 width: "120px", 
+//                 height: "120px", 
+//                 margin: "0 auto 30px",
+//               }}>
+//                 <div style={{ 
+//                   position: "absolute", 
+//                   inset: "0", 
+//                   borderRadius: "50%", 
+//                   background: "linear-gradient(135deg, rgba(0, 167, 157, 0.2), rgba(34, 211, 238, 0.2))",
+//                   animation: "pulse 2s ease-in-out infinite" 
+//                 }} />
+//                 <div style={{ 
+//                   position: "absolute", 
+//                   inset: "10px", 
+//                   borderRadius: "50%", 
+//                   background: "linear-gradient(135deg, #00A79D, #22D3EE)", 
+//                   display: "flex", 
+//                   alignItems: "center", 
+//                   justifyContent: "center",
+//                   boxShadow: "0 10px 30px rgba(34, 211, 238, 0.4)",
+//                   border: "2px solid rgba(255,255,255,0.2)",
+//                 }}>
+//                   <div style={{
+//                     width: "70px",
+//                     height: "70px",
+//                     borderRadius: "50%",
+//                     background: "rgba(0, 13, 26, 0.9)",
+//                     display: "flex",
+//                     alignItems: "center",
+//                     justifyContent: "center",
+//                     fontSize: "28px",
+//                   }}>
+//                     🎙️
+//                   </div>
+//                 </div>
+//               </div>
+
+//               <h1 style={{ 
+//                 fontSize: "22px", 
+//                 fontWeight: "700", 
+//                 margin: "0 0 12px 0",
+//                 color: "#F4F7F9",
+//               }}>
+//                 Aria Voice Assistant
+//               </h1>
+//               <p style={{ 
+//                 fontSize: "14px", 
+//                 margin: "0 0 30px 0", 
+//                 opacity: 0.9,
+//                 lineHeight: 1.4,
+//                 color: "#F4F7F9",
+//                 textAlign: 'center',
+//                 maxWidth: '300px',
+//               }}>
+//                 Let's find your perfect rental property through natural conversation
+//               </p>
+
+//               <button 
+//                 onClick={() => {
+//                   const newSessionId = `user_${Math.random().toString(36).substr(2, 9)}`;
+//                   setSessionId(newSessionId);
+//                 }}
+//                 style={{
+//                   padding: "16px 40px",
+//                   background: "linear-gradient(135deg, #00A79D, #22D3EE)",
+//                   color: "#FFFFFF",
+//                   border: "none",
+//                   borderRadius: "50px",
+//                   cursor: "pointer",
+//                   fontSize: "16px",
+//                   fontWeight: "700",
+//                   boxShadow: "0 8px 25px rgba(0,167,157,0.3)",
+//                   transition: "all 0.3s",
+//                   outline: "none",
+//                 }}
+//                 onTouchStart={provideHapticFeedback}
+//               >
+//                 Start Voice Session
+//               </button>
+//             </div>
+//           ) : (
+//             // Chat messages area
+//             <div style={{
+//               flex: 1,
+//               overflowY: "auto",
+//               padding: "16px",
+//               background: "rgba(0, 13, 26, 0.6)",
+//               position: 'relative',
+//             }}>
+//               {messages.length === 0 ? (
+//                 <div style={{ 
+//                   textAlign: "center", 
+//                   color: "#4A6A8A", 
+//                   padding: "40px 20px", 
+//                   height: "100%", 
+//                   display: "flex", 
+//                   flexDirection: "column", 
+//                   justifyContent: "center", 
+//                   alignItems: "center" 
+//                 }}>
+//                   <div style={{ 
+//                     width: "60px", 
+//                     height: "60px", 
+//                     margin: "0 auto 20px", 
+//                     borderRadius: "50%", 
+//                     background: "rgba(74, 106, 138, 0.2)", 
+//                     display: "flex", 
+//                     alignItems: "center", 
+//                     justifyContent: "center",
+//                     fontSize: "24px",
+//                   }}>
+//                     💬
+//                   </div>
+//                   <p style={{ margin: 0, fontWeight: "600", fontSize: "16px" }}>Starting conversation...</p>
+//                 </div>
+//               ) : (
+//                 <>
+//                   {messages.map((msg, idx) => (
+//                     <div key={idx} style={{ 
+//                       marginBottom: "12px", 
+//                       display: "flex", 
+//                       justifyContent: msg.type === "user" ? "flex-end" : "flex-start",
+//                     }}>
+//                       <div style={{ 
+//                         maxWidth: "85%", 
+//                         display: "flex", 
+//                         gap: "8px", 
+//                         flexDirection: msg.type === "user" ? "row-reverse" : "row", 
+//                         alignItems: "flex-start" 
+//                       }}>
+//                         <div style={{ 
+//                           width: "32px", 
+//                           height: "32px", 
+//                           borderRadius: "50%", 
+//                           background: msg.type === "user" 
+//                             ? "linear-gradient(135deg, #22D3EE, #00A79D)" 
+//                             : "linear-gradient(135deg, #4A6A8A, #003366)",
+//                           display: "flex", 
+//                           alignItems: "center", 
+//                           justifyContent: "center", 
+//                           flexShrink: 0, 
+//                           boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+//                           fontSize: "12px",
+//                           color: "#FFFFFF",
+//                           fontWeight: "600",
+//                         }}>
+//                           {msg.type === "user" ? "You" : "AI"}
+//                         </div>
+//                         <div style={{ 
+//                           padding: "12px 14px", 
+//                           borderRadius: "16px", 
+//                           background: msg.type === "user" 
+//                             ? "linear-gradient(135deg, #22D3EE, #00A79D)" 
+//                             : "rgba(74, 106, 138, 0.3)",
+//                           color: "#FFFFFF",
+//                           fontSize: "14px", 
+//                           lineHeight: 1.4,
+//                           boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
+//                           border: msg.type === "user" ? "1px solid rgba(34, 211, 238, 0.3)" : "1px solid rgba(74, 106, 138, 0.3)",
+//                         }}>
+//                           <div style={{ fontWeight: 400, wordWrap: "break-word" }}>
+//                             {msg.text}
+//                           </div>
+//                         </div>
+//                       </div>
+//                     </div>
+//                   ))}
+//                   {isThinking && <TypingIndicator />}
+//                   {suggestions.length > 0 && <SuggestionChips />}
+//                 </>
+//               )}
+//               <div ref={messagesEndRef} />
+//             </div>
+//           )}
+
+//           {/* Quick Actions */}
+//           {sessionId && <QuickActions />}
+//         </div>
+
+//         {/* Fixed Bottom Mic Button */}
+//         {sessionId && (
+//           <div style={{
+//             position: "fixed",
+//             bottom: "20px",
+//             left: "50%",
+//             transform: "translateX(-50%)",
+//             zIndex: 1000,
+//             display: "flex",
+//             flexDirection: "column",
+//             alignItems: "center",
+//             gap: "12px",
+//             width: "100%",
+//             maxWidth: "400px",
+//             padding: "0 20px",
+//           }}>
+//             {/* Status Bar */}
+//             <div style={{
+//               background: "rgba(0, 13, 26, 0.9)",
+//               padding: "8px 16px",
+//               borderRadius: "20px",
+//               boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
+//               backdropFilter: "blur(10px)",
+//               border: "1px solid rgba(34, 211, 238, 0.2)",
+//             }}>
+//               <div style={{ 
+//                 display: "flex", 
+//                 alignItems: "center", 
+//                 gap: "8px",
+//                 fontSize: "12px",
+//                 fontWeight: "600",
+//                 color: conversationState === "speaking" ? "#00A79D" : 
+//                        listening ? "#22D3EE" : "#4A6A8A",
+//               }}>
+//                 <div style={{
+//                   width: "8px",
+//                   height: "8px",
+//                   borderRadius: "50%",
+//                   background: conversationState === "speaking" ? "#00A79D" : 
+//                              listening ? "#22D3EE" : "#4A6A8A",
+//                   animation: conversationState === "speaking" || listening ? "pulse 1s infinite" : "none",
+//                 }} />
+//                 {conversationState === "speaking" ? "Aria is speaking..." :
+//                  listening ? "Listening... Speak now" : 
+//                  autoStartAttempted ? "Ready - Auto mic active" : "Tap microphone to speak"}
+//               </div>
+//             </div>
+
+//             {/* Waveform visualization */}
+//             {listening && (
+//               <div style={{ 
+//                 display: "flex", 
+//                 gap: "3px", 
+//                 height: "40px", 
+//                 alignItems: "flex-end", 
+//                 justifyContent: "center",
+//                 width: "100%",
+//                 background: "rgba(0, 13, 26, 0.9)",
+//                 borderRadius: "20px",
+//                 padding: "0 20px",
+//                 boxShadow: "0 4px 15px rgba(0,0,0,0.3)",
+//                 border: "1px solid rgba(34, 211, 238, 0.2)",
+//               }}>
+//                 {waveform.map((height, idx) => (
+//                   <div 
+//                     key={idx} 
+//                     style={{ 
+//                       width: "4px", 
+//                       height: `${Math.max(4, height * 0.4)}%`, 
+//                       background: "linear-gradient(180deg, #22D3EE, #00A79D)", 
+//                       borderRadius: "2px", 
+//                       transition: "height 0.1s ease",
+//                     }} 
+//                   />
+//                 ))}
+//               </div>
+//             )}
+
+//             {/* Mic Button */}
+//             <button
+//               onClick={handleMicToggle}
+//               style={{
+//                 width: 70,
+//                 height: 70,
+//                 borderRadius: "50%",
+//                 background: listening 
+//                   ? "linear-gradient(135deg, #dc3545, #c82333)"
+//                   : conversationState === "speaking" 
+//                   ? "linear-gradient(135deg, #4A6A8A, #003366)"
+//                   : "linear-gradient(135deg, #00A79D, #22D3EE)",
+//                 color: "#FFFFFF",
+//                 border: "none",
+//                 boxShadow: listening 
+//                   ? "0 6px 20px rgba(220, 53, 69, 0.4)" 
+//                   : "0 6px 20px rgba(0, 167, 157, 0.4)",
+//                 fontSize: 24,
+//                 cursor: conversationState === "speaking" ? "not-allowed" : "pointer",
+//                 display: "flex",
+//                 alignItems: "center",
+//                 justifyContent: "center",
+//                 transition: "all 0.3s ease",
+//                 opacity: conversationState === "speaking" ? 0.7 : 1,
+//               }}
+//               disabled={conversationState === "speaking"}
+//               aria-label={listening ? "Stop listening" : "Start listening"}
+//               onTouchStart={provideHapticFeedback}
+//             >
+//               {conversationState === "speaking" ? "🔊" : listening ? "⏹️" : "🎙️"}
+//             </button>
+//           </div>
+//         )}
+
+//         {/* Help Overlay */}
+//         {showHelp && <HelpOverlay />}
+//       </div>
+//     </>
+//   );
+// };
+
+// export default VoiceAssistantRent;
+
+import React, { useEffect, useRef, useState } from "react";
+import TopNavigationBar from "../../Dashboard/TopNavigationBar";
+import { useNavigate, useLocation } from "react-router-dom";
+
+const VoiceAssistantRent = () => {
+  // Scroll to top on mount
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined" && window.scrollTo) {
+        window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+      }
+    } catch (e) { }
+  }, []);
+
+  // UI / state
+  const [sessionId, setSessionId] = useState(null);
+  const [listening, setListening] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [waveform, setWaveform] = useState(Array(25).fill(0));
+  const [conversationState, setConversationState] = useState("idle");
+  const [autoStartAttempted, setAutoStartAttempted] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showHelp, setShowHelp] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isThinking, setIsThinking] = useState(false);
+  const [activeSuggestion, setActiveSuggestion] = useState(null);
+  const [micPulse, setMicPulse] = useState(false);
+
+  // Refs for audio/recognition/speech states
+  const recognitionRef = useRef(null);
+  const isRecognizingRef = useRef(false);
+  const speakingRef = useRef(false);
+  const isBotSpeakingRef = useRef(false);
+  const messagesEndRef = useRef(null);
+  const waveIntervalRef = useRef(null);
+  const collectedPrefsRef = useRef([]);
+  const audioContextRef = useRef(null);
+  const lastProcessedSpeechRef = useRef("");
+  const currentQuestionIndexRef = useRef(0);
+  const autoStartTimeoutRef = useRef(null);
+  const retryCountRef = useRef(0);
+  const touchStartRef = useRef(null);
+  const audioAnalyserRef = useRef(null);
+
+  // Save queue for failed network saves
+  const SAVE_QUEUE_KEY = "aria_save_queue_v2";
+  const PREFS_KEY = "aria_collected_prefs_v2";
+  const CONVERSATION_STATE_KEY = "aria_conversation_state_v2";
+
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Modern conversation questions
+  const questions = [
+    "Hey there! I'm Aria, your AI rental expert. Let's find your dream home! 🏠 Which neighborhood or sector are you looking for?",
+    "Great choice! What's your comfortable budget range? 💰",
+    "Nice! How many bedrooms are you thinking? Or what size works for you? 🛏️",
+    "Almost done! Any must-have amenities? Think pool, gym, parking... 🏊‍♂️",
+    "Perfect! I've got your preferences locked in. Let me work my magic and find your ideal properties! ✨"
+  ];
+
+  // Visual helpers
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  };
+  useEffect(scrollToBottom, [messages]);
+
+  // Fetch user info
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+          method: "GET",
+          credentials: "include",
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setUser(data);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  // Modern waveform with frequency analysis
+  useEffect(() => {
+    if (listening) {
+      waveIntervalRef.current = setInterval(() => {
+        setWaveform(prev => {
+          const newWave = [...prev.slice(1)];
+          newWave.push(Math.random() * 80 + 20);
+          return newWave;
+        });
+      }, 80);
+    } else {
+      if (waveIntervalRef.current) clearInterval(waveIntervalRef.current);
+      setWaveform(Array(25).fill(0));
+    }
+    return () => {
+      if (waveIntervalRef.current) clearInterval(waveIntervalRef.current);
+    };
+  }, [listening]);
+
+  // Mic pulse animation
+  useEffect(() => {
+    if (listening) {
+      const pulseInterval = setInterval(() => {
+        setMicPulse(prev => !prev);
+      }, 1500);
+      return () => clearInterval(pulseInterval);
+    }
+  }, [listening]);
+
+  // Network status
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      provideHapticFeedback('soft');
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      provideHapticFeedback('medium');
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Auto-save conversation
+  useEffect(() => {
+    const interval = setInterval(saveConversationState, 25000);
+    return () => clearInterval(interval);
+  }, [messages]);
+
+  // ---------------------------
+  // Modern Haptic Feedback System
+  // ---------------------------
+  const provideHapticFeedback = (type = 'soft') => {
+    if ('vibrate' in navigator) {
+      const patterns = {
+        'soft': [10],
+        'medium': [20],
+        'strong': [30, 40, 30],
+        'success': [50, 100, 50],
+        'error': [100, 50, 100]
+      };
+      navigator.vibrate(patterns[type] || patterns.soft);
+    }
+  };
+
+  // ---------------------------
+  // Advanced Conversation State Management
+  // ---------------------------
+  const saveConversationState = () => {
+    const state = {
+      messages,
+      currentQuestionIndex: currentQuestionIndexRef.current,
+      collectedPrefs: collectedPrefsRef.current,
+      timestamp: Date.now(),
+      version: '2.0'
+    };
+    try {
+      localStorage.setItem(CONVERSATION_STATE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.warn("Failed to save conversation state");
+    }
+  };
+
+  const resumeConversation = () => {
+    try {
+      const saved = localStorage.getItem(CONVERSATION_STATE_KEY);
+      if (saved) {
+        const state = JSON.parse(saved);
+        if (Date.now() - state.timestamp < 3600000) {
+          setMessages(state.messages);
+          currentQuestionIndexRef.current = state.currentQuestionIndex;
+          collectedPrefsRef.current = state.collectedPrefs;
+          speak("Welcome back! Let's continue where we left off. " + questions[state.currentQuestionIndex]);
+          return true;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to resume conversation");
+    }
+    return false;
+  };
+
+  // ---------------------------
+  // AI-Powered Suggestions System
+  // ---------------------------
+  const getSmartSuggestions = (currentQuestionIndex, userHistory = []) => {
+    const suggestionMap = {
+      0: [
+        { text: "Sector 45 🏙️", confidence: 0.9 },
+        { text: "DLF Phase 2 🏢", confidence: 0.8 },
+        { text: "Gurgaon Central 🚇", confidence: 0.7 },
+        { text: "Near Metro Station 🚊", confidence: 0.6 }
+      ],
+      1: [
+        { text: "₹10K-15K 💸", confidence: 0.9 },
+        { text: "₹15K-20K 💰", confidence: 0.8 },
+        { text: "₹20K-25K 🏠", confidence: 0.7 },
+        { text: "₹25K-30K 🎯", confidence: 0.6 }
+      ],
+      2: [
+        { text: "1 BHK 🛌", confidence: 0.9 },
+        { text: "2 BHK 🛏️", confidence: 0.8 },
+        { text: "3 BHK 🏡", confidence: 0.7 },
+        { text: "Studio 🎨", confidence: 0.6 }
+      ],
+      3: [
+        { text: "Swimming Pool 🏊‍♂️", confidence: 0.9 },
+        { text: "Gym 💪", confidence: 0.8 },
+        { text: "Parking 🚗", confidence: 0.7 },
+        { text: "Security 🛡️", confidence: 0.6 }
+      ]
+    };
+    
+    return suggestionMap[currentQuestionIndex] || [];
+  };
+
+  const handleSuggestionSelect = async (suggestion) => {
+    setActiveSuggestion(suggestion.text);
+    provideHapticFeedback('success');
+    
+    // Animate selection
+    await new Promise(resolve => setTimeout(resolve, 300));
+    setActiveSuggestion(null);
+    
+    await processUserResponse(suggestion.text);
+  };
+
+  // ---------------------------
+  // Advanced Voice Command System
+  // ---------------------------
+  const voiceCommands = {
+    'repeat': () => {
+      speak(questions[currentQuestionIndexRef.current]);
+      return true;
+    },
+    'start over': () => {
+      startConversation();
+      return true;
+    },
+    'go back': () => {
+      if (currentQuestionIndexRef.current > 0) {
+        currentQuestionIndexRef.current--;
+        const prevQuestion = questions[currentQuestionIndexRef.current];
+        speak("Going back. " + prevQuestion);
+        return true;
+      }
+      return false;
+    },
+    'help': () => {
+      setShowHelp(true);
+      return true;
+    },
+    'stop': () => {
+      stopRecognition();
+      speak("Stopped listening. Tap the mic when you're ready.");
+      return true;
+    },
+    'skip': () => {
+      handleSkipQuestion();
+      return true;
+    },
+    'what can i say': () => {
+      speak("You can say things like 'repeat', 'go back', 'start over', or 'help' for commands.");
+      return true;
+    }
+  };
+
+  const checkForVoiceCommands = (userSpeech) => {
+    const command = userSpeech.toLowerCase().trim();
+    for (const [key, action] of Object.entries(voiceCommands)) {
+      if (command.includes(key)) {
+        provideHapticFeedback('medium');
+        return action();
+      }
+    }
+    return false;
+  };
+
+  // ---------------------------
+  // Modern Quick Actions with Gestures
+  // ---------------------------
+  const handleRepeatQuestion = () => {
+    provideHapticFeedback('soft');
+    speak(questions[currentQuestionIndexRef.current]);
+  };
+
+  const handleSkipQuestion = () => {
+    provideHapticFeedback('medium');
+    const nextIndex = currentQuestionIndexRef.current + 1;
+    if (nextIndex < questions.length) {
+      currentQuestionIndexRef.current = nextIndex;
+      const botMsg = { type: "bot", text: questions[nextIndex] };
+      setMessages(prev => [...prev, botMsg]);
+      setSuggestions(getSmartSuggestions(nextIndex));
+      speak(questions[nextIndex]);
+    }
+  };
+
+  // ---------------------------
+  // Advanced Swipe Gestures
+  // ---------------------------
+  const handleTouchStart = (e) => {
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+      time: Date.now()
+    };
+  };
+
+  const handleTouchMove = (e) => {
+    if (!touchStartRef.current) return;
+    
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    
+    // Horizontal swipe detection
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
+      e.preventDefault(); // Prevent scroll during swipe
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!touchStartRef.current) return;
+    
+    const touch = e.changedTouches[0];
+    const deltaX = touch.clientX - touchStartRef.current.x;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    const duration = Date.now() - touchStartRef.current.time;
+    
+    // Check for horizontal swipe with minimal vertical movement
+    if (Math.abs(deltaX) > 50 && Math.abs(deltaY) < 100 && duration < 500) {
+      provideHapticFeedback('soft');
+      if (deltaX > 0) {
+        // Swipe right - go back
+        if (currentQuestionIndexRef.current > 0) {
+          currentQuestionIndexRef.current--;
+          const prevQuestion = questions[currentQuestionIndexRef.current];
+          speak("Going back. " + prevQuestion);
+        }
+      } else {
+        // Swipe left - skip
+        handleSkipQuestion();
+      }
+    }
+    touchStartRef.current = null;
+  };
+
+  // ---------------------------
+  // Modern Audio Context with Visualization
+  // ---------------------------
+  const primeAudioContext = async () => {
+    try {
+      if (!audioContextRef.current && (window.AudioContext || window.webkitAudioContext)) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioContextRef.current = new AudioContext();
+      }
+      if (!audioContextRef.current) return false;
+
+      if (audioContextRef.current.state === "suspended") {
+        await audioContextRef.current.resume();
+      }
+      return true;
+    } catch (e) {
+      console.warn("primeAudioContext failed:", e);
+      return false;
+    }
+  };
+
+  // ---------------------------
+  // Advanced Speech Recognition
+  // ---------------------------
+  const initializeRecognition = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition not supported in this browser!");
+      return null;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-IN";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 3;
+    
+    recognition.onstart = () => {
+      console.log("🎤 Recognition started");
+      isRecognizingRef.current = true;
+      setListening(true);
+      setConversationState("listening");
+      retryCountRef.current = 0;
+      provideHapticFeedback('success');
+    };
+
+    recognition.onend = () => {
+      console.log("🎤 Recognition ended");
+      isRecognizingRef.current = false;
+      setListening(false);
+      
+      if (conversationState === "listening" && !speakingRef.current) {
+        setTimeout(() => {
+          if (recognitionRef.current && !isRecognizingRef.current && conversationState === "listening") {
+            safeStartRecognition();
+          }
+        }, 1000);
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.error("🎤 Recognition error:", event.error);
+      isRecognizingRef.current = false;
+      setListening(false);
+      handleRecognitionError(event.error);
+    };
+
+    recognition.onresult = async (event) => {
+      try {
+        const result = event.results[event.results.length - 1];
+        const userSpeech = result[0].transcript.trim();
+        
+        if (result.isFinal) {
+          console.log("🎤 Recognized speech:", userSpeech);
+          await processUserResponse(userSpeech);
+        }
+        
+      } catch (err) {
+        console.error("Speech result error:", err);
+      }
+    };
+
+    return recognition;
+  };
+
+  const safeStartRecognition = async () => {
+    if (!recognitionRef.current || isRecognizingRef.current) return;
+    
+    try {
+      await primeAudioContext();
+      recognitionRef.current.start();
+      return true;
+    } catch (err) {
+      console.warn("Recognition start error:", err?.message || err);
+      return false;
+    }
+  };
+
+  const stopRecognition = () => {
+    if (recognitionRef.current && isRecognizingRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (err) {
+        console.warn("Recognition stop error:", err);
+      }
+    }
+    isRecognizingRef.current = false;
+    setListening(false);
+  };
+
+  // ---------------------------
+  // Manual Mic Control (Modern Push-to-Talk)
+  // ---------------------------
+  const handleMicToggle = async () => {
+    if (!recognitionRef.current) {
+      alert("Speech recognition is not supported or initialized.");
+      return;
+    }
+
+    if (isRecognizingRef.current) {
+      stopRecognition();
+      setConversationState("waiting");
+    } else {
+      await primeAudioContext();
+      provideHapticFeedback('soft');
+
+      window.speechSynthesis.cancel();
+      isBotSpeakingRef.current = false;
+      speakingRef.current = false;
+
+      setConversationState("listening");
+      safeStartRecognition();
+    }
+  };
+
+  // ---------------------------
+  // Smart Error Handling & Recovery
+  // ---------------------------
+  const handleRecognitionError = (error) => {
+    const errorMessages = {
+      'no-speech': "I didn't catch that. Could you speak a bit louder? 🎤",
+      'audio-capture': "Having trouble with your microphone. Check permissions! ⚙️",
+      'network': "Network issues detected. Let me retry... 📡",
+      'not-allowed': "Microphone access needed. Please enable permissions! ✅"
+    };
+    
+    speak(errorMessages[error] || "Let's try that again. Speak clearly! 🎯");
+    
+    if (error !== 'not-allowed') {
+      setTimeout(() => {
+        if (conversationState === 'waiting') {
+          safeStartRecognition();
+        }
+      }, 2000);
+    }
+  };
+
+  // ---------------------------
+  // Auto-start with Smart Delay
+  // ---------------------------
+  const attemptAutoStart = async () => {
+    if (autoStartAttempted || !recognitionRef.current) return;
+    
+    console.log("🚀 Attempting auto-start...");
+    setAutoStartAttempted(true);
+    
+    const startRecognition = async (attempt = 1) => {
+      if (attempt > 3) {
+        console.log("❌ Auto-start failed after 3 attempts");
+        return;
+      }
+      
+      if (!speakingRef.current && conversationState === "waiting") {
+        console.log(`🔄 Auto-start attempt ${attempt}`);
+        const success = await safeStartRecognition();
+        if (!success && attempt < 3) {
+          setTimeout(() => startRecognition(attempt + 1), 1200);
+        }
+      } else {
+        setTimeout(() => startRecognition(attempt), 600);
+      }
+    };
+    
+    setTimeout(() => startRecognition(1), 1800);
+  };
+
+  // ---------------------------
+  // Modern Text-to-Speech with Emotions
+  // ---------------------------
+  const speak = (text) => {
+    return new Promise((resolve) => {
+      try {
+        window.speechSynthesis.cancel();
+        isBotSpeakingRef.current = true;
+        speakingRef.current = true;
+        setConversationState("speaking");
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "en-IN";
+        utterance.rate = 1.0;
+        utterance.pitch = 1.1;
+        utterance.volume = 0.9;
+
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find((v) =>
+          v.name.includes("Female") || v.name.includes("Google") || v.name.includes("Samantha")
+        ) || voices[0];
+        
+        if (preferredVoice) {
+          utterance.voice = preferredVoice;
+        }
+
+        utterance.onstart = () => {
+          console.log("🗣️ Bot started speaking");
+        };
+
+        utterance.onend = () => {
+          console.log("🗣️ Bot finished speaking");
+          isBotSpeakingRef.current = false;
+          speakingRef.current = false;
+          setConversationState("waiting");
+          
+          setTimeout(() => {
+            attemptAutoStart();
+          }, 600);
+          
+          resolve();
+        };
+
+        utterance.onerror = (err) => {
+          console.error("Speech synthesis error:", err);
+          isBotSpeakingRef.current = false;
+          speakingRef.current = false;
+          setConversationState("waiting");
+          resolve();
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } catch (e) {
+        console.error("Speech synthesis error:", e);
+        speakingRef.current = false;
+        setConversationState("waiting");
+        resolve();
+      }
+    });
+  };
+
+  // ---------------------------
+  // AI-Powered Response Validation
+  // ---------------------------
+  const isValidResponse = (userSpeech, currentQuestion) => {
+    const speech = userSpeech.toLowerCase().trim();
+    
+    if (speech.length < 2) return false;
+    
+    // Check for voice commands first
+    if (checkForVoiceCommands(userSpeech)) {
+      return false;
+    }
+    
+    const commonErrors = ["hello", "hi", "hey", "ok", "okay", "yes", "no", "thank you", "thanks"];
+    if (commonErrors.includes(speech)) {
+      speak("Could you provide more specific details? 🤔");
+      return false;
+    }
+    
+    return true;
+  };
+
+  const processUserResponse = async (userSpeech) => {
+    const currentQuestionIndex = currentQuestionIndexRef.current;
+    const currentQuestion = questions[currentQuestionIndex];
+    
+    console.log("🔄 Processing response:", userSpeech);
+
+    // Validate response
+    if (!isValidResponse(userSpeech, currentQuestion)) {
+      return;
+    }
+
+    setConversationState("processing");
+    setIsThinking(true);
+    stopRecognition();
+
+    // Simulate AI thinking with progressive delay
+    await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 700));
+    setIsThinking(false);
+
+    // Save user message
+    pushCollectedPref(userSpeech);
+    const userMsg = { type: "user", text: userSpeech };
+    setMessages(prev => [...prev, userMsg]);
+    saveMessageToServer(userMsg);
+
+    // Move to next question
+    const nextIndex = currentQuestionIndex + 1;
+    currentQuestionIndexRef.current = nextIndex;
+
+    if (nextIndex < questions.length) {
+      // Update smart suggestions
+      setSuggestions(getSmartSuggestions(nextIndex));
+
+      // Show bot message with typing indicator
+      const botMsg = { type: "bot", text: questions[nextIndex] };
+      setMessages(prev => [...prev, botMsg]);
+      saveMessageToServer(botMsg);
+
+      // Speak the next question
+      await speak(questions[nextIndex]);
+    } else {
+      await handleFinalStep();
+    }
+  };
+
+  const startConversation = async () => {
+    currentQuestionIndexRef.current = 0;
+    const firstMsg = { type: "bot", text: questions[0] };
+    setMessages([firstMsg]);
+    saveMessageToServer(firstMsg);
+    setSuggestions(getSmartSuggestions(0));
+    
+    await speak(questions[0]);
+  };
+
+  const handleFinalStep = async () => {
+    const orderedPrefs = {
+      location: collectedPrefsRef.current[0] || "",
+      budget: collectedPrefsRef.current[1] || "",
+      size: collectedPrefsRef.current[2] || "",
+      amenities: collectedPrefsRef.current[3] ? [collectedPrefsRef.current[3]] : [],
+    };
+
+    const searchQuery = encodeURIComponent(`${orderedPrefs.size || ""} in ${orderedPrefs.location}`.trim());
+    const botMsg = { type: "bot", text: questions[questions.length - 1] };
+    setMessages(prev => [...prev, botMsg]);
+    saveMessageToServer(botMsg);
+
+    await speak(questions[questions.length - 1]);
+    provideHapticFeedback('success');
+
+    // Save preferences
+    try {
+      const resp = await fetch(process.env.REACT_APP_RENTAL_PROPERTY_PREFERENCE_ARIA, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: user?.email || null,
+          assistantType: "rental",
+          preferences: orderedPrefs,
+        }),
+        credentials: "include",
+      });
+      
+      if (resp.ok) {
+        clearCollectedPrefs();
+        setTimeout(() => {
+          navigate(`/search/${searchQuery}`);
+        }, 2500);
+      }
+    } catch (err) {
+      console.error("❌ Error saving preferences:", err);
+    }
+  };
+
+  // ---------------------------
+  // Modern UI Components
+  // ---------------------------
+  const FloatingParticles = () => (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      pointerEvents: 'none',
+      zIndex: 1,
+    }}>
+      {[...Array(8)].map((_, i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          width: '6px',
+          height: '6px',
+          background: `radial-gradient(circle, #22D3EE, transparent)`,
+          borderRadius: '50%',
+          left: `${Math.random() * 100}%`,
+          top: `${Math.random() * 100}%`,
+          animation: `float ${15 + Math.random() * 10}s ease-in-out infinite`,
+          animationDelay: `${Math.random() * 5}s`,
+          opacity: 0.6,
+        }} />
+      ))}
+    </div>
+  );
+
+  const TypingIndicator = () => (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      padding: '16px 20px',
+      background: 'linear-gradient(135deg, rgba(74, 106, 138, 0.1), rgba(34, 211, 238, 0.05))',
+      borderRadius: '24px',
+      color: '#22D3EE',
+      fontSize: '14px',
+      marginBottom: '16px',
+      alignSelf: 'flex-start',
+      backdropFilter: 'blur(10px)',
+      border: '1px solid rgba(34, 211, 238, 0.1)',
+      maxWidth: '200px',
+    }}>
+      <div style={{ display: 'flex', gap: '4px' }}>
+        {[0, 1, 2].map(i => (
+          <div key={i} style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #22D3EE, #00A79D)',
+            animation: `typing 1.4s ease-in-out infinite ${i * 0.2}s`,
+          }} />
+        ))}
+      </div>
+      Aria is thinking
+    </div>
+  );
+
+  const SuggestionChips = () => (
+    <div style={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: '10px',
+      padding: '16px 0',
+      marginBottom: '20px',
+      justifyContent: 'flex-start',
+    }}>
+      {suggestions.map((suggestion, index) => (
+        <button
+          key={index}
+          onClick={() => handleSuggestionSelect(suggestion)}
+          style={{
+            padding: '12px 18px',
+            background: activeSuggestion === suggestion.text
+              ? 'linear-gradient(135deg, #22D3EE, #00A79D)'
+              : 'linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(0, 167, 157, 0.05))',
+            border: `1px solid ${activeSuggestion === suggestion.text ? '#22D3EE' : 'rgba(34, 211, 238, 0.3)'}`,
+            borderRadius: '20px',
+            color: activeSuggestion === suggestion.text ? '#FFFFFF' : '#22D3EE',
+            fontSize: '13px',
+            cursor: 'pointer',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            fontWeight: '500',
+            backdropFilter: 'blur(10px)',
+            transform: activeSuggestion === suggestion.text ? 'scale(0.95)' : 'scale(1)',
+            boxShadow: activeSuggestion === suggestion.text
+              ? '0 8px 25px rgba(34, 211, 238, 0.4)'
+              : '0 4px 15px rgba(0, 0, 0, 0.1)',
+          }}
+          onTouchStart={() => provideHapticFeedback('soft')}
+        >
+          {suggestion.text}
+        </button>
+      ))}
+    </div>
+  );
+
+  const ProgressIndicator = () => (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      padding: '0 20px 16px',
+      background: 'rgba(0, 29, 61, 0.9)',
+    }}>
+      {questions.map((_, index) => (
+        <div key={index} style={{
+          flex: 1,
+          height: '4px',
+          background: index <= currentQuestionIndexRef.current
+            ? 'linear-gradient(90deg, #00A79D, #22D3EE)'
+            : 'rgba(74, 106, 138, 0.3)',
+          borderRadius: '2px',
+          transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+          transform: index <= currentQuestionIndexRef.current ? 'scaleY(1.2)' : 'scaleY(1)',
+        }} />
+      ))}
+    </div>
+  );
+
+  const QuickActions = () => (
+    <div style={{
+      position: 'fixed',
+      top: '80px',
+      right: '16px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '12px',
+      zIndex: 100
+    }}>
+      {[
+        { icon: '🔊', action: handleRepeatQuestion, label: 'Repeat' },
+        { icon: '⏭️', action: handleSkipQuestion, label: 'Skip' },
+        { icon: '❓', action: () => setShowHelp(true), label: 'Help' },
+      ].map((item, index) => (
+        <button
+          key={index}
+          onClick={item.action}
+          style={{
+            width: '52px',
+            height: '52px',
+            borderRadius: '16px',
+            background: 'linear-gradient(135deg, rgba(0, 167, 157, 0.9), rgba(34, 211, 238, 0.9))',
+            border: 'none',
+            color: 'white',
+            fontSize: '18px',
+            cursor: 'pointer',
+            boxShadow: '0 8px 25px rgba(0, 167, 157, 0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            backdropFilter: 'blur(10px)',
+            transform: 'scale(1)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'scale(1.08)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+          onTouchStart={(e) => {
+            provideHapticFeedback('soft');
+            e.currentTarget.style.transform = 'scale(0.95)';
+          }}
+          onTouchEnd={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+          }}
+        >
+          {item.icon}
+        </button>
+      ))}
+    </div>
+  );
+
+  const ModernMicButton = () => (
+    <div style={{
+      position: 'relative',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+    }}>
+      {/* Animated Waveform */}
+      <div style={{
+        display: 'flex',
+        gap: '3px',
+        height: '50px',
+        alignItems: 'flex-end',
+        justifyContent: 'center',
+        width: '200px',
+        marginBottom: '15px',
+      }}>
+        {waveform.map((height, idx) => (
+          <div 
+            key={idx} 
+            style={{ 
+              width: '4px', 
+              height: `${Math.max(5, height)}%`, 
+              background: listening 
+                ? `linear-gradient(to top, #00A79D, #22D3EE, #00A79D)`
+                : 'rgba(74, 106, 138, 0.3)', 
+              borderRadius: '3px', 
+              transition: 'height 0.1s ease, background 0.3s ease',
+              transform: listening ? 'scaleY(1.1)' : 'scaleY(1)',
+            }} 
+          />
+        ))}
+      </div>
+
+      {/* Main Mic Button */}
+      <button
+        onClick={handleMicToggle}
+        style={{
+          width: '80px',
+          height: '80px',
+          borderRadius: '50%',
+          background: listening 
+            ? 'linear-gradient(135deg, #ff6b6b, #ee5a52)'
+            : conversationState === "speaking" 
+            ? 'linear-gradient(135deg, #4A6A8A, #003366)'
+            : 'linear-gradient(135deg, #00A79D, #22D3EE, #00A79D)',
+          color: "#FFFFFF",
+          border: 'none',
+          boxShadow: listening 
+            ? '0 0 0 12px rgba(255, 107, 107, 0.3), 0 12px 30px rgba(255, 107, 107, 0.4)' 
+            : conversationState === "speaking"
+            ? '0 12px 30px rgba(74, 106, 138, 0.4)'
+            : `0 12px 30px rgba(0, 167, 157, 0.4)${micPulse ? ', 0 0 0 15px rgba(0, 167, 157, 0.2)' : ''}`,
+          fontSize: '28px',
+          cursor: conversationState === "speaking" ? "not-allowed" : "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          opacity: conversationState === "speaking" ? 0.7 : 1,
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+        disabled={conversationState === "speaking"}
+        aria-label={listening ? "Stop listening" : "Start listening"}
+        onTouchStart={provideHapticFeedback}
+      >
+        {/* Animated background */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 70%)',
+          opacity: listening ? 0.6 : 0,
+          transition: 'opacity 0.3s ease',
+        }} />
+        
+        {conversationState === "speaking" ? "🔊" : listening ? "⏹️" : "🎙️"}
+      </button>
+
+      {/* Status Text */}
+      <div style={{
+        marginTop: '12px',
+        padding: '8px 16px',
+        background: 'rgba(0, 13, 26, 0.9)',
+        borderRadius: '20px',
+        color: conversationState === "speaking" ? '#00A79D' : 
+               listening ? '#22D3EE' : '#4A6A8A',
+        fontSize: '12px',
+        fontWeight: '600',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(34, 211, 238, 0.2)',
+        textAlign: 'center',
+        minWidth: '140px',
+      }}>
+        {conversationState === "speaking" ? "Aria is speaking..." :
+         listening ? "Listening... Speak now" : 
+         "Tap to start speaking"}
+      </div>
+    </div>
+  );
+
+  const ModernHelpOverlay = () => (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      background: 'radial-gradient(circle at 30% 20%, rgba(0, 29, 61, 0.95) 0%, rgba(0, 13, 26, 0.98) 100%)',
+      zIndex: 2000,
+      padding: '20px',
+      color: '#F4F7F9',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      backdropFilter: 'blur(20px)',
+    }}>
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(0, 29, 61, 0.8), rgba(0, 13, 26, 0.9))',
+        borderRadius: '28px',
+        padding: '35px 30px',
+        maxWidth: '400px',
+        width: '90%',
+        border: '1px solid rgba(34, 211, 238, 0.3)',
+        boxShadow: '0 25px 50px rgba(0, 0, 0, 0.5)',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Decorative elements */}
+        <div style={{
+          position: 'absolute',
+          top: -50,
+          right: -50,
+          width: '120px',
+          height: '120px',
+          background: 'radial-gradient(circle, rgba(34, 211, 238, 0.1) 0%, transparent 70%)',
+          borderRadius: '50%',
+        }} />
+        
+        <h3 style={{
+          color: '#22D3EE', 
+          marginBottom: '25px', 
+          textAlign: 'center',
+          fontSize: '20px',
+          fontWeight: '700',
+          background: 'linear-gradient(135deg, #22D3EE, #00A79D)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+        }}>
+          Voice Commands & Tips
+        </h3>
+        
+        <div style={{
+          lineHeight: '2.2', 
+          fontSize: '14px',
+          display: 'grid',
+          gap: '12px',
+        }}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(0, 167, 157, 0.2))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '14px',
+            }}>🎙️</div>
+            <span><strong>"Repeat"</strong> - Hear question again</span>
+          </div>
+          
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(0, 167, 157, 0.2))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '14px',
+            }}>🔄</div>
+            <span><strong>"Start over"</strong> - Begin from start</span>
+          </div>
+          
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(0, 167, 157, 0.2))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '14px',
+            }}>↪️</div>
+            <span><strong>"Go back"</strong> - Previous question</span>
+          </div>
+          
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+            <div style={{
+              width: '32px',
+              height: '3232px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(0, 167, 157, 0.2))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '14px',
+            }}>⏭️</div>
+            <span><strong>"Skip"</strong> - Skip current question</span>
+          </div>
+          
+          <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+            <div style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '10px',
+              background: 'linear-gradient(135deg, rgba(34, 211, 238, 0.2), rgba(0, 167, 157, 0.2))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '14px',
+            }}>👆</div>
+            <span><strong>Swipe left/right</strong> - Skip/Go back</span>
+          </div>
+        </div>
+        
+        <button
+          onClick={() => setShowHelp(false)}
+          style={{
+            marginTop: '30px',
+            padding: '14px 28px',
+            background: 'linear-gradient(135deg, #00A79D, #22D3EE)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '25px',
+            cursor: 'pointer',
+            width: '100%',
+            fontSize: '16px',
+            fontWeight: '600',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 8px 25px rgba(0, 167, 157, 0.4)',
+          }}
+          onTouchStart={() => {
+            provideHapticFeedback('success');
+            setShowHelp(false);
+          }}
+        >
+          Got it! Let's continue
+        </button>
+      </div>
+    </div>
+  );
+
+  // ---------------------------
+  // Persistence functions (keep existing)
+  // ---------------------------
+  async function saveMessageToServer(message) {
+    if (!message || !isOnline) return;
+    try {
+      await fetch(process.env.REACT_APP_SAVE_ASSISTANT_MESSAGE_API, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sessionId: sessionId || null,
+          message,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+    } catch (err) {
+      console.warn("Save message failed, queueing for retry:", err);
+      try {
+        const q = JSON.parse(localStorage.getItem(SAVE_QUEUE_KEY) || "[]");
+        q.push({ message, timestamp: Date.now() });
+        localStorage.setItem(SAVE_QUEUE_KEY, JSON.stringify(q));
+      } catch (e) {
+        console.warn("Failed to push to local save queue:", e);
+      }
+    }
+  }
+
+  const pushCollectedPref = (txt) => {
+    collectedPrefsRef.current.push(txt);
+    try {
+      localStorage.setItem(PREFS_KEY, JSON.stringify(collectedPrefsRef.current));
+    } catch (e) {}
+  };
+
+  const clearCollectedPrefs = () => {
+    collectedPrefsRef.current = [];
+    try {
+      localStorage.removeItem(PREFS_KEY);
+      localStorage.removeItem(CONVERSATION_STATE_KEY);
+    } catch (e) {}
+  };
+
+  // ---------------------------
+  // Main Effect for Recognition Setup
+  // ---------------------------
+  useEffect(() => {
+    if (!sessionId) return;
+
+    recognitionRef.current = initializeRecognition();
+    if (!recognitionRef.current) return;
+
+    if (!resumeConversation()) {
+      startConversation();
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      }
+      if (autoStartTimeoutRef.current) {
+        clearTimeout(autoStartTimeoutRef.current);
+      }
+    };
+  }, [sessionId]);
+
+  // Stop mic & speech if user navigates away
+  useEffect(() => {
+    const allowedPath = "/AIassistant-Rent";
+    if (location.pathname !== allowedPath) {
+      try {
+        if (recognitionRef.current) {
+          recognitionRef.current.onstart = null;
+          recognitionRef.current.onend = null;
+          recognitionRef.current.onresult = null;
+          recognitionRef.current.onerror = null;
+          recognitionRef.current.stop();
+        }
+      } catch {}
+      try {
+        window.speechSynthesis.cancel();
+      } catch {}
+      isRecognizingRef.current = false;
+      isBotSpeakingRef.current = false;
+      speakingRef.current = false;
+      setListening(false);
+      setConversationState("idle");
+    }
+  }, [location]);
+
+  // Ensure TTS voices loaded
+  useEffect(() => {
+    window.speechSynthesis.onvoiceschanged = () => {
+      window.speechSynthesis.getVoices();
+    };
+  }, []);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      try {
+        if (audioContextRef.current && audioContextRef.current.close) {
+          audioContextRef.current.close();
+        }
+      } catch {}
+      if (autoStartTimeoutRef.current) {
+        clearTimeout(autoStartTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Logout handler
+  const handleLogout = async () => {
+    try {
+      await fetch(process.env.REACT_APP_LOGOUT_API, { method: "POST", credentials: "include" });
+    } catch (e) {}
+    setUser(null);
+    navigate("/");
+  };
+
+  return (
+    <>
+      {/* Top Navigation Bar */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          zIndex: 999,
+          backgroundColor: "#FFFFFF",
+          boxShadow: "0 2px 20px rgba(0,0,0,0.1)",
+          backdropFilter: "blur(20px)",
+        }}
+      >
+        <TopNavigationBar user={user} handleLogout={handleLogout} navItems={[
+          "For Buyers",
+          "For Tenants",
+          "For Owners",
+          "For Dealers / Builders",
+          "Insights",
+        ]} />
+      </div>
+
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "linear-gradient(135deg, #000814 0%, #001d3d 20%, #003566 50%, #001d3d 80%, #000814 100%)",
+          backgroundSize: "400% 400%",
+          animation: "gradientShift 20s ease infinite",
+          display: "flex",
+          flexDirection: "column",
+          padding: "0",
+          fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+          position: "relative",
+          overflow: "hidden",
+          paddingTop: "70px",
+          paddingBottom: "160px",
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <style>{`
+          @keyframes gradientShift { 
+            0%, 100% { background-position: 0% 50%; } 
+            50% { background-position: 100% 50%; } 
+          }
+          @keyframes typing {
+            0%, 60%, 100% { transform: scale(1); opacity: 1; }
+            30% { transform: scale(1.2); opacity: 0.8; }
+          }
+          @keyframes float {
+            0%, 100% { transform: translateY(0px) translateX(0px) rotate(0deg); }
+            33% { transform: translateY(-20px) translateX(10px) rotate(5deg); }
+            66% { transform: translateY(-10px) translateX(-10px) rotate(-5deg); }
+          }
+          @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(34, 211, 238, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(34, 211, 238, 0.8), 0 0 60px rgba(0, 167, 157, 0.4); }
+          }
+        `}</style>
+
+        <FloatingParticles />
+
+        {/* Main Content */}
+        <div style={{
+          width: "100%",
+          height: "100%",
+          background: "rgba(0, 13, 26, 0.85)",
+          borderRadius: "0",
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          backdropFilter: "blur(30px)",
+          border: "1px solid rgba(34, 211, 238, 0.15)",
+          boxShadow: "0 25px 50px rgba(0, 0, 0, 0.25)",
+        }}>
+          
+          {/* Modern Header */}
+          {sessionId && (
+            <div style={{
+              padding: "20px 20px 0px 20px",
+              background: "linear-gradient(180deg, rgba(0, 29, 61, 0.95) 0%, transparent 100%)",
+              color: "#F4F7F9",
+              textAlign: "center",
+              position: 'relative',
+            }}>
+              <div style={{ 
+                fontSize: "18px", 
+                fontWeight: "800", 
+                marginBottom: "6px", 
+                background: "linear-gradient(135deg, #22D3EE, #00A79D)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                letterSpacing: "-0.5px",
+              }}>
+                Aria AI Assistant
+              </div>
+              <div style={{ 
+                fontSize: "11px", 
+                opacity: 0.8, 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                gap: '8px',
+                fontWeight: '500',
+              }}>
+                <div style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: isOnline ? '#00A79D' : '#4A6A8A',
+                  animation: isOnline ? 'pulse-glow 2s infinite' : 'none',
+                }} />
+                {isOnline ? 'Online • Real-time' : 'Offline • Local'} • 
+                {conversationState === "speaking" ? " Aria Speaking" :
+                 listening ? " Listening" : " Ready"}
+              </div>
+              <ProgressIndicator />
+            </div>
+          )}
+
+          {/* Modern Session Start */}
+          {!sessionId ? (
+            <div style={{ 
+              textAlign: "center", 
+              padding: "80px 20px", 
+              flex: 1, 
+              display: "flex", 
+              flexDirection: "column", 
+              justifyContent: "center", 
+              alignItems: "center",
+              position: 'relative',
+            }}>
+              {/* Animated background elements */}
+              <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '200px',
+                height: '200px',
+                background: 'radial-gradient(circle, rgba(34, 211, 238, 0.1) 0%, transparent 70%)',
+                borderRadius: '50%',
+                animation: 'pulse-glow 3s ease-in-out infinite',
+              }} />
+              
+              <div style={{ 
+                position: "relative", 
+                width: "140px", 
+                height: "140px", 
+                margin: "0 auto 40px",
+              }}>
+                <div style={{ 
+                  position: "absolute", 
+                  inset: "0", 
+                  borderRadius: "50%", 
+                  background: "linear-gradient(135deg, rgba(0, 167, 157, 0.3), rgba(34, 211, 238, 0.3))",
+                  animation: "pulse 2.5s ease-in-out infinite",
+                  filter: 'blur(10px)',
+                }} />
+                <div style={{ 
+                  position: "absolute", 
+                  inset: "8px", 
+                  borderRadius: "50%", 
+                  background: "linear-gradient(135deg, #00A79D, #22D3EE)", 
+                  display: "flex", 
+                  alignItems: "center", 
+                  justifyContent: "center",
+                  boxShadow: "0 20px 40px rgba(34, 211, 238, 0.4), inset 0 2px 10px rgba(255,255,255,0.2)",
+                  border: "2px solid rgba(255,255,255,0.3)",
+                }}>
+                  <div style={{
+                    width: "80px",
+                    height: "80px",
+                    borderRadius: "50%",
+                    background: "rgba(0, 13, 26, 0.9)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "36px",
+                    backdropFilter: 'blur(10px)',
+                  }}>
+                    🎙️
+                  </div>
+                </div>
+              </div>
+
+              <h1 style={{ 
+                fontSize: "28px", 
+                fontWeight: "800", 
+                margin: "0 0 16px 0",
+                background: "linear-gradient(135deg, #22D3EE, #00A79D, #22D3EE)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundSize: "200% 200%",
+                animation: "gradientShift 3s ease infinite",
+                letterSpacing: "-1px",
+              }}>
+                Aria Voice AI
+              </h1>
+              <p style={{ 
+                fontSize: "16px", 
+                margin: "0 0 40px 0", 
+                opacity: 0.9,
+                lineHeight: 1.5,
+                color: "#F4F7F9",
+                textAlign: 'center',
+                maxWidth: '320px',
+                fontWeight: '500',
+              }}>
+                Your intelligent rental assistant. Let's find your perfect home through natural conversation
+              </p>
+
+              <button 
+                onClick={() => {
+                  const newSessionId = `user_${Math.random().toString(36).substr(2, 9)}`;
+                  setSessionId(newSessionId);
+                }}
+                style={{
+                  padding: "18px 48px",
+                  background: "linear-gradient(135deg, #00A79D, #22D3EE)",
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: "30px",
+                  cursor: "pointer",
+                  fontSize: "17px",
+                  fontWeight: "700",
+                  boxShadow: "0 15px 35px rgba(0,167,157,0.4)",
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  outline: "none",
+                  position: 'relative',
+                  overflow: 'hidden',
+                }}
+                onTouchStart={() => {
+                  provideHapticFeedback('success');
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 20px 40px rgba(0,167,157,0.6)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 15px 35px rgba(0,167,157,0.4)';
+                }}
+              >
+                <span style={{ position: 'relative', zIndex: 2 }}>
+                  Start Voice Session
+                </span>
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'linear-gradient(135deg, #22D3EE, #00A79D)',
+                  opacity: 0,
+                  transition: 'opacity 0.3s ease',
+                }} />
+              </button>
+            </div>
+          ) : (
+            // Modern Chat Interface
+            <div style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "20px",
+              background: "rgba(0, 13, 26, 0.4)",
+              position: 'relative',
+            }}>
+              {messages.length === 0 ? (
+                <div style={{ 
+                  textAlign: "center", 
+                  color: "#4A6A8A", 
+                  padding: "60px 20px", 
+                  height: "100%", 
+                  display: "flex", 
+                  flexDirection: "column", 
+                  justifyContent: "center", 
+                  alignItems: "center" 
+                }}>
+                  <div style={{ 
+                    width: "80px", 
+                    height: "80px", 
+                    margin: "0 auto 25px", 
+                    borderRadius: "24px", 
+                    background: "linear-gradient(135deg, rgba(74, 106, 138, 0.2), rgba(34, 211, 238, 0.1))", 
+                    display: "flex", 
+                    alignItems: "center", 
+                    justifyContent: "center",
+                    fontSize: "32px",
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(34, 211, 238, 0.1)',
+                  }}>
+                    💬
+                  </div>
+                  <p style={{ margin: 0, fontWeight: "700", fontSize: "18px", color: '#F4F7F9' }}>Starting Conversation</p>
+                  <p style={{ margin: "8px 0 0 0", fontSize: "14px", opacity: 0.7 }}>Aria is getting ready...</p>
+                </div>
+              ) : (
+                <>
+                  {messages.map((msg, idx) => (
+                    <div key={idx} style={{ 
+                      marginBottom: "16px", 
+                      display: "flex", 
+                      justifyContent: msg.type === "user" ? "flex-end" : "flex-start",
+                    }}>
+                      <div style={{ 
+                        maxWidth: "85%", 
+                        display: "flex", 
+                        gap: "12px", 
+                        flexDirection: msg.type === "user" ? "row-reverse" : "row", 
+                        alignItems: "flex-start" 
+                      }}>
+                        <div style={{ 
+                          width: "40px", 
+                          height: "40px", 
+                          borderRadius: "14px", 
+                          background: msg.type === "user" 
+                            ? "linear-gradient(135deg, #22D3EE, #00A79D)" 
+                            : "linear-gradient(135deg, #4A6A8A, #003366)",
+                          display: "flex", 
+                          alignItems: "center", 
+                          justifyContent: "center", 
+                          flexShrink: 0, 
+                          boxShadow: "0 8px 20px rgba(0,0,0,0.3)",
+                          fontSize: "14px",
+                          color: "#FFFFFF",
+                          fontWeight: "700",
+                          backdropFilter: 'blur(10px)',
+                        }}>
+                          {msg.type === "user" ? "You" : "AI"}
+                        </div>
+                        <div style={{ 
+                          padding: "16px 20px", 
+                          borderRadius: "22px", 
+                          background: msg.type === "user" 
+                            ? "linear-gradient(135deg, #22D3EE, #00A79D)" 
+                            : "linear-gradient(135deg, rgba(74, 106, 138, 0.2), rgba(34, 211, 238, 0.1))",
+                          color: "#FFFFFF",
+                          fontSize: "15px", 
+                          lineHeight: 1.5,
+                          boxShadow: msg.type === "user" 
+                            ? "0 8px 25px rgba(34, 211, 238, 0.3)" 
+                            : "0 8px 25px rgba(0, 0, 0, 0.2)",
+                          border: msg.type === "user" 
+                            ? "1px solid rgba(34, 211, 238, 0.3)" 
+                            : "1px solid rgba(74, 106, 138, 0.2)",
+                          backdropFilter: 'blur(10px)',
+                          maxWidth: '100%',
+                          wordWrap: 'break-word',
+                        }}>
+                          <div style={{ fontWeight: 500, lineHeight: 1.5 }}>
+                            {msg.text}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {isThinking && <TypingIndicator />}
+                  {suggestions.length > 0 && <SuggestionChips />}
+                </>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+
+          {/* Quick Actions */}
+          {sessionId && <QuickActions />}
+        </div>
+
+        {/* Modern Bottom Control Panel */}
+        {sessionId && (
+          <div style={{
+            position: "fixed",
+            bottom: "20px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 1000,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "20px",
+            width: "100%",
+            maxWidth: "400px",
+            padding: "0 20px",
+          }}>
+            <ModernMicButton />
+          </div>
+        )}
+
+        {/* Modern Help Overlay */}
+        {showHelp && <ModernHelpOverlay />}
+      </div>
+    </>
+  );
+};
+
+export default VoiceAssistantRent;

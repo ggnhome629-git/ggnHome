@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- Homepage -->
+  <url>
+    <loc>https://www.ggnhome.com/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Authentication -->
+  <url>
+    <loc>https://www.ggnhome.com/login</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+  <!-- Static pages -->
+  <url>
+    <loc>https://www.ggnhome.com/about</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.ggnhome.com/support</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.ggnhome.com/rewards</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.ggnhome.com/price-predictor</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.ggnhome.com/investrealestate</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.ggnhome.com/servicesCreate</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://www.ggnhome.com/services</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- AI Assistant pages -->
+  <url>
+    <loc>https://www.ggnhome.com/AIassistant</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.ggnhome.com/AIassistant-Rent</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://www.ggnhome.com/AIassistant-Sale</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- Search -->
+  <url>
+    <loc>https://www.ggnhome.com/search</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- User/Properties pages -->
+  <url>
+    <loc>https://www.ggnhome.com/my-properties</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.ggnhome.com/savedproperties</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Dashboard subpages -->
+  <url>
+    <loc>https://www.ggnhome.com/seeAllproperties</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Flatmates pages -->
+  <url>
+    <loc>https://www.ggnhome.com/flatmatesdashboard</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.ggnhome.com/flatmatessearch</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.ggnhome.com/flatmateslistingform</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://www.ggnhome.com/flatmatesmylistings</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>
+
+  <!-- User Preference Form -->
+  <url>
+    <loc>https://www.ggnhome.com/userpreferenceform</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Chatbot -->
+  <url>
+    <loc>https://www.ggnhome.com/chatbot</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+
+  <!-- Dynamic property pages (optional example) -->
+  <!-- These are placeholders; dynamic sitemap needed later -->
+  <!--
+  <url>
+    <loc>https://www.ggnhome.com/Rentaldetails/{id}</loc>
+  </url>
+  <url>
+    <loc>https://www.ggnhome.com/Saledetails/{id}</loc>
+  </url>
+  -->
+
+</urlset>

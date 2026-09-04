@@ -1,0 +1,40 @@
+Username: 
+Email: tanushchawla16@gmail.com
+Preferences:
+[object Object]
+[object Object]
+[object Object]
+
+Username: Guest
+Email: tanushchawla16@gmail.com
+Preferences:
+[object Object]
+[object Object]
+[object Object]
+
+Username: Guest
+Email: tanushchawla16@gmail.com
+Preferences:
+Which locations are you most interested in? : Gurgan
+What is the absolute size of the property? : 56bhk
+What is your budget range for this property? : 90000
+
+
+
+
+
+
+Username: Guest
+Email: tanushchawla16@gmail.com
+Preferences:
+Which locations are you most interested in? : Gurgaon
+What is the absolute size of the property? : 1200
+What is your budget range for this property? : 12000
+
+Username: Guest
+Email: tanushchawla16@gmail.com
+Preferences:
+Which locations are you most interested in? : gurgaon
+What is the absolute size of the property? : 1200
+What is your budget range for this property? : 12000
+

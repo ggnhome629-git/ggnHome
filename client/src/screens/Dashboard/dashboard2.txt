@@ -1,0 +1,269 @@
+// import { useState } from 'react';
+// import { Search, Bot, Plus, User, LogOut, UserCircle, ChevronDown } from 'lucide-react';
+
+// export default function Dashboard() {
+//   const [showMenu, setShowMenu] = useState(false);
+
+//   const properties = Array.from({ length: 12 }, (_, i) => ({
+//     id: i + 1,
+//     name: `Property ${i + 1}`
+//   }));
+
+//   return (
+//     <div style={{ 
+//       minHeight: '100vh', 
+//       backgroundColor: '#F4F7F9',
+//       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+//     }}>
+//       {/* Header */}
+//       <header style={{
+//         backgroundColor: '#003366',
+//         padding: '1rem 2rem',
+//         display: 'flex',
+//         alignItems: 'center',
+//         justifyContent: 'space-between',
+//         gap: '1.5rem',
+//         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+//         position: 'sticky',
+//         top: 0,
+//         zIndex: 1000
+//       }}>
+//         {/* Company Name */}
+//         <div style={{
+//           fontSize: '1.5rem',
+//           fontWeight: 'bold',
+//           color: '#FFFFFF',
+//           whiteSpace: 'nowrap'
+//         }}>
+//           neo-urban
+//         </div>
+
+//         {/* Search Bar */}
+//         <div style={{
+//           flex: 1,
+//           maxWidth: '500px',
+//           position: 'relative'
+//         }}>
+//           <Search style={{
+//             position: 'absolute',
+//             left: '12px',
+//             top: '50%',
+//             transform: 'translateY(-50%)',
+//             color: '#4A6A8A',
+//             width: '20px',
+//             height: '20px'
+//           }} />
+//           <input
+//             type="text"
+//             placeholder="Search properties..."
+//             style={{
+//               width: '100%',
+//               padding: '0.75rem 1rem 0.75rem 2.75rem',
+//               border: 'none',
+//               borderRadius: '8px',
+//               fontSize: '0.95rem',
+//               backgroundColor: '#FFFFFF',
+//               color: '#333333',
+//               outline: 'none'
+//             }}
+//           />
+//         </div>
+
+//         {/* Action Buttons */}
+//         <div style={{
+//           display: 'flex',
+//           alignItems: 'center',
+//           gap: '1rem'
+//         }}>
+//           {/* AI Assistant Button */}
+//           <button style={{
+//             display: 'flex',
+//             alignItems: 'center',
+//             gap: '0.5rem',
+//             padding: '0.75rem 1.25rem',
+//             backgroundColor: '#00A79D',
+//             color: '#FFFFFF',
+//             border: 'none',
+//             borderRadius: '8px',
+//             fontSize: '0.95rem',
+//             fontWeight: '500',
+//             cursor: 'pointer',
+//             whiteSpace: 'nowrap',
+//             transition: 'background-color 0.2s'
+//           }}
+//           onMouseEnter={(e) => e.target.style.backgroundColor = '#22D3EE'}
+//           onMouseLeave={(e) => e.target.style.backgroundColor = '#00A79D'}>
+//             <Bot size={20} />
+//             AI Assistant
+//           </button>
+
+//           {/* Post Property Button */}
+//           <button style={{
+//             display: 'flex',
+//             alignItems: 'center',
+//             gap: '0.5rem',
+//             padding: '0.75rem 1.25rem',
+//             backgroundColor: '#22D3EE',
+//             color: '#003366',
+//             border: 'none',
+//             borderRadius: '8px',
+//             fontSize: '0.95rem',
+//             fontWeight: '600',
+//             cursor: 'pointer',
+//             whiteSpace: 'nowrap',
+//             transition: 'background-color 0.2s'
+//           }}
+//           onMouseEnter={(e) => e.target.style.backgroundColor = '#4dd4f0'}
+//           onMouseLeave={(e) => e.target.style.backgroundColor = '#22D3EE'}>
+//             <Plus size={20} />
+//             Post Property
+//           </button>
+
+//           {/* User Menu */}
+//           <div style={{ position: 'relative' }}>
+//             <button
+//               onClick={() => setShowMenu(!showMenu)}
+//               style={{
+//                 display: 'flex',
+//                 alignItems: 'center',
+//                 gap: '0.25rem',
+//                 padding: '0.5rem',
+//                 backgroundColor: '#4A6A8A',
+//                 color: '#FFFFFF',
+//                 border: 'none',
+//                 borderRadius: '50%',
+//                 cursor: 'pointer',
+//                 transition: 'background-color 0.2s'
+//               }}
+//               onMouseEnter={(e) => e.target.style.backgroundColor = '#5a7a9a'}
+//               onMouseLeave={(e) => e.target.style.backgroundColor = '#4A6A8A'}>
+//               <User size={24} />
+//             </button>
+
+//             {/* Dropdown Menu */}
+//             {showMenu && (
+//               <div style={{
+//                 position: 'absolute',
+//                 top: '100%',
+//                 right: 0,
+//                 marginTop: '0.5rem',
+//                 backgroundColor: '#FFFFFF',
+//                 borderRadius: '8px',
+//                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+//                 minWidth: '180px',
+//                 overflow: 'hidden',
+//                 zIndex: 1001
+//               }}>
+//                 <button style={{
+//                   display: 'flex',
+//                   alignItems: 'center',
+//                   gap: '0.75rem',
+//                   width: '100%',
+//                   padding: '0.875rem 1.25rem',
+//                   backgroundColor: 'transparent',
+//                   color: '#333333',
+//                   border: 'none',
+//                   textAlign: 'left',
+//                   cursor: 'pointer',
+//                   fontSize: '0.95rem',
+//                   transition: 'background-color 0.2s'
+//                 }}
+//                 onMouseEnter={(e) => e.target.style.backgroundColor = '#F4F7F9'}
+//                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+//                   <UserCircle size={18} />
+//                   User Details
+//                 </button>
+//                 <button style={{
+//                   display: 'flex',
+//                   alignItems: 'center',
+//                   gap: '0.75rem',
+//                   width: '100%',
+//                   padding: '0.875rem 1.25rem',
+//                   backgroundColor: 'transparent',
+//                   color: '#333333',
+//                   border: 'none',
+//                   borderTop: '1px solid #F4F7F9',
+//                   textAlign: 'left',
+//                   cursor: 'pointer',
+//                   fontSize: '0.95rem',
+//                   transition: 'background-color 0.2s'
+//                 }}
+//                 onMouseEnter={(e) => e.target.style.backgroundColor = '#F4F7F9'}
+//                 onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+//                   <LogOut size={18} />
+//                   Log Out
+//                 </button>
+//               </div>
+//             )}
+//           </div>
+//         </div>
+//       </header>
+
+//       {/* Main Content */}
+//       <main style={{
+//         padding: '2rem',
+//         maxWidth: '1400px',
+//         margin: '0 auto'
+//       }}>
+//         <div style={{
+//           display: 'grid',
+//           gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+//           gap: '1.5rem'
+//         }}>
+//           {properties.map((property) => (
+//             <div
+//               key={property.id}
+//               style={{
+//                 backgroundColor: '#FFFFFF',
+//                 padding: '2rem',
+//                 borderRadius: '12px',
+//                 boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+//                 border: '1px solid #e5e7eb',
+//                 transition: 'transform 0.2s, box-shadow 0.2s',
+//                 cursor: 'pointer'
+//               }}
+//               onMouseEnter={(e) => {
+//                 e.currentTarget.style.transform = 'translateY(-4px)';
+//                 e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.12)';
+//               }}
+//               onMouseLeave={(e) => {
+//                 e.currentTarget.style.transform = 'translateY(0)';
+//                 e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+//               }}>
+//               <div style={{
+//                 height: '160px',
+//                 backgroundColor: '#4A6A8A',
+//                 borderRadius: '8px',
+//                 marginBottom: '1rem',
+//                 display: 'flex',
+//                 alignItems: 'center',
+//                 justifyContent: 'center',
+//                 color: '#FFFFFF',
+//                 fontSize: '0.9rem',
+//                 opacity: 0.8
+//               }}>
+//                 Image Placeholder
+//               </div>
+//               <h3 style={{
+//                 fontSize: '1.25rem',
+//                 fontWeight: '600',
+//                 color: '#003366',
+//                 margin: '0 0 0.5rem 0'
+//               }}>
+//                 {property.name}
+//               </h3>
+//               <p style={{
+//                 fontSize: '0.95rem',
+//                 color: '#4A6A8A',
+//                 margin: 0,
+//                 lineHeight: '1.5'
+//               }}>
+//                 Sample property description with details about location and features.
+//               </p>
+//             </div>
+//           ))}
+//         </div>
+//       </main>
+//     </div>
+//   );
+// }

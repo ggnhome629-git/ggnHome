@@ -1,0 +1,164 @@
+{
+  "cities": [
+    {
+      "name": "Bangalore",
+      "description": "A home to about 11 million people, Bangalore, now known as Bengaluru, is India's fourth largest city after Delhi, Kolkata and Mumbai. Known for its pleasant climate, tech hub growth, and vibrant culture, the city attracts professionals and families from all over India. Its residential market offers a mix of affordable, mid-range, and premium properties, with numerous apartments, villas, and gated communities catering to various needs.",
+      "lowBudgetFlats": "738+ Low Budget Flats in Bangalore",
+      "propertiesForSale": "67620+ Properties for Sale in Bangalore",
+      "residentialAgents": "290+ Residential Property Agents in Bangalore",
+      "residentialProjects": "50225+ Residential Projects in Bangalore"
+    },
+    {
+      "name": "Gurgaon",
+      "description": "Gurgaon, officially Gurugram, is a modern city near Delhi that has seen rapid growth as a commercial and residential hub. With many corporate offices, shopping centers, and contemporary housing projects, Gurgaon is popular among young professionals and families seeking a modern urban lifestyle. Its real estate market includes luxury apartments, high-rise towers, and affordable residential communities.",
+      "lowBudgetFlats": "520+ Low Budget Flats in Gurgaon",
+      "propertiesForSale": "43210+ Properties for Sale in Gurgaon",
+      "residentialAgents": "200+ Residential Property Agents in Gurgaon",
+      "residentialProjects": "37500+ Residential Projects in Gurgaon"
+    },
+    {
+      "name": "Hyderabad",
+      "description": "Hyderabad, the capital of Telangana, is known for its rich history, growing IT sector, and vibrant culture. Famous for its cuisine and heritage landmarks, the city attracts property buyers and investors looking for a balanced urban lifestyle. Hyderabad's real estate market offers a wide range of apartments, villas, and gated communities catering to diverse budgets.",
+      "lowBudgetFlats": "680+ Low Budget Flats in Hyderabad",
+      "propertiesForSale": "55000+ Properties for Sale in Hyderabad",
+      "residentialAgents": "310+ Residential Property Agents in Hyderabad",
+      "residentialProjects": "48210+ Residential Projects in Hyderabad"
+    },
+    {
+      "name": "Mumbai",
+      "description": "Mumbai, the financial capital of India, is home to a thriving business ecosystem, vibrant culture, and iconic landmarks such as Marine Drive, Gateway of India, and Bandra-Worli Sea Link. Known for its high-rise apartments, luxury developments, and bustling neighborhoods, Mumbai attracts property buyers from across the country seeking both residential and commercial opportunities. The city has a diverse real estate market catering to premium, mid-segment, and affordable housing needs, making it an investment hotspot for developers and buyers alike.",
+      "lowBudgetFlats": "820+ Low Budget Flats in Mumbai",
+      "propertiesForSale": "98000+ Properties for Sale in Mumbai",
+      "residentialAgents": "450+ Residential Property Agents in Mumbai",
+      "residentialProjects": "65000+ Residential Projects in Mumbai"
+    },
+    {
+      "name": "Delhi",
+      "description": "Delhi, the capital city of India, offers a blend of rich history, culture, and modern urban living. With diverse neighborhoods ranging from heritage-rich Old Delhi to contemporary residential areas like Dwarka and Gurgaon, the city provides options for all budget segments. Delhi's real estate market features apartments, independent houses, and premium villas catering to both residents and investors. Its proximity to commercial hubs, educational institutions, and healthcare facilities makes it one of the most sought-after cities for property investment in India.",
+      "lowBudgetFlats": "900+ Low Budget Flats in Delhi",
+      "propertiesForSale": "87000+ Properties for Sale in Delhi",
+      "residentialAgents": "480+ Residential Property Agents in Delhi",
+      "residentialProjects": "60000+ Residential Projects in Delhi"
+    },
+    {
+      "name": "Chennai",
+      "description": "Chennai, known for its cultural heritage and coastal living, is a city that offers a range of residential options with easy access to IT and industrial hubs. The city boasts a mix of traditional and modern neighborhoods, with properties ranging from affordable apartments to luxury villas. Chennai's real estate market caters to families and professionals seeking a balanced lifestyle with good educational institutions, healthcare, and connectivity.",
+      "lowBudgetFlats": "650+ Low Budget Flats in Chennai",
+      "propertiesForSale": "42000+ Properties for Sale in Chennai",
+      "residentialAgents": "300+ Residential Property Agents in Chennai",
+      "residentialProjects": "36000+ Residential Projects in Chennai"
+    },
+    {
+      "name": "Kolkata",
+      "description": "Kolkata, the cultural capital of India, combines historical charm with modern infrastructure. Its residential market caters to various buyer preferences, offering affordable apartments, heritage homes, and new developments. The city is known for its literary and artistic heritage, with neighborhoods that provide a mix of old-world charm and contemporary amenities, making it attractive for families and investors alike.",
+      "lowBudgetFlats": "550+ Low Budget Flats in Kolkata",
+      "propertiesForSale": "40000+ Properties for Sale in Kolkata",
+      "residentialAgents": "280+ Residential Property Agents in Kolkata",
+      "residentialProjects": "32000+ Residential Projects in Kolkata"
+    },
+    {
+      "name": "Pune",
+      "description": "Pune is an educational and IT hub with a growing real estate market, offering everything from affordable apartments to luxury villas. The city attracts students, professionals, and families due to its pleasant climate, cultural scene, and expanding infrastructure. Pune's residential projects include gated communities, high-rise apartments, and independent houses, catering to a diverse population seeking quality living spaces.",
+      "lowBudgetFlats": "700+ Low Budget Flats in Pune",
+      "propertiesForSale": "45000+ Properties for Sale in Pune",
+      "residentialAgents": "320+ Residential Property Agents in Pune",
+      "residentialProjects": "39000+ Residential Projects in Pune"
+    },
+    {
+      "name": "Noida",
+      "description": "Noida, part of the National Capital Region, is known for its planned infrastructure and modern residential developments. The city offers a variety of housing options including apartments, villas, and townships with good connectivity to Delhi and other NCR regions. Noida's real estate market appeals to IT professionals, families, and investors looking for affordable and well-planned living spaces with access to commercial and recreational facilities.",
+      "lowBudgetFlats": "500+ Low Budget Flats in Noida",
+      "propertiesForSale": "38000+ Properties for Sale in Noida",
+      "residentialAgents": "250+ Residential Property Agents in Noida",
+      "residentialProjects": "30000+ Residential Projects in Noida"
+    },
+    {
+      "name": "Ahmedabad",
+      "description": "Ahmedabad is a rapidly growing city with a mix of traditional and modern living spaces, appealing to investors and homebuyers alike. Known for its rich history and vibrant culture, the city offers a range of residential options including affordable apartments, independent houses, and gated communities. Ahmedabad's real estate market benefits from strong industrial growth and improving infrastructure, making it a favorable destination for property investment.",
+      "lowBudgetFlats": "480+ Low Budget Flats in Ahmedabad",
+      "propertiesForSale": "35000+ Properties for Sale in Ahmedabad",
+      "residentialAgents": "220+ Residential Property Agents in Ahmedabad",
+      "residentialProjects": "28000+ Residential Projects in Ahmedabad"
+    },
+    {
+      "name": "Jaipur",
+      "description": "Jaipur, the Pink City, offers a mix of heritage properties and modern residential projects catering to a variety of budgets. The city is known for its rich history, cultural festivals, and growing urban infrastructure. Jaipur's real estate market includes affordable apartments, luxury villas, and gated communities, attracting families and investors interested in a blend of traditional charm and contemporary living.",
+      "lowBudgetFlats": "450+ Low Budget Flats in Jaipur",
+      "propertiesForSale": "32000+ Properties for Sale in Jaipur",
+      "residentialAgents": "210+ Residential Property Agents in Jaipur",
+      "residentialProjects": "25000+ Residential Projects in Jaipur"
+    },
+    {
+      "name": "Lucknow",
+      "description": "Lucknow combines rich cultural history with modern urban development, making it attractive for property buyers. The city offers a variety of residential options including affordable housing, apartments, and villas. With improving infrastructure, educational institutions, and healthcare facilities, Lucknow's real estate market is growing steadily, appealing to families and investors seeking value and heritage.",
+      "lowBudgetFlats": "400+ Low Budget Flats in Lucknow",
+      "propertiesForSale": "30000+ Properties for Sale in Lucknow",
+      "residentialAgents": "200+ Residential Property Agents in Lucknow",
+      "residentialProjects": "24000+ Residential Projects in Lucknow"
+    },
+    {
+      "name": "Indore",
+      "description": "Indore, a commercial and educational hub in Madhya Pradesh, offers affordable housing options and growing residential projects. The city is known for its cleanliness, vibrant culture, and expanding infrastructure. Indore's real estate market includes apartments, independent houses, and gated communities, attracting families and investors looking for value and quality living spaces.",
+      "lowBudgetFlats": "380+ Low Budget Flats in Indore",
+      "propertiesForSale": "28000+ Properties for Sale in Indore",
+      "residentialAgents": "180+ Residential Property Agents in Indore",
+      "residentialProjects": "22000+ Residential Projects in Indore"
+    },
+    {
+      "name": "Bhubaneswar",
+      "description": "Bhubaneswar, the capital of Odisha, is witnessing rapid urbanization with residential projects catering to modern lifestyle requirements. The city combines cultural heritage with growing infrastructure, offering apartments, villas, and gated communities. Bhubaneswar's real estate market appeals to professionals, families, and investors seeking affordable and well-planned housing options.",
+      "lowBudgetFlats": "350+ Low Budget Flats in Bhubaneswar",
+      "propertiesForSale": "25000+ Properties for Sale in Bhubaneswar",
+      "residentialAgents": "170+ Residential Property Agents in Bhubaneswar",
+      "residentialProjects": "20000+ Residential Projects in Bhubaneswar"
+    },
+    {
+      "name": "Coimbatore",
+      "description": "Coimbatore, known as the Manchester of South India, offers residential options for IT professionals and industrial workers. The city features a mix of affordable apartments, independent houses, and gated communities with good connectivity and amenities. Coimbatore's real estate market is growing steadily, supported by its industrial base, pleasant climate, and educational institutions.",
+      "lowBudgetFlats": "320+ Low Budget Flats in Coimbatore",
+      "propertiesForSale": "22000+ Properties for Sale in Coimbatore",
+      "residentialAgents": "150+ Residential Property Agents in Coimbatore",
+      "residentialProjects": "18000+ Residential Projects in Coimbatore"
+    },
+    {
+      "name": "Chandigarh",
+      "description": "Chandigarh, a well-planned city and capital of Punjab and Haryana, is known for its high standard of living and modern residential options. The city offers a variety of housing types including apartments, villas, and townhouses, with excellent infrastructure and green spaces. Chandigarh's real estate market attracts families and professionals seeking quality living environments with easy access to commercial and recreational facilities.",
+      "lowBudgetFlats": "300+ Low Budget Flats in Chandigarh",
+      "propertiesForSale": "20000+ Properties for Sale in Chandigarh",
+      "residentialAgents": "140+ Residential Property Agents in Chandigarh",
+      "residentialProjects": "16000+ Residential Projects in Chandigarh"
+    },
+    {
+      "name": "Nagpur",
+      "description": "Nagpur, a growing city in central India, is emerging as a residential and commercial hub with affordable housing options. The city offers a range of properties including apartments, independent houses, and gated communities. Nagpur's real estate market benefits from improving infrastructure, educational institutions, and industrial growth, making it attractive for families and investors.",
+      "lowBudgetFlats": "280+ Low Budget Flats in Nagpur",
+      "propertiesForSale": "18000+ Properties for Sale in Nagpur",
+      "residentialAgents": "120+ Residential Property Agents in Nagpur",
+      "residentialProjects": "15000+ Residential Projects in Nagpur"
+    },
+    {
+      "name": "Mysore",
+      "description": "Mysore, famous for its heritage and calm living, offers affordable residential properties and a peaceful lifestyle. The city features a blend of traditional and modern housing options including apartments, villas, and independent houses. Mysore's real estate market appeals to families and retirees seeking a serene environment with good infrastructure and cultural richness.",
+      "lowBudgetFlats": "250+ Low Budget Flats in Mysore",
+      "propertiesForSale": "15000+ Properties for Sale in Mysore",
+      "residentialAgents": "100+ Residential Property Agents in Mysore",
+      "residentialProjects": "12000+ Residential Projects in Mysore"
+    },
+    {
+      "name": "Goa",
+      "description": "Goa, a coastal paradise, offers luxury and vacation homes with high investment potential in residential properties. Known for its beaches, nightlife, and relaxed lifestyle, Goa attracts buyers looking for holiday homes, retirement properties, and rental investments. The real estate market includes villas, apartments, and resorts, catering to diverse preferences and budgets.",
+      "lowBudgetFlats": "220+ Low Budget Flats in Goa",
+      "propertiesForSale": "12000+ Properties for Sale in Goa",
+      "residentialAgents": "90+ Residential Property Agents in Goa",
+      "residentialProjects": "10000+ Residential Projects in Goa"
+    },
+    {
+      "name": "Vizag",
+      "description": "Vizag (Visakhapatnam), a coastal city in Andhra Pradesh, is growing rapidly with residential and commercial developments. The city offers a mix of affordable and premium housing options including apartments, villas, and gated communities. Vizag's real estate market is supported by its port, IT sector, and tourism, making it attractive for families and investors seeking coastal living with urban conveniences.",
+      "lowBudgetFlats": "200+ Low Budget Flats in Vizag",
+      "propertiesForSale": "10000+ Properties for Sale in Vizag",
+      "residentialAgents": "80+ Residential Property Agents in Vizag",
+      "residentialProjects": "9000+ Residential Projects in Vizag"
+    }
+  ]
+}

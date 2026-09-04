@@ -1,0 +1,54 @@
+# Node / React / Python ignores
+node_modules/
+__pycache__/
+*.pyc
+
+# Env files
+client/.env
+server/.env
+
+# Build / dist folders
+client/build/
+server/__pycache__/
+
+# Optional system files
+.DS_StoreDesktop/Code_files/Neo-Urban/client/public/invideo-ai-1080 Unlock Your Perfect Rental in 90 Seconds 2025-10-04.mp4
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.log
+.env
+venv/
+.env/
+.venv/
+*.sqlite3
+
+# Rasa model artifacts
+
+results/
+rasa/cache/
+
+# Training data cache
+*.lock
+events.db
+
+# IDE / OS files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Credentials (sensitive)
+credentials.yml
+endpoints.yml
+
+# Render or local build artifacts
+*.tar.gz
+node_modules/
+# AI / ML files
+AI Model/
+realestate-rasa-bot/

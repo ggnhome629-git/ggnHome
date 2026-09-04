@@ -1,0 +1,610 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Bot, Plus, User, LogOut, UserCircle, MapPin, Square } from 'lucide-react';
+
+export default function Dashboard() {
+  const [showMenu, setShowMenu] = useState(false);
+  const [user, setUser] = useState(null);
+  const [properties, setProperties] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [recentSearches, setRecentSearches] = useState([]);
+  const [recommended, setRecommended] = useState([]);
+  const [showRecentDropdown, setShowRecentDropdown] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const res = await fetch("http://localhost:2000/auth/me", {
+          method: "GET",
+          credentials: "include",
+        });
+        console.log("Fetch response status:", res.status);
+        console.log("Fetch response object:", res);
+
+        const data = await res.json();
+        console.log("Parsed response data:", data);
+
+        if (res.ok && data) {
+          setUser(data); // use data directly
+          console.log("User set in state:", data);
+        } else {
+          setUser(null);
+          console.log("User not set, response data:", data);
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+        setUser(null);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        if (!user) {
+          const res = await fetch("http://localhost:2000/api/properties", {
+            method: "GET",
+            credentials: "include",
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setProperties(data.slice(0, 15)); // data is array
+          } else {
+            setProperties([]);
+          }
+        } else {
+          const res = await fetch("http://localhost:2000/api/user/dashboard", {
+            method: "GET",
+            credentials: "include",
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setRecentSearches(data.recentSearches || []);
+            setRecommended(data.recommendedProperties || []);
+          } else {
+            setRecentSearches([]);
+            setRecommended([]);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching properties or dashboard data:", err);
+        setProperties([]);
+        setRecentSearches([]);
+        setRecommended([]);
+      }
+    };
+    fetchProperties();
+  }, [user]);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:2000/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      setUser(null);
+      navigate("/login");
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#F4F7F9', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, sans-serif' }}>
+      <header style={{ backgroundColor: '#FFFFFF', padding: '1.25rem 3rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '2rem', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', borderBottom: '1px solid rgba(0,51,102,0.08)', position: 'sticky', top: 0, zIndex: 1000 }}>
+        <div style={{ fontSize: '1.75rem', fontWeight: '700', color: '#003366', letterSpacing: '-0.5px', whiteSpace: 'nowrap' }}>neo-urban</div>
+        <div style={{ flex: 1, maxWidth: '520px', position: 'relative' }}>
+          <Search style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#4A6A8A', width: '18px', height: '18px' }} />
+          <input
+            type="text"
+            placeholder="Search by location, property type..."
+            style={{ width: '100%', padding: '0.875rem 1.25rem 0.875rem 3rem', border: '1.5px solid #e5e7eb', borderRadius: '12px', fontSize: '0.95rem', backgroundColor: '#F4F7F9', color: '#333333', outline: 'none', transition: 'all 0.2s' }}
+            onFocus={() => {
+              if (!user) navigate("/login");
+              else setShowRecentDropdown(true);
+            }}
+            onBlur={() => setTimeout(() => setShowRecentDropdown(false), 150)}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={async (e) => {
+              if (e.key === 'Enter' && searchQuery.trim() !== '') {
+                if (user) {
+                  try {
+                    await fetch(`http://localhost:2000/api/search-properties?query=${encodeURIComponent(searchQuery.trim())}`, {
+                      method: 'GET',
+                      credentials: 'include',
+                    });
+                    console.log('Search history sent successfully');
+                  } catch (err) {
+                    console.error('Error sending search history:', err);
+                  }
+                }
+                navigate(`/search/${encodeURIComponent(searchQuery.trim())}`);
+              }
+            }}
+          />
+          {showRecentDropdown && recentSearches.length > 0 && (
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 10 }}>
+              {recentSearches.map((s) => (
+                <div
+                  key={s._id}
+                  style={{ padding: '0.75rem 1rem', cursor: 'pointer', borderBottom: '1px solid #f0f0f0' }}
+                  onClick={() => {
+                    setSearchQuery(s.query);
+                    setShowRecentDropdown(false);
+                    navigate(`/search/${encodeURIComponent(s.query)}`);
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#F4F7F9'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#fff'; }}
+                >
+                  {s.query}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <button style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', backgroundColor: '#F4F7F9', color: '#003366', border: '1.5px solid #e5e7eb', borderRadius: '12px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => { if (user) navigate("/AIassistant"); else navigate("/login"); }}><Bot size={20} />AI Assistant</button>
+          <button style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', backgroundColor: '#003366', color: '#FFFFFF', border: 'none', borderRadius: '12px', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 2px 8px rgba(0,51,102,0.2)' }} onClick={() => { if (user) navigate("/add-property"); else navigate("/login"); }}><Plus size={20} />Post Property</button>
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setShowMenu(!showMenu)} 
+              style={{ width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4F7F9', color: '#003366', border: '1.5px solid #e5e7eb', borderRadius: '50%', cursor: 'pointer', transition: 'all 0.2s' }} 
+              onMouseEnter={(e) => { e.target.style.backgroundColor = '#003366'; e.target.style.color = '#FFFFFF'; e.target.style.borderColor = '#003366'; }} 
+              onMouseLeave={(e) => { e.target.style.backgroundColor = '#F4F7F9'; e.target.style.color = '#003366'; e.target.style.borderColor = '#e5e7eb'; }}>
+              <User size={22} />
+            </button>
+            {showMenu && (
+              <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '0.75rem', backgroundColor: '#FFFFFF', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', minWidth: '200px', overflow: 'hidden', border: '1px solid #e5e7eb', padding: '1rem' }}>
+                {user ? (
+                  <>
+                    <div style={{ marginBottom: '0.75rem', fontWeight: '700', color: '#000', fontSize: '0.95rem' }}>
+                      Hi, {user.name || user.email}
+                    </div>
+                    {/* <button style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', width: '100%', padding: '1rem 1.5rem', backgroundColor: 'transparent', color: '#333333', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '500', transition: 'background-color 0.2s' }} onMouseEnter={(e) => e.target.style.backgroundColor = '#F4F7F9'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'} onClick={()=> navigate('/user-details')}>
+                      <UserCircle size={20} color="#4A6A8A" />User Details
+                    </button> */}
+                    <button
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', width: '100%', padding: '1rem 1.5rem', backgroundColor: 'transparent', color: '#333333', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '500', transition: 'background-color 0.2s' }}
+                      onClick={() => navigate('/rewards')}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#F4F7F9'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                    >
+                      <Bot size={20} color="#4A6A8A" />Rewards
+                    </button>
+                    <button style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', width: '100%', padding: '1rem 1.5rem', backgroundColor: 'transparent', color: '#333333', border: 'none', textAlign: 'left', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '500', transition: 'background-color 0.2s' }} onClick={() => navigate('/my-properties')} onMouseEnter={(e) => e.target.style.backgroundColor = '#F4F7F9'} onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}>
+                      <Square size={20} color="#4A6A8A" />Properties
+                    </button>
+                    <button
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', width: '100%', padding: '1rem 1.5rem', backgroundColor: 'transparent', color: '#333333', border: 'none', borderTop: '1px solid #F4F7F9', textAlign: 'left', cursor: 'pointer', fontSize: '0.95rem', fontWeight: '500', transition: 'background-color 0.2s' }}
+                      onClick={handleLogout}
+                      onMouseEnter={(e) => e.target.style.backgroundColor = '#F4F7F9'}
+                      onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                    >
+                      <LogOut size={20} color="#4A6A8A" />Log Out
+                    </button>
+                  </>
+                ) : (
+                  <button style={{ width: '100%', padding: '1rem', fontSize: '0.95rem', fontWeight: '600', backgroundColor: '#003366', color: '#FFFFFF', border: 'none', borderRadius: '8px', cursor: 'pointer' }} onClick={() => navigate('/login')}>
+                    Login
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+      <main style={{ padding: '3rem 3rem', maxWidth: '1600px', margin: '0 auto' }}>
+        {user ? (
+          <>
+            <div style={{ marginBottom: '2.5rem' }}>
+              <h1 style={{ fontSize: '2rem', fontWeight: '700', color: '#003366' }}>Your Personalized Dashboard</h1>
+              <p style={{ fontSize: '1rem', color: '#4A6A8A' }}>Based on your recent searches</p>
+            </div>
+
+       
+
+            {/* Recommended Properties */}
+            <section>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '600', color: '#003366', marginBottom: '1rem' }}>Recommended Properties</h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '2rem' }}>
+                {recommended.length > 0 ? (
+                  recommended.map((property) => (
+                    <div
+                      key={property._id}
+                      style={{
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '16px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                        border: '1px solid rgba(0,0,0,0.06)',
+                        overflow: 'hidden',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => navigate(`/details/${property._id}`)}
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,51,102,0.12)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; }}
+                    >
+                      <div style={{ height: '220px', backgroundColor: '#E5E7EB' }}>
+                        {property.images && property.images.length > 0 ? (
+                          <img src={property.images[0]} alt={property.address} style={{ width: '100%', height: '220px', objectFit: 'cover' }} />
+                        ) : (
+                          <div style={{ color: '#4A6A8A', textAlign: 'center', paddingTop: '100px' }}>N.A</div>
+                        )}
+                      </div>
+                      <div style={{ padding: '1.5rem' }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: '700', color: '#00A79D' }}>
+                          ${property.monthlyRent || 'N.A'}
+                        </div>
+                        <div style={{ color: '#4A6A8A', marginTop: '0.5rem' }}>{property.address || 'N.A'}</div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p>No recommendations yet.</p>
+                )}
+              </div>
+            </section>
+          </>
+        ) : (
+          <>
+            <div style={{ marginBottom: '2.5rem' }}>
+              <h1 style={{ fontSize: '2rem', fontWeight: '700', color: '#003366', margin: '0 0 0.5rem 0', letterSpacing: '-0.5px' }}>Your Properties</h1>
+              <p style={{ fontSize: '1rem', color: '#4A6A8A', margin: 0, fontWeight: '400' }}>Manage and track all your listed properties</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '2rem' }}>
+              {properties.map((property) => (
+                <div
+                  key={property._id}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '16px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+                    border: '1px solid rgba(0,0,0,0.06)',
+                    overflow: 'hidden',
+                    transition: 'all 0.3s',
+                    cursor: 'pointer'
+                  }}
+                  onClick={() => navigate(`/details/${property._id}`)}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,51,102,0.12)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; }}
+                >
+                  <div style={{ height: '220px', backgroundColor: '#E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', fontSize: '0.875rem', fontWeight: '500', position: 'relative' }}>
+                    {property.images && property.images.length > 0 ? (
+                      <img src={property.images[0]} alt={property.name || 'Property Image'} style={{ width: '100%', height: '220px', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ color: '#4A6A8A' }}>N.A</div>
+                    )}
+                  </div>
+                  <div style={{ padding: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '0.75rem' }}>
+                      <span style={{ fontSize: '1.25rem', fontWeight: '700', color: '#00A79D', whiteSpace: 'nowrap' }}>{property.monthlyRent || 'N.A'}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem', color: '#4A6A8A', fontSize: '0.9rem' }}>
+                      <MapPin size={16} />{property.address || 'N.A'}
+                    </div>
+                    <div style={{ display: 'flex', gap: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #F4F7F9' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#333333', fontSize: '0.9rem', fontWeight: '500' }}>
+                        <Square size={18} color="#4A6A8A" />{property.totalArea ? `${property.totalArea} sqft` : 'N.A'}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#333333', fontSize: '0.9rem', fontWeight: '500' }}>
+                        Move-in: {property.moveInDate ? new Date(property.moveInDate).toLocaleDateString() : 'N.A'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+{/* Hero Banner with Search */}
+      <div style={{
+      background: 'linear-gradient(to right, rgba(0,51,102,0.7), rgba(74,106,138,0.6)), url("https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1600&h=500&fit=crop")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      padding: '60px 4% 140px',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      {/* Animated gradient overlay */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'radial-gradient(circle at 20% 50%, rgba(34, 211, 238, 0.15) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(0, 167, 157, 0.15) 0%, transparent 50%)',
+        animation: 'pulse 4s ease-in-out infinite'
+      }} />
+
+      {/* Floating particles */}
+      {[...Array(15)].map((_, i) => (
+        <div
+          key={i}
+          style={{
+            position: 'absolute',
+            width: Math.random() * 6 + 3 + 'px',
+            height: Math.random() * 6 + 3 + 'px',
+            background: i % 2 === 0 ? '#22D3EE' : '#00A79D',
+            borderRadius: '50%',
+            top: Math.random() * 100 + '%',
+            left: Math.random() * 100 + '%',
+            opacity: 0.3,
+            animation: `float ${Math.random() * 3 + 3}s ease-in-out infinite`,
+            animationDelay: `${Math.random() * 2}s`
+          }}
+        />
+      ))}
+
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        position: 'relative',
+        zIndex: 10
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '40px'
+        }}>
+          {/* Left Content */}
+          <div style={{
+            flex: '1 1 500px',
+            transform: isVisible ? 'translateY(0)' : 'translateY(30px)',
+            opacity: isVisible ? 1 : 0,
+            transition: 'all 0.8s ease-out'
+          }}>
+            {/* Badge */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'rgba(34, 211, 238, 0.2)',
+              border: '1px solid rgba(34, 211, 238, 0.4)',
+              padding: '8px 20px',
+              borderRadius: '50px',
+              marginBottom: '24px',
+              backdropFilter: 'blur(10px)'
+            }}>
+              <Sparkles size={16} color="#22D3EE" />
+              <span style={{ color: '#22D3EE', fontSize: '14px', fontWeight: '600', letterSpacing: '0.5px' }}>
+                LIMITED TIME OFFER
+              </span>
+            </div>
+
+            {/* Main Heading */}
+            <h1 style={{
+              fontSize: 'clamp(36px, 5vw, 64px)',
+              fontWeight: '800',
+              color: '#FFFFFF',
+              marginBottom: '20px',
+              lineHeight: '1.1',
+              textShadow: '0 4px 20px rgba(0,0,0,0.3)'
+            }}>
+              Unlock Amazing
+              <span style={{
+                display: 'block',
+                background: 'linear-gradient(135deg, #22D3EE 0%, #00A79D 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text'
+              }}>
+                Rewards & Goodies
+              </span>
+            </h1>
+
+            {/* Subheading */}
+            <p style={{
+              fontSize: '20px',
+              color: '#F4F7F9',
+              marginBottom: '32px',
+              lineHeight: '1.6',
+              maxWidth: '540px'
+            }}>
+              Complete your booking and instantly receive exclusive rewards, special gifts, and bonus points on every successful transaction.
+            </p>
+
+            {/* CTA Button */}
+            <button style={{
+              background: 'linear-gradient(135deg, #22D3EE 0%, #00A79D 100%)',
+              color: '#FFFFFF',
+              fontSize: '18px',
+              fontWeight: '700',
+              padding: '18px 48px',
+              border: 'none',
+              borderRadius: '50px',
+              cursor: 'pointer',
+              boxShadow: '0 8px 32px rgba(34, 211, 238, 0.4)',
+              transition: 'all 0.3s ease',
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+            onMouseEnter={e => {
+              e.target.style.transform = 'translateY(-2px)';
+              e.target.style.boxShadow = '0 12px 40px rgba(34, 211, 238, 0.6)';
+            }}
+            onMouseLeave={e => {
+              e.target.style.transform = 'translateY(0)';
+              e.target.style.boxShadow = '0 8px 32px rgba(34, 211, 238, 0.4)';
+            }}>
+              Claim Your Rewards
+              <Zap size={20} style={{ marginLeft: '8px', display: 'inline', verticalAlign: 'middle' }} />
+            </button>
+          </div>
+
+          {/* Right Content - Floating Reward Cards */}
+          <div style={{
+            flex: '1 1 400px',
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '20px',
+            transform: isVisible ? 'translateY(0)' : 'translateY(30px)',
+            opacity: isVisible ? 1 : 0,
+            transition: 'all 0.8s ease-out 0.2s'
+          }}>
+            {rewards.map((reward, index) => {
+              const Icon = reward.icon;
+              return (
+                <div
+                  key={index}
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    backdropFilter: 'blur(20px)',
+                    border: floatingIndex === index ? `2px solid ${reward.color}` : '2px solid rgba(255, 255, 255, 0.2)',
+                    borderRadius: '20px',
+                    padding: '24px',
+                    transition: 'all 0.4s ease',
+                    transform: floatingIndex === index ? 'scale(1.05) translateY(-5px)' : 'scale(1)',
+                    boxShadow: floatingIndex === index 
+                      ? `0 12px 40px ${reward.color}40` 
+                      : '0 4px 20px rgba(0,0,0,0.2)',
+                    cursor: 'pointer'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.transform = 'scale(1.05) translateY(-5px)';
+                    e.currentTarget.style.borderColor = reward.color;
+                  }}
+                  onMouseLeave={e => {
+                    if (floatingIndex !== index) {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                    }
+                  }}
+                >
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    background: `${reward.color}20`,
+                    borderRadius: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '12px'
+                  }}>
+                    <Icon size={24} color={reward.color} />
+                  </div>
+                  <h3 style={{
+                    color: '#FFFFFF',
+                    fontSize: '18px',
+                    fontWeight: '700',
+                    margin: 0
+                  }}>
+                    {reward.label}
+                  </h3>
+                </div>
+              );
+            })}
+          </div>
+          </div>
+          </div>
+      
+        {/* Advertisement Banner
+        <div style={{backgroundColor: 'rgba(255,255,255,0.95)', borderRadius: '12px', padding: '24px', marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '1200px', margin: '0 auto 40px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)'}}>
+          <div>
+            <div style={{fontSize: '24px', fontWeight: '700', color: '#003366', marginBottom: '8px'}}>Find a peaceful haven.</div>
+            <div style={{fontSize: '15px', color: '#4A6A8A'}}>A symphony of water and lush greenery.<br/>Krisumi's Waterside Residences is your paradise of tranquility.</div>
+          </div>
+          <div style={{display: 'flex', alignItems: 'center', gap: '20px'}}>
+            <img src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=120&h=80&fit=crop" alt="Property" style={{width: '120px', height: '80px', borderRadius: '8px', objectFit: 'cover'}} />
+          </div>
+        </div> */}
+
+        {/* Search Box */}
+        <div style={{position: 'absolute', bottom: '-10px', left: '50%', transform: 'translateX(-50%)', width: '90%', maxWidth: '1200px', backgroundColor: '#FFFFFF', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', overflow: 'hidden'}}>
+          {/* Tabs */}
+          <div style={{display: 'flex', borderBottom: '1px solid #E5E7EB', backgroundColor: '#FFFFFF'}}>
+            {tabs.map((tab) => (<button key={tab.name} onClick={() => setActiveTab(tab.name)} style={{padding: '16px 24px', border: 'none', backgroundColor: 'transparent', color: activeTab === tab.name ? '#003366' : '#4A6A8A', fontSize: '14px', fontWeight: activeTab === tab.name ? '600' : '500', cursor: 'pointer', borderBottom: activeTab === tab.name ? '3px solid #00A79D' : '3px solid transparent', transition: 'all 0.2s', position: 'relative', display: 'flex', alignItems: 'center', gap: '8px'}} onMouseEnter={(e) => {if(activeTab !== tab.name) e.target.style.color = '#003366';}} onMouseLeave={(e) => {if(activeTab !== tab.name) e.target.style.color = '#4A6A8A';}}>{tab.name} {tab.new && <span style={{backgroundColor: '#FF4757', color: '#FFFFFF', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '700'}}>NEW</span>} {tab.free && <span style={{backgroundColor: '#00A79D', color: '#FFFFFF', padding: '2px 6px', borderRadius: '4px', fontSize: '10px', fontWeight: '700'}}>FREE</span>}</button>))}
+          </div>
+          
+          {/* Search Input */}
+          <div style={{padding: '20px 24px', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap'}}>
+            <div style={{position: 'relative', minWidth: '180px'}}>
+              <select style={{padding: '12px 16px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '14px', color: '#333333', backgroundColor: '#FFFFFF', cursor: 'pointer', appearance: 'none', paddingRight: '36px', width: '100%', fontWeight: '500'}}><option>All Residential</option><option>Apartments</option><option>Independent Houses</option><option>Villas</option><option>Builder Floors</option></select>
+              <ChevronDown size={18} style={{position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#4A6A8A', pointerEvents: 'none'}} />
+            </div>
+            <div style={{flex: '1', display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', border: '1px solid #E5E7EB', borderRadius: '8px', backgroundColor: '#FFFFFF', minWidth: '320px', position: 'relative'}}>
+              <Search size={20} color="#4A6A8A" style={{ marginRight: '8px' }} />
+      <input
+        type="text"
+        placeholder='Search "Farm house in Punjab below 1 cr"'
+        style={{ border: 'none', outline: 'none', flex: 1, fontSize: '14px', color: '#333333', backgroundColor: 'transparent' }}
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        onFocus={() => {
+          if (!user) navigate("/login");
+          else setShowRecentDropdown(true);
+        }}
+        onBlur={() => setTimeout(() => setShowRecentDropdown(false), 400)}
+        onKeyDown={async (e) => {
+          if (e.key === 'Enter') handleSearch();
+        }}
+      />
+      <button onClick={handleSearch} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
+        <Search size={20} color="#4A6A8A" />
+      </button>
+
+      {/* {console.log("Rendering recent searches:", recentSearches)} */}
+      {showRecentDropdown && user && recentSearches.length > 0 && (
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          left: 0,
+          marginTop: '0.5rem',
+          backgroundColor: '#fff',
+          border: '1px solid #e5e7eb',
+          borderRadius: '8px',
+          width: '100%',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+          zIndex: 10
+        }}>
+          {recentSearches.map((search, idx) => (
+            <div
+              key={search._id || idx}
+              style={{
+                padding: '10px 16px',
+                cursor: 'pointer',
+                borderBottom: idx !== recentSearches.length - 1 ? '1px solid #f1f1f1' : 'none',
+                color: '#333',
+                fontSize: '14px',
+                backgroundColor: '#fff',
+                transition: 'background 0.2s'
+              }}
+              onMouseDown={e => {
+                e.preventDefault();
+                setSearchQuery(search.query);
+                setShowRecentDropdown(false);
+                handleSearch();
+              }}
+              onMouseEnter={e => e.target.style.backgroundColor = '#F4F7F9'}
+              onMouseLeave={e => e.target.style.backgroundColor = '#fff'}
+            >
+              {search.query}
+            </div>
+          ))}
+        </div>
+      )}
+              <MapPin size={20} color="#00A79D" style={{cursor: 'pointer'}} />
+              <Mic size={20} color="#00A79D" style={{cursor: 'pointer'}} />
+            </div>
+            <button style={{padding: '12px 48px', backgroundColor: '#0066FF', color: '#FFFFFF', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.3s'}} onMouseEnter={(e) => {e.target.style.backgroundColor = '#0052CC'; e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 6px 20px rgba(0,102,255,0.3)';}} onMouseLeave={(e) => {e.target.style.backgroundColor = '#0066FF'; e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = 'none';}}>Search</button>
+          </div>
+        </div>
+        </div>
+        

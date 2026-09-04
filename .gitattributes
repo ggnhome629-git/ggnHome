@@ -1,0 +1,2 @@
+client/public/AI[[:space:]]Video1.mp4 filter=lfs diff=lfs merge=lfs -text
+*.mp4 filter=lfs diff=lfs merge=lfs -text
