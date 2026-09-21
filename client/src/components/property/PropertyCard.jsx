@@ -119,7 +119,9 @@ export default function PropertyCard({
 }) {
   const price = formatPrice(property);
   const area = formatArea(property);
-  const imageCount = property?.images?.length || 0;
+  // List endpoints send one image plus the real total (`imageCount`); detail
+  // payloads carry the whole array and no count.
+  const imageCount = property?.imageCount ?? property?.images?.length ?? 0;
   const isList = layout === "list";
   const badgeTone = badge ? BADGE_TONES[badge.type] || { bg: "primary.main" } : null;
 

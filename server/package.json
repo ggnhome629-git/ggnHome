@@ -26,6 +26,7 @@
     "express": "^5.1.0",
     "express-validator": "^7.3.1",
     "faker": "^6.6.6",
+    "ioredis": "^5.4.1",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.1",
     "multer": "^2.0.2",
