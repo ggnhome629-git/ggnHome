@@ -1,8 +1,26 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { Phone, Key, LogIn, ArrowRight } from "lucide-react";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogContent,
+  Divider,
+  Link,
+  Stack,
+  Typography,
+} from "@mui/material";
+import { ArrowRight, Key, KeyRound, LogIn, Mail, Phone } from "lucide-react";
 import TopNavigationBar from "../Top Navigation Bar/AgentTopNavigationBar";
+import {
+  AuthButton,
+  AuthField,
+  AuthLayout,
+  AuthMessage,
+  AuthTabs,
+  OtpInput,
+} from "../../../components/auth";
 
 const AgentLogin = () => {
   const navigate = useNavigate();
@@ -622,879 +640,351 @@ const handleForgotSubmit = async () => {
       return;
     }
   };
+  // Full-page hand-off while the agent session is being established.
   if (showFullLoader) {
-    // console.log("[AgentLogin] showing full-screen redirect loader");
     return (
-      <div
-        style={{
-          width: "100vw",
-          height: "100vh",
+      <Box
+        sx={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 9999,
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "rgba(255,255,255,0.95)",
-          position: "fixed",
-          top: 0,
-          left: 0,
-          zIndex: 9999,
-          flexDirection: "column",
-          gap: "16px",
+          gap: 5,
+          backgroundColor: "background.paper",
         }}
       >
-        <div
-          style={{
-            width: "64px",
-            height: "64px",
-            border: "6px solid rgba(0,167,157,0.25)",
-            borderTopColor: "#00A79D",
-            borderRadius: "50%",
-            animation: "spin 0.8s linear infinite",
-          }}
-        />
-        <div style={{ color: "#003366", fontWeight: 600 }}>
-          Redirecting to dashboard...
-        </div>
-
-        <style>{`
-            @keyframes spin {
-              to { transform: rotate(360deg); }
-            }
-          `}</style>
-      </div>
+        <CircularProgress size={52} color="secondary" thickness={4} />
+        <Typography variant="body1" sx={{ color: "primary.main", fontWeight: 600 }}>
+          Taking you to your dashboard…
+        </Typography>
+      </Box>
     );
   }
 
+  // The form's single submit path: set-password when that's the pending step,
+  // otherwise the normal login. Previously the button carried an onClick while
+  // the form also had onSubmit, so the handler's own preventDefault was the
+  // only thing stopping it running twice.
+  const onFormSubmit = (e) => (isSetPasswordFlow ? handleSetPassword(e) : handleSubmit(e));
+
+  const submitLabel = isSetPasswordFlow
+    ? "Set password"
+    : formData.loginType === "otp"
+    ? "Verify and sign in"
+    : "Sign in";
+
   return (
     <>
-      {" "}
       <TopNavigationBar />
-      <div
-        style={{
-          background:
-            "linear-gradient(135deg, #003366 0%, #4A6A8A 50%, #00A79D 100%)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
 
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-          position: "relative",
-          overflow: "hidden",
-        }}
+      <AuthLayout
+        eyebrow="Agent portal"
+        heading="Sign in to your agent dashboard"
+        subheading="Manage your listings, track enquiries and see how your properties are performing."
+        icon={<LogIn size={28} color="#FFFFFF" />}
+        benefits={[
+          "Post and manage listings on ggnHome",
+          "See verified enquiries as they arrive",
+          "Track views, saves and engagement per property",
+        ]}
+        footer={
+          <Stack spacing={4}>
+            <Divider />
+            <Typography variant="body2" sx={{ textAlign: "center", color: "text.secondary" }}>
+              Not registered yet?{" "}
+              <Link
+                component="button"
+                type="button"
+                variant="body2"
+                underline="hover"
+                onClick={() => navigate("/agent/register")}
+                sx={{ color: "secondary.main", fontWeight: 600 }}
+              >
+                Apply as an agent
+              </Link>
+            </Typography>
+          </Stack>
+        }
       >
-        {/* Animated background elements */}
-        <div
-          style={{
-            position: "absolute",
-            top: "10%",
-            left: "10%",
-            width: "300px",
-            height: "300px",
-            background: "rgba(34, 211, 238, 0.1)",
-            borderRadius: "50%",
-            filter: "blur(80px)",
-            animation: "float 6s ease-in-out infinite",
-          }}
-        ></div>
+        <Typography variant="h3" sx={{ color: "primary.main", mb: 1 }}>
+          Agent sign in
+        </Typography>
+        <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
+          {prefilledFromSession
+            ? "We recognised your session — confirm your agent code to continue."
+            : "Enter your details, then verify your agent code to continue."}
+        </Typography>
 
-        <div
-          style={{
-            position: "absolute",
-            bottom: "10%",
-            right: "10%",
-            width: "250px",
-            height: "250px",
-            background: "rgba(0, 167, 157, 0.15)",
-            borderRadius: "50%",
-            filter: "blur(80px)",
-            animation: "float 8s ease-in-out infinite reverse",
-          }}
-        ></div>
-
-        <style>
-          {`
-          @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
+        <AuthMessage
+          message={
+            formError
+              ? {
+                  type: /pending|approval/i.test(formError) ? "warning" : "error",
+                  text: formError,
+                }
+              : null
           }
-        `}
-        </style>
+          onClose={() => setFormError("")}
+        />
 
-        {/* Login Card */}
-        <div
-          style={{
-            background: "#FFFFFF",
-            borderRadius: "20px",
-            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
-            padding: "50px 40px",
-            maxWidth: "450px",
-            width: "100%",
-            position: "relative",
-            zIndex: 1,
-          }}
-        >
-          {/* Logo/Brand Section */}
-          <div
-            style={{
-              textAlign: "center",
-              marginBottom: "40px",
-            }}
-          >
-            <div
-              style={{
-                width: "70px",
-                height: "70px",
-                background: "linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)",
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 20px",
-                boxShadow: "0 10px 30px rgba(0, 167, 157, 0.3)",
+        {agentVerified && !formError && (
+          <AuthMessage
+            message={{ type: "success", text: "Agent verified. Continue below to sign in." }}
+          />
+        )}
+
+        <Box component="form" onSubmit={onFormSubmit} noValidate>
+          <AuthField
+            label="Email address"
+            icon={Mail}
+            type="email"
+            name="email"
+            autoComplete="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            error={errors.email}
+            helperText="Optional — needed only to sign in with a one-time code"
+            disabled={prefilledFromSession}
+          />
+
+          <AuthField
+            label="Mobile number"
+            icon={Phone}
+            type="tel"
+            name="mobileNumber"
+            autoComplete="tel"
+            value={formData.mobileNumber}
+            onChange={(e) =>
+              handleInputChange({
+                target: {
+                  name: "mobileNumber",
+                  value: e.target.value.replace(/\D/g, "").slice(0, 10),
+                },
+              })
+            }
+            error={errors.mobileNumber}
+            helperText="10 digits, no country code"
+            disabled={prefilledFromSession}
+            inputProps={{ inputMode: "numeric", maxLength: 10 }}
+          />
+
+          <AuthField
+            label="Agent code"
+            icon={Key}
+            name="agentCode"
+            value={formData.agentCode}
+            onChange={handleInputChange}
+            error={errors.agentCode}
+            helperText="The code issued when your application was approved"
+          />
+
+          {/* Identify the agent before offering a sign-in method — which
+              methods are available depends on what the backend reports. */}
+          {!prefilledFromSession && !agentVerified && (
+            <AuthButton
+              type="button"
+              variant="outlined"
+              loading={isLoading}
+              loadingText="Checking…"
+              onClick={checkAgentExists}
+              sx={{
+                mb: 5,
+                borderColor: "secondary.main",
+                color: "secondary.main",
+                "&:hover": { borderColor: "secondary.dark", backgroundColor: "rgba(0,167,157,0.06)" },
               }}
             >
-              <LogIn size={35} color="#FFFFFF" />
-            </div>
+              Verify agent code
+            </AuthButton>
+          )}
 
-            <h1
-              style={{
-                fontSize: "28px",
-                fontWeight: "700",
-                color: "#003366",
-                marginBottom: "10px",
-              }}
-            >
-              Agent Login
-            </h1>
-
-            <p
-              style={{
-                fontSize: "15px",
-                color: "#4A6A8A",
-                lineHeight: "1.5",
-              }}
-            >
-              Access your GGNHome Agent Dashboard
-            </p>
-          </div>
-
-          {/* Login Form */}
-          <form onSubmit={handleSubmit}>
-            {formError && (
-              <div
-                style={{
-                  marginBottom: "16px",
-                  padding: "12px",
-                  borderRadius: "8px",
-                  background:
-                    formError.toLowerCase().includes("pending")
-                      ? "#FFF7ED"
-                      : formError.toLowerCase().includes("suspended")
-                      ? "#FEF2F2"
-                      : "#FEF2F2",
-                  color: "#DC2626",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  border:
-                    formError.toLowerCase().includes("pending")
-                      ? "1px solid #FDBA74"
-                      : "1px solid #FCA5A5",
-                }}
-              >
-                {formError}
-              </div>
-            )}
-            {/* Email Field (OTP login only) */}
-            {(formData.loginType === "otp" || prefilledFromSession) && (
-              <div style={{ marginBottom: "20px" }}>
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "10px",
-                    color: "#333333",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                  }}
-                >
-                  Email
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  readOnly={prefilledFromSession}
-                  placeholder="Enter email address"
-                  style={{
-                    width: "100%",
-                    padding: "14px",
-                    border: `2px solid ${errors.email ? "#EF4444" : "#F4F7F9"}`,
-                    borderRadius: "12px",
-                    fontSize: "15px",
-                    background: prefilledFromSession ? "#F4F7F9" : "#FFFFFF",
-                    cursor: prefilledFromSession ? "not-allowed" : "text",
-                  }}
-                  onFocus={(e) => {
-                    if (!errors.email) {
-                      e.target.style.borderColor = "#00A79D";
-                      e.target.style.background = "#FFFFFF";
-                    }
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = errors.email
-                      ? "#EF4444"
-                      : "#F4F7F9";
-                    e.target.style.background = "#F4F7F9";
-                  }}
-                />
-                {errors.email && (
-                  <div
-                    style={{
-                      color: "#EF4444",
-                      fontSize: "13px",
-                      marginTop: "8px",
-                    }}
-                  >
-                    {errors.email}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Mobile Number Field */}
-            <div style={{ marginBottom: "25px" }}>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "10px",
-                  color: "#333333",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                }}
-              >
-                Mobile Number
-              </label>
-
-              <div style={{ position: "relative" }}>
-                <div
-                  style={{
-                    position: "absolute",
-                    left: "16px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    pointerEvents: "none",
-                  }}
-                >
-                  <Phone size={20} color="#4A6A8A" />
-                </div>
-
-                <input
-                  type="tel"
-                  name="mobileNumber"
-                  value={formData.mobileNumber}
-                  onChange={handleInputChange}
-                  readOnly={prefilledFromSession}
-                  placeholder="Enter 10-digit mobile number"
-                  maxLength="10"
-                  style={{
-                    width: "100%",
-                    padding: "16px 16px 16px 50px",
-                    border: `2px solid ${
-                      errors.mobileNumber ? "#EF4444" : "#F4F7F9"
-                    }`,
-                    borderRadius: "12px",
-                    fontSize: "16px",
-                    transition: "all 0.3s",
-                    outline: "none",
-                    boxSizing: "border-box",
-                    background: prefilledFromSession ? "#F4F7F9" : "#FFFFFF",
-                    cursor: prefilledFromSession ? "not-allowed" : "text",
-                  }}
-                  onFocus={(e) => {
-                    if (!errors.mobileNumber) {
-                      e.target.style.borderColor = "#00A79D";
-                      e.target.style.background = "#FFFFFF";
-                    }
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = errors.mobileNumber
-                      ? "#EF4444"
-                      : "#F4F7F9";
-                    e.target.style.background = "#F4F7F9";
-                  }}
-                />
-              </div>
-
-              {errors.mobileNumber && (
-                <div
-                  style={{
-                    color: "#EF4444",
-                    fontSize: "13px",
-                    marginTop: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "5px",
-                  }}
-                >
-                  <span>⚠</span>
-                  <span>{errors.mobileNumber}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Agent Code Field */}
-            <div style={{ marginBottom: "30px" }}>
-              <label
-                style={{
-                  display: "block",
-                  marginBottom: "10px",
-                  color: "#333333",
-                  fontSize: "14px",
-                  fontWeight: "600",
-                }}
-              >
-                Agent Code
-              </label>
-
-              <div style={{ position: "relative" }}>
-                <div
-                  style={{
-                    position: "absolute",
-                    left: "16px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    pointerEvents: "none",
-                  }}
-                >
-                  <Key size={20} color="#4A6A8A" />
-                </div>
-
-                <input
-                  type="text"
-                  name="agentCode"
-                  value={formData.agentCode}
-                  onChange={handleInputChange}
-                  placeholder="Enter your agent code"
-                  style={{
-                    width: "100%",
-                    padding: "16px 16px 16px 50px",
-                    border: `2px solid ${
-                      errors.agentCode ? "#EF4444" : "#F4F7F9"
-                    }`,
-                    borderRadius: "12px",
-                    fontSize: "16px",
-                    transition: "all 0.3s",
-                    outline: "none",
-                    boxSizing: "border-box",
-                    background: "#F4F7F9",
-                    textTransform: "uppercase",
-                    letterSpacing: "1px",
-                  }}
-                  onFocus={(e) => {
-                    if (!errors.agentCode) {
-                      e.target.style.borderColor = "#00A79D";
-                      e.target.style.background = "#FFFFFF";
-                    }
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = errors.agentCode
-                      ? "#EF4444"
-                      : "#F4F7F9";
-                    e.target.style.background = "#F4F7F9";
-                  }}
-                />
-              </div>
-
-              {errors.agentCode && (
-                <div
-                  style={{
-                    color: "#EF4444",
-                    fontSize: "13px",
-                    marginTop: "8px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "5px",
-                  }}
-                >
-                  <span>⚠</span>
-                  <span>{errors.agentCode}</span>
-                </div>
-              )}
-            </div>
-            {!prefilledFromSession && (
-              <div style={{ marginBottom: "20px", display: "flex", gap: "10px" }}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData((p) => ({
-                      ...p,
-                      loginType: "otp",
-                      password: "",
-                    }))
-                  }
-                  style={{
-                    flex: 1,
-                    padding: "10px",
-                    borderRadius: "10px",
-                    border: "2px solid #00A79D",
-                    background:
-                      formData.loginType === "otp" ? "#00A79D" : "transparent",
-                    color: formData.loginType === "otp" ? "#FFFFFF" : "#00A79D",
-                    fontWeight: 700,
-                  }}
-                >
-                  Login via OTP
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData((p) => ({
-                      ...p,
-                      loginType: "password",
-                      otp: "",
-                    }))
-                  }
-                  style={{
-                    flex: 1,
-                    padding: "10px",
-                    borderRadius: "10px",
-                    border: "2px solid #00A79D",
-                    background:
-                      formData.loginType === "password"
-                        ? "#00A79D"
-                        : "transparent",
-                    color:
-                      formData.loginType === "password" ? "#FFFFFF" : "#00A79D",
-                    fontWeight: 700,
-                  }}
-                >
-                  Login via Password
-                </button>
-              </div>
-            )}
-
-
-            {/* Multi-state: Check Agent / Send OTP */}
-            { !prefilledFromSession && !agentVerified && (
-              <div style={{ marginBottom: "18px", textAlign: "right" }}>
-                <button
-                  type="button"
-                  onClick={checkAgentExists}
-                  disabled={isLoading}
-                  style={{
-                    padding: "10px 14px",
-                    background: "transparent",
-                    border: "2px solid #00A79D",
-                    color: "#00A79D",
-                    borderRadius: "10px",
-                    fontWeight: 700,
-                    cursor: isLoading ? "not-allowed" : "pointer",
-                  }}
-                >
-                  Check Agent
-                </button>
-              </div>
-            )}
-            {/* PASSWORD PRESENT → LOGIN */}
-            {!prefilledFromSession &&
-              formData.loginType === "password" &&
-              passwordState === "PASSWORD_PRESENT" && (
-                <div style={{ marginBottom: "20px" }}>
-                  <label style={{ fontWeight: 600 }}>Password</label>
-                  <div style={{ textAlign: "right", marginBottom: "12px" }}>
-                    <button
-                      type="button"
-                      onClick={() => setShowForgotModal(true)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "#00A79D",
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        fontSize: "13px"
-                      }}
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-                  <input
-                    type="password"
-                    name="password"
-                    value={formData.password || ""}
-                    onChange={handleInputChange}
-                    placeholder="Enter password"
-                    style={{
-                      width: "100%",
-                      padding: "14px",
-                      borderRadius: "12px",
-                      border: "2px solid #F4F7F9"
-                    }}
-                  />
-                </div>
-            )}
-
-            {/* PASSWORD NOT SET → CREATE PASSWORD */}
-            {!prefilledFromSession &&
-              formData.loginType === "password" &&
-              passwordState === "SET_PASSWORD" && (
-                <div style={{ marginBottom: "20px" }}>
-                  <label style={{ fontWeight: 600 }}>
-                    Create New Password (min 6 characters)
-                  </label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Create password"
-                    style={{
-                      width: "100%",
-                      padding: "14px",
-                      borderRadius: "12px",
-                      border: "2px solid #F4F7F9"
-                    }}
-                  />
-                  {newPassword && newPassword.length < 6 && (
-                    <div style={{ color: "#DC2626", fontSize: "13px", marginTop: "6px" }}>
-                      Password must be at least 6 characters
-                    </div>
-                  )}
-                </div>
-            )}
-
-            { agentVerified && otpRequired && formData.loginType === "otp" && (
-              <div style={{ marginBottom: "18px", textAlign: "right" }}>
-                <button
-                  type="button"
-                  onClick={handleSendOtp}
-                  disabled={isLoading}
-                  style={{
-                    padding: "10px 14px",
-                    background: "transparent",
-                    border: "2px solid #00A79D",
-                    color: "#00A79D",
-                    borderRadius: "10px",
-                    fontWeight: 700,
-                    cursor: isLoading ? "not-allowed" : "pointer",
-                  }}
-                >
-                  Send OTP
-                </button>
-              </div>
-            )}
-
-            {showOtp && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                transition={{ duration: 0.3, ease: "easeOut" }}
-                style={{ marginBottom: "20px", overflow: "hidden" }}
-              >
-                <label
-                  style={{
-                    display: "block",
-                    marginBottom: "10px",
-                    color: "#333333",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                  }}
-                >
-                  OTP
-                </label>
-                <input
-                  type="tel"
-                  name="otp"
-                  value={formData.otp}
-                  onChange={handleInputChange}
-                  placeholder="Enter 6-digit OTP"
-                  maxLength="6"
-                  style={{
-                    width: "100%",
-                    padding: "14px",
-                    border: `2px solid ${errors.otp ? "#EF4444" : "#F4F7F9"}`,
-                    borderRadius: "12px",
-                    fontSize: "15px",
-                    background: "#F4F7F9",
-                  }}
-                  onFocus={(e) => {
-                    if (!errors.otp) {
-                      e.target.style.borderColor = "#00A79D";
-                      e.target.style.background = "#FFFFFF";
-                    }
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = errors.otp
-                      ? "#EF4444"
-                      : "#F4F7F9";
-                    e.target.style.background = "#F4F7F9";
-                  }}
-                />
-                {errors.otp && (
-                  <div
-                    style={{
-                      color: "#EF4444",
-                      fontSize: "13px",
-                      marginTop: "8px",
-                    }}
-                  >
-                    {errors.otp}
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {/* Login Button */}
-            <button
-              onClick={isSetPasswordFlow ? handleSetPassword : handleSubmit}
-              disabled={
-                isSetPasswordFlow
-                  ? setPasswordLoading || newPassword.length < 6
-                  : isLoginDisabled
+          {!prefilledFromSession && agentVerified && (
+            <AuthTabs
+              value={formData.loginType}
+              onChange={(next) =>
+                setFormData((p) => ({
+                  ...p,
+                  loginType: next,
+                  ...(next === "otp" ? { password: "" } : { otp: "" }),
+                }))
               }
-              style={{
-                width: "100%",
-                padding: "18px",
-                background: isSetPasswordFlow
-                  ? (setPasswordLoading || newPassword.length < 6
-                      ? "#94A3B8"
-                      : "linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)")
-                  : isLoginDisabled
-                  ? "#94A3B8"
-                  : "linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)",
-                color: "#FFFFFF",
-                border: "none",
-                borderRadius: "12px",
-                fontSize: "17px",
-                fontWeight: "700",
-                cursor: isSetPasswordFlow
-                  ? (setPasswordLoading || newPassword.length < 6 ? "not-allowed" : "pointer")
-                  : isLoginDisabled
-                  ? "not-allowed"
-                  : "pointer",
-                transition: "all 0.3s",
-                boxShadow: "0 4px 15px rgba(0, 167, 157, 0.3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "10px",
-                textTransform: "uppercase",
-                letterSpacing: "1px",
+              ariaLabel="Agent sign-in method"
+              options={[
+                { value: "otp", label: "One-time code" },
+                { value: "password", label: "Password" },
+              ]}
+            />
+          )}
+
+          {/* Existing password → sign in with it. */}
+          {!prefilledFromSession &&
+            agentVerified &&
+            formData.loginType === "password" &&
+            passwordState === "PASSWORD_PRESENT" && (
+              <>
+                <AuthField
+                  label="Password"
+                  icon={KeyRound}
+                  type="password"
+                  name="password"
+                  autoComplete="current-password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  error={errors.password}
+                />
+                <Box sx={{ mt: -2, mb: 4, textAlign: "right" }}>
+                  <Link
+                    component="button"
+                    type="button"
+                    variant="body2"
+                    underline="hover"
+                    onClick={() => setShowForgotModal(true)}
+                    sx={{ color: "secondary.main", fontWeight: 600 }}
+                  >
+                    Forgot password?
+                  </Link>
+                </Box>
+              </>
+            )}
+
+          {/* No password on the account yet → create one. */}
+          {!prefilledFromSession && isSetPasswordFlow && (
+            <AuthField
+              label="Create a password"
+              icon={KeyRound}
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              helperText="At least 6 characters"
+            />
+          )}
+
+          {/* One-time code: request, then enter. */}
+          {!prefilledFromSession && agentVerified && formData.loginType === "otp" && otpRequired && !showOtp && (
+            <AuthButton
+              type="button"
+              variant="outlined"
+              loading={isLoading}
+              loadingText="Sending…"
+              onClick={handleSendOtp}
+              startIcon={<ArrowRight size={16} />}
+              sx={{
+                mb: 5,
+                borderColor: "secondary.main",
+                color: "secondary.main",
+                "&:hover": { borderColor: "secondary.dark", backgroundColor: "rgba(0,167,157,0.06)" },
               }}
-              onMouseEnter={(e) => {
-                const disabled =
-                  isSetPasswordFlow
-                    ? setPasswordLoading || newPassword.length < 6
-                    : isLoginDisabled;
-                if (!disabled) {
-                  e.target.style.transform = "translateY(-2px)";
-                  e.target.style.boxShadow =
-                    "0 6px 20px rgba(0, 167, 157, 0.4)";
+            >
+              Send one-time code
+            </AuthButton>
+          )}
+
+          {showOtp && (
+            <Box sx={{ mb: 5 }}>
+              <Typography variant="body2" sx={{ color: "text.secondary", mb: 4, textAlign: "center" }}>
+                We sent a 6-digit code to the email registered on this agent account.
+              </Typography>
+              <OtpInput
+                value={formData.otp}
+                onChange={(next) =>
+                  handleInputChange({ target: { name: "otp", value: next } })
                 }
-              }}
-              onMouseLeave={(e) => {
-                const disabled =
-                  isSetPasswordFlow
-                    ? setPasswordLoading || newPassword.length < 6
-                    : isLoginDisabled;
-                if (!disabled) {
-                  e.target.style.transform = "translateY(0)";
-                  e.target.style.boxShadow =
-                    "0 4px 15px rgba(0, 167, 157, 0.3)";
-                }
-              }}
-            >
-              {(isLoading && passwordState !== "SET_PASSWORD") ||
-              (setPasswordLoading && passwordState === "SET_PASSWORD") ? (
-                <>
-                  <div
-                    style={{
-                      width: "20px",
-                      height: "20px",
-                      border: "3px solid rgba(255, 255, 255, 0.3)",
-                      borderTopColor: "#FFFFFF",
-                      borderRadius: "50%",
-                      animation: "spin 0.8s linear infinite",
-                    }}
-                  ></div>
-                  <style>
-                    {`
-                    @keyframes spin {
-                      to { transform: rotate(360deg); }
-                    }
-                  `}
-                  </style>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  {formData.loginType === "password" && passwordState === "SET_PASSWORD"
-                    ? "Set Password"
-                    : "Login"}
-                  <ArrowRight size={20} />
-                </>
-              )}
-            </button>
+                error={errors.otp}
+                disabled={isLoading}
+              />
+            </Box>
+          )}
 
-            {/* Info Text */}
-            <div
-              style={{
-                marginTop: "20px",
-                padding: "15px",
-                background: "#F4F7F9",
-                borderRadius: "10px",
-                borderLeft: "4px solid #00A79D",
-              }}
-            >
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: "#4A6A8A",
-                  margin: 0,
-                  lineHeight: "1.6",
-                }}
-              >
-                💡 We'll send you an OTP to verify your identity. Make sure your
-                agent code is correct.
-              </p>
-            </div>
+          <AuthButton
+            loading={isSetPasswordFlow ? setPasswordLoading : isLoading}
+            loadingText={isSetPasswordFlow ? "Saving…" : "Signing in…"}
+            disabled={
+              isSetPasswordFlow
+                ? setPasswordLoading || newPassword.length < 6
+                : isLoginDisabled
+            }
+          >
+            {submitLabel}
+          </AuthButton>
 
-            {/* Registration Link */}
-            <div
-              style={{
-                marginTop: "30px",
-                textAlign: "center",
-                paddingTop: "25px",
-                borderTop: "1px solid #F4F7F9",
-              }}
-            >
-              <p
-                style={{
-                  fontSize: "14px",
-                  color: "#4A6A8A",
-                  margin: 0,
-                }}
-              >
-                Not registered yet?{" "}
-                <a
-                  href="/agent/register"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    window.location.href = "/agent/register";
-                  }}
-                  style={{
-                    color: "#00A79D",
-                    fontWeight: "600",
-                    textDecoration: "none",
-                    transition: "all 0.3s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.color = "#22D3EE";
-                    e.target.style.textDecoration = "underline";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.color = "#00A79D";
-                    e.target.style.textDecoration = "none";
-                  }}
-                >
-                  Apply as an agent
-                </a>
-              </p>
-            </div>
-          </form>
-        </div>
-      </div>
-      {showForgotModal && (
-  <div
-    style={{
-      position: "fixed",
-      inset: 0,
-      background: "rgba(0,0,0,0.45)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 10000
-    }}
-    onClick={() => setShowForgotModal(false)}
-  >
-    <div
-      onClick={(e) => e.stopPropagation()}
-      style={{
-        background: "#FFFFFF",
-        borderRadius: "16px",
-        padding: "30px",
-        width: "100%",
-        maxWidth: "400px",
-        boxShadow: "0 20px 40px rgba(0,0,0,0.25)"
-      }}
-    >
-      <h3 style={{ marginBottom: "20px", color: "#003366" }}>
-        Reset Password
-      </h3>
+          {!agentVerified && !prefilledFromSession && (
+            <Typography variant="caption" sx={{ display: "block", mt: 4, color: "text.secondary" }}>
+              Verify your agent code first — we'll then show the sign-in methods
+              available on your account.
+            </Typography>
+          )}
+        </Box>
+      </AuthLayout>
 
-      <label style={{ fontWeight: 600 }}>Agent Code</label>
-      <input
-        name="agentCode"
-        value={forgotData.agentCode}
-        onChange={handleForgotChange}
-        placeholder="agent code (lowercase)"
-        style={{
-          width: "100%",
-          padding: "12px",
-          marginBottom: "15px",
-          borderRadius: "10px",
-          border: "2px solid #F4F7F9",
-          textTransform: "lowercase"
-        }}
-      />
-
-      <label style={{ fontWeight: 600 }}>Date of Birth</label>
-      <input
-        type="date"
-        name="dob"
-        value={forgotData.dob}
-        onChange={handleForgotChange}
-        style={{
-          width: "100%",
-          padding: "12px",
-          marginBottom: "15px",
-          borderRadius: "10px",
-          border: "2px solid #F4F7F9"
-        }}
-      />
-
-      {forgotMsg && (
-        <div
-          style={{
-            marginBottom: "15px",
-            fontWeight: 600,
-            color: forgotMsg.toLowerCase().includes("successful")
-              ? "#059669"
-              : "#DC2626"
-          }}
-        >
-          {forgotMsg}
-        </div>
-      )}
-
-      <button
-        onClick={handleForgotSubmit}
-        disabled={forgotLoading}
-        style={{
-          width: "100%",
-          padding: "14px",
-          background: "#00A79D",
-          color: "#FFFFFF",
-          borderRadius: "12px",
-          border: "none",
-          fontWeight: 700,
-          cursor: forgotLoading ? "not-allowed" : "pointer"
-        }}
+      {/* Password reset: agent code + date of birth. */}
+      <Dialog
+        open={showForgotModal}
+        onClose={() => setShowForgotModal(false)}
+        maxWidth="xs"
+        fullWidth
       >
-        {forgotLoading ? "Processing..." : "Reset Password"}
-      </button>
-    </div>
-  </div>
-)}
+        <DialogContent sx={{ p: 8 }}>
+          <Typography variant="h3" sx={{ color: "primary.main", mb: 2 }}>
+            Reset your password
+          </Typography>
+          <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
+            Confirm your agent code and date of birth and we'll reset it for you.
+          </Typography>
+
+          <AuthMessage
+            message={
+              forgotMsg
+                ? {
+                    type: forgotMsg.toLowerCase().includes("successful") ? "success" : "error",
+                    text: forgotMsg,
+                  }
+                : null
+            }
+            onClose={() => setForgotMsg("")}
+          />
+
+          <AuthField
+            label="Agent code"
+            icon={Key}
+            name="agentCode"
+            value={forgotData.agentCode}
+            onChange={handleForgotChange}
+            helperText="Lowercase"
+          />
+
+          <AuthField
+            label="Date of birth"
+            type="date"
+            name="dob"
+            value={forgotData.dob}
+            onChange={handleForgotChange}
+            slotProps={{ inputLabel: { shrink: true } }}
+          />
+
+          <AuthButton
+            type="button"
+            loading={forgotLoading}
+            loadingText="Resetting…"
+            onClick={handleForgotSubmit}
+            sx={{ mt: 3 }}
+          >
+            Reset password
+          </AuthButton>
+
+          <Button
+            fullWidth
+            variant="text"
+            onClick={() => setShowForgotModal(false)}
+            sx={{ mt: 3, color: "text.secondary" }}
+          >
+            Cancel
+          </Button>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
