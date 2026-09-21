@@ -32,6 +32,9 @@ export default function AuthLayout({
   children,
   footer,
   maxWidth = "lg",
+  // Multi-column forms (agent registration) need more room than a single
+  // column of fields.
+  cardWidth = 460,
 }) {
   return (
     <Box
@@ -164,7 +167,7 @@ export default function AuthLayout({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
             sx={{
-              flex: { md: "0 1 460px" },
+              flex: { md: `0 1 ${cardWidth}px` },
               width: "100%",
               backgroundColor: "background.paper",
               borderRadius: `${radii.xl}px`,
