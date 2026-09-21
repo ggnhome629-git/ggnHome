@@ -60,6 +60,9 @@ export default function RealEstateDashboard() {
 
   const [properties, setProperties] = useState([]);
   const [recommended, setRecommended] = useState([]);
+  // Starts true so the first paint shows card skeletons rather than the
+  // carousel's "nothing to explore" empty state.
+  const [feedLoading, setFeedLoading] = useState(true);
 
   const [userLocation, setUserLocation] = useState(null);
   const [propertiesInArea, setPropertiesInArea] = useState([]);
@@ -151,17 +154,23 @@ export default function RealEstateDashboard() {
   }, [user, userToken]);
 
   useEffect(() => {
+    // A sign-in mid-flight swaps which endpoint we want; ignore whatever the
+    // superseded request returns so it can't overwrite the newer feed.
+    let cancelled = false;
+
     const fetchProperties = async () => {
+      setFeedLoading(true);
       try {
         if (!user) {
           const res = await fetch(
             `${process.env.REACT_APP_Base_API}/api/activeproperties?limit=12`,
             { method: "GET" }
           );
+          if (cancelled) return;
 
           if (res.ok) {
             const data = await res.json();
-            setProperties(data.slice(0, 15));
+            if (!cancelled) setProperties(data.slice(0, 15));
           } else {
             setProperties([]);
           }
@@ -173,8 +182,11 @@ export default function RealEstateDashboard() {
               ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
             },
           });
+          if (cancelled) return;
+
           if (res.ok) {
             const data = await res.json();
+            if (cancelled) return;
             setRecentSearches(data.recentSearches || []);
             setRecommended(data.recommendedProperties || data || []);
           } else {
@@ -183,12 +195,19 @@ export default function RealEstateDashboard() {
           }
         }
       } catch (err) {
+        if (cancelled) return;
         setProperties([]);
         setRecentSearches([]);
         setRecommended([]);
+      } finally {
+        if (!cancelled) setFeedLoading(false);
       }
     };
+
     fetchProperties();
+    return () => {
+      cancelled = true;
+    };
   }, [user, userToken]);
 
   // ------------------------------------------------- properties near you --
@@ -334,6 +353,7 @@ export default function RealEstateDashboard() {
         <PropertyDashboard
           properties={user ? recommended : properties}
           user={user}
+          loading={feedLoading}
           title={user ? "Recommended for you" : "Explore Properties"}
           onPropertyClick={handlePropertyClick}
         />
@@ -362,6 +382,7 @@ export default function RealEstateDashboard() {
         <PropertiesInArea
           properties={propertiesInArea}
           user={user}
+          loading={areaLoading && propertiesInArea.length === 0}
           title="Properties in your area"
           onPropertyClick={handlePropertyClick}
           locationQueryFields={[
@@ -376,7 +397,7 @@ export default function RealEstateDashboard() {
       </LazySection>
 
       <Stack alignItems="center" spacing={3} sx={{ py: { xs: 6, md: 8 } }}>
-        {areaLoading && (
+        {areaLoading && propertiesInArea.length > 0 && (
           <Stack direction="row" spacing={3} alignItems="center">
             <CircularProgress size={18} color="secondary" />
             <Typography variant="body2" sx={{ color: "text.secondary" }}>

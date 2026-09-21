@@ -171,6 +171,15 @@ export default function PropertyCard({
           src={property?.images?.[0] || "/default-property.jpg"}
           alt={property?.title || property?.type || "Property"}
           aspectRatio={isList ? "4 / 3" : `4 / ${imageHeight > 200 ? 3 : 2.4}`}
+          // Cards never render wider than a quarter of a desktop viewport, so
+          // there is no reason to fetch anything bigger.
+          width={isList ? 560 : 640}
+          widths={[320, 480, 640, 960]}
+          sizes={
+            isList
+              ? "(max-width: 600px) 92vw, 280px"
+              : "(max-width: 600px) 82vw, (max-width: 900px) 46vw, (max-width: 1200px) 31vw, 23vw"
+          }
           sx={isList ? { height: "100%" } : undefined}
         />
 

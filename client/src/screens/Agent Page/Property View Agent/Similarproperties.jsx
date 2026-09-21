@@ -55,8 +55,7 @@ const SimilarProperties = ({ sector, propertyType }) => {
         );
         setAllProps(remainingProps.slice(0, 7));
 
-        // Delay visible spinner
-        setTimeout(() => setLoading(false), 2000);
+        setLoading(false);
       } catch (error) {
         console.error("Error loading similar properties:", error);
         setLoading(false);

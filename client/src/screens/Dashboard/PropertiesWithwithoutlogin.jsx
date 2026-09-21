@@ -8,7 +8,7 @@ import PropertyCarousel from "../../components/property/PropertyCarousel";
  * and pauses on hover; "See all" hands the current list to SeeAllProperties
  * so it can page from where this rail left off.
  */
-const PropertyDashboard = ({ properties = [], user, title, onPropertyClick }) => {
+const PropertyDashboard = ({ properties = [], user, title, loading = false, onPropertyClick }) => {
   const navigate = useNavigate();
 
   return (
@@ -16,6 +16,7 @@ const PropertyDashboard = ({ properties = [], user, title, onPropertyClick }) =>
       title={title}
       properties={user ? properties : properties.slice(0, 12)}
       user={user}
+      loading={loading}
       onPropertyClick={onPropertyClick}
       autoScroll
       onSeeAll={() => {
