@@ -49,13 +49,12 @@ const SimilarProperties = ({ sector, currentPropertyId }) => {
     };
   }, [sector, currentPropertyId]);
 
-  if (loading) return null;
-
   return (
     <PropertyCarousel
       title="Similar properties"
       subtitle="Based on this listing's sector and nearby areas"
       properties={properties}
+      loading={loading}
       requireAuth={false}
       emptyTitle="No similar properties yet"
       emptyDescription="We couldn't find other active listings nearby right now."

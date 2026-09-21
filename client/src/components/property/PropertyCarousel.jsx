@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Box, Button, Container, IconButton, Stack, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Box, Button, Container, IconButton, Skeleton, Stack, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, SearchX } from "lucide-react";
@@ -29,6 +29,10 @@ export default function PropertyCarousel({
   onPropertyClick,
   onSeeAll,
   autoScroll = false,
+  // While a caller is still fetching, the rail holds card-shaped placeholders.
+  // Without this an in-flight request renders the empty state, so the page
+  // flashes "no properties" before the listings arrive.
+  loading = false,
   emptyTitle = "No properties to show yet",
   emptyDescription = "Check back soon, or explore everything we have listed.",
 }) {
@@ -72,7 +76,7 @@ export default function PropertyCarousel({
   // Ambient auto-advance for the primary rail only; pauses on hover and loops
   // back to the start once it reaches the end.
   useEffect(() => {
-    if (!autoScroll || hovered || properties.length <= itemsPerPage) return undefined;
+    if (!autoScroll || hovered || loading || properties.length <= itemsPerPage) return undefined;
     const id = setInterval(() => {
       const el = trackRef.current;
       if (!el) return;
@@ -83,7 +87,7 @@ export default function PropertyCarousel({
       }
     }, 4000);
     return () => clearInterval(id);
-  }, [autoScroll, hovered, itemsPerPage, properties.length]);
+  }, [autoScroll, hovered, loading, itemsPerPage, properties.length]);
 
   const visibleProperties = useMemo(
     () => properties.filter((p) => p?.isActive !== false),
@@ -115,7 +119,7 @@ export default function PropertyCarousel({
           )}
         </Box>
 
-        {onSeeAll && visibleProperties.length > 0 && (
+        {onSeeAll && !loading && visibleProperties.length > 0 && (
           <Button
             onClick={onSeeAll}
             endIcon={<ChevronRight size={18} />}
@@ -131,7 +135,19 @@ export default function PropertyCarousel({
         )}
       </Stack>
 
-      {visibleProperties.length === 0 ? (
+      {loading ? (
+        <Stack direction="row" spacing={6} sx={{ overflow: "hidden" }}>
+          {Array.from({ length: itemsPerPage }).map((_, i) => (
+            <Box key={i} sx={{ flexShrink: 0, width: CARD_WIDTH }}>
+              <Skeleton
+                variant="rectangular"
+                animation="wave"
+                sx={{ borderRadius: `${radii.lg}px`, height: 300 }}
+              />
+            </Box>
+          ))}
+        </Stack>
+      ) : visibleProperties.length === 0 ? (
         <Stack
           alignItems="center"
           spacing={4}

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const invalidatePropertyCache = require("./plugins/invalidatePropertyCache");
 
 const SalePropertySchema = new mongoose.Schema({
   title: {
@@ -76,6 +77,15 @@ totalArea: {
     default: Date.now
   }
 });
+
+// Indexes — mirrors RentalProperty; see that model for the rationale.
+SalePropertySchema.index({ isActive: 1, createdAt: -1 });
+SalePropertySchema.index({ isActive: 1, Sector: 1 });
+SalePropertySchema.index({ isPostedNew: 1, isEdited: 1 });
+SalePropertySchema.index({ sourcePortal: 1, sourceListingId: 1 });
+
+// Any write to a listing clears the cached listing feeds.
+SalePropertySchema.plugin(invalidatePropertyCache);
 
 const SaleProperty = mongoose.model('SaleProperty', SalePropertySchema);
 

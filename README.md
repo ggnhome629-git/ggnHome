@@ -119,7 +119,27 @@ JWT_SECRET=
 CLOUDINARY_NAME=
 CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
+
+# Optional. Enables the Redis cache in front of the property endpoints.
+# Leave it unset and the app runs exactly as before, reading from MongoDB.
+REDIS_URI=
 ```
+
+#### Caching (optional)
+
+Property listing and detail responses are cached in Redis when `REDIS_URI` is
+set. The cache is designed to fit a 30 MB plan: list endpoints store trimmed
+card projections (~350 bytes per listing rather than ~5 KB full documents) and
+everything carries a short TTL. If Redis is unset, unreachable or out of
+memory, every read falls through to MongoDB — the cache can never fail a
+request.
+
+Writes invalidate automatically: a Mongoose plugin on the property models
+clears the cached feeds on any save, update or delete, debounced so a bulk
+sync triggers one sweep instead of thousands.
+
+Recommended plan settings: `maxmemory-policy allkeys-lru`, and a single shared
+client per process (free tiers usually cap connections at 30).
 
 ### Example Client `.env`
 ```

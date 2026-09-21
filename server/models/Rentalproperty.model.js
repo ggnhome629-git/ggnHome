@@ -1,5 +1,6 @@
 // Model For renting the Property
 const mongoose = require("mongoose");
+const invalidatePropertyCache = require("./plugins/invalidatePropertyCache");
 
 const RentalpropertySchema = new mongoose.Schema(
   {
@@ -111,6 +112,22 @@ const RentalpropertySchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Indexes
+//
+// The dashboard/listing feeds all filter on isActive and sort by createdAt,
+// so the compound index serves the filter and the sort from one structure —
+// without it every listing request is a full collection scan.
+RentalpropertySchema.index({ isActive: 1, createdAt: -1 });
+// Sector drives location search and the "similar properties" rail.
+RentalpropertySchema.index({ isActive: 1, Sector: 1 });
+// Admin queues filter on the approval flags.
+RentalpropertySchema.index({ isPostedNew: 1, isEdited: 1 });
+// Keeps the daily NoBroker sync from scanning the collection per listing.
+RentalpropertySchema.index({ sourcePortal: 1, sourceListingId: 1 });
+
+// Any write to a listing clears the cached listing feeds.
+RentalpropertySchema.plugin(invalidatePropertyCache);
 
 const RentalProperty = mongoose.model("RentalProperty", RentalpropertySchema);
 

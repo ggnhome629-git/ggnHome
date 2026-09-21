@@ -7,7 +7,7 @@ import PropertyCarousel from "../../components/property/PropertyCarousel";
  * error) is owned by dashboard.jsx, which fetches each page and appends into
  * `properties` — this component only renders whatever it's handed.
  */
-const RecommendedProperties = ({ properties = [], user, title, onPropertyClick, locationQueryFields }) => {
+const RecommendedProperties = ({ properties = [], user, title, loading = false, onPropertyClick, locationQueryFields }) => {
   const navigate = useNavigate();
 
   return (
@@ -15,6 +15,7 @@ const RecommendedProperties = ({ properties = [], user, title, onPropertyClick, 
       title={title}
       properties={properties}
       user={user}
+      loading={loading}
       onPropertyClick={onPropertyClick}
       onSeeAll={() => {
         if (!user) {
