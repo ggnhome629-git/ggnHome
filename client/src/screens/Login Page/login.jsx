@@ -1,9 +1,20 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { Box, Button, Dialog, DialogContent, Divider, Link, Stack, Typography } from "@mui/material";
+import { ArrowLeft, KeyRound, Mail, Phone, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../Context/AuthContext";
+import { AuthButton, AuthField, AuthLayout, AuthMessage, AuthTabs, OtpInput } from "../../components/auth";
 
-// STEP 1: ADD COOKIE DETECTION HELPER
+const OTP_VALIDITY_SECONDS = 180;
+
+// The password flow (and its /auth/check-mobile, /auth/set-password and
+// /login/password endpoints) is built and working, but its tab was commented
+// out before this redesign — so it stays hidden. Flip this to surface it.
+const PASSWORD_LOGIN_ENABLED = false;
+
+// Cookies back the refresh-token session; without them the user can sign in
+// but silently loses the session on reload, so we say so up front.
 function areCookiesEnabled() {
   try {
     document.cookie = "ggn_cookie_test=1";
@@ -15,38 +26,40 @@ function areCookiesEnabled() {
   }
 }
 
+const stepVariants = {
+  initial: { opacity: 0, x: 16 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -16 },
+};
+
 export default function LoginModal() {
   // Authentication method selection
   const [authMethod, setAuthMethod] = useState("otp"); // "otp" or "password"
-  
+
   // OTP flow states
   const [step, setStep] = useState("email"); // "email" or "otp"
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [maskedEmail, setMaskedEmail] = useState(null);
-  const [time, setTime] = useState(180);
+  const [time, setTime] = useState(OTP_VALIDITY_SECONDS);
 
   // Recovery email modal states
   const [showRecoveryEmailModal, setShowRecoveryEmailModal] = useState(false);
   const [recoveryEmail, setRecoveryEmail] = useState("");
-  
+
   // Password flow states
-  const [passwordStep, setPasswordStep] = useState("mobile"); // "mobile", "setPassword", or "login"
+  const [passwordStep, setPasswordStep] = useState("mobile"); // "mobile" | "setPassword" | "login"
   const [mobileNumber, setMobileNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   // Common states
   const [message, setMessage] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [buttonLoading, setButtonLoading] = useState(false);
-
-  // STEP 2: ADD STATE FOR COOKIE BANNER
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
   const [cookiesEnabled, setCookiesEnabled] = useState(true);
   const [showCookieBanner, setShowCookieBanner] = useState(false);
-  
+
   const navigate = useNavigate();
   const location = useLocation();
   const redirectTo = location.state?.from || "/";
@@ -62,15 +75,13 @@ export default function LoginModal() {
       const timer = setTimeout(() => setTime(time - 1), 1000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [authMethod, step, time]);
 
-  // STEP 3: DETECT COOKIES ON MOUNT
   useEffect(() => {
     const enabled = areCookiesEnabled();
     setCookiesEnabled(enabled);
-    if (!enabled) {
-      setShowCookieBanner(true);
-    }
+    if (!enabled) setShowCookieBanner(true);
   }, []);
 
   const formatTime = () => {
@@ -79,140 +90,125 @@ export default function LoginModal() {
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  // Clear message after 5 seconds
+  // Clear message after 6 seconds
   useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 5000);
-      return () => clearTimeout(timer);
-    }
+    if (!message) return undefined;
+    const timer = setTimeout(() => setMessage(null), 6000);
+    return () => clearTimeout(timer);
   }, [message]);
+
+  // Signing in refreshes the session, then hands the user wherever they were
+  // headed before being bounced to /login.
+  const completeLogin = useCallback(async () => {
+    try {
+      if (typeof fetchUser === "function") {
+        await fetchUser({ force: true });
+        await sleep(200);
+      }
+    } catch (err) {
+      console.warn("fetchUser after login failed:", err);
+    }
+    navigate(redirectTo);
+  }, [fetchUser, navigate, redirectTo]);
 
   // ============ OTP FLOW HANDLERS ============
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
-    setButtonLoading(true);
     setMessage(null);
-    
-    if (!email || !mobileNumber) {
-      setMessage({ text: "Please enter both email and mobile number", type: "error" });
-      setTimeout(() => setButtonLoading(false), 2000);
-      return;
-    }
 
+    // Validation reports against the specific field rather than a banner, and
+    // never spins the button — nothing was sent.
+    const errors = {};
+    if (!mobileNumber || mobileNumber.length !== 10) {
+      errors.mobileNumber = "Enter a valid 10-digit mobile number";
+    }
+    if (!email) errors.email = "Enter your email address";
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    setSubmitting(true);
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/login/request-otp`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email , mobileNumber }),
-          credentials: "include",
-        }
-      );
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/login/request-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, mobileNumber }),
+        credentials: "include",
+      });
       const data = await response.json();
-      
+
       if (response.ok) {
         setStep("otp");
-        setTime(180);
-        // Save maskedEmail if OTP was sent to previously registered email
-        if (data.sentToSavedEmail) {
-          setMaskedEmail(data.maskedEmail || null);
-          setMessage({
-            text: data.message || "OTP has been sent to your previously registered email.",
-            type: "success",
-          });
-        } else {
-          setMaskedEmail(null);
-          setMessage({
-            text: data.message || "OTP sent successfully",
-            type: "success",
-          });
-        }
+        setOtp("");
+        setTime(OTP_VALIDITY_SECONDS);
+        setMaskedEmail(data.sentToSavedEmail ? data.maskedEmail || null : null);
+        setMessage({
+          text:
+            data.message ||
+            (data.sentToSavedEmail
+              ? "OTP has been sent to your previously registered email."
+              : "OTP sent successfully"),
+          type: "success",
+        });
       } else {
         setMessage({ text: data.message || "Error sending OTP", type: "error" });
       }
     } catch (error) {
       setMessage({ text: "Error sending OTP", type: "error" });
     } finally {
-      setTimeout(() => setButtonLoading(false), 2000);
+      setSubmitting(false);
     }
   };
 
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
-    setButtonLoading(true);
     setMessage(null);
-    
-    if (!otp) {
-      setMessage({ text: "Please enter OTP", type: "error" });
-      setTimeout(() => setButtonLoading(false), 2000);
+
+    if (otp.length !== 6) {
+      setFieldErrors({ otp: "Enter all 6 digits" });
       return;
     }
-    
-    setLoading(true);
+    setFieldErrors({});
+
+    setSubmitting(true);
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/login/verify-otp`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, otp, mobileNumber }),
-          credentials: "include",
-        }
-      );
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/login/verify-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp, mobileNumber }),
+        credentials: "include",
+      });
       const data = await response.json();
-      
+
       if (response.ok) {
-        if (data.accessToken) {
-  localStorage.setItem("accessToken", data.accessToken);
-}
-        
-        setMessage({ text: "OTP Verified!", type: "success" });
-        
-        try {
-          if (typeof fetchUser === "function") {
-            await fetchUser({ force: true });
-            await sleep(400);
-          }
-        } catch (err) {
-          console.warn("fetchUser after login failed:", err);
-        }
-        
-        navigate(redirectTo);
+        if (data.accessToken) localStorage.setItem("accessToken", data.accessToken);
+        setMessage({ text: "OTP verified — signing you in…", type: "success" });
+        await completeLogin();
       } else {
         setMessage({ text: data.message || "OTP verification failed", type: "error" });
+        setSubmitting(false);
       }
     } catch (error) {
       setMessage({ text: "Error verifying OTP", type: "error" });
-    } finally {
-      setLoading(false);
-      setTimeout(() => setButtonLoading(false), 2000);
+      setSubmitting(false);
     }
   };
 
   const handleResendOtp = async () => {
-    setButtonLoading(true);
     setMessage(null);
-    
+    setSubmitting(true);
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/login/request-otp`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, mobileNumber }),
-          credentials: "include",
-        }
-      );
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/login/request-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, mobileNumber }),
+        credentials: "include",
+      });
       const data = await response.json();
-      
+
       if (response.ok) {
         setMaskedEmail(data.sentToSavedEmail ? data.maskedEmail || null : null);
-        setMessage({
-          text: data.message || "OTP resent successfully!",
-          type: "success",
-        });
-        setTime(180);
+        setMessage({ text: data.message || "OTP resent successfully!", type: "success" });
+        setTime(OTP_VALIDITY_SECONDS);
         setOtp("");
       } else {
         setMessage({ text: data.message || "Error resending OTP", type: "error" });
@@ -220,154 +216,152 @@ export default function LoginModal() {
     } catch (err) {
       setMessage({ text: "Error resending OTP", type: "error" });
     } finally {
-      setTimeout(() => setButtonLoading(false), 2000);
+      setSubmitting(false);
     }
   };
 
   // ============ PASSWORD FLOW HANDLERS ============
   const handleMobileCheck = async (e) => {
     e.preventDefault();
-    setButtonLoading(true);
     setMessage(null);
-    
+
     if (!mobileNumber || mobileNumber.length !== 10) {
-      setMessage({ text: "Please enter a valid 10-digit mobile number", type: "error" });
-      setTimeout(() => setButtonLoading(false), 2000);
+      setFieldErrors({ mobileNumber: "Enter a valid 10-digit mobile number" });
       return;
     }
+    setFieldErrors({});
 
+    setSubmitting(true);
     try {
-      // Check if user exists with this mobile number
-      const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/auth/check-mobile`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mobileNumber }),
-          credentials: "include",
-        }
-      );
-      
-      // If endpoint doesn't exist, we'll handle it client-side by attempting login
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/auth/check-mobile`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobileNumber }),
+        credentials: "include",
+      });
+
+      // If the endpoint isn't deployed, fall back to the set-password flow.
       if (response.status === 404) {
-        // Endpoint not found, assume new user or password not set
         setPasswordStep("setPassword");
       } else {
         const data = await response.json();
-        
-        if (data.passwordSet) {
-          setPasswordStep("login");
-        } else {
-          setPasswordStep("setPassword");
-        }
+        setPasswordStep(data.passwordSet ? "login" : "setPassword");
       }
     } catch (error) {
-      // If check fails, allow setting password (new user flow)
       setPasswordStep("setPassword");
     } finally {
-      setTimeout(() => setButtonLoading(false), 2000);
+      setSubmitting(false);
     }
   };
 
   const handleSetPassword = async (e) => {
     e.preventDefault();
-    setButtonLoading(true);
     setMessage(null);
-    
-    if (!password || password.length < 6) {
-      setMessage({ text: "Password must be at least 6 characters", type: "error" });
-      setTimeout(() => setButtonLoading(false), 2000);
-      return;
-    }
-    
-    if (password !== confirmPassword) {
-      setMessage({ text: "Passwords do not match", type: "error" });
-      setTimeout(() => setButtonLoading(false), 2000);
-      return;
-    }
 
+    const errors = {};
+    if (!password || password.length < 6) errors.password = "Password must be at least 6 characters";
+    if (password !== confirmPassword) errors.confirmPassword = "Passwords do not match";
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    setSubmitting(true);
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/auth/set-password`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mobileNumber, password }),
-          credentials: "include",
-        }
-      );
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/auth/set-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobileNumber, password }),
+        credentials: "include",
+      });
       const data = await response.json();
-      
+
       if (response.ok) {
-        setMessage({ text: "Password set successfully! Please login.", type: "success" });
+        setMessage({ text: "Password set successfully! Please log in.", type: "success" });
         setPassword("");
         setConfirmPassword("");
-        setTimeout(() => {
-          setPasswordStep("login");
-        }, 1500);
+        setTimeout(() => setPasswordStep("login"), 1200);
       } else {
         setMessage({ text: data.message || "Error setting password", type: "error" });
       }
     } catch (error) {
       setMessage({ text: "Error setting password", type: "error" });
     } finally {
-      setTimeout(() => setButtonLoading(false), 2000);
+      setSubmitting(false);
     }
   };
 
   const handlePasswordLogin = async (e) => {
     e.preventDefault();
-    setButtonLoading(true);
     setMessage(null);
-    
+
     if (!password) {
-      setMessage({ text: "Please enter your password", type: "error" });
-      setTimeout(() => setButtonLoading(false), 2000);
+      setFieldErrors({ password: "Enter your password" });
       return;
     }
+    setFieldErrors({});
 
-    setLoading(true);
+    setSubmitting(true);
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/login/password`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ mobileNumber, password }),
-          credentials: "include",
-        }
-      );
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/login/password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobileNumber, password }),
+        credentials: "include",
+      });
       const data = await response.json();
-      
+
       if (response.ok) {
-        setMessage({ text: "Login successful!", type: "success" });
-        if (data.accessToken) {
-          localStorage.setItem("accessToken", data.accessToken);
-        }
+        if (data.accessToken) localStorage.setItem("accessToken", data.accessToken);
 
         if (data.requireEmailSetup) {
           setShowRecoveryEmailModal(true);
+          setSubmitting(false);
           return;
         }
-        
-        try {
-          if (typeof fetchUser === "function") {
-            await fetchUser({ force: true });
-            await sleep(400);
-          }
-        } catch (err) {
-          console.warn("fetchUser after login failed:", err);
-        }
-        
-        navigate(redirectTo);
+
+        setMessage({ text: "Signing you in…", type: "success" });
+        await completeLogin();
       } else {
         setMessage({ text: data.message || "Login failed", type: "error" });
+        setSubmitting(false);
       }
     } catch (error) {
       setMessage({ text: "Error during login", type: "error" });
+      setSubmitting(false);
+    }
+  };
+
+  // Email here is optional — skipping must be as easy as saving.
+  const handleSaveRecoveryEmail = async () => {
+    if (!recoveryEmail) {
+      setShowRecoveryEmailModal(false);
+      await completeLogin();
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/auth/set-recovery-email`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
+        },
+        body: JSON.stringify({ email: recoveryEmail }),
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        setShowRecoveryEmailModal(false);
+        setRecoveryEmail("");
+        await completeLogin();
+      } else {
+        setMessage({ text: data.message || "Failed to save email", type: "error" });
+      }
+    } catch (err) {
+      setMessage({ text: "Error saving recovery email", type: "error" });
     } finally {
-      setLoading(false);
-      setTimeout(() => setButtonLoading(false), 2000);
+      setSubmitting(false);
     }
   };
 
@@ -375,8 +369,9 @@ export default function LoginModal() {
   const resetToEmailStep = () => {
     setStep("email");
     setOtp("");
-    setTime(180);
+    setTime(OTP_VALIDITY_SECONDS);
     setMessage(null);
+    setFieldErrors({});
     setMaskedEmail(null);
   };
 
@@ -385,15 +380,17 @@ export default function LoginModal() {
     setPassword("");
     setConfirmPassword("");
     setMessage(null);
+    setFieldErrors({});
   };
 
   const switchAuthMethod = (method) => {
     setAuthMethod(method);
     setMessage(null);
+    setFieldErrors({});
     if (method === "otp") {
       setStep("email");
       setOtp("");
-      setTime(180);
+      setTime(OTP_VALIDITY_SECONDS);
     } else {
       setPasswordStep("mobile");
       setPassword("");
@@ -401,1027 +398,354 @@ export default function LoginModal() {
     }
   };
 
-  // Loading spinner overlay
-  if (loading && (step === "email" || passwordStep === "mobile")) {
-    return (
-      <div style={{
-        position: "fixed",
-        inset: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        background: "rgba(0, 51, 102, 0.4)",
-        backdropFilter: "blur(8px)",
-        zIndex: 50,
-      }}>
-        <div style={{
-          border: "4px solid rgba(255,255,255,0.3)",
-          borderTop: "4px solid #00A79D",
-          borderRadius: "50%",
-          width: "50px",
-          height: "50px",
-          animation: "spin 1s linear infinite"
-        }} />
-      </div>
-    );
-  }
-
-  // Handler for saving recovery email (optional)
-  const handleSaveRecoveryEmail = async () => {
-    // Email is OPTIONAL — user may skip
-    if (!recoveryEmail) {
-      try {
-        if (typeof fetchUser === "function") {
-          await fetchUser({ force: true });
-          await sleep(300);
-        }
-      } catch (err) {
-        console.warn("fetchUser after password login failed:", err);
-      }
-      setShowRecoveryEmailModal(false);
-      navigate(redirectTo);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/auth/set-recovery-email`,
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
-          },
-          body: JSON.stringify({ email: recoveryEmail }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (response.ok) {
-        try {
-          if (typeof fetchUser === "function") {
-            await fetchUser({ force: true });
-            await sleep(300);
-          }
-        } catch (err) {
-          console.warn("fetchUser after saving recovery email failed:", err);
-        }
-
-        setShowRecoveryEmailModal(false);
-        setRecoveryEmail("");
-        navigate(redirectTo);
-      } else {
-        setMessage({ text: data.message || "Failed to save email", type: "error" });
-      }
-    } catch (err) {
-      setMessage({ text: "Error saving recovery email", type: "error" });
-    }
-  };
+  const otpExpired = time === 0;
 
   return (
-    <div style={{
-      position: "fixed",
-      inset: 0,
-      background: "rgba(0, 51, 102, 0.4)",
-      backdropFilter: "blur(8px)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 50,
-    }}>
-      {buttonLoading && (
-        <div style={{
-          position: "fixed",
-          inset: 0,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "rgba(255,255,255,0.7)",
-          zIndex: 100,
-        }}>
-          <div style={{
-            width: "60px",
-            height: "60px",
-            border: "6px solid #f3f4f6",
-            borderTop: "6px solid #003366",
-            borderRadius: "50%",
-            animation: "spin 1s linear infinite",
-          }} />
-        </div>
-      )}
-      
-      <div style={{
-        background: "#F4F7F9",
-        borderRadius: "16px",
-        padding: "40px",
-        width: "90%",
-        maxWidth: "420px",
-        boxShadow: "0 20px 60px rgba(0, 51, 102, 0.3)",
-        position: "relative",
-        backdropFilter: "blur(2px)",
-        animation: "modalPop 0.4s ease",
-        maxHeight: "90vh",
-        overflowY: "auto",
-      }}>
-        {/* STEP 4: ADD COOKIE PROMPT UI (NON-BLOCKING) */}
+    <>
+      <AuthLayout
+        eyebrow="ggnHome"
+        heading="Find your next home in Gurgaon"
+        subheading="Sign in to save listings, track your enquiries and get recommendations matched to what you're looking for."
+        icon={<ShieldCheck size={30} color="#FFFFFF" />}
+        benefits={[
+          "Verified listings from owners and agents",
+          "Save properties and revisit them anytime",
+          "Sign in with a one-time code — no password to remember",
+        ]}
+        footer={
+          <Stack spacing={4}>
+            <Divider>
+              <Typography variant="caption">or</Typography>
+            </Divider>
+            <Stack direction="row" spacing={3} justifyContent="space-between" alignItems="center">
+              <Link component="button" type="button" variant="body2" underline="hover" onClick={() => navigate(redirectTo)} sx={{ color: "text.secondary" }}>
+                Continue browsing
+              </Link>
+              <Link component="button" type="button" variant="body2" underline="hover" onClick={() => navigate("/agent/login")} sx={{ color: "secondary.main", fontWeight: 600 }}>
+                I'm an agent
+              </Link>
+            </Stack>
+          </Stack>
+        }
+      >
         {showCookieBanner && !cookiesEnabled && (
-          <div
-            style={{
-              background: "#FFF7ED",
-              border: "1px solid #FDBA74",
-              color: "#9A3412",
-              padding: "12px",
-              borderRadius: "8px",
-              fontSize: "13px",
-              fontWeight: 600,
-              marginBottom: "16px",
-              textAlign: "center",
+          <AuthMessage
+            message={{
+              type: "warning",
+              text: "Cookies are disabled in your browser. You can still sign in, but you'll be signed out when you reload — allow cookies for this site to stay signed in.",
             }}
-          >
-            Cookies are disabled in your browser.  
-            To stay logged in securely, please allow cookies for this site.
-            <div style={{ marginTop: "8px", display: "flex", gap: "8px", justifyContent: "center" }}>
-              <button
-                type="button"
-                onClick={() => setShowCookieBanner(false)}
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  color: "#9A3412",
-                  textDecoration: "underline",
-                  cursor: "pointer",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                }}
-              >
-                Continue anyway
-              </button>
-              <a
-                href="https://support.google.com/chrome/answer/95647"
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  color: "#9A3412",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  textDecoration: "underline",
-                }}
-              >
-                How to enable cookies
-              </a>
-            </div>
-          </div>
-        )}
-        {/* User/Agent Toggle */}
-        <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
-          <button
-            type="button"
-            onMouseEnter={(e) => {
-              e.target.style.transform = "scale(1.03)";
-              e.target.style.boxShadow = "0 6px 18px rgba(0,167,157,0.45)";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.transform = "scale(1)";
-              e.target.style.boxShadow = "0 4px 12px rgba(0,167,157,0.35)";
-            }}
-            style={{
-              flex: 1,
-              padding: "12px",
-              borderRadius: "10px",
-              border: "2px solid #00A79D",
-              background: "linear-gradient(135deg, #00A79D, #22D3EE)",
-              color: "#FFFFFF",
-              fontSize: "15px",
-              fontWeight: "700",
-              cursor: "pointer",
-              transition: "all 0.25s ease",
-              boxShadow: "0 4px 12px rgba(0,167,157,0.35)",
-            }}
-          >
-            User Login
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate("/agent/login")}
-            onMouseEnter={(e) => {
-              e.target.style.background = "#E6FFFB";
-              e.target.style.boxShadow = "0 6px 16px rgba(0,167,157,0.25)";
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.background = "transparent";
-              e.target.style.boxShadow = "none";
-            }}
-            style={{
-              flex: 1,
-              padding: "12px",
-              borderRadius: "10px",
-              border: "2px dashed #00A79D",
-              background: "transparent",
-              color: "#00A79D",
-              fontSize: "15px",
-              fontWeight: "700",
-              cursor: "pointer",
-              transition: "all 0.25s ease",
-            }}
-          >
-            Agent Login
-          </button>
-        </div>
-
-        {/* OTP/Password Toggle */}
-        <div style={{
-          display: "flex",
-          gap: "8px",
-          marginBottom: "24px",
-          background: "#E6F7F6",
-          padding: "4px",
-          borderRadius: "10px",
-        }}>
-          <button
-            type="button"
-            onClick={() => switchAuthMethod("otp")}
-            style={{
-              flex: 1,
-              padding: "10px",
-              borderRadius: "8px",
-              border: "none",
-              background: authMethod === "otp" ? "#00A79D" : "transparent",
-              color: authMethod === "otp" ? "#FFFFFF" : "#00A79D",
-              fontSize: "14px",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-            }}
-          >
-            Login with OTP
-          </button>
-          {/* <button
-            type="button"
-            onClick={() => switchAuthMethod("password")}
-            style={{
-              flex: 1,
-              padding: "10px",
-              borderRadius: "8px",
-              border: "none",
-              background: authMethod === "password" ? "#00A79D" : "transparent",
-              color: authMethod === "password" ? "#FFFFFF" : "#00A79D",
-              fontSize: "14px",
-              fontWeight: "600",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-            }}
-          >
-            Login with Password
-          </button> */}
-        </div>
-
-        {/* Message Display */}
-        {message && (
-          <div style={{
-            color: message.type === "success" ? "#16a34a" : "#dc2626",
-            background: message.type === "success" ? "#dcfce7" : "#fee2e2",
-            fontSize: "14px",
-            fontWeight: 600,
-            padding: "12px",
-            borderRadius: "8px",
-            marginBottom: "16px",
-            textAlign: "center",
-          }}>
-            {message.text}
-          </div>
+            onClose={() => setShowCookieBanner(false)}
+          />
         )}
 
-        {/* OTP FLOW */}
+        {PASSWORD_LOGIN_ENABLED && (
+          <AuthTabs
+            value={authMethod}
+            onChange={switchAuthMethod}
+            ariaLabel="Sign-in method"
+            options={[
+              { value: "otp", label: "One-time code" },
+              { value: "password", label: "Password" },
+            ]}
+          />
+        )}
+
+        <AuthMessage message={message} onClose={() => setMessage(null)} />
+
         <AnimatePresence mode="wait">
-        {authMethod === "otp" && (
-          <motion.div key="otp-flow" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.25, ease: "easeOut" }}>
-            {step === "email" ? (
-              <form onSubmit={handleEmailSubmit}>
-                <h2 style={{
-                  color: "#003366",
-                  fontSize: "28px",
-                  fontWeight: "700",
-                  marginBottom: "8px",
-                  textAlign: "center",
-                }}>
-                  Welcome Back
-                </h2>
-                <p style={{
-                  color: "#4A6A8A",
-                  fontSize: "14px",
-                  marginBottom: "24px",
-                  textAlign: "center",
-                }}>
-                  Enter your details to continue
-                </p>
+          {/* ------------------------------------------------- OTP FLOW -- */}
+          {authMethod === "otp" && step === "email" && (
+            <motion.form
+              key="otp-email"
+              onSubmit={handleEmailSubmit}
+              variants={stepVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.22, ease: "easeOut" }}
+            >
+              <Typography variant="h3" sx={{ color: "primary.main", mb: 1 }}>
+                Welcome back
+              </Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
+                We'll send a one-time code to your email to confirm it's you.
+              </Typography>
 
-                <input
-                  type="tel"
-                  placeholder="Enter your mobile number"
-                  value={mobileNumber}
-                  onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  required
-                  pattern="\d{10}"
-                  maxLength={10}
-                  style={{
-                    width: "100%",
-                    padding: "14px 16px",
-                    border: "2px solid #00A79D",
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    marginBottom: "16px",
-                    outline: "none",
-                    background: "#FFFFFF",
-                    color: "#333333",
-                    transition: "border 0.3s",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#22D3EE")}
-                  onBlur={(e) => (e.target.style.borderColor = "#00A79D")}
-                />
+              <AuthField
+                label="Mobile number"
+                icon={Phone}
+                type="tel"
+                autoComplete="tel"
+                value={mobileNumber}
+                onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                error={fieldErrors.mobileNumber}
+                helperText="10 digits, no country code"
+                inputProps={{ inputMode: "numeric", maxLength: 10 }}
+              />
 
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "14px 16px",
-                    border: "2px solid #00A79D",
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    marginBottom: "24px",
-                    outline: "none",
-                    background: "#FFFFFF",
-                    color: "#333333",
-                    transition: "border 0.3s",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#22D3EE")}
-                  onBlur={(e) => (e.target.style.borderColor = "#00A79D")}
-                />
+              <AuthField
+                label="Email address"
+                icon={Mail}
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                error={fieldErrors.email}
+                helperText="Your code is sent here"
+              />
 
-                <button
-                  type="submit"
-                  disabled={buttonLoading}
-                  style={{
-                    width: "100%",
-                    padding: "14px",
-                    background: "linear-gradient(135deg, #00A79D, #22D3EE)",
-                    color: "#FFFFFF",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    cursor: buttonLoading ? "not-allowed" : "pointer",
-                    transition: "transform 0.2s, box-shadow 0.2s",
-                    boxShadow: "0 4px 12px rgba(0, 167, 157, 0.3)",
-                    letterSpacing: "0.5px",
-                    opacity: buttonLoading ? 0.6 : 1,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!buttonLoading) {
-                      e.target.style.transform = "translateY(-2px)";
-                      e.target.style.boxShadow = "0 6px 20px rgba(0, 167, 157, 0.4)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = "translateY(0)";
-                    e.target.style.boxShadow = "0 4px 12px rgba(0, 167, 157, 0.3)";
-                  }}
+              <AuthButton loading={submitting} loadingText="Sending code…" sx={{ mt: 3 }}>
+                Send one-time code
+              </AuthButton>
+            </motion.form>
+          )}
+
+          {authMethod === "otp" && step === "otp" && (
+            <motion.form
+              key="otp-verify"
+              onSubmit={handleOtpSubmit}
+              variants={stepVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.22, ease: "easeOut" }}
+            >
+              <Typography variant="h3" sx={{ color: "primary.main", mb: 1 }}>
+                Enter your code
+              </Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
+                We sent a 6-digit code to <Box component="strong" sx={{ color: "text.primary" }}>{maskedEmail || email}</Box>
+              </Typography>
+
+              <OtpInput
+                value={otp}
+                onChange={(next) => {
+                  setOtp(next);
+                  if (fieldErrors.otp) setFieldErrors({});
+                }}
+                error={fieldErrors.otp}
+                disabled={submitting}
+              />
+
+              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 5, mb: 5 }}>
+                <Typography
+                  variant="body2"
+                  sx={{ color: otpExpired ? "error.main" : time < 60 ? "warning.main" : "text.secondary", fontWeight: 600 }}
                 >
-                  {buttonLoading ? "Sending..." : "Send OTP"}
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleOtpSubmit}>
-                <h2 style={{
-                  color: "#003366",
-                  fontSize: "28px",
-                  fontWeight: "700",
-                  marginBottom: "8px",
-                  textAlign: "center",
-                }}>
-                  Verify OTP
-                </h2>
-                <p style={{
-                  color: "#4A6A8A",
-                  fontSize: "14px",
-                  marginBottom: "24px",
-                  textAlign: "center",
-                }}>
-                  {maskedEmail
-                    ? `Code sent to ${maskedEmail}`
-                    : `Code sent to ${email}`}
-                </p>
-
-                <input
-                  type="text"
-                  placeholder="Enter 6-digit OTP"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "14px 16px",
-                    border: "2px solid #00A79D",
-                    borderRadius: "8px",
-                    fontSize: "20px",
-                    marginBottom: "16px",
-                    outline: "none",
-                    background: "#FFFFFF",
-                    color: "#333333",
-                    letterSpacing: "8px",
-                    textAlign: "center",
-                    fontWeight: "600",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#22D3EE")}
-                  onBlur={(e) => (e.target.style.borderColor = "#00A79D")}
-                />
-
-                <div style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: "24px",
-                }}>
-                  <span style={{
-                    color: time < 60 ? "#ef4444" : "#4A6A8A",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                  }}>
-                    {formatTime()}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={handleResendOtp}
-                    disabled={buttonLoading}
-                    style={{
-                      color: "#00A79D",
-                      fontSize: "14px",
-                      fontWeight: "600",
-                      background: "none",
-                      border: "none",
-                      cursor: buttonLoading ? "not-allowed" : "pointer",
-                      textDecoration: "underline",
-                      opacity: buttonLoading ? 0.6 : 1,
-                    }}
-                  >
-                    {buttonLoading ? "Resending..." : "Resend OTP"}
-                  </button>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={time === 0 || loading || buttonLoading}
-                  style={{
-                    width: "100%",
-                    padding: "14px",
-                    background: time === 0 ? "#4A6A8A" : "linear-gradient(135deg, #00A79D, #22D3EE)",
-                    color: "#FFFFFF",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    cursor: time === 0 ? "not-allowed" : "pointer",
-                    transition: "transform 0.2s, box-shadow 0.2s",
-                    boxShadow: "0 4px 12px rgba(0, 167, 157, 0.3)",
-                    opacity: time === 0 ? 0.6 : 1,
-                    letterSpacing: "0.5px",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (time !== 0 && !buttonLoading) {
-                      e.target.style.transform = "translateY(-2px)";
-                      e.target.style.boxShadow = "0 6px 20px rgba(0, 167, 157, 0.4)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = "translateY(0)";
-                    e.target.style.boxShadow = "0 4px 12px rgba(0, 167, 157, 0.3)";
-                  }}
-                >
-                  {buttonLoading ? "Verifying..." : (loading ? "Processing..." : "Verify & Continue")}
-                </button>
-
-                <button
+                  {otpExpired ? "Code expired" : `Expires in ${formatTime()}`}
+                </Typography>
+                <Link
+                  component="button"
                   type="button"
-                  onClick={resetToEmailStep}
-                  style={{
-                    width: "100%",
-                    marginTop: "12px",
-                    padding: "12px",
-                    background: "transparent",
-                    color: "#4A6A8A",
-                    border: "2px solid #4A6A8A",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                  }}
+                  variant="body2"
+                  underline="hover"
+                  onClick={handleResendOtp}
+                  disabled={submitting}
+                  sx={{ color: "secondary.main", fontWeight: 600 }}
                 >
-                  Back to Email
-                </button>
-              </form>
-            )}
-          </motion.div>
-        )}
+                  Resend code
+                </Link>
+              </Stack>
 
-        {/* PASSWORD FLOW */}
-        {authMethod === "password" && (
-          <motion.div key="password-flow" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.25, ease: "easeOut" }}>
-            {passwordStep === "mobile" && (
-              <form onSubmit={handleMobileCheck}>
-                <h2 style={{
-                  color: "#003366",
-                  fontSize: "28px",
-                  fontWeight: "700",
-                  marginBottom: "8px",
-                  textAlign: "center",
-                }}>
-                  Welcome Back
-                </h2>
-                <p style={{
-                  color: "#4A6A8A",
-                  fontSize: "14px",
-                  marginBottom: "24px",
-                  textAlign: "center",
-                }}>
-                  Enter your mobile number to continue
-                </p>
+              <AuthButton loading={submitting} loadingText="Verifying…" disabled={otpExpired}>
+                Verify and continue
+              </AuthButton>
 
-                <input
-                  type="tel"
-                  placeholder="Enter your mobile number"
-                  value={mobileNumber}
-                  onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  required
-                  pattern="\d{10}"
-                  maxLength={10}
-                  style={{
-                    width: "100%",
-                    padding: "14px 16px",
-                    border: "2px solid #00A79D",
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    marginBottom: "24px",
-                    outline: "none",
-                    background: "#FFFFFF",
-                    color: "#333333",
-                    transition: "border 0.3s",
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#22D3EE")}
-                  onBlur={(e) => (e.target.style.borderColor = "#00A79D")}
-                />
+              <Button
+                fullWidth
+                variant="text"
+                startIcon={<ArrowLeft size={15} />}
+                onClick={resetToEmailStep}
+                sx={{ mt: 3, color: "text.secondary" }}
+              >
+                Use a different email
+              </Button>
+            </motion.form>
+          )}
 
-                <button
-                  type="submit"
-                  disabled={buttonLoading}
-                  style={{
-                    width: "100%",
-                    padding: "14px",
-                    background: "linear-gradient(135deg, #00A79D, #22D3EE)",
-                    color: "#FFFFFF",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    cursor: buttonLoading ? "not-allowed" : "pointer",
-                    transition: "transform 0.2s, box-shadow 0.2s",
-                    boxShadow: "0 4px 12px rgba(0, 167, 157, 0.3)",
-                    letterSpacing: "0.5px",
-                    opacity: buttonLoading ? 0.6 : 1,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!buttonLoading) {
-                      e.target.style.transform = "translateY(-2px)";
-                      e.target.style.boxShadow = "0 6px 20px rgba(0, 167, 157, 0.4)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = "translateY(0)";
-                    e.target.style.boxShadow = "0 4px 12px rgba(0, 167, 157, 0.3)";
-                  }}
-                >
-                  {buttonLoading ? "Checking..." : "Continue"}
-                </button>
-              </form>
-            )}
+          {/* -------------------------------------------- PASSWORD FLOW -- */}
+          {authMethod === "password" && passwordStep === "mobile" && (
+            <motion.form
+              key="password-mobile"
+              onSubmit={handleMobileCheck}
+              variants={stepVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.22, ease: "easeOut" }}
+            >
+              <Typography variant="h3" sx={{ color: "primary.main", mb: 1 }}>
+                Welcome back
+              </Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
+                Enter your mobile number to continue.
+              </Typography>
 
-            {passwordStep === "setPassword" && (
-              <form onSubmit={handleSetPassword}>
-                <h2 style={{
-                  color: "#003366",
-                  fontSize: "28px",
-                  fontWeight: "700",
-                  marginBottom: "8px",
-                  textAlign: "center",
-                }}>
-                  Set Password
-                </h2>
-                <p style={{
-                  color: "#4A6A8A",
-                  fontSize: "14px",
-                  marginBottom: "24px",
-                  textAlign: "center",
-                }}>
-                  Create a password for {mobileNumber}
-                </p>
+              <AuthField
+                label="Mobile number"
+                icon={Phone}
+                type="tel"
+                autoComplete="tel"
+                value={mobileNumber}
+                onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                error={fieldErrors.mobileNumber}
+                helperText="10 digits, no country code"
+                inputProps={{ inputMode: "numeric", maxLength: 10 }}
+              />
 
-                <div style={{ position: "relative", marginBottom: "16px" }}>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter password (min 6 characters)"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    style={{
-                      width: "100%",
-                      padding: "14px 48px 14px 16px",
-                      border: "2px solid #00A79D",
-                      borderRadius: "8px",
-                      fontSize: "16px",
-                      outline: "none",
-                      background: "#FFFFFF",
-                      color: "#333333",
-                      transition: "border 0.3s",
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = "#22D3EE")}
-                    onBlur={(e) => (e.target.style.borderColor = "#00A79D")}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{
-                      position: "absolute",
-                      right: "12px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: "#4A6A8A",
-                      fontSize: "20px",
-                    }}
-                  >
-                    {showPassword ? "👁️" : "👁️‍🗨️"}
-                  </button>
-                </div>
+              <AuthButton loading={submitting} loadingText="Checking…" sx={{ mt: 3 }}>
+                Continue
+              </AuthButton>
+            </motion.form>
+          )}
 
-                <div style={{ position: "relative", marginBottom: "24px" }}>
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    style={{
-                      width: "100%",
-                      padding: "14px 48px 14px 16px",
-                      border: "2px solid #00A79D",
-                      borderRadius: "8px",
-                      fontSize: "16px",
-                      outline: "none",
-                      background: "#FFFFFF",
-                      color: "#333333",
-                      transition: "border 0.3s",
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = "#22D3EE")}
-                    onBlur={(e) => (e.target.style.borderColor = "#00A79D")}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    style={{
-                      position: "absolute",
-                      right: "12px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: "#4A6A8A",
-                      fontSize: "20px",
-                    }}
-                  >
-                    {showConfirmPassword ? "👁️" : "👁️‍🗨️"}
-                  </button>
-                </div>
+          {authMethod === "password" && passwordStep === "setPassword" && (
+            <motion.form
+              key="password-set"
+              onSubmit={handleSetPassword}
+              variants={stepVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.22, ease: "easeOut" }}
+            >
+              <Typography variant="h3" sx={{ color: "primary.main", mb: 1 }}>
+                Create a password
+              </Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
+                For {mobileNumber}
+              </Typography>
 
-                <button
-                  type="submit"
-                  disabled={buttonLoading}
-                  style={{
-                    width: "100%",
-                    padding: "14px",
-                    background: "linear-gradient(135deg, #00A79D, #22D3EE)",
-                    color: "#FFFFFF",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    cursor: buttonLoading ? "not-allowed" : "pointer",
-                    transition: "transform 0.2s, box-shadow 0.2s",
-                    boxShadow: "0 4px 12px rgba(0, 167, 157, 0.3)",
-                    letterSpacing: "0.5px",
-                    opacity: buttonLoading ? 0.6 : 1,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!buttonLoading) {
-                      e.target.style.transform = "translateY(-2px)";
-                      e.target.style.boxShadow = "0 6px 20px rgba(0, 167, 157, 0.4)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = "translateY(0)";
-                    e.target.style.boxShadow = "0 4px 12px rgba(0, 167, 157, 0.3)";
-                  }}
-                >
-                  {buttonLoading ? "Setting..." : "Set Password"}
-                </button>
+              <AuthField
+                label="Password"
+                icon={KeyRound}
+                type="password"
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                error={fieldErrors.password}
+                helperText="At least 6 characters"
+              />
 
-                <button
-                  type="button"
-                  onClick={resetToMobileStep}
-                  style={{
-                    width: "100%",
-                    marginTop: "12px",
-                    padding: "12px",
-                    background: "transparent",
-                    color: "#4A6A8A",
-                    border: "2px solid #4A6A8A",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                  }}
-                >
-                  Back to Mobile
-                </button>
-              </form>
-            )}
+              <AuthField
+                label="Confirm password"
+                icon={KeyRound}
+                type="password"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                error={fieldErrors.confirmPassword}
+              />
 
-            {passwordStep === "login" && (
-              <form onSubmit={handlePasswordLogin}>
-                <h2 style={{
-                  color: "#003366",
-                  fontSize: "28px",
-                  fontWeight: "700",
-                  marginBottom: "8px",
-                  textAlign: "center",
-                }}>
-                  Welcome Back
-                </h2>
-                <p style={{
-                  color: "#4A6A8A",
-                  fontSize: "14px",
-                  marginBottom: "24px",
-                  textAlign: "center",
-                }}>
-                  Enter password for {mobileNumber}
-                </p>
+              <AuthButton loading={submitting} loadingText="Saving…" sx={{ mt: 3 }}>
+                Set password
+              </AuthButton>
 
-                <div style={{ position: "relative", marginBottom: "24px" }}>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    style={{
-                      width: "100%",
-                      padding: "14px 48px 14px 16px",
-                      border: "2px solid #00A79D",
-                      borderRadius: "8px",
-                      fontSize: "16px",
-                      outline: "none",
-                      background: "#FFFFFF",
-                      color: "#333333",
-                      transition: "border 0.3s",
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = "#22D3EE")}
-                    onBlur={(e) => (e.target.style.borderColor = "#00A79D")}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{
-                      position: "absolute",
-                      right: "12px",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      color: "#4A6A8A",
-                      fontSize: "20px",
-                    }}
-                  >
-                    {showPassword ? "👁️" : "👁️‍🗨️"}
-                  </button>
-                </div>
+              <Button
+                fullWidth
+                variant="text"
+                startIcon={<ArrowLeft size={15} />}
+                onClick={resetToMobileStep}
+                sx={{ mt: 3, color: "text.secondary" }}
+              >
+                Change mobile number
+              </Button>
+            </motion.form>
+          )}
 
-                <button
-                  type="submit"
-                  disabled={buttonLoading || loading}
-                  style={{
-                    width: "100%",
-                    padding: "14px",
-                    background: "linear-gradient(135deg, #00A79D, #22D3EE)",
-                    color: "#FFFFFF",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "16px",
-                    fontWeight: "600",
-                    cursor: (buttonLoading || loading) ? "not-allowed" : "pointer",
-                    transition: "transform 0.2s, box-shadow 0.2s",
-                    boxShadow: "0 4px 12px rgba(0, 167, 157, 0.3)",
-                    letterSpacing: "0.5px",
-                    opacity: (buttonLoading || loading) ? 0.6 : 1,
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!buttonLoading && !loading) {
-                      e.target.style.transform = "translateY(-2px)";
-                      e.target.style.boxShadow = "0 6px 20px rgba(0, 167, 157, 0.4)";
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = "translateY(0)";
-                    e.target.style.boxShadow = "0 4px 12px rgba(0, 167, 157, 0.3)";
-                  }}
-                >
-                  {buttonLoading ? "Logging in..." : (loading ? "Processing..." : "Login")}
-                </button>
+          {authMethod === "password" && passwordStep === "login" && (
+            <motion.form
+              key="password-login"
+              onSubmit={handlePasswordLogin}
+              variants={stepVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.22, ease: "easeOut" }}
+            >
+              <Typography variant="h3" sx={{ color: "primary.main", mb: 1 }}>
+                Welcome back
+              </Typography>
+              <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
+                Enter the password for {mobileNumber}
+              </Typography>
 
-                <button
-                  type="button"
-                  onClick={resetToMobileStep}
-                  style={{
-                    width: "100%",
-                    marginTop: "12px",
-                    padding: "12px",
-                    background: "transparent",
-                    color: "#4A6A8A",
-                    border: "2px solid #4A6A8A",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    cursor: "pointer",
-                  }}
-                >
-                  Change Mobile Number
-                </button>
-              </form>
-            )}
-          </motion.div>
-        )}
+              <AuthField
+                label="Password"
+                icon={KeyRound}
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                error={fieldErrors.password}
+              />
+
+              <AuthButton loading={submitting} loadingText="Signing in…" sx={{ mt: 3 }}>
+                Sign in
+              </AuthButton>
+
+              <Button
+                fullWidth
+                variant="text"
+                startIcon={<ArrowLeft size={15} />}
+                onClick={resetToMobileStep}
+                sx={{ mt: 3, color: "text.secondary" }}
+              >
+                Change mobile number
+              </Button>
+            </motion.form>
+          )}
         </AnimatePresence>
+      </AuthLayout>
 
-        {/* Bottom Navigation Links */}
-        <div style={{
-          position: "absolute",
-          bottom: "12px",
-          left: "16px",
-          right: "16px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          fontSize: "12px",
-          fontWeight: "600",
-        }}>
-          <span
-            onClick={() => navigate(redirectTo)}
-            style={{
-              color: "#4A6A8A",
-              cursor: "pointer",
-              textDecoration: "underline",
-            }}
+      {/* Recovery email — optional, so "Skip" is a peer of "Save". */}
+      <Dialog
+        open={showRecoveryEmailModal}
+        onClose={() => setShowRecoveryEmailModal(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogContent sx={{ p: 8 }}>
+          <Typography variant="h3" sx={{ color: "primary.main", mb: 2 }}>
+            Add a recovery email
+          </Typography>
+          <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
+            Optional. Adding one lets you sign in with a one-time code if you
+            ever forget your password.
+          </Typography>
+
+          <AuthField
+            label="Email address"
+            icon={Mail}
+            type="email"
+            autoComplete="email"
+            value={recoveryEmail}
+            onChange={(e) => setRecoveryEmail(e.target.value)}
+          />
+
+          <AuthButton
+            type="button"
+            loading={submitting}
+            loadingText="Saving…"
+            onClick={handleSaveRecoveryEmail}
+            sx={{ mt: 3 }}
           >
-            Go to Dashboard
-          </span>
+            Save and continue
+          </AuthButton>
 
-          <span
-            onClick={() => navigate("/agent/login")}
-            style={{
-              color: "#00A79D",
-              cursor: "pointer",
-              textDecoration: "underline",
+          <Button
+            fullWidth
+            variant="text"
+            onClick={async () => {
+              setShowRecoveryEmailModal(false);
+              await completeLogin();
             }}
+            sx={{ mt: 3, color: "text.secondary" }}
           >
-            Want to become an Agent? Login here
-          </span>
-        </div>
-      </div>
-
-      {showRecoveryEmailModal && (
-        <div style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,0.5)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          zIndex: 200,
-        }}>
-          <div style={{
-            background: "#FFFFFF",
-            padding: "32px",
-            borderRadius: "16px",
-            width: "90%",
-            maxWidth: "420px",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
-            textAlign: "center",
-          }}>
-            <h2 style={{ color: "#003366", marginBottom: "12px" }}>
-              Add Recovery Email
-            </h2>
-            <p style={{ color: "#4A6A8A", fontSize: "14px", marginBottom: "20px" }}>
-              Enter a recovery email (optional) for future login with OTP.
-            </p>
-
-            <input
-              type="email"
-              value={recoveryEmail}
-              onChange={(e) => setRecoveryEmail(e.target.value)}
-              placeholder="Enter recovery email"
-              style={{
-                width: "100%",
-                padding: "14px",
-                borderRadius: "8px",
-                border: "2px solid #00A79D",
-                marginBottom: "20px",
-                fontSize: "16px",
-              }}
-            />
-
-            <button
-              onClick={handleSaveRecoveryEmail}
-              style={{
-                width: "100%",
-                padding: "14px",
-                background: "linear-gradient(135deg, #00A79D, #22D3EE)",
-                color: "#fff",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "16px",
-                fontWeight: "600",
-                cursor: "pointer",
-              }}
-            >
-              Save & Continue
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  if (typeof fetchUser === "function") {
-                    await fetchUser({ force: true });
-                    await sleep(300);
-                  }
-                } catch (err) {
-                  console.warn("fetchUser after skip failed:", err);
-                }
-                setShowRecoveryEmailModal(false);
-                navigate(redirectTo);
-              }}
-              style={{
-                width: "100%",
-                marginTop: "12px",
-                padding: "12px",
-                background: "transparent",
-                color: "#4A6A8A",
-                border: "2px solid #4A6A8A",
-                borderRadius: "8px",
-                fontSize: "14px",
-                fontWeight: "600",
-                cursor: "pointer",
-              }}
-            >
-              Skip for now
-            </button>
-          </div>
-        </div>
-      )}
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        @keyframes modalPop {
-          0% {
-            transform: scale(0.92) translateY(20px);
-            opacity: 0;
-          }
-          100% {
-            transform: scale(1) translateY(0);
-            opacity: 1;
-          }
-        }
-      `}</style>
-    </div>
+            Skip for now
+          </Button>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
