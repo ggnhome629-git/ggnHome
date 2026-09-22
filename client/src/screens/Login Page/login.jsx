@@ -42,6 +42,9 @@ export default function LoginModal() {
   const [otp, setOtp] = useState("");
   const [maskedEmail, setMaskedEmail] = useState(null);
   const [time, setTime] = useState(OTP_VALIDITY_SECONDS);
+  // Set once the server tells us this number has no account yet, which turns
+  // the form into a sign-up.
+  const [needsEmail, setNeedsEmail] = useState(false);
 
   // Recovery email modal states
   const [showRecoveryEmailModal, setShowRecoveryEmailModal] = useState(false);
@@ -122,7 +125,12 @@ export default function LoginModal() {
     if (!mobileNumber || mobileNumber.length !== 10) {
       errors.mobileNumber = "Enter a valid 10-digit mobile number";
     }
-    if (!email) errors.email = "Enter your email address";
+    // Email is only required for a number we've never seen. The server is the
+    // one that knows, so we ask first and collect the address only if it says
+    // so — a returning user shouldn't have to retype it, and typing a
+    // different address than the one on file just sends the code there
+    // instead.
+    if (needsEmail && !email) errors.email = "Enter your email address";
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
@@ -131,7 +139,7 @@ export default function LoginModal() {
       const response = await fetch(`${process.env.REACT_APP_Base_API}/login/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, mobileNumber }),
+        body: JSON.stringify(email ? { email, mobileNumber } : { mobileNumber }),
         credentials: "include",
       });
       const data = await response.json();
@@ -149,9 +157,32 @@ export default function LoginModal() {
               : "OTP sent successfully"),
           type: "success",
         });
-      } else {
-        setMessage({ text: data.message || "Error sending OTP", type: "error" });
+        return;
       }
+
+      // First time for this number: this is the sign-up moment, so ask for an
+      // email rather than showing the raw server error.
+      if (response.status === 400 && !email) {
+        // No error state on the field itself — they haven't got anything
+        // wrong, they've just not been asked for this yet. The heading and
+        // helper text carry the explanation; an error only appears if they
+        // then submit it empty.
+        setNeedsEmail(true);
+        setFieldErrors({});
+        return;
+      }
+
+      // The account predates OTP login and has no email on file, so there's
+      // nowhere to send a code.
+      if (response.status === 403) {
+        setMessage({
+          text: "This number is registered without an email, so we can't send a code. Please contact support to add one.",
+          type: "error",
+        });
+        return;
+      }
+
+      setMessage({ text: data.message || "Error sending OTP", type: "error" });
     } catch (error) {
       setMessage({ text: "Error sending OTP", type: "error" });
     } finally {
@@ -405,12 +436,13 @@ export default function LoginModal() {
       <AuthLayout
         eyebrow="ggnHome"
         heading="Find your next home in Gurgaon"
-        subheading="Sign in to save listings, track your enquiries and get recommendations matched to what you're looking for."
+        subheading="Sign in or create a free account to save listings, track your enquiries and get recommendations matched to what you're looking for."
         icon={<ShieldCheck size={30} color="#FFFFFF" />}
         benefits={[
+          "Free to join — takes under a minute",
           "Verified listings from owners and agents",
           "Save properties and revisit them anytime",
-          "Sign in with a one-time code — no password to remember",
+          "No password to remember — just a one-time code",
         ]}
         footer={
           <Stack spacing={4}>
@@ -465,10 +497,12 @@ export default function LoginModal() {
               transition={{ duration: 0.22, ease: "easeOut" }}
             >
               <Typography variant="h3" sx={{ color: "primary.main", mb: 1 }}>
-                Welcome back
+                {needsEmail ? "Create your account" : "Sign in or sign up"}
               </Typography>
               <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
-                We'll send a one-time code to your email to confirm it's you.
+                {needsEmail
+                  ? "This number is new here. Add your email and we'll set your account up — no password needed."
+                  : "Enter your mobile number and we'll send you a one-time code. New here? This creates your account."}
               </Typography>
 
               <AuthField
@@ -477,25 +511,33 @@ export default function LoginModal() {
                 type="tel"
                 autoComplete="tel"
                 value={mobileNumber}
-                onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                onChange={(e) => {
+                  // Changing the number invalidates what the server told us
+                  // about the previous one.
+                  setNeedsEmail(false);
+                  setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10));
+                }}
                 error={fieldErrors.mobileNumber}
                 helperText="10 digits, no country code"
                 inputProps={{ inputMode: "numeric", maxLength: 10 }}
               />
 
-              <AuthField
-                label="Email address"
-                icon={Mail}
-                type="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                error={fieldErrors.email}
-                helperText="Your code is sent here"
-              />
+              {needsEmail && (
+                <AuthField
+                  label="Email address"
+                  icon={Mail}
+                  type="email"
+                  autoComplete="email"
+                  autoFocus
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  error={fieldErrors.email}
+                  helperText="We'll send your code here"
+                />
+              )}
 
               <AuthButton loading={submitting} loadingText="Sending code…" sx={{ mt: 3 }}>
-                Send one-time code
+                {needsEmail ? "Create account & send code" : "Continue"}
               </AuthButton>
             </motion.form>
           )}
@@ -558,7 +600,7 @@ export default function LoginModal() {
                 onClick={resetToEmailStep}
                 sx={{ mt: 3, color: "text.secondary" }}
               >
-                Use a different email
+                Use a different number
               </Button>
             </motion.form>
           )}
