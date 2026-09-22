@@ -169,6 +169,15 @@ export default function AuthLayout({
             sx={{
               flex: { md: `0 1 ${cardWidth}px` },
               width: "100%",
+              // Below md the card is the only column, and a tablet's container
+              // is wide enough that an unconstrained card stretches the fields
+              // into a single uncomfortable line. Cap it at the same width it
+              // gets beside the brand panel and centre it.
+              maxWidth: cardWidth,
+              // alignSelf rather than `mx: auto`: the parent stretches its
+              // items below md, which wins over auto margins and pins the
+              // capped card to the left edge.
+              alignSelf: "center",
               backgroundColor: "background.paper",
               borderRadius: `${radii.xl}px`,
               boxShadow: elevationShadows[3],
