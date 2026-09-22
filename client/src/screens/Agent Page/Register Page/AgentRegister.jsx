@@ -1081,8 +1081,13 @@ const AgentRegistration = () => {
               <Box />
             )}
 
+            {/* Distinct keys matter: without them React reconciles these two
+                as one DOM node and only swaps `type`, so the click that
+                advances the step lands on a button that has already become
+                type="submit" — firing a real submit on every Continue. */}
             {currentStep < totalSteps ? (
               <AuthButton
+                key="step-next"
                 type="button"
                 onClick={goToNext}
                 sx={{ width: { xs: "100%", sm: "auto" }, px: 8 }}
@@ -1091,6 +1096,7 @@ const AgentRegistration = () => {
               </AuthButton>
             ) : (
               <AuthButton
+                key="step-submit"
                 loading={submitting}
                 loadingText="Submitting…"
                 sx={{ width: { xs: "100%", sm: "auto" }, px: 8 }}
