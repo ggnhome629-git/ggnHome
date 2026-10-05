@@ -7,18 +7,33 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.text.InputType
 import android.view.Gravity
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import java.net.HttpURLConnection
+import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : Activity() {
 
     private lateinit var urlInput: EditText
     private lateinit var keyInput: EditText
     private lateinit var statusView: TextView
+    private val handler = Handler(Looper.getMainLooper())
+    private var testResult = ""
+    private val ticker = object : Runnable {
+        override fun run() {
+            refreshStatus()
+            handler.postDelayed(this, 1000)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,7 +82,12 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        refreshStatus()
+        handler.post(ticker)
+    }
+
+    override fun onPause() {
+        handler.removeCallbacks(ticker)
+        super.onPause()
     }
 
     private fun saveAndStart() {
@@ -100,14 +120,53 @@ class MainActivity : Activity() {
     }
 
     private fun startGateway() {
-        startForegroundService(Intent(this, GatewayService::class.java))
+        testResult = "Testing connection…"
         refreshStatus()
+        testConnection()
+        try {
+            startForegroundService(Intent(this, GatewayService::class.java))
+        } catch (e: Exception) {
+            testResult = "Could not start service: ${e.message}"
+        }
+        refreshStatus()
+    }
+
+    // One-off request so a wrong URL / key is reported immediately.
+    private fun testConnection() {
+        val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val url = prefs.getString(KEY_URL, "") ?: ""
+        val key = prefs.getString(KEY_DEVICE, "") ?: ""
+        Thread {
+            val result = try {
+                val c = URL("$url/sms-gateway/next").openConnection() as HttpURLConnection
+                c.connectTimeout = 10000
+                c.readTimeout = 15000
+                c.setRequestProperty("Authorization", "Bearer $key")
+                val code = c.responseCode
+                c.disconnect()
+                when (code) {
+                    200, 204 -> "Connection OK ✔ (server reachable, key accepted)"
+                    401 -> "Server reachable but the device key is WRONG"
+                    404 -> "Server reachable but /sms-gateway/next not found (old server version?)"
+                    else -> "Server answered HTTP $code"
+                }
+            } catch (e: Exception) {
+                "Cannot reach server: ${e.javaClass.simpleName} ${e.message ?: ""}"
+            }
+            handler.post { testResult = result; refreshStatus() }
+        }.start()
     }
 
     private fun refreshStatus() {
         val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val on = prefs.getBoolean(KEY_ENABLED, false)
-        statusView.text = (if (on) "Running" else "Stopped") + "\nLast: " + prefs.getString(KEY_LAST, "—")
+        val beat = prefs.getLong(KEY_BEAT, 0L)
+        val beatText = if (beat == 0L) "never"
+        else SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(beat))
+        statusView.text = (if (on) "Service: ON" else "Service: OFF") +
+            "\nConnection test: " + (if (testResult.isEmpty()) "—" else testResult) +
+            "\nLast server check: " + beatText +
+            "\nLast event: " + prefs.getString(KEY_LAST, "—")
     }
 
     companion object {
@@ -116,5 +175,6 @@ class MainActivity : Activity() {
         const val KEY_DEVICE = "device_key"
         const val KEY_ENABLED = "enabled"
         const val KEY_LAST = "last"
+        const val KEY_BEAT = "beat"
     }
 }

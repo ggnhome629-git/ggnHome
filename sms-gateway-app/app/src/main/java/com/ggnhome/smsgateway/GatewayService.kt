@@ -71,6 +71,9 @@ class GatewayService : Service() {
             try {
                 val next = request("GET", "$base/sms-gateway/next", key, null)
                 failures = 0
+                if (next.first == 200 || next.first == 204) {
+                    prefs.edit().putLong(MainActivity.KEY_BEAT, System.currentTimeMillis()).apply()
+                }
                 if (next.first == 200) {
                     val job = JSONObject(next.second)
                     val id = job.getString("id")
