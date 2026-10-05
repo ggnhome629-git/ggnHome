@@ -1,0 +1,35 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+}
+
+android {
+    namespace 'com.ggnhome.smsgateway'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.ggnhome.smsgateway'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+
+    buildTypes {
+        // Debug-signed on purpose: this is an internal testing app, so no
+        // release keystore is needed and the APK installs directly.
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}
+
+// Intentionally no third-party dependencies: only the Android framework.

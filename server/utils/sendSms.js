@@ -1,18 +1,22 @@
 const axios = require("axios");
 require("dotenv").config();
 
-// Sends SMS through an Android SMS-gateway app (https://sms-gate.app,
-// "capcom6/android-sms-gateway") running on a phone — the SMS goes out over
-// that phone's SIM and uses its SMS quota.
+// Two ways to send, picked from env vars:
 //
-// Cloud mode (works from Render, since the server cannot reach a phone on a
-// private LAN): default SMS_GATEWAY_URL is https://api.sms-gate.app/3rdparty/v1
-// Private-server mode: set SMS_GATEWAY_URL to your own gateway server URL.
+// 1. Own gateway (default): set SMS_DEVICE_KEY. The OTP is put in the SmsQueue
+//    collection and our Android app (sms-gateway-app/) polls /sms-gateway/next,
+//    sending the SMS from the phone's SIM.
+// 2. Third-party gateway (sms-gate.app): set SMS_GATEWAY_USER + SMS_GATEWAY_PASSWORD
+//    (optionally SMS_GATEWAY_URL).
 
 const DEFAULT_COUNTRY_CODE = process.env.SMS_DEFAULT_COUNTRY_CODE || "+91";
 
-function isSmsConfigured() {
+function useThirdParty() {
   return Boolean(process.env.SMS_GATEWAY_USER && process.env.SMS_GATEWAY_PASSWORD);
+}
+
+function isSmsConfigured() {
+  return Boolean(process.env.SMS_DEVICE_KEY) || useThirdParty();
 }
 
 // "9876543210" -> "+919876543210"; leaves numbers that already have + untouched
@@ -25,20 +29,19 @@ function toE164(mobileNumber) {
 }
 
 async function sendSms(mobileNumber, message) {
-  if (!isSmsConfigured()) {
-    throw new Error("SMS gateway is not configured");
+  if (!isSmsConfigured()) throw new Error("SMS gateway is not configured");
+
+  if (process.env.SMS_DEVICE_KEY && !useThirdParty()) {
+    const SmsQueue = require("../models/SmsQueue.model");
+    return SmsQueue.create({ phoneNumber: toE164(mobileNumber), message });
   }
 
   const baseUrl = (process.env.SMS_GATEWAY_URL || "https://api.sms-gate.app/3rdparty/v1").replace(/\/+$/, "");
-
   const res = await axios.post(
     `${baseUrl}/messages`,
     { message, phoneNumbers: [toE164(mobileNumber)] },
     {
-      auth: {
-        username: process.env.SMS_GATEWAY_USER,
-        password: process.env.SMS_GATEWAY_PASSWORD,
-      },
+      auth: { username: process.env.SMS_GATEWAY_USER, password: process.env.SMS_GATEWAY_PASSWORD },
       timeout: 10000,
     }
   );
