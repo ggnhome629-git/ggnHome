@@ -248,12 +248,13 @@ export default function AdminSmsDevices() {
               <TableCell>Status</TableCell>
               <TableCell>Sent by</TableCell>
               <TableCell>Sent at</TableCell>
+              <TableCell>Delivered to phone?</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {log.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6}>
+                <TableCell colSpan={7}>
                   <Typography variant="body2" color="text.secondary">
                     No messages yet.
                   </Typography>
@@ -272,6 +273,21 @@ export default function AdminSmsDevices() {
                 </TableCell>
                 <TableCell>{m.deviceName || "—"}</TableCell>
                 <TableCell>{fmtTime(m.sentAt)}</TableCell>
+                <TableCell>
+                  {m.delivery === "delivered" ? (
+                    <Chip size="small" color="success" label="Delivered" />
+                  ) : m.delivery === "undelivered" ? (
+                    <Tooltip title={m.deliveryDetail || ""}>
+                      <Chip size="small" color="error" label="Not delivered" />
+                    </Tooltip>
+                  ) : m.status === "sent" ? (
+                    <Tooltip title="No delivery report from the carrier (yet). Some carriers never send one.">
+                      <Chip size="small" variant="outlined" label="No report" />
+                    </Tooltip>
+                  ) : (
+                    "—"
+                  )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

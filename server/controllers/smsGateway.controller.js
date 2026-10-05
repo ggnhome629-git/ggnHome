@@ -190,6 +190,20 @@ exports.reportResult = async (req, res) => {
   }
 };
 
+// Phone reports the carrier's delivery report: { status: "delivered" | "undelivered", detail? }
+exports.reportDelivery = async (req, res) => {
+  try {
+    const { status, detail } = req.body || {};
+    if (!["delivered", "undelivered"].includes(status)) return res.status(400).json({ message: "Invalid status" });
+    const update = { delivery: status, deliveryDetail: String(detail || "").slice(0, 100) };
+    if (status === "delivered") update.deliveredAt = new Date();
+    await SmsLog.updateOne({ queueId: String(req.params.id) }, update);
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 // ---------------------------------------------------------------- admin ----
 
 // GET /api/admin/sms-devices
@@ -276,6 +290,8 @@ exports.adminSmsLog = async (req, res) => {
           ["queued", "sending"].includes(r.status) && new Date(r.createdAt).getTime() < stale ? "expired" : r.status,
         deviceName: r.deviceName,
         error: r.error,
+        delivery: r.delivery,
+        deliveryDetail: r.deliveryDetail,
         createdAt: r.createdAt,
         sentAt: r.sentAt,
       })),

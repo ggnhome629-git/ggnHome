@@ -12,7 +12,7 @@ object Config {
     const val DEFAULT_URL = "https://api.ggnhome.com"
     // TESTING default — must match SMS_DEVICE_KEY on the server (or its fallback).
     const val DEFAULT_KEY = "test123"
-    const val APP_VERSION = "3.0"
+    const val APP_VERSION = "3.1"
 
     private const val PREFS = "gateway"
     const val KEY_URL = "url"
@@ -54,14 +54,14 @@ object Config {
     }
 
     // ---- local history of what this phone sent (OTP codes are never stored) ----
-    class LogEntry(val time: Long, val number: String, val ok: Boolean, val detail: String)
+    class LogEntry(val time: Long, val number: String, val ok: Boolean, val detail: String, val qid: String = "")
 
     @Synchronized
-    fun appendLog(c: Context, number: String, ok: Boolean, detail: String) {
+    fun appendLog(c: Context, number: String, ok: Boolean, detail: String, qid: String = "") {
         val p = prefs(c)
         val old = try { JSONArray(p.getString(KEY_LOG, "[]")) } catch (_: Exception) { JSONArray() }
         val fresh = JSONArray()
-        fresh.put(JSONObject().put("t", System.currentTimeMillis()).put("n", number).put("ok", ok).put("d", detail))
+        fresh.put(JSONObject().put("t", System.currentTimeMillis()).put("n", number).put("ok", ok).put("d", detail).put("q", qid))
         for (i in 0 until minOf(old.length(), MAX_LOG - 1)) fresh.put(old.get(i))
         p.edit().putString(KEY_LOG, fresh.toString()).apply()
     }
@@ -70,8 +70,23 @@ object Config {
         val arr = try { JSONArray(prefs(c).getString(KEY_LOG, "[]")) } catch (_: Exception) { JSONArray() }
         return (0 until arr.length()).map {
             val o = arr.getJSONObject(it)
-            LogEntry(o.getLong("t"), o.getString("n"), o.getBoolean("ok"), o.optString("d"))
+            LogEntry(o.getLong("t"), o.getString("n"), o.getBoolean("ok"), o.optString("d"), o.optString("q"))
         }
+    }
+
+    // Delivery report / send error arrives later: update that message's line.
+    @Synchronized
+    fun updateLog(c: Context, qid: String, ok: Boolean, detail: String) {
+        val p = prefs(c)
+        val arr = try { JSONArray(p.getString(KEY_LOG, "[]")) } catch (_: Exception) { return }
+        for (i in 0 until arr.length()) {
+            val o = arr.getJSONObject(i)
+            if (o.optString("q") == qid) {
+                o.put("ok", ok).put("d", detail)
+                break
+            }
+        }
+        p.edit().putString(KEY_LOG, arr.toString()).apply()
     }
 
     fun clearLog(c: Context) = prefs(c).edit().remove(KEY_LOG).apply()

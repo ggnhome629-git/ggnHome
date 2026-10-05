@@ -12,6 +12,10 @@ const SmsLogSchema = new mongoose.Schema({
   deviceId: { type: String }, // phone that actually sent it
   deviceName: { type: String },
   error: { type: String },
+  // Carrier delivery report from the sending phone (not all carriers send one).
+  delivery: { type: String, enum: ["delivered", "undelivered"] },
+  deliveryDetail: { type: String },
+  deliveredAt: { type: Date },
   sentAt: { type: Date },
   createdAt: { type: Date, default: Date.now, expires: 30 * 24 * 3600 },
 });

@@ -473,7 +473,7 @@ class MainActivity : Activity() {
         logView.text = if (entries.isEmpty()) "Nothing sent yet." else {
             val fmt = SimpleDateFormat("dd MMM HH:mm:ss", Locale.getDefault())
             entries.take(50).joinToString("\n") {
-                val mark = if (it.ok) "✔" else "✘ ${it.detail}"
+                val mark = if (it.ok) "✔ ${it.detail}" else "✘ ${it.detail}"
                 "${fmt.format(Date(it.time))}  ${it.number}  $mark"
             }
         }

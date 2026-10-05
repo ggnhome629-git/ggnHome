@@ -3,6 +3,7 @@ package com.ggnhome.smsgateway
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -14,6 +15,7 @@ import android.telephony.SmsManager
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.atomic.AtomicInteger
 
 // Foreground service that polls the server for queued SMS and sends them.
 class GatewayService : Service() {
@@ -112,16 +114,16 @@ class GatewayService : Service() {
                     val id = job.getString("id")
                     val to = job.getString("phoneNumber")
                     try {
-                        sendSms(to, job.getString("message"))
+                        sendSms(to, job.getString("message"), id)
                         request("POST", "$base/sms-gateway/$id/result", key, """{"status":"sent"}""", deviceId, deviceName, ready)
                         prefs.edit().putInt(Config.KEY_SENT, prefs.getInt(Config.KEY_SENT, 0) + 1).apply()
                         note("Sent to …${to.takeLast(4)}")
-                        Config.appendLog(this, to, true, "Sent")
+                        Config.appendLog(this, to, true, "Sent, waiting for delivery report", id)
                     } catch (e: Exception) {
                         val err = JSONObject().put("status", "failed").put("error", e.message ?: "send error")
                         request("POST", "$base/sms-gateway/$id/result", key, err.toString(), deviceId, deviceName, ready)
                         note("Send failed: ${e.message}")
-                        Config.appendLog(this, to, false, e.message ?: "send error")
+                        Config.appendLog(this, to, false, e.message ?: "send error", id)
                     }
                     // Cool down before this SIM sends again (random, so it doesn't look automated).
                     val gap = Config.MIN_GAP_MS + (Math.random() * Config.JITTER_MS).toLong()
@@ -139,12 +141,30 @@ class GatewayService : Service() {
         }
     }
 
+    private val requestCodes = AtomicInteger(1000)
+
     @Suppress("DEPRECATION")
-    private fun sendSms(to: String, text: String) {
+    private fun sendSms(to: String, text: String, queueId: String) {
         val sms = if (Build.VERSION.SDK_INT >= 31) getSystemService(SmsManager::class.java) else SmsManager.getDefault()
         val parts = sms.divideMessage(text)
-        sms.sendMultipartTextMessage(to, null, parts, null, null)
+        val sentIntents = ArrayList<PendingIntent>()
+        val deliveryIntents = ArrayList<PendingIntent>()
+        for (i in parts.indices) {
+            // Android needs a unique requestCode per PendingIntent (extras don't count).
+            sentIntents.add(statusIntent(SmsStatusReceiver.ACTION_SENT, queueId, to))
+            deliveryIntents.add(statusIntent(SmsStatusReceiver.ACTION_DELIVERED, queueId, to))
+        }
+        sms.sendMultipartTextMessage(to, null, parts, sentIntents, deliveryIntents)
     }
+
+    private fun statusIntent(action: String, queueId: String, to: String): PendingIntent =
+        PendingIntent.getBroadcast(
+            this,
+            requestCodes.incrementAndGet(),
+            Intent(this, SmsStatusReceiver::class.java).setAction(action)
+                .putExtra("qid", queueId).putExtra("to", to),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        )
 
     private fun request(method: String, url: String, key: String, body: String?, deviceId: String, deviceName: String, ready: Boolean): Resp {
         val c = URL(url).openConnection() as HttpURLConnection
