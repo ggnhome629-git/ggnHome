@@ -43,7 +43,13 @@ app.use((req, res, next) => {
 
 // Health check (for uptime monitors / Render)
 app.get("/", (req, res) => {
-  res.json({ status: "ok", service: "ggnHome API", uptime: Math.round(process.uptime()) });
+  res.json({
+    status: "ok",
+    service: "ggnHome API",
+    uptime: Math.round(process.uptime()),
+    // Set automatically by Render: shows which commit is actually deployed.
+    commit: (process.env.RENDER_GIT_COMMIT || "unknown").slice(0, 7),
+  });
 });
 
 // Routes

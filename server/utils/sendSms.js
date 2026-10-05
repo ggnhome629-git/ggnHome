@@ -56,10 +56,10 @@ async function sendSms(mobileNumber, message, kind = "otp") {
   return res.data;
 }
 
-// The SMS people receive: just "<code> is the code". Deliberately minimal —
-// no brand, link or extra wording — to get past carrier spam filters.
+// The SMS people receive: ONLY the 6-digit code, nothing else — the least
+// likely thing for a carrier spam filter to object to.
 function otpSmsText(otp) {
-  return `${otp} is the code`;
+  return String(otp);
 }
 
 function sendOtpSms(mobileNumber, otp) {
