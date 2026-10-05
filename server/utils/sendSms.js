@@ -3,7 +3,7 @@ require("dotenv").config();
 
 // Two ways to send, picked from env vars:
 //
-// 1. Own gateway (default): set SMS_DEVICE_KEY. The OTP is put in the SmsQueue
+// 1. Own gateway (default): device key is SMS_DEVICE_KEY (testing default: test123). The OTP is put in the SmsQueue
 //    collection and our Android app (sms-gateway-app/) polls /sms-gateway/next,
 //    sending the SMS from the phone's SIM.
 // 2. Third-party gateway (sms-gate.app): set SMS_GATEWAY_USER + SMS_GATEWAY_PASSWORD
@@ -16,7 +16,8 @@ function useThirdParty() {
 }
 
 function isSmsConfigured() {
-  return Boolean(process.env.SMS_DEVICE_KEY) || useThirdParty();
+  // The own-gateway queue is always on (device key defaults to a test value).
+  return true;
 }
 
 // "9876543210" -> "+919876543210"; leaves numbers that already have + untouched
@@ -31,7 +32,7 @@ function toE164(mobileNumber) {
 async function sendSms(mobileNumber, message) {
   if (!isSmsConfigured()) throw new Error("SMS gateway is not configured");
 
-  if (process.env.SMS_DEVICE_KEY && !useThirdParty()) {
+  if (!useThirdParty()) {
     const SmsQueue = require("../models/SmsQueue.model");
     return SmsQueue.create({ phoneNumber: toE164(mobileNumber), message });
   }

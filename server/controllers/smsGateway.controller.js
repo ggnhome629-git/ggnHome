@@ -4,6 +4,12 @@ const SmsQueue = require("../models/SmsQueue.model");
 // Messages older than this are not worth sending (OTP valid for 5 minutes).
 const MAX_AGE_MS = 4 * 60 * 1000;
 
+// TEMPORARY, FOR TESTING ONLY: falls back to a well-known key when
+// SMS_DEVICE_KEY is not set in the environment. Anyone who knows it can read
+// queued OTPs, so set a real SMS_DEVICE_KEY on Render before real users.
+const DEFAULT_TEST_KEY = "test123";
+exports.getDeviceKey = () => process.env.SMS_DEVICE_KEY || DEFAULT_TEST_KEY;
+
 function safeEqual(a, b) {
   const x = Buffer.from(String(a || ""));
   const y = Buffer.from(String(b || ""));
@@ -12,8 +18,7 @@ function safeEqual(a, b) {
 
 // Auth for the Android app: "Authorization: Bearer <SMS_DEVICE_KEY>"
 exports.verifyGatewayDevice = (req, res, next) => {
-  const key = process.env.SMS_DEVICE_KEY;
-  if (!key) return res.status(503).json({ message: "SMS gateway not configured" });
+  const key = exports.getDeviceKey();
   const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   if (!safeEqual(token, key)) return res.status(401).json({ message: "Unauthorized" });
   next();
