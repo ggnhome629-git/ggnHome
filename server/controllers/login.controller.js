@@ -107,17 +107,12 @@ exports.requestOtp = async (req, res) => {
       }
     }
 
-    // Admins use the predefined code stored in the DB `otp` field; nothing is sent.
-    if (user.role === "admin") {
-      return res.status(200).json({ message: "Admin login uses predefined code; no OTP sent.", channel });
-    }
-
     // Throttle: OTP creation time is otpExpiry - TTL.
     if (user.otpExpiry && user.otpExpiry.getTime() - OTP_TTL_MS > Date.now() - OTP_RESEND_GAP_MS) {
       return res.status(429).json({ message: "Please wait 30 seconds before requesting another code." });
     }
 
-    // Always a fresh code on every request.
+    // Always a fresh code on every request, for every role including admins.
     const otp = generateOtp();
     user.otp = otp;
     user.otpExpiry = new Date(Date.now() + OTP_TTL_MS);
@@ -330,50 +325,7 @@ exports.verifyOtp = async (req, res) => {
 
     // Removed mobile mismatch check
 
-    // Admin flow: compare submitted otp with predefined code stored in `user.otp` without expiry check
-    if (user.role === 'admin') {
-      if (!user.otp) return res.status(400).json({ message: 'Admin code not set. Contact support.' });
-      if (user.otp !== otp) {
-        return res.status(400).json({ message: 'Invalid admin code' });
-      }
-      // admin is verified — do NOT clear the stored predefined code (it is permanent)
-      if (mobileNumber && !user.mobileNumber) {
-        user.mobileNumber = mobileNumber;
-      }
-      if (email && !user.email) {
-        user.email = email;
-      }
-
-      user.isVerified = true;
-
-      const accessToken = user.getAccessToken();
-      const refreshToken = user.getRefreshToken();
-      user.refreshToken = refreshToken;
-      await user.save();
-
-      res.cookie("accessToken", accessToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "None",
-        maxAge: 65 * 60 * 1000,
-      });
-
-      res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "None",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-
-      return res.json({
-        message: "Admin login successful",
-              accessToken,
-  refreshToken,
-        user: { email: user.email, role: user.role, name: user.name, mobileNumber: user.mobileNumber },
-      });
-    }
-
-    // Non-admin flow: must match OTP and not be expired
+    // All roles (admins included): must match the latest emailed/SMS OTP and not be expired
     try {
       if ((user.otpAttempts || 0) >= MAX_OTP_ATTEMPTS) {
         return res.status(429).json({ message: "Too many wrong attempts. Please request a new code." });
@@ -395,7 +347,7 @@ exports.verifyOtp = async (req, res) => {
     // }
 
     user.isVerified = true;
-    // clear one-time OTP fields for non-admin users
+    // clear one-time OTP fields (single use, all roles)
     user.otp = null;
     user.otpExpiry = null;
     user.otpAttempts = 0;
