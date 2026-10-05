@@ -8,8 +8,7 @@ import android.content.Intent
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
-        val on = context.getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE)
-            .getBoolean(MainActivity.KEY_ENABLED, false)
+        val on = Config.prefs(context).getBoolean(Config.KEY_ENABLED, false)
         if (on) {
             try {
                 context.startForegroundService(Intent(context, GatewayService::class.java))

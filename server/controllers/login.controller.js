@@ -2,10 +2,12 @@ const User = require("../models/user.model");
 const sendEmail = require("../utils/sendEmail"); // Import the sendEmail module
 const jwt = require("jsonwebtoken");
 const { sendOtpSms, isSmsConfigured } = require("../utils/sendSms");
+const { hasOnlineDevice } = require("./smsGateway.controller");
+const crypto = require("crypto");
 
 // Generate a random 6-digit OTP
 function generateOtp() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 1000000).toString();
 }
 
 function maskEmail(email) {
@@ -16,135 +18,166 @@ function maskEmail(email) {
   return `${visible}***@${domain}`;
 }
 
+// ---- OTP helpers -------------------------------------------------------
+
+const OTP_TTL_MS = 5 * 60 * 1000;
+// Minimum gap between OTP sends to the same account, so SMS can't be spammed.
+const OTP_RESEND_GAP_MS = 30 * 1000;
+const MAX_OTP_ATTEMPTS = 5;
+
+function maskMobile(mobile) {
+  const m = String(mobile || "");
+  return m.length >= 4 ? `${"•".repeat(Math.max(m.length - 4, 0))}${m.slice(-4)}` : m;
+}
+
+// Tiny in-memory per-IP limiter for the OTP endpoint (SMS costs real quota).
+const ipHits = new Map();
+function tooManyFromIp(req) {
+  // Behind Cloudflare/Render req.ip is the proxy, so prefer the forwarded client IP.
+  const ip =
+    req.headers["cf-connecting-ip"] ||
+    String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() ||
+    req.ip ||
+    "unknown";
+  const now = Date.now();
+  const windowMs = 10 * 60 * 1000;
+  const hits = (ipHits.get(ip) || []).filter((t) => now - t < windowMs);
+  hits.push(now);
+  ipHits.set(ip, hits);
+  if (ipHits.size > 5000) ipHits.clear();
+  return hits.length > 15;
+}
+
+async function sendOtpEmail(user, otp) {
+  const emailParams = process.env.BREVO_OTP_TEMPLATE_ID
+    ? {
+        to: user.email,
+        templateId: Number(process.env.BREVO_OTP_TEMPLATE_ID),
+        params: { otp_code: otp },
+        subject: "Your OTP Code for www.ggnHome.com",
+      }
+    : {
+        to: user.email,
+        params: { otp_code: otp },
+        subject: "Your OTP Code for www.ggnHome.com",
+        text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
+        html: `<p><strong>Your OTP code:</strong> ${otp}</p><p>This code will expire in 5 minutes.</p>`,
+      };
+  await sendEmail(emailParams);
+}
+
 // Request OTP
+//   { mobileNumber }  -> OTP by SMS (creates the account for a new number)
+//   { email }         -> OTP by email, for an existing account (email login)
 exports.requestOtp = async (req, res) => {
   try {
-    const { email, mobileNumber } = req.body;
-    if (!mobileNumber) {
+    if (tooManyFromIp(req)) {
+      return res.status(429).json({ message: "Too many requests. Please try again in a few minutes." });
+    }
+
+    const mobileNumber = req.body.mobileNumber ? String(req.body.mobileNumber).trim() : "";
+    const email = req.body.email ? String(req.body.email).toLowerCase().trim() : "";
+    const channel = mobileNumber ? "sms" : "email";
+
+    if (!mobileNumber && !email) {
       return res.status(400).json({ message: "Mobile number is required" });
     }
 
-    let emailMismatch = false;
-    let maskedSavedEmail = null;
-
-    let user = await User.findOne({ mobileNumber });
-    if (user) {
-      if (user.email) {
-        // Check if frontend email differs from saved email
-        if (email && email.toLowerCase().trim() !== user.email.toLowerCase().trim()) {
-          emailMismatch = true;
-          maskedSavedEmail = maskEmail(user.email);
-        }
-      } else {
-        return res.status(403).json({
-          message: "OTP login not enabled. Please login using password and add email first."
+    let user;
+    if (channel === "sms") {
+      if (!/^\d{10}$/.test(mobileNumber)) {
+        return res.status(400).json({ message: "Enter a valid 10-digit mobile number" });
+      }
+      user = await User.findOne({ mobileNumber });
+      if (!user) {
+        // New number: account is created from the number alone.
+        user = new User({ mobileNumber, role: "renter" });
+        if (email) user.email = email;
+        await user.save();
+      }
+    } else {
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        return res.status(400).json({ message: "Enter a valid email address" });
+      }
+      user = await User.findOne({ email });
+      if (!user) {
+        return res.status(404).json({
+          message: "No account found with this email. Sign in with your mobile number first.",
         });
       }
-    } else {
-      if (!email) {
-        return res.status(400).json({ message: "Email is required for new users" });
-      }
-      // default new users are renters
-      user = new User({
-        mobileNumber,
-        email,
-        role: "renter",
-      });
-      await user.save();
     }
 
-    // If user is admin, we DO NOT generate/send an OTP. Admins use the predefined code stored in DB in `otp` field.
+    // Admins use the predefined code stored in the DB `otp` field; nothing is sent.
     if (user.role === "admin") {
-      // Do not create or overwrite user.otp; assume a predefined code is already present in DB.
-      return res.status(200).json({ message: "Admin login uses predefined code; no OTP sent." });
+      return res.status(200).json({ message: "Admin login uses predefined code; no OTP sent.", channel });
     }
 
-    // For non-admin users, proceed with normal OTP flow
-    // Check if an existing OTP is still valid; reuse if so
-    let otp;
-    if (user.otp && user.otpExpiry && user.otpExpiry > Date.now()) {
-      otp = user.otp; // reuse existing OTP
-    } else {
-      otp = generateOtp();
-      user.otp = otp;
-      user.otpExpiry = Date.now() + 5 * 60 * 1000; // valid for 5 minutes
-      await user.save();
+    // Throttle: OTP creation time is otpExpiry - TTL.
+    if (user.otpExpiry && user.otpExpiry.getTime() - OTP_TTL_MS > Date.now() - OTP_RESEND_GAP_MS) {
+      return res.status(429).json({ message: "Please wait 30 seconds before requesting another code." });
     }
 
-    // Send the OTP by SMS (via the phone gateway) when configured. An SMS
-    // failure must not block login — the email below is still sent.
-    let smsSent = false;
+    // Always a fresh code on every request.
+    const otp = generateOtp();
+    user.otp = otp;
+    user.otpExpiry = new Date(Date.now() + OTP_TTL_MS);
+    user.otpAttempts = 0;
+    await user.save();
+
+    if (channel === "email") {
+      try {
+        await sendOtpEmail(user, otp);
+      } catch (emailError) {
+        return res.status(500).json({ message: "Failed to send OTP email" });
+      }
+      return res.status(200).json({
+        message: "OTP sent to your email",
+        channel: "email",
+        maskedEmail: maskEmail(user.email),
+      });
+    }
+
+    // SMS channel
+    let smsQueued = false;
+    let noPhoneOnline = false;
     if (isSmsConfigured()) {
       try {
+        noPhoneOnline = !(await hasOnlineDevice());
         await sendOtpSms(user.mobileNumber, otp);
-        smsSent = true;
+        smsQueued = true;
       } catch (smsError) {
         console.error("OTP SMS failed:", smsError.response?.data || smsError.message);
       }
     }
 
-    // Production mode: send via Brevo
-    // Prefer using a Brevo template. Set BREVO_OTP_TEMPLATE_ID in env (numeric id).
-    if (process.env.BREVO_OTP_TEMPLATE_ID) {
-      const emailParams = {
-        to: user.email,
-        templateId: Number(process.env.BREVO_OTP_TEMPLATE_ID), // Brevo expects a numeric template id
-        params: {
-          otp_code: otp
-        },
-        // optional: templates may use their own subject; this will act as an override if needed
-        subject: "Your OTP Code for www.ggnHome.com"
-      };
-
+    // Safety net: no gateway phone online (or queueing failed) and the account
+    // has an email -> also deliver by email so the user isn't locked out.
+    let emailFallback = false;
+    if ((!smsQueued || noPhoneOnline) && user.email) {
       try {
-        await sendEmail(emailParams);
-        return res.status(200).json({
-          message: emailMismatch
-            ? "OTP has been sent to your previously registered email."
-            : smsSent
-              ? "OTP sent to your mobile number and email"
-              : "OTP sent successfully",
-          smsSent,
-          sentToSavedEmail: emailMismatch,
-          maskedEmail: emailMismatch ? maskedSavedEmail : null
-        });
+        await sendOtpEmail(user, otp);
+        emailFallback = true;
       } catch (emailError) {
-        if (smsSent) {
-          return res.status(200).json({ message: "OTP sent to your mobile number", smsSent, sentToSavedEmail: false, maskedEmail: null });
-        }
-        return res.status(500).json({ message: "Failed to send OTP email", error: emailError.message });
-      }
-    } else {
-      // Fallback: no template configured — send raw HTML/text
-      const emailParams = {
-        to: user.email,
-        params: {
-          otp_code: otp
-        },
-        subject: "Your OTP Code for www.ggnHome.com",
-        text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
-        html: `<p><strong>Your OTP code:</strong> ${otp}</p><p>This code will expire in 5 minutes.</p>`
-      };
-
-      try {
-        await sendEmail(emailParams);
-        return res.status(200).json({
-          message: emailMismatch
-            ? "OTP has been sent to your previously registered email."
-            : smsSent
-              ? "OTP sent to your mobile number and email"
-              : "OTP sent successfully",
-          smsSent,
-          sentToSavedEmail: emailMismatch,
-          maskedEmail: emailMismatch ? maskedSavedEmail : null
-        });
-      } catch (emailError) {
-        if (smsSent) {
-          return res.status(200).json({ message: "OTP sent to your mobile number", smsSent, sentToSavedEmail: false, maskedEmail: null });
-        }
-        return res.status(500).json({ message: "Failed to send OTP email", error: emailError.message });
+        console.error("OTP email fallback failed:", emailError.message);
       }
     }
+
+    if (!smsQueued && !emailFallback) {
+      return res.status(503).json({ message: "Could not send the OTP right now. Please try again shortly." });
+    }
+
+    return res.status(200).json({
+      message: emailFallback && !smsQueued
+        ? "SMS is unavailable right now, so we emailed your code instead."
+        : emailFallback
+          ? "OTP sent to your mobile number (and emailed as a backup)"
+          : "OTP sent to your mobile number",
+      channel: "sms",
+      smsSent: smsQueued,
+      emailFallback,
+      maskedMobile: maskMobile(user.mobileNumber),
+      maskedEmail: emailFallback ? maskEmail(user.email) : null,
+    });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }
@@ -278,15 +311,18 @@ exports.verifyOtp = async (req, res) => {
   try {
     const { email, otp, mobileNumber } = req.body;
 
-    if (!mobileNumber || !otp) {
+    if (!otp || (!mobileNumber && !email)) {
       return res.status(400).json({
-        message: "Mobile number and OTP are required"
+        message: "Mobile number (or email) and OTP are required"
       });
     }
 
-    const user = await User.findOne({ mobileNumber });
+    // SMS login identifies the account by mobile number, email login by email.
+    const user = mobileNumber
+      ? await User.findOne({ mobileNumber })
+      : await User.findOne({ email: String(email).toLowerCase().trim() });
     if (!user) return res.status(400).json({ message: "User not found" });
-    if (email && user.email && user.email !== email) {
+    if (mobileNumber && email && user.email && user.email !== String(email).toLowerCase().trim()) {
       return res.status(400).json({
         message: "This mobile number is already linked to a different email"
       });
@@ -339,7 +375,12 @@ exports.verifyOtp = async (req, res) => {
 
     // Non-admin flow: must match OTP and not be expired
     try {
+      if ((user.otpAttempts || 0) >= MAX_OTP_ATTEMPTS) {
+        return res.status(429).json({ message: "Too many wrong attempts. Please request a new code." });
+      }
       if (user.otp !== otp || !user.otpExpiry || user.otpExpiry < Date.now()) {
+        user.otpAttempts = (user.otpAttempts || 0) + 1;
+        await user.save();
         return res.status(400).json({ message: "Invalid or expired OTP" });
       }
     } catch (otpCheckError) {
@@ -357,6 +398,7 @@ exports.verifyOtp = async (req, res) => {
     // clear one-time OTP fields for non-admin users
     user.otp = null;
     user.otpExpiry = null;
+    user.otpAttempts = 0;
 
     const accessToken = user.getAccessToken();
     const refreshToken = user.getRefreshToken();

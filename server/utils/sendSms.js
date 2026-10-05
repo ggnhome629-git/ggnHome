@@ -34,7 +34,10 @@ async function sendSms(mobileNumber, message) {
 
   if (!useThirdParty()) {
     const SmsQueue = require("../models/SmsQueue.model");
-    return SmsQueue.create({ phoneNumber: toE164(mobileNumber), message });
+    const { pickDevice } = require("../controllers/smsGateway.controller");
+    // Random online phone, so no single SIM carries all the traffic.
+    const assignedDevice = await pickDevice();
+    return SmsQueue.create({ phoneNumber: toE164(mobileNumber), message, assignedDevice });
   }
 
   const baseUrl = (process.env.SMS_GATEWAY_URL || "https://api.sms-gate.app/3rdparty/v1").replace(/\/+$/, "");

@@ -10,6 +10,7 @@ import {
   ArrowRight,
   BarChart3,
   Settings,
+  Smartphone,
 } from 'lucide-react';
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
 import { useNavigate } from "react-router-dom";
@@ -148,6 +149,15 @@ const AdminLandingPage = () => {
       route: '/admin/rewardsproperties',
       color: '#ef4444',
       gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+    },
+    {
+      id: 'smsDevices',
+      title: 'SMS Phones',
+      description: 'OTP SMS gateway phones: status, limits, test send',
+      icon: Smartphone,
+      route: '/admin/sms-devices',
+      color: '#0ea5e9',
+      gradient: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
     },
     {
       id: 'propertyManager',

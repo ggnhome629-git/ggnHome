@@ -8,6 +8,9 @@ const SmsQueueSchema = new mongoose.Schema({
   message: { type: String, required: true },
   status: { type: String, enum: ["pending", "sending", "sent", "failed"], default: "pending", index: true },
   error: { type: String },
+  // Phone chosen at random when queued; null = any phone may take it.
+  assignedDevice: { type: String, default: null },
+  sentBy: { type: String },
   createdAt: { type: Date, default: Date.now, expires: 600 },
 });
 

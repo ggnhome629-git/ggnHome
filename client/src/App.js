@@ -56,6 +56,7 @@ import AgentRegistration from "./screens/Agent Page/Register Page/AgentRegister"
 import AgentLogin from "./screens/Agent Page/Login Page/AgentLogin";
 import AgentDashboard from "./screens/Agent Page/Dashboard/AgentDashboard";
 import AgentManagement from "./screens/Admin Page/admin.AgentsManagement";
+import AdminSmsDevices from "./screens/Admin Page/admin.smsDevices";
 import PropertyListingFormAgent from "./screens/Agent Page/Add property/Propertyadd";
 import PropertyCardsAgent from "./screens/Agent Page/User-Properties/propertiesuser";
 import PropertyAnalyticsAgent from "./screens/Agent Page/User-Properties/PropertyAnalysis";
@@ -196,6 +197,7 @@ function App() {
       <Route path="/admin/rewards" element={<AdminRewardsSection />} />
       <Route path="/admin/userpreferenceformresponses" element={<AdminProtectedRoute element={<AdminUserPreferencesResponses />} />} />
       <Route path="/admin/agentsmanagement" element={<AdminProtectedRoute element={<AgentManagement />} />} />
+      <Route path="/admin/sms-devices" element={<AdminProtectedRoute element={<AdminSmsDevices />} />} />
       <Route path="/admin/agent-registration" element={<AgentRegistrationAdmin />} />
 
 

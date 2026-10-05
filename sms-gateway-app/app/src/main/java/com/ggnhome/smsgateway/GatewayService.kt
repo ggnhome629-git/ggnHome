@@ -49,7 +49,7 @@ class GatewayService : Service() {
             NotificationChannel(channelId, "SMS Gateway", NotificationManager.IMPORTANCE_LOW)
         )
         val notification = Notification.Builder(this, channelId)
-            .setContentTitle("ggnHome SMS Gateway running")
+            .setContentTitle("ggnhome-sms-service running")
             .setContentText("Waiting for OTP messages to send")
             .setSmallIcon(android.R.drawable.stat_notify_chat)
             .setOngoing(true)
@@ -62,28 +62,31 @@ class GatewayService : Service() {
     }
 
     private fun pollLoop() {
-        val prefs = getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE)
-        val base = prefs.getString(MainActivity.KEY_URL, "") ?: ""
-        val key = prefs.getString(MainActivity.KEY_DEVICE, "") ?: ""
+        val prefs = Config.prefs(this)
+        val base = Config.url(this)
+        val key = Config.key(this)
+        val deviceId = Config.deviceId(this)
+        val deviceName = Config.deviceName()
         var failures = 0
 
         while (running) {
             try {
-                val next = request("GET", "$base/sms-gateway/next", key, null)
+                val next = request("GET", "$base/sms-gateway/next", key, null, deviceId, deviceName)
                 failures = 0
                 if (next.first == 200 || next.first == 204) {
-                    prefs.edit().putLong(MainActivity.KEY_BEAT, System.currentTimeMillis()).apply()
+                    prefs.edit().putLong(Config.KEY_BEAT, System.currentTimeMillis()).apply()
                 }
                 if (next.first == 200) {
                     val job = JSONObject(next.second)
                     val id = job.getString("id")
                     try {
                         sendSms(job.getString("phoneNumber"), job.getString("message"))
-                        request("POST", "$base/sms-gateway/$id/result", key, """{"status":"sent"}""")
+                        request("POST", "$base/sms-gateway/$id/result", key, """{"status":"sent"}""", deviceId, deviceName)
+                        prefs.edit().putInt(Config.KEY_SENT, prefs.getInt(Config.KEY_SENT, 0) + 1).apply()
                         note("Sent to …${job.getString("phoneNumber").takeLast(4)}")
                     } catch (e: Exception) {
                         val err = JSONObject().put("status", "failed").put("error", e.message ?: "send error")
-                        request("POST", "$base/sms-gateway/$id/result", key, err.toString())
+                        request("POST", "$base/sms-gateway/$id/result", key, err.toString(), deviceId, deviceName)
                         note("Send failed: ${e.message}")
                     }
                     continue // check immediately for more
@@ -107,13 +110,16 @@ class GatewayService : Service() {
         sms.sendMultipartTextMessage(to, null, parts, null, null)
     }
 
-    private fun request(method: String, url: String, key: String, body: String?): Pair<Int, String> {
+    private fun request(method: String, url: String, key: String, body: String?, deviceId: String, deviceName: String): Pair<Int, String> {
         val c = URL(url).openConnection() as HttpURLConnection
         try {
             c.requestMethod = method
             c.connectTimeout = 10000
             c.readTimeout = 15000
             c.setRequestProperty("Authorization", "Bearer $key")
+            c.setRequestProperty("X-Device-Id", deviceId)
+            c.setRequestProperty("X-Device-Name", deviceName)
+            c.setRequestProperty("X-App-Version", Config.APP_VERSION)
             if (body != null) {
                 c.doOutput = true
                 c.setRequestProperty("Content-Type", "application/json")
@@ -128,7 +134,6 @@ class GatewayService : Service() {
     }
 
     private fun note(s: String) {
-        getSharedPreferences(MainActivity.PREFS, Context.MODE_PRIVATE)
-            .edit().putString(MainActivity.KEY_LAST, s).apply()
+        Config.prefs(this).edit().putString(Config.KEY_LAST, s).apply()
     }
 }

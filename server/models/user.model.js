@@ -30,6 +30,10 @@ const userSchema = new mongoose.Schema(
     otpExpiry: {
       type: Date, // when OTP should expire
     },
+    otpAttempts: {
+      type: Number, // wrong guesses against the current OTP
+      default: 0,
+    },
     isVerified: {
       type: Boolean,
       default: false,

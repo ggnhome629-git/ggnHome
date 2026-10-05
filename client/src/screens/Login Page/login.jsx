@@ -42,9 +42,10 @@ export default function LoginModal() {
   const [otp, setOtp] = useState("");
   const [maskedEmail, setMaskedEmail] = useState(null);
   const [time, setTime] = useState(OTP_VALIDITY_SECONDS);
-  // Set once the server tells us this number has no account yet, which turns
-  // the form into a sign-up.
-  const [needsEmail, setNeedsEmail] = useState(false);
+  // Which identifier the code is sent to: the mobile number (SMS, default) or
+  // the email on an existing account.
+  const [loginChannel, setLoginChannel] = useState("mobile"); // "mobile" | "email"
+  const [maskedMobile, setMaskedMobile] = useState(null);
 
   // Recovery email modal states
   const [showRecoveryEmailModal, setShowRecoveryEmailModal] = useState(false);
@@ -115,6 +116,9 @@ export default function LoginModal() {
   }, [fetchUser, navigate, redirectTo]);
 
   // ============ OTP FLOW HANDLERS ============
+  const requestPayload = () =>
+    loginChannel === "email" ? { email: email.trim() } : { mobileNumber };
+
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
     setMessage(null);
@@ -122,15 +126,13 @@ export default function LoginModal() {
     // Validation reports against the specific field rather than a banner, and
     // never spins the button — nothing was sent.
     const errors = {};
-    if (!mobileNumber || mobileNumber.length !== 10) {
-      errors.mobileNumber = "Enter a valid 10-digit mobile number";
+    if (loginChannel === "mobile") {
+      if (!mobileNumber || mobileNumber.length !== 10) {
+        errors.mobileNumber = "Enter a valid 10-digit mobile number";
+      }
+    } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) {
+      errors.email = "Enter a valid email address";
     }
-    // Email is only required for a number we've never seen. The server is the
-    // one that knows, so we ask first and collect the address only if it says
-    // so — a returning user shouldn't have to retype it, and typing a
-    // different address than the one on file just sends the code there
-    // instead.
-    if (needsEmail && !email) errors.email = "Enter your email address";
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
@@ -139,7 +141,7 @@ export default function LoginModal() {
       const response = await fetch(`${process.env.REACT_APP_Base_API}/login/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(email ? { email, mobileNumber } : { mobileNumber }),
+        body: JSON.stringify(requestPayload()),
         credentials: "include",
       });
       const data = await response.json();
@@ -148,39 +150,15 @@ export default function LoginModal() {
         setStep("otp");
         setOtp("");
         setTime(OTP_VALIDITY_SECONDS);
-        setMaskedEmail(data.sentToSavedEmail ? data.maskedEmail || null : null);
-        setMessage({
-          text:
-            data.message ||
-            (data.sentToSavedEmail
-              ? "OTP has been sent to your previously registered email."
-              : data.smsSent
-                ? "OTP sent to your mobile number and email"
-                : "OTP sent successfully"),
-          type: "success",
-        });
+        setMaskedMobile(data.maskedMobile || null);
+        setMaskedEmail(data.maskedEmail || null);
+        setMessage({ text: data.message || "OTP sent successfully", type: "success" });
         return;
       }
 
-      // First time for this number: this is the sign-up moment, so ask for an
-      // email rather than showing the raw server error.
-      if (response.status === 400 && !email) {
-        // No error state on the field itself — they haven't got anything
-        // wrong, they've just not been asked for this yet. The heading and
-        // helper text carry the explanation; an error only appears if they
-        // then submit it empty.
-        setNeedsEmail(true);
-        setFieldErrors({});
-        return;
-      }
-
-      // The account predates OTP login and has no email on file, so there's
-      // nowhere to send a code.
-      if (response.status === 403) {
-        setMessage({
-          text: "This number is registered without an email, so we can't send a code. Please contact support to add one.",
-          type: "error",
-        });
+      // Unknown email: say so on the field, and point at the mobile route.
+      if (response.status === 404 && loginChannel === "email") {
+        setFieldErrors({ email: data.message || "No account found with this email" });
         return;
       }
 
@@ -207,7 +185,7 @@ export default function LoginModal() {
       const response = await fetch(`${process.env.REACT_APP_Base_API}/login/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp, mobileNumber }),
+        body: JSON.stringify(loginChannel === "email" ? { email: email.trim(), otp } : { mobileNumber, otp }),
         credentials: "include",
       });
       const data = await response.json();
@@ -233,13 +211,14 @@ export default function LoginModal() {
       const response = await fetch(`${process.env.REACT_APP_Base_API}/login/request-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, mobileNumber }),
+        body: JSON.stringify(requestPayload()),
         credentials: "include",
       });
       const data = await response.json();
 
       if (response.ok) {
-        setMaskedEmail(data.sentToSavedEmail ? data.maskedEmail || null : null);
+        setMaskedMobile(data.maskedMobile || null);
+        setMaskedEmail(data.maskedEmail || null);
         setMessage({ text: data.message || "OTP resent successfully!", type: "success" });
         setTime(OTP_VALIDITY_SECONDS);
         setOtp("");
@@ -406,6 +385,13 @@ export default function LoginModal() {
     setMessage(null);
     setFieldErrors({});
     setMaskedEmail(null);
+    setMaskedMobile(null);
+  };
+
+  const switchChannel = (channel) => {
+    setLoginChannel(channel);
+    setFieldErrors({});
+    setMessage(null);
   };
 
   const resetToMobileStep = () => {
@@ -444,7 +430,7 @@ export default function LoginModal() {
           "Free to join — takes under a minute",
           "Verified listings from owners and agents",
           "Save properties and revisit them anytime",
-          "No password to remember — just a one-time code",
+          "No password to remember — just a one-time code by SMS",
         ]}
         footer={
           <Stack spacing={4}>
@@ -499,32 +485,28 @@ export default function LoginModal() {
               transition={{ duration: 0.22, ease: "easeOut" }}
             >
               <Typography variant="h3" sx={{ color: "primary.main", mb: 1 }}>
-                {needsEmail ? "Create your account" : "Sign in or sign up"}
+                {loginChannel === "mobile" ? "Sign in or sign up" : "Sign in with email"}
               </Typography>
               <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
-                {needsEmail
-                  ? "This number is new here. Add your email and we'll set your account up — no password needed."
-                  : "Enter your mobile number and we'll send you a one-time code. New here? This creates your account."}
+                {loginChannel === "mobile"
+                  ? "Enter your mobile number and we'll text you a one-time code. New here? This creates your account."
+                  : "Enter the email on your account and we'll email you a one-time code."}
               </Typography>
 
-              <AuthField
-                label="Mobile number"
-                icon={Phone}
-                type="tel"
-                autoComplete="tel"
-                value={mobileNumber}
-                onChange={(e) => {
-                  // Changing the number invalidates what the server told us
-                  // about the previous one.
-                  setNeedsEmail(false);
-                  setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10));
-                }}
-                error={fieldErrors.mobileNumber}
-                helperText="10 digits, no country code"
-                inputProps={{ inputMode: "numeric", maxLength: 10 }}
-              />
-
-              {needsEmail && (
+              {loginChannel === "mobile" ? (
+                <AuthField
+                  label="Mobile number"
+                  icon={Phone}
+                  type="tel"
+                  autoComplete="tel"
+                  autoFocus
+                  value={mobileNumber}
+                  onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                  error={fieldErrors.mobileNumber}
+                  helperText="10 digits, no country code"
+                  inputProps={{ inputMode: "numeric", maxLength: 10 }}
+                />
+              ) : (
                 <AuthField
                   label="Email address"
                   icon={Mail}
@@ -534,13 +516,23 @@ export default function LoginModal() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   error={fieldErrors.email}
-                  helperText="We'll send your code here"
+                  helperText="Only for accounts that already have this email saved"
                 />
               )}
 
               <AuthButton loading={submitting} loadingText="Sending code…" sx={{ mt: 3 }}>
-                {needsEmail ? "Create account & send code" : "Continue"}
+                Send code
               </AuthButton>
+
+              <Button
+                fullWidth
+                variant="text"
+                startIcon={loginChannel === "mobile" ? <Mail size={15} /> : <Phone size={15} />}
+                onClick={() => switchChannel(loginChannel === "mobile" ? "email" : "mobile")}
+                sx={{ mt: 3, color: "text.secondary" }}
+              >
+                {loginChannel === "mobile" ? "Login with email instead" : "Use mobile number instead"}
+              </Button>
             </motion.form>
           )}
 
@@ -558,7 +550,10 @@ export default function LoginModal() {
                 Enter your code
               </Typography>
               <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
-                We sent a 6-digit code to <Box component="strong" sx={{ color: "text.primary" }}>{maskedEmail || email}</Box>
+                We {loginChannel === "mobile" ? "texted" : "emailed"} a 6-digit code to{" "}
+                <Box component="strong" sx={{ color: "text.primary" }}>
+                  {loginChannel === "mobile" ? maskedMobile || `+91 ${mobileNumber}` : maskedEmail || email}
+                </Box>
               </Typography>
 
               <OtpInput
@@ -602,7 +597,7 @@ export default function LoginModal() {
                 onClick={resetToEmailStep}
                 sx={{ mt: 3, color: "text.secondary" }}
               >
-                Use a different number
+                {loginChannel === "mobile" ? "Use a different number" : "Use a different email"}
               </Button>
             </motion.form>
           )}

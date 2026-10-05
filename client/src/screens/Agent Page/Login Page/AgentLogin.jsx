@@ -11,7 +11,7 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { ArrowRight, Key, KeyRound, LogIn, Mail, Phone } from "lucide-react";
+import { ArrowRight, Key, KeyRound, LogIn, Phone } from "lucide-react";
 import TopNavigationBar from "../Top Navigation Bar/AgentTopNavigationBar";
 import {
   AuthButton,
@@ -738,19 +738,6 @@ const handleForgotSubmit = async () => {
 
         <Box component="form" onSubmit={onFormSubmit} noValidate>
           <AuthField
-            label="Email address"
-            icon={Mail}
-            type="email"
-            name="email"
-            autoComplete="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            error={errors.email}
-            helperText="Optional — needed only to sign in with a one-time code"
-            disabled={prefilledFromSession}
-          />
-
-          <AuthField
             label="Mobile number"
             icon={Phone}
             type="tel"
@@ -886,7 +873,7 @@ const handleForgotSubmit = async () => {
           {showOtp && (
             <Box sx={{ mb: 5 }}>
               <Typography variant="body2" sx={{ color: "text.secondary", mb: 4, textAlign: "center" }}>
-                We sent a 6-digit code to the email registered on this agent account.
+                We texted a 6-digit code to your registered mobile number.
               </Typography>
               <OtpInput
                 value={formData.otp}

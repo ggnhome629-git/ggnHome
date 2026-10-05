@@ -97,22 +97,29 @@ export default function AuthLayout({
               alignItems: { xs: "center", md: "flex-start" },
             }}
           >
-            {icon && (
+            {/* The ggnHome mark sits on a white tile so it reads on the dark
+                brand wash (the logo artwork has a white background). */}
+            <Box
+              component="a"
+              href="/"
+              aria-label="ggnHome home"
+              sx={{
+                display: "block",
+                width: { xs: 72, md: 96 },
+                height: { xs: 72, md: 96 },
+                borderRadius: `${radii.lg}px`,
+                overflow: "hidden",
+                background: brand.white,
+                boxShadow: "0 8px 28px rgba(0,0,0,0.25)",
+              }}
+            >
               <Box
-                sx={{
-                  width: 64,
-                  height: 64,
-                  display: "grid",
-                  placeItems: "center",
-                  borderRadius: `${radii.lg}px`,
-                  background: "rgba(255,255,255,0.14)",
-                  border: "1px solid rgba(255,255,255,0.22)",
-                  backdropFilter: "blur(10px)",
-                }}
-              >
-                {icon}
-              </Box>
-            )}
+                component="img"
+                src="/Logo2.jpg"
+                alt="ggnHome"
+                sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+              />
+            </Box>
 
             {eyebrow && (
               <Typography variant="overline" sx={{ color: brand.cyan, letterSpacing: "0.12em" }}>

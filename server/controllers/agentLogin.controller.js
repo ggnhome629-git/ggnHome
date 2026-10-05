@@ -11,6 +11,7 @@ const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const sendEmail = require('../utils/sendEmail');
 const { sendOtpSms, isSmsConfigured } = require('../utils/sendSms');
+const { hasOnlineDevice } = require('./smsGateway.controller');
 
 const User = require('../models/user.model');
 
@@ -573,22 +574,6 @@ exports.requestOtpAgent = async (req, res) => {
       return res.status(404).json({ message: "Agent not found" });
     }
 
-    // 🔐 OTP allowed ONLY if email matches DB
-    if (!req.body.email || !agent.email) {
-      return res.status(403).json({
-        message: "OTP login is allowed only when registered email is provided"
-      });
-    }
-
-    const reqEmail = String(req.body.email).toLowerCase().trim();
-    const dbEmail = String(agent.email).toLowerCase().trim();
-
-    if (reqEmail !== dbEmail) {
-      return res.status(403).json({
-        message: "OTP can only be sent to the registered email address"
-      });
-    }
-
     // ⏱️ Throttle OTP resend: minimum 60 seconds
     if (agent.otpExpiry && Date.now() - (agent.otpExpiry.getTime() - 5 * 60 * 1000) < 60 * 1000) {
       return res.status(429).json({
@@ -597,7 +582,7 @@ exports.requestOtpAgent = async (req, res) => {
     }
 
     // 🔐 Always generate NEW OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = require('crypto').randomInt(100000, 1000000).toString();
     agent.otp = otp;
     agent.otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
     await agent.save();
@@ -738,28 +723,45 @@ exports.requestOtpAgent = async (req, res) => {
 </html>
 `;
 
-    // SMS via phone gateway (optional); failure must not block the email
-    let smsSent = false;
+    // OTP goes to the agent's registered MOBILE NUMBER by SMS.
+    let smsQueued = false;
+    let noPhoneOnline = false;
     if (isSmsConfigured()) {
       try {
+        noPhoneOnline = !(await hasOnlineDevice());
         await sendOtpSms(agent.mobileNumber, otp);
-        smsSent = true;
+        smsQueued = true;
       } catch (smsError) {
         console.error("Agent OTP SMS failed:", smsError.response?.data || smsError.message);
       }
     }
 
-    await sendEmail({
-      to: agent.email,
-      subject: "ggnHome – OTP Verification",
-      html: otpHtml
-    });
+    // Safety net: no gateway phone online / queueing failed -> email the code
+    // if the agent has an email on file.
+    let emailFallback = false;
+    if ((!smsQueued || noPhoneOnline) && agent.email) {
+      try {
+        await sendEmail({
+          to: agent.email,
+          subject: "ggnHome – OTP Verification",
+          html: otpHtml
+        });
+        emailFallback = true;
+      } catch (mailErr) {
+        console.error("Agent OTP email fallback failed:", mailErr?.message || mailErr);
+      }
+    }
+
+    if (!smsQueued && !emailFallback) {
+      return res.status(503).json({ message: "Could not send the OTP right now. Please try again shortly." });
+    }
 
     return res.json({
-      message: smsSent
-        ? "A new OTP has been sent to your mobile number and email. Previous OTPs are no longer valid."
-        : "A new OTP has been sent to your email. Previous OTPs are no longer valid.",
-      smsSent
+      message: emailFallback && !smsQueued
+        ? "SMS is unavailable right now, so we emailed your code instead."
+        : "A new OTP has been sent to your mobile number. Previous OTPs are no longer valid.",
+      smsSent: smsQueued,
+      emailFallback
     });
   } catch (err) {
     console.error("requestOtpAgent error:", err);
@@ -1051,40 +1053,15 @@ exports.checkAgentExists = async (req, res) => {
     // 🔑 DECISION RESPONSE
     // =============================
 
-    // CASE 5: Email provided but mismatch
-    if (frontendEmail && dbEmail && !emailMatched) {
-      return res.status(403).json({
-        success: false,
-        code: "EMAIL_MISMATCH",
-        message: "Email does not match registered email"
-      });
-    }
-
-    // CASE 1 & 2: Email matched → OTP allowed
-    if (emailMatched) {
-      return res.json({
-        success: true,
-        code: "OTP_ALLOWED",
-        passwordSet,
-        message: passwordSet
-          ? "OTP and password login allowed"
-          : "OTP login allowed (password not set)"
-      });
-    }
-
-    // CASE 3 & 4: No email → password path
-    if (!passwordSet) {
-      return res.json({
-        success: true,
-        code: "SET_PASSWORD_REQUIRED",
-        message: "Please set a password to continue"
-      });
-    }
-
+    // The OTP goes to the agent's mobile number by SMS, so email no longer
+    // gates OTP login: any agent that exists may use it.
     return res.json({
       success: true,
-      code: "PASSWORD_ONLY",
-      message: "Please login using password"
+      code: "OTP_ALLOWED",
+      passwordSet,
+      message: passwordSet
+        ? "OTP and password login allowed"
+        : "OTP login allowed (password not set)"
     });
 
   } catch (err) {
