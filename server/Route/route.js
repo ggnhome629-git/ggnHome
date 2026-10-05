@@ -116,8 +116,10 @@ router.post("/auth/set-password", setPassword);
 router.post("/auth/check-mobile", checkMobile);
 
 // ================== SMS GATEWAY (Android app polls these) ==================
-const { verifyGatewayDevice, claimNext, reportResult } = require("../controllers/smsGateway.controller");
+const { verifyGatewayDevice, claimNext, reportResult, testSend, queueStatus } = require("../controllers/smsGateway.controller");
 router.get("/sms-gateway/next", verifyGatewayDevice, claimNext);
+router.post("/sms-gateway/test-send", verifyGatewayDevice, testSend);
+router.get("/sms-gateway/status/:id", verifyGatewayDevice, queueStatus);
 router.post("/sms-gateway/:id/result", verifyGatewayDevice, reportResult);
 router.post("/auth/set-recovery-email", verifyToken, setRecoveryEmail);
 router.post(

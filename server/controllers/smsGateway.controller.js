@@ -44,10 +44,34 @@ exports.reportResult = async (req, res) => {
   try {
     const { status, error } = req.body || {};
     if (!["sent", "failed"].includes(status)) return res.status(400).json({ message: "Invalid status" });
-    // Once sent, drop the text immediately — it contains the OTP.
-    if (status === "sent") await SmsQueue.deleteOne({ _id: req.params.id });
+    // Once sent, blank the text immediately — it may contain the OTP. The
+    // record stays (until the TTL expiry) so /sms-gateway/status/:id works.
+    if (status === "sent") await SmsQueue.updateOne({ _id: req.params.id }, { status, message: "[sent]" });
     else await SmsQueue.updateOne({ _id: req.params.id }, { status, error: String(error || "").slice(0, 200) });
     res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// TESTING helper (device-key protected): queue a plain SMS.
+// POST /sms-gateway/test-send { phoneNumber, message }
+exports.testSend = async (req, res) => {
+  try {
+    const { phoneNumber, message } = req.body || {};
+    if (!phoneNumber || !message) return res.status(400).json({ message: "phoneNumber and message required" });
+    const { toE164 } = require("../utils/sendSms");
+    const doc = await SmsQueue.create({ phoneNumber: toE164(phoneNumber), message: String(message).slice(0, 300) });
+    res.json({ id: doc._id, status: doc.status });
+  } catch (e) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+exports.queueStatus = async (req, res) => {
+  try {
+    const doc = await SmsQueue.findById(req.params.id).select("status error");
+    res.json({ status: doc ? doc.status : "expired", error: doc?.error });
   } catch (e) {
     res.status(500).json({ message: "Server error" });
   }
