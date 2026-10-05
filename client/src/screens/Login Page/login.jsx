@@ -232,6 +232,40 @@ export default function LoginModal() {
     }
   };
 
+  // "Didn't get the SMS?" — emails the same code to the email already saved on
+  // the account (never to a newly typed address).
+  const handleEmailFallback = async () => {
+    setMessage(null);
+    setSubmitting(true);
+    try {
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/login/request-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mobileNumber, via: "email" }),
+        credentials: "include",
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setMaskedEmail(data.maskedEmail || null);
+        setMessage({
+          text: `We emailed the same code to ${data.maskedEmail || "your registered email"}. Check spam too.`,
+          type: "success",
+        });
+      } else if (data.code === "NO_EMAIL") {
+        setMessage({
+          text: "This account has no email saved, so we can't email the code. Please try the SMS code again or contact support.",
+          type: "error",
+        });
+      } else {
+        setMessage({ text: data.message || "Couldn't email the code", type: "error" });
+      }
+    } catch (err) {
+      setMessage({ text: "Couldn't email the code", type: "error" });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   // ============ PASSWORD FLOW HANDLERS ============
   const handleMobileCheck = async (e) => {
     e.preventDefault();
@@ -585,6 +619,23 @@ export default function LoginModal() {
                   Resend code
                 </Link>
               </Stack>
+
+              {/* Appears after 20s of waiting for the SMS. */}
+              {loginChannel === "mobile" && !otpExpired && OTP_VALIDITY_SECONDS - time >= 20 && (
+                <Box sx={{ textAlign: "center", mb: 4 }}>
+                  <Link
+                    component="button"
+                    type="button"
+                    variant="body2"
+                    underline="hover"
+                    onClick={handleEmailFallback}
+                    disabled={submitting}
+                    sx={{ color: "secondary.main", fontWeight: 600 }}
+                  >
+                    Didn't get the SMS? Email me the code
+                  </Link>
+                </Box>
+              )}
 
               <AuthButton loading={submitting} loadingText="Verifying…" disabled={otpExpired}>
                 Verify and continue

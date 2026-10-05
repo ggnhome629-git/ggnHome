@@ -109,6 +109,38 @@ exports.requestOtp = async (req, res) => {
       if (!/^\d{10}$/.test(mobileNumber)) {
         return res.status(400).json({ message: "Enter a valid 10-digit mobile number" });
       }
+
+      // "Didn't get the SMS?" -> send the code to the email saved on this
+      // account. Reuses the code that was already sent by SMS while it is still
+      // valid (so whichever arrives first works), otherwise makes a new one.
+      if (req.body.via === "email") {
+        const existing = await User.findOne({ mobileNumber });
+        if (!existing) return res.status(404).json({ message: "Request a code by SMS first." });
+        if (!existing.email) {
+          return res.status(400).json({
+            code: "NO_EMAIL",
+            message: "There is no email saved on this account, so we can't email the code.",
+          });
+        }
+        if (!existing.otp || !existing.otpExpiry || existing.otpExpiry.getTime() < Date.now()) {
+          existing.otp = generateOtp();
+          existing.otpExpiry = new Date(Date.now() + OTP_TTL_MS);
+          existing.otpAttempts = 0;
+          await existing.save();
+        }
+        try {
+          await sendOtpEmail(existing, existing.otp);
+        } catch (emailError) {
+          return res.status(500).json({ message: "Failed to send OTP email" });
+        }
+        return res.status(200).json({
+          message: "We emailed the same code to your registered email",
+          channel: "sms",
+          emailFallback: true,
+          maskedEmail: maskEmail(existing.email),
+        });
+      }
+
       user = await User.findOne({ mobileNumber });
       if (!user) {
         // New number: account is created from the number alone.
