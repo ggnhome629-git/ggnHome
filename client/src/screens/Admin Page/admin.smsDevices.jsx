@@ -43,6 +43,13 @@ async function api(path, options = {}) {
   return data;
 }
 
+const fmtTime = (iso) =>
+  iso
+    ? new Date(iso).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", second: "2-digit" })
+    : "—";
+
+const STATUS_COLOR = { sent: "success", failed: "error", queued: "warning", sending: "info", expired: "default" };
+
 const ago = (iso) => {
   if (!iso) return "never";
   const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
@@ -58,10 +65,13 @@ export default function AdminSmsDevices() {
   const [error, setError] = useState("");
   const [testNumber, setTestNumber] = useState("");
   const [testMsg, setTestMsg] = useState(null);
+  const [log, setLog] = useState([]);
 
   const load = useCallback(async () => {
     try {
-      setData(await api("/api/admin/sms-devices"));
+      const [devices, logRes] = await Promise.all([api("/api/admin/sms-devices"), api("/api/admin/sms-log?limit=100")]);
+      setData(devices);
+      setLog(logRes.rows || []);
       setError("");
     } catch (e) {
       setError(e.message);
@@ -197,8 +207,8 @@ export default function AdminSmsDevices() {
                 <TableCell>
                   <Chip
                     size="small"
-                    label={!d.enabled ? "Disabled" : d.online ? "Online" : "Offline"}
-                    color={!d.enabled ? "default" : d.online ? "success" : "warning"}
+                    label={!d.enabled ? "Disabled" : !d.online ? "Offline" : d.ready ? "Online" : "Cooling down"}
+                    color={!d.enabled ? "default" : !d.online ? "warning" : d.ready ? "success" : "info"}
                   />
                 </TableCell>
                 <TableCell align="right">
@@ -219,6 +229,49 @@ export default function AdminSmsDevices() {
                     <Trash2 size={16} />
                   </IconButton>
                 </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+        Recent messages (last 100, kept 30 days)
+      </Typography>
+      <TableContainer component={Paper} sx={{ mb: 3, maxHeight: 420 }}>
+        <Table size="small" stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell>Queued at</TableCell>
+              <TableCell>To</TableCell>
+              <TableCell>Type</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Sent by</TableCell>
+              <TableCell>Sent at</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {log.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    No messages yet.
+                  </Typography>
+                </TableCell>
+              </TableRow>
+            )}
+            {log.map((m) => (
+              <TableRow key={m.id}>
+                <TableCell>{fmtTime(m.createdAt)}</TableCell>
+                <TableCell>{m.phoneNumber}</TableCell>
+                <TableCell>{m.kind === "otp" ? "Login OTP" : "Test"}</TableCell>
+                <TableCell>
+                  <Tooltip title={m.error || ""}>
+                    <Chip size="small" label={m.status} color={STATUS_COLOR[m.status] || "default"} />
+                  </Tooltip>
+                </TableCell>
+                <TableCell>{m.deviceName || "—"}</TableCell>
+                <TableCell>{fmtTime(m.sentAt)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

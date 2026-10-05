@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const SmsQueue = require("../models/SmsQueue.model");
 const SmsDevice = require("../models/SmsDevice.model");
+const SmsLog = require("../models/SmsLog.model");
 
 // Messages older than this are not worth sending (OTP valid for 5 minutes).
 const MAX_AGE_MS = 4 * 60 * 1000;
@@ -9,6 +10,14 @@ const ONLINE_WINDOW_MS = 20 * 1000;
 // If the phone a message was assigned to doesn't pick it up in this long,
 // any other phone may take it (covers a phone dying mid-queue).
 const FAILOVER_AFTER_MS = 15 * 1000;
+// A message a phone claimed but never reported on (phone died mid-send) goes
+// back to the pool after this long.
+const RECLAIM_AFTER_MS = 30 * 1000;
+// Total send attempts (each on a different phone) before giving up.
+const MAX_ATTEMPTS = 3;
+// Server-side minimum gap between two SMS from the same phone (the app also
+// paces itself; this protects against old app versions).
+const MIN_GAP_MS = Number(process.env.SMS_DEVICE_MIN_GAP_MS) || 5000;
 // Soft cap per SIM per day, to stay clear of carrier spam limits.
 const DAILY_LIMIT = Number(process.env.SMS_DEVICE_DAILY_LIMIT) || 90;
 
@@ -45,7 +54,10 @@ exports.pickDevice = async () => {
   if (!online.length) return null;
   const today = todayKey();
   const underCap = online.filter((d) => d.dayKey !== today || d.sentToday < DAILY_LIMIT);
-  const pool = underCap.length ? underCap : online;
+  const ready = underCap.filter((d) => d.ready !== false);
+  // Every phone busy/capped: leave it open, the first phone that frees up takes it.
+  if (!ready.length) return null;
+  const pool = ready;
   return pool[crypto.randomInt(pool.length)].deviceId;
 };
 
@@ -67,6 +79,7 @@ exports.claimNext = async (req, res) => {
       {
         $set: {
           lastSeen: new Date(),
+          ready: req.headers["x-device-ready"] !== "0",
           appVersion: String(req.headers["x-app-version"] || "").slice(0, 20),
         },
         // Name only on first sight, so an admin's rename sticks.
@@ -74,23 +87,44 @@ exports.claimNext = async (req, res) => {
       },
       { upsert: true, new: true }
     );
-    if (!device.enabled) return res.status(204).end();
+    // Lets every phone show how much is waiting.
+    const pending = await SmsQueue.countDocuments({
+      status: "pending",
+      createdAt: { $gt: new Date(Date.now() - MAX_AGE_MS) },
+    });
+    res.set("X-Queue-Pending", String(pending));
+
+    if (!device.enabled || !device.ready) return res.status(204).end();
+    if (device.lastSentAt && Date.now() - device.lastSentAt.getTime() < MIN_GAP_MS) return res.status(204).end();
 
     const now = Date.now();
+    const fresh = { createdAt: { $gt: new Date(now - MAX_AGE_MS) }, failedBy: { $ne: deviceId } };
     const msg = await SmsQueue.findOneAndUpdate(
       {
-        status: "pending",
-        createdAt: { $gt: new Date(now - MAX_AGE_MS) },
+        ...fresh,
         $or: [
-          { assignedDevice: deviceId },
-          { assignedDevice: null },
-          { createdAt: { $lt: new Date(now - FAILOVER_AFTER_MS) } },
+          // New message meant for this phone, for anyone, or abandoned by its phone.
+          {
+            status: "pending",
+            $or: [
+              { assignedDevice: deviceId },
+              { assignedDevice: null },
+              { createdAt: { $lt: new Date(now - FAILOVER_AFTER_MS) } },
+            ],
+          },
+          // Claimed by a phone that went quiet: put it back in play.
+          { status: "sending", claimedAt: { $lt: new Date(now - RECLAIM_AFTER_MS) } },
         ],
       },
-      { status: "sending", sentBy: deviceId },
+      { status: "sending", sentBy: deviceId, claimedAt: new Date(now) },
       { sort: { createdAt: 1 }, new: true }
     );
     if (!msg) return res.status(204).end();
+    // Only ever moves queued -> sending, so a slow write can't overwrite "sent".
+    await SmsLog.updateOne(
+      { queueId: String(msg._id), status: "queued" },
+      { status: "sending", deviceId, deviceName: device.name }
+    ).catch(() => {});
     res.json({ id: msg._id, phoneNumber: msg.phoneNumber, message: msg.message });
   } catch (e) {
     res.status(500).json({ message: "Server error" });
@@ -104,10 +138,32 @@ exports.reportResult = async (req, res) => {
     if (!["sent", "failed"].includes(status)) return res.status(400).json({ message: "Invalid status" });
     const deviceId = String(req.headers["x-device-id"] || "");
 
-    // Once sent, blank the text — it may contain the OTP. The record stays
-    // (until its TTL expiry) so the admin can see delivery state.
-    if (status === "sent") await SmsQueue.updateOne({ _id: req.params.id }, { status, message: "[sent]" });
-    else await SmsQueue.updateOne({ _id: req.params.id }, { status, error: String(error || "").slice(0, 200) });
+    const errText = String(error || "").slice(0, 200);
+    let finalStatus = status;
+
+    if (status === "sent") {
+      // Blank the text — it contains the OTP. The record stays (until its TTL
+      // expiry) so delivery state is visible.
+      await SmsQueue.updateOne({ _id: req.params.id }, { status: "sent", message: "[sent]" });
+    } else {
+      // Failed on this phone: hand it to a different phone (up to 3 tries).
+      const q = await SmsQueue.findById(req.params.id);
+      if (q && (q.attempts || 0) + 1 < MAX_ATTEMPTS) {
+        await SmsQueue.updateOne(
+          { _id: q._id },
+          { status: "pending", assignedDevice: null, error: errText, $inc: { attempts: 1 }, $push: { failedBy: deviceId } }
+        );
+        finalStatus = "queued";
+      } else {
+        await SmsQueue.updateOne({ _id: req.params.id }, { status: "failed", error: errText });
+      }
+    }
+
+    const logUpdate = { status: finalStatus };
+    if (status === "sent") logUpdate.sentAt = new Date();
+    if (status === "failed") logUpdate.error = errText;
+    if (deviceId) logUpdate.deviceId = deviceId;
+    await SmsLog.updateOne({ queueId: String(req.params.id) }, logUpdate).catch(() => {});
 
     if (deviceId) {
       const device = await SmsDevice.findOne({ deviceId });
@@ -123,7 +179,7 @@ exports.reportResult = async (req, res) => {
           device.lastSentAt = new Date();
         } else {
           device.failedTotal += 1;
-          device.lastError = String(error || "").slice(0, 200);
+          device.lastError = errText;
         }
         await device.save();
       }
@@ -149,6 +205,7 @@ exports.adminListDevices = async (req, res) => {
         deviceId: d.deviceId,
         name: d.name,
         enabled: d.enabled,
+        ready: d.ready !== false,
         online: !!d.lastSeen && Date.now() - new Date(d.lastSeen).getTime() < ONLINE_WINDOW_MS,
         lastSeen: d.lastSeen,
         appVersion: d.appVersion,
@@ -196,8 +253,33 @@ exports.adminTestSend = async (req, res) => {
     if (!/^\d{10}$/.test(String(phoneNumber || ""))) return res.status(400).json({ message: "Enter a 10-digit mobile number" });
     const { sendSms } = require("../utils/sendSms");
     const message = String(req.body.message || "Hello from ggnhome-sms-service").slice(0, 300);
-    await sendSms(phoneNumber, message);
+    await sendSms(phoneNumber, message, "test");
     res.json({ ok: true, message: "Queued — the SMS should arrive in a few seconds" });
+  } catch (e) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// GET /api/admin/sms-log?limit=100 — newest first
+exports.adminSmsLog = async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query.limit) || 100, 500);
+    const rows = await SmsLog.find().sort({ createdAt: -1 }).limit(limit).lean();
+    // Anything still "queued"/"sending" after the queue's lifetime never went out.
+    const stale = Date.now() - 10 * 60 * 1000;
+    res.json({
+      rows: rows.map((r) => ({
+        id: r._id,
+        phoneNumber: r.phoneNumber,
+        kind: r.kind,
+        status:
+          ["queued", "sending"].includes(r.status) && new Date(r.createdAt).getTime() < stale ? "expired" : r.status,
+        deviceName: r.deviceName,
+        error: r.error,
+        createdAt: r.createdAt,
+        sentAt: r.sentAt,
+      })),
+    });
   } catch (e) {
     res.status(500).json({ message: "Server error" });
   }

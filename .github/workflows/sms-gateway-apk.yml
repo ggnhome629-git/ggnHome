@@ -1,4 +1,4 @@
-name: Build SMS Gateway APK
+name: Build ggnHome Admin APK
 
 on:
   push:
@@ -35,11 +35,14 @@ jobs:
       - name: Build APK
         run: gradle assembleRelease --no-daemon
 
+      - name: Name the APK
+        run: cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/ggnhome-admin.apk
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ggnhome-sms-gateway-apk
-          path: sms-gateway-app/app/build/outputs/apk/release/*.apk
+          name: ggnhome-admin-apk
+          path: sms-gateway-app/app/build/outputs/apk/release/ggnhome-admin.apk
 
       - name: Distribute via Firebase App Distribution
         if: ${{ env.FIREBASE_APP_ID != '' && env.FIREBASE_SERVICE_ACCOUNT != '' }}
@@ -48,5 +51,5 @@ jobs:
           appId: ${{ secrets.FIREBASE_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           groups: ${{ vars.FIREBASE_TESTER_GROUPS || 'testers' }}
-          file: sms-gateway-app/app/build/outputs/apk/release/app-release.apk
-          releaseNotes: "SMS gateway build ${{ github.sha }}"
+          file: sms-gateway-app/app/build/outputs/apk/release/ggnhome-admin.apk
+          releaseNotes: "ggnHome Admin build ${{ github.sha }}"

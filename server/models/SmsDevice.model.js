@@ -8,6 +8,8 @@ const SmsDeviceSchema = new mongoose.Schema(
     // Admin can switch a phone off (e.g. SIM at risk of being blocked).
     enabled: { type: Boolean, default: true },
     lastSeen: { type: Date },
+    // false while the phone is cooling down / at its hourly cap (anti-block pacing)
+    ready: { type: Boolean, default: true },
     appVersion: { type: String },
     // Counters used to spread load and to stay under per-SIM daily limits.
     sentTotal: { type: Number, default: 0 },

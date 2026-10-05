@@ -29,7 +29,7 @@ function toE164(mobileNumber) {
   return `+${digits}`;
 }
 
-async function sendSms(mobileNumber, message) {
+async function sendSms(mobileNumber, message, kind = "otp") {
   if (!isSmsConfigured()) throw new Error("SMS gateway is not configured");
 
   if (!useThirdParty()) {
@@ -37,7 +37,11 @@ async function sendSms(mobileNumber, message) {
     const { pickDevice } = require("../controllers/smsGateway.controller");
     // Random online phone, so no single SIM carries all the traffic.
     const assignedDevice = await pickDevice();
-    return SmsQueue.create({ phoneNumber: toE164(mobileNumber), message, assignedDevice });
+    const SmsLog = require("../models/SmsLog.model");
+    const phoneNumber = toE164(mobileNumber);
+    const queued = await SmsQueue.create({ phoneNumber, message, assignedDevice });
+    await SmsLog.create({ queueId: String(queued._id), phoneNumber, kind, assignedDevice }).catch(() => {});
+    return queued;
   }
 
   const baseUrl = (process.env.SMS_GATEWAY_URL || "https://api.sms-gate.app/3rdparty/v1").replace(/\/+$/, "");
@@ -52,11 +56,20 @@ async function sendSms(mobileNumber, message) {
   return res.data;
 }
 
-function sendOtpSms(mobileNumber, otp) {
-  return sendSms(
-    mobileNumber,
-    `${otp} is your ggnHome OTP. Valid for 5 minutes. Do not share it with anyone.`
+// The SMS people receive. Kept under one 160-character segment (cheaper, and
+// delivered as a single message). The last line follows the Web OTP format
+// ("@host #code") so Chrome on Android can offer to fill the code in.
+function otpSmsText(otp) {
+  return (
+    `${otp} is your ggnHome login code. Valid for 5 minutes. ` +
+    `Never share it with anyone.\n` +
+    `www.ggnhome.com\n` +
+    `@www.ggnhome.com #${otp}`
   );
 }
 
-module.exports = { sendSms, sendOtpSms, isSmsConfigured, toE164 };
+function sendOtpSms(mobileNumber, otp) {
+  return sendSms(mobileNumber, otpSmsText(otp), "otp");
+}
+
+module.exports = { sendSms, sendOtpSms, otpSmsText, isSmsConfigured, toE164 };

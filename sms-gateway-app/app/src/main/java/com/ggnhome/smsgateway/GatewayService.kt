@@ -26,6 +26,8 @@ class GatewayService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startInForeground()
+        // If the system or an OEM task-killer stops us, this alarm brings us back.
+        Watchdog.schedule(this, 5 * 60 * 1000L)
         if (!running) {
             running = true
             val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -35,7 +37,18 @@ class GatewayService : Service() {
         return START_STICKY
     }
 
+    // Swiped away from recents: make sure we come straight back.
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        if (Config.prefs(this).getBoolean(Config.KEY_ENABLED, false)) Watchdog.schedule(this, 2000L)
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onDestroy() {
+        if (Config.prefs(this).getBoolean(Config.KEY_ENABLED, false)) {
+            Watchdog.schedule(this, 5000L)   // killed while it should be running
+        } else {
+            Watchdog.cancel(this)            // user pressed Stop
+        }
         running = false
         worker?.interrupt()
         wakeLock?.let { if (it.isHeld) it.release() }
@@ -46,13 +59,19 @@ class GatewayService : Service() {
         val channelId = "gateway"
         val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.createNotificationChannel(
-            NotificationChannel(channelId, "SMS Gateway", NotificationManager.IMPORTANCE_LOW)
+            NotificationChannel(channelId, "ggnHome SMS service", NotificationManager.IMPORTANCE_LOW)
         )
         val notification = Notification.Builder(this, channelId)
-            .setContentTitle("ggnhome-sms-service running")
-            .setContentText("Waiting for OTP messages to send")
+            .setContentTitle("ggnHome Admin · SMS service running")
+            .setContentText("Sending login OTPs from this SIM in the background")
             .setSmallIcon(android.R.drawable.stat_notify_chat)
             .setOngoing(true)
+            .setContentIntent(
+                android.app.PendingIntent.getActivity(
+                    this, 0, Intent(this, MainActivity::class.java),
+                    android.app.PendingIntent.FLAG_IMMUTABLE
+                )
+            )
             .build()
         if (Build.VERSION.SDK_INT >= 29) {
             startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
@@ -60,6 +79,8 @@ class GatewayService : Service() {
             startForeground(1, notification)
         }
     }
+
+    private class Resp(val code: Int, val body: String, val pending: Int)
 
     private fun pollLoop() {
         val prefs = Config.prefs(this)
@@ -71,27 +92,42 @@ class GatewayService : Service() {
 
         while (running) {
             try {
-                val next = request("GET", "$base/sms-gateway/next", key, null, deviceId, deviceName)
+                // Pacing: only take a new message once the cool-down is over and
+                // we are under the hourly cap. "Not ready" still checks in, so the
+                // server keeps us listed (and routes OTPs to the other phones).
+                val now = System.currentTimeMillis()
+                val ready = now >= prefs.getLong(Config.KEY_NEXT_SEND, 0L) &&
+                    Config.sentLastHour(this) < Config.HOURLY_LIMIT
+
+                val next = request("GET", "$base/sms-gateway/next", key, null, deviceId, deviceName, ready)
                 failures = 0
-                if (next.first == 200 || next.first == 204) {
-                    prefs.edit().putLong(Config.KEY_BEAT, System.currentTimeMillis()).apply()
+                if (next.code == 200 || next.code == 204) {
+                    prefs.edit()
+                        .putLong(Config.KEY_BEAT, System.currentTimeMillis())
+                        .putInt(Config.KEY_QUEUE, next.pending)
+                        .apply()
                 }
-                if (next.first == 200) {
-                    val job = JSONObject(next.second)
+                if (next.code == 200) {
+                    val job = JSONObject(next.body)
                     val id = job.getString("id")
+                    val to = job.getString("phoneNumber")
                     try {
-                        sendSms(job.getString("phoneNumber"), job.getString("message"))
-                        request("POST", "$base/sms-gateway/$id/result", key, """{"status":"sent"}""", deviceId, deviceName)
+                        sendSms(to, job.getString("message"))
+                        request("POST", "$base/sms-gateway/$id/result", key, """{"status":"sent"}""", deviceId, deviceName, ready)
                         prefs.edit().putInt(Config.KEY_SENT, prefs.getInt(Config.KEY_SENT, 0) + 1).apply()
-                        note("Sent to …${job.getString("phoneNumber").takeLast(4)}")
+                        note("Sent to …${to.takeLast(4)}")
+                        Config.appendLog(this, to, true, "Sent")
                     } catch (e: Exception) {
                         val err = JSONObject().put("status", "failed").put("error", e.message ?: "send error")
-                        request("POST", "$base/sms-gateway/$id/result", key, err.toString(), deviceId, deviceName)
+                        request("POST", "$base/sms-gateway/$id/result", key, err.toString(), deviceId, deviceName, ready)
                         note("Send failed: ${e.message}")
+                        Config.appendLog(this, to, false, e.message ?: "send error")
                     }
-                    continue // check immediately for more
+                    // Cool down before this SIM sends again (random, so it doesn't look automated).
+                    val gap = Config.MIN_GAP_MS + (Math.random() * Config.JITTER_MS).toLong()
+                    prefs.edit().putLong(Config.KEY_NEXT_SEND, System.currentTimeMillis() + gap).apply()
                 }
-                if (next.first == 401) note("Wrong device key")
+                if (next.code == 401) note("Wrong device key")
                 Thread.sleep(3000)
             } catch (_: InterruptedException) {
                 return
@@ -110,7 +146,7 @@ class GatewayService : Service() {
         sms.sendMultipartTextMessage(to, null, parts, null, null)
     }
 
-    private fun request(method: String, url: String, key: String, body: String?, deviceId: String, deviceName: String): Pair<Int, String> {
+    private fun request(method: String, url: String, key: String, body: String?, deviceId: String, deviceName: String, ready: Boolean): Resp {
         val c = URL(url).openConnection() as HttpURLConnection
         try {
             c.requestMethod = method
@@ -120,6 +156,7 @@ class GatewayService : Service() {
             c.setRequestProperty("X-Device-Id", deviceId)
             c.setRequestProperty("X-Device-Name", deviceName)
             c.setRequestProperty("X-App-Version", Config.APP_VERSION)
+            c.setRequestProperty("X-Device-Ready", if (ready) "1" else "0")
             if (body != null) {
                 c.doOutput = true
                 c.setRequestProperty("Content-Type", "application/json")
@@ -127,7 +164,8 @@ class GatewayService : Service() {
             }
             val code = c.responseCode
             val text = if (code == 200) c.inputStream.bufferedReader().use { it.readText() } else ""
-            return Pair(code, text)
+            val pending = c.getHeaderField("X-Queue-Pending")?.toIntOrNull() ?: -1
+            return Resp(code, text, pending)
         } finally {
             c.disconnect()
         }

@@ -48,6 +48,27 @@ function tooManyFromIp(req) {
   return hits.length > 15;
 }
 
+function otpEmailHtml(otp) {
+  return `<!DOCTYPE html>
+<html><body style="margin:0;padding:24px;background:#F4F7F9;font-family:'Segoe UI',Arial,sans-serif;">
+  <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,51,102,0.10);">
+    <div style="background:#003366;padding:20px 24px;">
+      <img src="https://www.ggnhome.com/Logo2.jpg" alt="ggnHome" width="44" height="44" style="vertical-align:middle;border-radius:10px;background:#fff;">
+      <span style="color:#fff;font-size:20px;font-weight:600;margin-left:12px;vertical-align:middle;">ggnHome</span>
+    </div>
+    <div style="padding:28px 24px;text-align:center;color:#1B2A3A;">
+      <p style="margin:0 0 8px;font-size:16px;">Your login code is</p>
+      <div style="font-size:38px;letter-spacing:10px;font-weight:700;color:#003366;margin:12px 0 18px;">${otp}</div>
+      <p style="margin:0;color:#5B6B7B;font-size:14px;">Valid for 5 minutes. Never share this code with anyone &mdash; ggnHome will never ask for it.</p>
+      <a href="https://www.ggnhome.com" style="display:inline-block;margin-top:24px;background:#00A79D;color:#fff;text-decoration:none;padding:12px 28px;border-radius:24px;font-weight:600;">Open www.ggnhome.com</a>
+    </div>
+    <div style="padding:14px 24px;background:#F4F7F9;color:#8A98A5;font-size:12px;text-align:center;">
+      Didn't request this? You can safely ignore this email.
+    </div>
+  </div>
+</body></html>`;
+}
+
 async function sendOtpEmail(user, otp) {
   const emailParams = process.env.BREVO_OTP_TEMPLATE_ID
     ? {
@@ -60,8 +81,8 @@ async function sendOtpEmail(user, otp) {
         to: user.email,
         params: { otp_code: otp },
         subject: "Your OTP Code for www.ggnHome.com",
-        text: `Your OTP code is ${otp}. It will expire in 5 minutes.`,
-        html: `<p><strong>Your OTP code:</strong> ${otp}</p><p>This code will expire in 5 minutes.</p>`,
+        text: `${otp} is your ggnHome login code. Valid for 5 minutes. Never share it with anyone. www.ggnhome.com`,
+        html: otpEmailHtml(otp),
       };
   await sendEmail(emailParams);
 }

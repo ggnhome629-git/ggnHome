@@ -11,7 +11,14 @@ const SmsQueueSchema = new mongoose.Schema({
   // Phone chosen at random when queued; null = any phone may take it.
   assignedDevice: { type: String, default: null },
   sentBy: { type: String },
+  claimedAt: { type: Date },
+  // Retry bookkeeping: a failed send goes to a *different* phone.
+  attempts: { type: Number, default: 0 },
+  failedBy: { type: [String], default: [] },
   createdAt: { type: Date, default: Date.now, expires: 600 },
 });
+
+// Lookup used by every phone's poll.
+SmsQueueSchema.index({ status: 1, assignedDevice: 1, createdAt: 1 });
 
 module.exports = mongoose.model("SmsQueue", SmsQueueSchema);

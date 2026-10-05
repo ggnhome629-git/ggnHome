@@ -19,6 +19,7 @@ import android.text.InputType
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -42,6 +43,17 @@ class MainActivity : Activity() {
     private lateinit var beatView: TextView
     private lateinit var eventView: TextView
     private lateinit var sentView: TextView
+    private lateinit var bgView: TextView
+    private lateinit var logView: TextView
+    private lateinit var queueView: TextView
+    private lateinit var paceView: TextView
+
+    private lateinit var admin: AdminWeb
+    private lateinit var smsScreen: View
+    private lateinit var adminScreen: View
+    private lateinit var tabAdmin: TextView
+    private lateinit var tabSms: TextView
+    private var currentTab = "admin"
     private lateinit var toggleBtn: Button
     private lateinit var urlInput: EditText
     private lateinit var keyInput: EditText
@@ -94,7 +106,10 @@ class MainActivity : Activity() {
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setBackgroundColor(navy)
+            background = GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                intArrayOf(navy, Color.parseColor("#4A6A8A"), teal)
+            )
             setPadding(dp(16), dp(20), dp(16), dp(20))
         }
         header.addView(ImageView(this).apply {
@@ -108,13 +123,13 @@ class MainActivity : Activity() {
             setPadding(dp(14), 0, 0, 0)
         }
         titles.addView(TextView(this).apply {
-            text = "ggnhome-sms-service"
+            text = "SMS Service"
             setTextColor(Color.WHITE)
             textSize = 19f
             setTypeface(typeface, Typeface.BOLD)
         })
         titles.addView(TextView(this).apply {
-            text = "Sends ggnHome OTPs from this phone's SIM"
+            text = "ggnHome Admin · sends login OTPs from this SIM"
             setTextColor(Color.parseColor("#B8D4E8"))
             textSize = 12f
         })
@@ -141,6 +156,12 @@ class MainActivity : Activity() {
         beatView = value().also { status.addView(it) }
         status.addView(label("Last event"))
         eventView = value().also { status.addView(it) }
+        status.addView(label("Waiting in server queue"))
+        queueView = value().also { status.addView(it) }
+        status.addView(label("Anti-block pacing"))
+        paceView = value().also { status.addView(it) }
+        status.addView(label("Background running"))
+        bgView = value().also { status.addView(it) }
         status.addView(label("SMS sent by this phone"))
         sentView = value().also { status.addView(it) }
         body.addView(status)
@@ -197,11 +218,102 @@ class MainActivity : Activity() {
         device.addView(advanced)
         body.addView(device)
 
+        // ---- history of sent messages ----
+        val history = card()
+        val historyHeader = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        historyHeader.addView(TextView(this).apply {
+            text = "Sent messages"
+            setTextColor(navy)
+            textSize = 16f
+            setTypeface(typeface, Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        historyHeader.addView(TextView(this).apply {
+            text = "Clear"
+            setTextColor(teal)
+            setPadding(dp(8), dp(4), dp(8), dp(4))
+            setOnClickListener { Config.clearLog(this@MainActivity); refresh() }
+        })
+        history.addView(historyHeader)
+        logView = TextView(this).apply {
+            setTextColor(Color.parseColor("#1B2A3A"))
+            textSize = 13f
+            typeface = Typeface.MONOSPACE
+            setPadding(0, dp(8), 0, 0)
+        }
+        history.addView(logView)
+        body.addView(history)
+
         root.addView(body)
-        setContentView(ScrollView(this).apply {
+        smsScreen = ScrollView(this).apply {
             setBackgroundColor(bg)
             addView(root)
+        }
+
+        admin = AdminWeb(this)
+        adminScreen = admin.build()
+
+        val pages = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
+            addView(adminScreen)
+            addView(smsScreen)
+        }
+
+        // ---- bottom tab bar ----
+        val tabs = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setBackgroundColor(Color.WHITE)
+            elevation = dp(8).toFloat()
+        }
+        tabAdmin = tabButton("▦  Admin") { showTab("admin") }
+        tabSms = tabButton("✉  SMS Service") { showTab("sms") }
+        tabs.addView(tabAdmin)
+        tabs.addView(tabSms)
+
+        setContentView(LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(pages)
+            addView(tabs)
         })
+        showTab(Config.prefs(this).getString("tab", "admin") ?: "admin")
+    }
+
+    private fun tabButton(text: String, onClick: () -> Unit) = TextView(this).apply {
+        this.text = text
+        gravity = Gravity.CENTER
+        textSize = 14f
+        setTypeface(typeface, Typeface.BOLD)
+        setPadding(0, dp(14), 0, dp(14))
+        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        setOnClickListener { onClick() }
+    }
+
+    private fun showTab(tab: String) {
+        currentTab = tab
+        Config.prefs(this).edit().putString("tab", tab).apply()
+        val isAdmin = tab == "admin"
+        adminScreen.visibility = if (isAdmin) View.VISIBLE else View.GONE
+        smsScreen.visibility = if (isAdmin) View.GONE else View.VISIBLE
+        if (isAdmin) admin.ensureLoaded()
+        for ((v, on) in listOf(tabAdmin to isAdmin, tabSms to !isAdmin)) {
+            v.setTextColor(if (on) navy else grey)
+            v.background = if (on) rounded(Color.parseColor("#E6F6F5"), 0) else null
+        }
+    }
+
+    @Deprecated("Activity API")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == AdminWeb.FILE_REQUEST) admin.onFileResult(resultCode, data)
+    }
+
+    @Deprecated("Activity API")
+    override fun onBackPressed() {
+        if (currentTab == "admin" && admin.goBack()) return
+        super.onBackPressed()
     }
 
     override fun onResume() {
@@ -265,6 +377,9 @@ class MainActivity : Activity() {
             testResult = "Could not start service: ${e.message}"
         }
         refresh()
+        // Without this exemption Android may stop the service when the screen is off.
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        if (!pm.isIgnoringBatteryOptimizations(packageName)) askIgnoreBatteryOptimizations()
     }
 
     // One-off request so a wrong URL / key is reported immediately.
@@ -281,6 +396,7 @@ class MainActivity : Activity() {
                 c.setRequestProperty("X-Device-Id", id)
                 c.setRequestProperty("X-Device-Name", Config.deviceName())
                 c.setRequestProperty("X-App-Version", Config.APP_VERSION)
+                c.setRequestProperty("X-Device-Ready", "0")
                 val code = c.responseCode
                 c.disconnect()
                 when (code) {
@@ -336,6 +452,31 @@ class MainActivity : Activity() {
         else SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(beat))
         eventView.text = prefs.getString(Config.KEY_LAST, "—")
         sentView.text = prefs.getInt(Config.KEY_SENT, 0).toString()
+
+        val pending = prefs.getInt(Config.KEY_QUEUE, -1)
+        queueView.text = if (pending < 0) "—" else "$pending message(s)"
+        val waitMs = prefs.getLong(Config.KEY_NEXT_SEND, 0L) - System.currentTimeMillis()
+        val lastHour = Config.sentLastHour(this)
+        paceView.text = when {
+            lastHour >= Config.HOURLY_LIMIT -> "Hourly limit reached ($lastHour/${Config.HOURLY_LIMIT}) — other phones take over"
+            waitMs > 0 -> "Cooling down ${(waitMs + 999) / 1000}s · $lastHour/${Config.HOURLY_LIMIT} this hour"
+            else -> "Ready · $lastHour/${Config.HOURLY_LIMIT} this hour"
+        }
+
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        val unrestricted = pm.isIgnoringBatteryOptimizations(packageName)
+        bgView.text = if (unrestricted) "Allowed ✔ (keeps running when screen is off)"
+        else "Restricted ✘ — tap “Allow background running” below"
+        bgView.setTextColor(if (unrestricted) Color.parseColor("#1E9E5A") else Color.parseColor("#C0392B"))
+
+        val entries = Config.readLog(this)
+        logView.text = if (entries.isEmpty()) "Nothing sent yet." else {
+            val fmt = SimpleDateFormat("dd MMM HH:mm:ss", Locale.getDefault())
+            entries.take(50).joinToString("\n") {
+                val mark = if (it.ok) "✔" else "✘ ${it.detail}"
+                "${fmt.format(Date(it.time))}  ${it.number}  $mark"
+            }
+        }
 
         toggleBtn.text = if (on) "Stop service" else "Start service"
         toggleBtn.background = rounded(if (on) Color.parseColor("#C0392B") else teal, 14)

@@ -1,6 +1,12 @@
-# ggnhome-sms-service
+# ggnHome Admin (Android)
 
-Android app that sends ggnHome OTP SMS from the phone's SIM.
+One app with two tabs:
+- **Admin** — the full www.ggnhome.com admin (same pages and UI as the website, log in with your admin number).
+- **SMS Service** — sends ggnHome login OTPs from this phone's SIM, in the background.
+
+Anti-block pacing: each phone waits 8–14 s (random) between SMS and takes at
+most 30 per hour; while a phone cools down the server gives OTPs to the other
+phones, and if all are busy the OTP waits in the queue.
 
 **How it works:** the server queues each OTP (`SmsQueue`) and picks a random
 *online, enabled* phone that is under its daily limit. Each phone polls
