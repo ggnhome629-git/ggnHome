@@ -6,6 +6,7 @@ import { setupInterceptors } from "./utils/axiosInterceptor";
 import { pageTransitionVariants } from "./theme/motion";
 import Dashboard from "./screens/Dashboard/dashboard";
 import LoginModal from "./screens/Login Page/login";
+import SmsOtpTest from "./screens/Test Page/SmsOtpTest";
 import PropertyCheckout from "./screens/Visit Schedule/Clientvist";
 
 import PropertySearchInterface from "./screens/AI Assistant/ai";
@@ -132,6 +133,7 @@ function App() {
         <Routes location={location}>
       <Route path="/" element={<Dashboard />} />
       <Route path="/login" element={<LoginModal />} />
+      <Route path="/test" element={<SmsOtpTest />} />
       <Route path="/Rentaldetails/:id" element={<RentalPropertydetails />} />
       <Route path="/Saledetails/:id" element={<SalePropertyPage />} />
 
