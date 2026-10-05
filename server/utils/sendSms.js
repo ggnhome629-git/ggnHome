@@ -56,16 +56,11 @@ async function sendSms(mobileNumber, message, kind = "otp") {
   return res.data;
 }
 
-// The SMS people receive. Kept under one 160-character segment (cheaper, and
-// delivered as a single message). The last line follows the Web OTP format
-// ("@host #code") so Chrome on Android can offer to fill the code in.
+// The SMS people receive. Deliberately PLAIN: one short line, no links, no
+// extra lines. Messages from an ordinary mobile number that contain a URL or
+// look like a template get dropped by carrier / Samsung spam filters.
 function otpSmsText(otp) {
-  return (
-    `${otp} is your ggnHome login code. Valid for 5 minutes. ` +
-    `Never share it with anyone.\n` +
-    `www.ggnhome.com\n` +
-    `@www.ggnhome.com #${otp}`
-  );
+  return `${otp} is your ggnHome OTP. Valid for 5 minutes. Do not share it with anyone.`;
 }
 
 function sendOtpSms(mobileNumber, otp) {
