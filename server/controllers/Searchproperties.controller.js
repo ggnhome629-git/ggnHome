@@ -13,164 +13,110 @@ const UserPreferencesARIA = require("../models/UserPreferencesARIA.model");
 const getPagination = (req) => {
   const rawLimit = Number(req.query.limit);
   const rawPage = Number(req.query.page);
-  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
-  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(Math.floor(rawLimit), 100) : 20;
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? Math.floor(rawPage) : 1;
   const skip = (page - 1) * limit;
   return { limit, page, skip };
 };
 
-const normalizeUserQuery = (raw) => {
-  if (!raw || typeof raw !== 'string') return '';
-  let q = raw
-    .toLowerCase()
-    // normalize common abbreviations and remove punctuation
-    .replace(/\b(sec|sectr|sector|s|sector-)\b/gi, 'sector')
-    .replace(/[^a-z0-9\s-]/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+const escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  // fuzzy sector detection (accepts sec46, sector46, s 46, sectr 46 etc.)
-  const fuzzySectorMatch = q.match(/(?:sector|sec|s|sectr|sector-)\s*-?\s*(\d+)/i);
-  if (fuzzySectorMatch) {
-    q = q.replace(/(?:sector|sec|s|sectr|sector-)\s*-?\s*\d+/i, `Sector-${fuzzySectorMatch[1]}`);
-  } else if (/^\d+$/.test(q)) {
-    // if query is just a number treat as sector number
-    q = `Sector-${q}`;
-  }
+const MAX_QUERY_LENGTH = 100;
+const BHK_WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10 };
+const STOP_WORDS = new Set(['in', 'at', 'near', 'for', 'the', 'of', 'a', 'an', 'flat', 'flats', 'apartment', 'apartments', 'property', 'properties', 'house', 'home']);
 
-  // convert word numbers to digits for matching (one,two,three...)
-  const numberWords = { one:1, two:2, three:3, four:4, five:5, six:6 };
-  Object.keys(numberWords).forEach((w) => {
-    const r = new RegExp(`\\b${w}\\b`, 'gi');
-    if (r.test(q)) q = q.replace(r, String(numberWords[w]));
+// Parses free text such as "2bhk in sec 46", "sector-46", "S46", "46" or "dlf phase 2"
+// into structured parts: sector numbers, BHK count and any residual free text.
+const parseSearchQuery = (raw) => {
+  const result = { sectors: [], bhk: null, text: '' };
+  if (!raw || typeof raw !== 'string') return result;
+
+  let q = raw.toLowerCase().slice(0, MAX_QUERY_LENGTH).replace(/[^a-z0-9\s]/g, ' ');
+
+  // "two bhk" -> "2 bhk"
+  q = q.replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten)\b(?=\s*(?:bhk|bh|bed))/g, (w) => String(BHK_WORDS[w]));
+
+  // BHK / bedroom count
+  q = q.replace(/\b(\d{1,2})\s*(?:bhk|bh|b\s*h\s*k|bed(?:room)?s?)\b/, (_, n) => {
+    result.bhk = Number(n);
+    return ' ';
   });
 
-  // Handle BHK variants: "2bhk", "2 bh", "2 bhk", "2 bedroom", "two bedroom", "3bh", "3 bh k" etc.
-  const bhkPatterns = [/(\\d+)\s*-?\s*?bhs?k?/i, /(\\d+)\s*bed(room)?s?/i, /(\\d+)\s*bhk/i, /(\\d+)\s*b\s*h\s*k?/i];
-  for (const p of bhkPatterns) {
-    const m = q.match(p);
-    if (m) {
-      q = q.replace(p, `${m[1]} BHK`);
-      break;
-    }
+  // Sector numbers: sector 46, sec46, sectr-46, s 46
+  q = q.replace(/\b(?:sector|sectr|sec|s)\s*(\d{1,3})(?!\d)/g, (_, n) => {
+    const num = String(Number(n));
+    if (!result.sectors.includes(num)) result.sectors.push(num);
+    return ' ';
+  });
+
+  const words = q.split(/\s+/).filter((w) => w && !STOP_WORDS.has(w) && w !== 'sector' && w !== 'sec');
+
+  // A bare number ("46", "2bhk in 46") is treated as a sector number
+  if (!result.sectors.length && words.length === 1 && /^\d{1,3}$/.test(words[0])) {
+    result.sectors.push(String(Number(words[0])));
+    words.length = 0;
   }
 
-  // If user typed like "2bhk in 46" keep that phrasing as "2 BHK in Sector-46"
-  const combinedMatch = q.match(/(\d+)\s*BHK.*sector\s*-?\s*(\d+)/i);
-  if (combinedMatch) {
-    q = `${combinedMatch[1]} BHK in Sector-${combinedMatch[2]}`;
-  } else {
-    const looseSectorMatch = q.match(/\bsector\s*-?\s*(\d+)\b/i);
-    if (looseSectorMatch) {
-      q = q.replace(/\bsector\s*-?\s*\d+\b/i, `Sector-${looseSectorMatch[1]}`);
-    }
-  }
-
-  q = q.replace(/\s+/g, ' ').trim();
-  return q;
+  result.text = words.join(' ').trim();
+  return result;
 };
 
-const buildFilterObject = ({ normalizedQuery, normalizedType, extras = {} }) => {
+// Canonical string used for relevance scoring, e.g. "2 BHK in Sector-46"
+const buildCanonicalQuery = ({ sectors, bhk, text }) => {
+  const parts = [];
+  if (bhk) parts.push(`${bhk} BHK`);
+  if (sectors.length) parts.push(`${bhk ? 'in ' : ''}${sectors.map((s) => `Sector-${s}`).join(' ')}`);
+  if (text) parts.push(text);
+  return parts.join(' ').trim();
+};
+
+const sectorRegexFor = (num) => new RegExp(`^\\s*sector\\s*[-_.]?\\s*0*${num}(?!\\d)`, 'i');
+
+const buildFilterObject = ({ parsed, extras = {} }) => {
   const filter = { isActive: true };
-  const sectorNames = Array.isArray(extras.sectorNames) ? extras.sectorNames : [];
+  const and = [];
 
-  // Optional type enforcement (removed for price-exact match refactor)
-
-  if (normalizedQuery) {
-    const sectorMatch = normalizedQuery.match(/sector\s*-?\s*(\d+)/i);
-    const bhkMatch = normalizedQuery.match(/(\d+)\s*BHK/i);
-    const sectorNum = sectorMatch ? sectorMatch[1] : null;
-    const bhkNum = bhkMatch ? bhkMatch[1] : null;
-
-    const bhkRegex = bhkNum ? new RegExp(`${bhkNum}\\s*BHK`, 'i') : null;
-    const sectorRegex = sectorNum ? new RegExp(`\\bsector\\s*-?\\s*${sectorNum}\\b(?!\\d)`, 'i') : null;
-    const fullQueryRegex = new RegExp(normalizedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-    const gurgaonRegex = /(gurgaon|gurugram)/i;
-
-    const orConditions = [];
-    if (bhkRegex) orConditions.push({ 'totalArea.configuration': bhkRegex });
-
-    // Always allow a direct match on Sector with the raw text of the query.
-    // This ensures inputs like "dlf" or misspellings like "sehore" can still
-    // match the Sector field even when no explicit sector number or "BHK" is present.
-    orConditions.push({ Sector: fullQueryRegex });
-    // Also allow explicit sector names discovered in the sectors collection (area synonyms)
-    if (sectorNames.length) {
-      sectorNames.forEach((sname) => {
-        try {
-          const esc = String(sname).replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
-          orConditions.push({ Sector: new RegExp(esc, 'i') });
-        } catch (e) {}
-      });
-    }
-
-    orConditions.push({ address: fullQueryRegex });
-    orConditions.push({ description: fullQueryRegex });
-    orConditions.push({ address: gurgaonRegex });
-    orConditions.push({ description: gurgaonRegex });
-
-    if (sectorRegex && bhkRegex) {
-      // If user typed both Sector + BHK (e.g., "2bhk in 46"),
-      // return properties matching EITHER BHK OR Sector OR text fields.
-      const combinedOr = [];
-
-      combinedOr.push({ 'totalArea.configuration': bhkRegex });
-      combinedOr.push({ Sector: sectorRegex });
-
-      // include additional text matches but avoid Sector duplication
-      orConditions.forEach((cond) => {
-        const key = Object.keys(cond)[0];
-        if (key !== 'Sector') combinedOr.push(cond);
-      });
-
-      filter.$or = combinedOr;
-    } else if (sectorRegex) {
-      filter.$and = [{ Sector: sectorRegex }];
-    } else if (bhkRegex) {
-      filter.$or = orConditions;
-    } else {
-      filter.$or = orConditions;
-    }
+  if (parsed.sectors.length) {
+    // Strict: only properties located in the requested sector(s)
+    and.push({ $or: parsed.sectors.map((n) => ({ Sector: sectorRegexFor(n) })) });
+  }
+  if (parsed.bhk) {
+    and.push({ 'totalArea.configuration': new RegExp(`\\b0*${parsed.bhk}\\s*-?\\s*BHK`, 'i') });
+  }
+  // Free text only narrows results when no explicit sector was given
+  if (parsed.text && !parsed.sectors.length) {
+    const textRegex = new RegExp(escapeRegex(parsed.text), 'i');
+    and.push({ $or: [{ Sector: textRegex }, { address: textRegex }, { description: textRegex }] });
   }
 
   // Optional *non-mandatory* extra filters (do not break API)
-  const { minPrice, maxPrice, bedrooms, bathrooms, minArea, maxArea, price } = extras;
-  const rangeClauses = [];
-  if (price) {
-    const eq = Number(price);
-    const eqStr = String(price);
-    rangeClauses.push({
-      $or: [
-        { monthlyRent: eq },
-        { price: eq },
-        { monthlyRent: eqStr },
-        { price: eqStr },
-      ],
-    });
-  } else if (minPrice || maxPrice) {
-    // Match either monthlyRent or price depending on doc
-    const priceOr = [];
-    const priceCond = {};
-    if (minPrice) priceCond.$gte = Number(minPrice);
-    if (maxPrice) priceCond.$lte = Number(maxPrice);
-    priceOr.push({ monthlyRent: priceCond });
-    priceOr.push({ price: priceCond });
-    rangeClauses.push({ $or: priceOr });
-  }
-  if (minArea || maxArea) {
-    const areaCond = {};
-    if (minArea) areaCond.$gte = Number(minArea);
-    if (maxArea) areaCond.$lte = Number(maxArea);
-    rangeClauses.push({ $or: [{ area: areaCond }, { 'totalArea.sqft': areaCond }] });
-  }
-  if (bedrooms) rangeClauses.push({ bedrooms: Number(bedrooms) });
-  if (bathrooms) rangeClauses.push({ bathrooms: Number(bathrooms) });
+  const toNum = (v) => (v !== undefined && v !== null && v !== '' && Number.isFinite(Number(v)) ? Number(v) : null);
+  const price = toNum(extras.price);
+  const minPrice = toNum(extras.minPrice);
+  const maxPrice = toNum(extras.maxPrice);
+  const minArea = toNum(extras.minArea);
+  const maxArea = toNum(extras.maxArea);
+  const bedrooms = toNum(extras.bedrooms);
+  const bathrooms = toNum(extras.bathrooms);
 
-  if (rangeClauses.length) {
-    if (filter.$and) filter.$and = [...filter.$and, ...rangeClauses];
-    else filter.$and = rangeClauses;
+  if (price !== null) {
+    and.push({ $or: [{ monthlyRent: price }, { price }, { monthlyRent: String(price) }, { price: String(price) }] });
+  } else if (minPrice !== null || maxPrice !== null) {
+    const cond = {};
+    if (minPrice !== null) cond.$gte = minPrice;
+    if (maxPrice !== null) cond.$lte = maxPrice;
+    and.push({ $or: [{ monthlyRent: cond }, { price: cond }] });
   }
+  if (minArea !== null || maxArea !== null) {
+    const cond = {};
+    if (minArea !== null) cond.$gte = minArea;
+    if (maxArea !== null) cond.$lte = maxArea;
+    and.push({ $or: [{ area: cond }, { 'totalArea.sqft': cond }] });
+  }
+  if (bedrooms !== null) and.push({ bedrooms });
+  if (bathrooms !== null) and.push({ bathrooms });
 
+  if (and.length) filter.$and = and;
   return filter;
 };
 
@@ -233,16 +179,12 @@ exports.searchProperties = async (req, res) => {
 
     // ---------- QUERY NORMALIZATION ----------
     const rawQuery = hasQuery ? query : '';
-    const normalizedQuery = normalizeUserQuery(rawQuery);
-
-    // ----- Sector lookup disabled -----
-    // let sectorNameMatches = [];
-    // (intentionally disabled)
+    const parsedQuery = parseSearchQuery(rawQuery);
+    const normalizedQuery = buildCanonicalQuery(parsedQuery);
     const sectorNameMatches = [];
 
     const filter = buildFilterObject({
-      normalizedQuery,
-      normalizedType,
+      parsed: parsedQuery,
       extras: {
         minPrice: req.query.minPrice,
         maxPrice: req.query.maxPrice,
@@ -251,21 +193,8 @@ exports.searchProperties = async (req, res) => {
         minArea: req.query.minArea,
         maxArea: req.query.maxArea,
         price: req.query.price,
-        sectorNames: sectorNameMatches,
       },
     });
-
-    // Prepare a safe regex for fallback direct Sector lookups on property models
-    let fullQueryRegex = null;
-    try {
-      if (normalizedQuery && normalizedQuery.length) {
-        const esc = normalizedQuery.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&');
-        fullQueryRegex = new RegExp(esc, 'i');
-      }
-    } catch (e) {
-      console.error('Error building fallback fullQueryRegex:', e.message || e);
-      fullQueryRegex = null;
-    }
 
     // ----------------------
     // Relevance scoring (enhanced)
@@ -394,39 +323,6 @@ exports.searchProperties = async (req, res) => {
       const salesWithType = saleMain.map((p) => ({ ...p, type: 'sale', defaultpropertytype: 'sale' }));
       mainResults = [...rentalsWithType, ...salesWithType];
       mainResults = applyRelevanceSort(mainResults, { sectorNames: sectorNameMatches });
-    }
-
-    // Fallback: if no results from the primary filter, try direct Sector / address lookup on property models
-    if ((!mainResults || mainResults.length === 0) && fullQueryRegex) {
-      try {
-        const fallbackLimit = parsedLimit || 10;
-        const [fallbackRentals, fallbackSales] = await Promise.all([
-          RentalProperty.find({ isActive: true, $or: [{ Sector: fullQueryRegex }, { address: fullQueryRegex }, { description: fullQueryRegex }] })
-            .limit(fallbackLimit)
-            .populate('owner', 'name email')
-            .lean(),
-          SaleProperty.find({ isActive: true, $or: [{ Sector: fullQueryRegex }, { address: fullQueryRegex }, { description: fullQueryRegex }] })
-            .limit(fallbackLimit)
-            .populate({ path: 'ownerId', select: 'name email', strictPopulate: false })
-            .lean(),
-        ]);
-
-        const fallbackWithType = [
-          ...fallbackRentals.map(p => ({ ...p, type: 'rent', defaultpropertytype: 'rental' })),
-          ...fallbackSales.map(p => ({ ...p, type: 'sale', defaultpropertytype: 'sale' })),
-        ];
-
-        if (fallbackWithType.length) {
-          // apply relevance sort if helper exists
-          if (typeof applyRelevanceSort === 'function') {
-            mainResults = applyRelevanceSort(fallbackWithType, { sectorNames: sectorNameMatches });
-          } else {
-            mainResults = fallbackWithType;
-          }
-        }
-      } catch (e) {
-        console.error('Fallback search error:', e.message || e);
-      }
     }
 
     // For compatibility with the rest of the code
@@ -593,7 +489,7 @@ exports.getSectorSuggestions = async (req, res) => {
     const { query } = req.query;
     if (!query) return res.status(400).json({ message: "Query is required" });
     // ----- Find sectors by name -----
-    const regex = new RegExp(query.trim(), "i");
+    const regex = new RegExp(escapeRegex(String(query).trim().slice(0, MAX_QUERY_LENGTH)), "i");
     const sectors = await Sector.find({ name: regex }).limit(10);
     if (sectors.length === 0) {
       return res.status(200).json({ sectors: [] });
