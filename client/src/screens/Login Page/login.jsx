@@ -174,8 +174,8 @@ export default function LoginModal() {
     e.preventDefault();
     setMessage(null);
 
-    if (otp.length !== 6) {
-      setFieldErrors({ otp: "Enter all 6 digits" });
+    if (otp.length !== 4) {
+      setFieldErrors({ otp: "Enter all 4 letters" });
       return;
     }
     setFieldErrors({});
@@ -584,7 +584,7 @@ export default function LoginModal() {
                 Enter your code
               </Typography>
               <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
-                We {loginChannel === "mobile" ? "texted" : "emailed"} a 6-digit code to{" "}
+                We {loginChannel === "mobile" ? "texted" : "emailed"} a 4-letter code to{" "}
                 <Box component="strong" sx={{ color: "text.primary" }}>
                   {loginChannel === "mobile" ? maskedMobile || `+91 ${mobileNumber}` : maskedEmail || email}
                 </Box>

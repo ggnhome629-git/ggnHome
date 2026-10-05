@@ -4,10 +4,11 @@ const jwt = require("jsonwebtoken");
 const { sendOtpSms, isSmsConfigured } = require("../utils/sendSms");
 const { hasOnlineDevice } = require("./smsGateway.controller");
 const crypto = require("crypto");
+const { generateCode, normalizeCode } = require("../utils/otpCode");
 
-// Generate a random 6-digit OTP
+// Generate a random 4-letter login code
 function generateOtp() {
-  return crypto.randomInt(100000, 1000000).toString();
+  return generateCode();
 }
 
 function maskEmail(email) {
@@ -81,7 +82,7 @@ async function sendOtpEmail(user, otp) {
         to: user.email,
         params: { otp_code: otp },
         subject: "Your OTP Code for www.ggnHome.com",
-        text: `${otp} is your ggnHome login code. Valid for 5 minutes. Never share it with anyone. www.ggnhome.com`,
+        text: `Hi, ${otp} is code for your app. Valid for 5 minutes. Never share it with anyone. www.ggnhome.com`,
         html: otpEmailHtml(otp),
       };
   await sendEmail(emailParams);
@@ -383,7 +384,7 @@ exports.verifyOtp = async (req, res) => {
       if ((user.otpAttempts || 0) >= MAX_OTP_ATTEMPTS) {
         return res.status(429).json({ message: "Too many wrong attempts. Please request a new code." });
       }
-      if (user.otp !== otp || !user.otpExpiry || user.otpExpiry < Date.now()) {
+      if (user.otp !== normalizeCode(otp) || !user.otpExpiry || user.otpExpiry < Date.now()) {
         user.otpAttempts = (user.otpAttempts || 0) + 1;
         await user.save();
         return res.status(400).json({ message: "Invalid or expired OTP" });

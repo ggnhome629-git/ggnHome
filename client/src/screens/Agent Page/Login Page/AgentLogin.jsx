@@ -266,8 +266,8 @@ const handleForgotSubmit = async () => {
     if (showOtp) {
       if (!formData.otp) {
         newErrors.otp = "OTP is required";
-      } else if (!/^\d{6}$/.test(formData.otp)) {
-        newErrors.otp = "OTP must be 6 digits";
+      } else if (!/^[A-Za-z]{4}$/.test(formData.otp)) {
+        newErrors.otp = "Code must be 4 letters";
       }
     }
 
@@ -873,7 +873,7 @@ const handleForgotSubmit = async () => {
           {showOtp && (
             <Box sx={{ mb: 5 }}>
               <Typography variant="body2" sx={{ color: "text.secondary", mb: 4, textAlign: "center" }}>
-                We texted a 6-digit code to your registered mobile number.
+                We texted a 4-letter code to your registered mobile number.
               </Typography>
               <OtpInput
                 value={formData.otp}

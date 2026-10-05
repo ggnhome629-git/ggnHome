@@ -69,7 +69,7 @@ export default function SmsOtpTest() {
   const verifyOtp = async (e) => {
     e.preventDefault();
     setResult(null);
-    if (!/^\d{6}$/.test(otp)) return show("error", "Enter the 6-digit OTP");
+    if (!/^[A-Za-z]{4}$/.test(otp)) return show("error", "Enter the 4-letter code");
     setBusy(true);
     try {
       const r = await post("/login/verify-otp", { ...identity(), otp });
@@ -129,10 +129,10 @@ export default function SmsOtpTest() {
         {sent && (
           <Stack component="form" spacing={2} onSubmit={verifyOtp} sx={{ mt: 3 }}>
             <TextField
-              label="6-digit OTP"
+              label="4-letter code"
               value={otp}
-              onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              inputProps={{ inputMode: "numeric" }}
+              onChange={(e) => setOtp(e.target.value.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 4))}
+              inputProps={{ inputMode: "text", autoCapitalize: "characters" }}
             />
             <Button type="submit" variant="outlined" disabled={busy}>
               Verify OTP

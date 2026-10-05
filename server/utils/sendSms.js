@@ -56,10 +56,9 @@ async function sendSms(mobileNumber, message, kind = "otp") {
   return res.data;
 }
 
-// The SMS people receive: ONLY the 6-digit code, nothing else — the least
-// likely thing for a carrier spam filter to object to.
+// The SMS people receive: "Hi, KQMX is code for your app."
 function otpSmsText(otp) {
-  return String(otp);
+  return `Hi, ${otp} is code for your app.`;
 }
 
 function sendOtpSms(mobileNumber, otp) {

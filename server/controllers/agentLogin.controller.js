@@ -582,7 +582,7 @@ exports.requestOtpAgent = async (req, res) => {
     }
 
     // 🔐 Always generate NEW OTP
-    const otp = require('crypto').randomInt(100000, 1000000).toString();
+    const otp = require('../utils/otpCode').generateCode();
     agent.otp = otp;
     agent.otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
     await agent.save();
@@ -821,7 +821,7 @@ exports.loginAgentOtp = async (req, res) => {
       }
     }
 
-    if (!agent.otp || agent.otp !== otp) {
+    if (!agent.otp || agent.otp !== require('../utils/otpCode').normalizeCode(otp)) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 

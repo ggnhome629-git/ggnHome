@@ -5,15 +5,15 @@ import { radii } from "../../theme/theme";
 /**
  * Segmented OTP entry.
  *
- * One box per digit, with the behaviour people expect from an SMS/email code:
+ * One box per character, with the behaviour people expect from an SMS/email code:
  * typing advances, backspace on an empty box steps back, arrow keys move, and
  * pasting the whole code from the email fills every box at once instead of
- * dropping all six characters into the first one.
+ * dropping every character into the first one.
  */
 export default function OtpInput({
   value = "",
   onChange,
-  length = 6,
+  length = 4,
   error,
   disabled = false,
   autoFocus = true,
@@ -31,7 +31,8 @@ export default function OtpInput({
   const commit = (next) => onChange(next.slice(0, length));
 
   const handleChange = (index, raw) => {
-    const typed = raw.replace(/\D/g, "");
+    // The code is 4 letters; accept either case, show capitals.
+    const typed = raw.replace(/[^a-zA-Z]/g, "").toUpperCase();
     if (!typed) return;
 
     // Typing over a filled box replaces that digit; a multi-character value
@@ -76,7 +77,11 @@ export default function OtpInput({
 
   const handlePaste = (event) => {
     event.preventDefault();
-    const pasted = event.clipboardData.getData("text").replace(/\D/g, "").slice(0, length);
+    const pasted = event.clipboardData
+      .getData("text")
+      .replace(/[^a-zA-Z]/g, "")
+      .toUpperCase()
+      .slice(0, length);
     if (!pasted) return;
     commit(pasted);
     inputsRef.current[Math.min(pasted.length, length - 1)]?.focus();
@@ -98,19 +103,23 @@ export default function OtpInput({
             onPaste={handlePaste}
             onFocus={(e) => e.target.select()}
             disabled={disabled}
-            inputMode="numeric"
+            inputMode="text"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
             autoComplete={index === 0 ? "one-time-code" : "off"}
-            aria-label={`Digit ${index + 1} of ${length}`}
+            aria-label={`Letter ${index + 1} of ${length}`}
             sx={{
               // Flexible rather than fixed: on a narrow phone six fixed-width
               // boxes plus their focus rings ran past the card's padding.
               flex: 1,
               minWidth: 0,
-              maxWidth: { xs: 48, sm: 52 },
+              maxWidth: { xs: 56, sm: 64 },
               height: { xs: 52, sm: 60 },
               textAlign: "center",
               fontSize: { xs: "1.25rem", sm: "1.5rem" },
               fontWeight: 700,
+              textTransform: "uppercase",
               fontFamily: "inherit",
               color: "primary.main",
               borderRadius: `${radii.md}px`,
