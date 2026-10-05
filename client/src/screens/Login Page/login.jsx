@@ -154,7 +154,9 @@ export default function LoginModal() {
             data.message ||
             (data.sentToSavedEmail
               ? "OTP has been sent to your previously registered email."
-              : "OTP sent successfully"),
+              : data.smsSent
+                ? "OTP sent to your mobile number and email"
+                : "OTP sent successfully"),
           type: "success",
         });
         return;

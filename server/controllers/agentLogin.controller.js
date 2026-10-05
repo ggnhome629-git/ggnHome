@@ -10,6 +10,7 @@ const fileHandler = require('../config/FileHandling2'); // cloudinary uploader +
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const sendEmail = require('../utils/sendEmail');
+const { sendOtpSms, isSmsConfigured } = require('../utils/sendSms');
 
 const User = require('../models/user.model');
 
@@ -737,6 +738,17 @@ exports.requestOtpAgent = async (req, res) => {
 </html>
 `;
 
+    // SMS via phone gateway (optional); failure must not block the email
+    let smsSent = false;
+    if (isSmsConfigured()) {
+      try {
+        await sendOtpSms(agent.mobileNumber, otp);
+        smsSent = true;
+      } catch (smsError) {
+        console.error("Agent OTP SMS failed:", smsError.response?.data || smsError.message);
+      }
+    }
+
     await sendEmail({
       to: agent.email,
       subject: "ggnHome – OTP Verification",
@@ -744,7 +756,10 @@ exports.requestOtpAgent = async (req, res) => {
     });
 
     return res.json({
-      message: "A new OTP has been sent to your email. Previous OTPs are no longer valid."
+      message: smsSent
+        ? "A new OTP has been sent to your mobile number and email. Previous OTPs are no longer valid."
+        : "A new OTP has been sent to your email. Previous OTPs are no longer valid.",
+      smsSent
     });
   } catch (err) {
     console.error("requestOtpAgent error:", err);

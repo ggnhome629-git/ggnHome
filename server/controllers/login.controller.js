@@ -1,6 +1,7 @@
 const User = require("../models/user.model");
 const sendEmail = require("../utils/sendEmail"); // Import the sendEmail module
 const jwt = require("jsonwebtoken");
+const { sendOtpSms, isSmsConfigured } = require("../utils/sendSms");
 
 // Generate a random 6-digit OTP
 function generateOtp() {
@@ -70,8 +71,17 @@ exports.requestOtp = async (req, res) => {
       await user.save();
     }
 
- 
-    
+    // Send the OTP by SMS (via the phone gateway) when configured. An SMS
+    // failure must not block login — the email below is still sent.
+    let smsSent = false;
+    if (isSmsConfigured()) {
+      try {
+        await sendOtpSms(user.mobileNumber, otp);
+        smsSent = true;
+      } catch (smsError) {
+        console.error("OTP SMS failed:", smsError.response?.data || smsError.message);
+      }
+    }
 
     // Production mode: send via Brevo
     // Prefer using a Brevo template. Set BREVO_OTP_TEMPLATE_ID in env (numeric id).
@@ -91,11 +101,17 @@ exports.requestOtp = async (req, res) => {
         return res.status(200).json({
           message: emailMismatch
             ? "OTP has been sent to your previously registered email."
-            : "OTP sent successfully",
+            : smsSent
+              ? "OTP sent to your mobile number and email"
+              : "OTP sent successfully",
+          smsSent,
           sentToSavedEmail: emailMismatch,
           maskedEmail: emailMismatch ? maskedSavedEmail : null
         });
       } catch (emailError) {
+        if (smsSent) {
+          return res.status(200).json({ message: "OTP sent to your mobile number", smsSent, sentToSavedEmail: false, maskedEmail: null });
+        }
         return res.status(500).json({ message: "Failed to send OTP email", error: emailError.message });
       }
     } else {
@@ -115,11 +131,17 @@ exports.requestOtp = async (req, res) => {
         return res.status(200).json({
           message: emailMismatch
             ? "OTP has been sent to your previously registered email."
-            : "OTP sent successfully",
+            : smsSent
+              ? "OTP sent to your mobile number and email"
+              : "OTP sent successfully",
+          smsSent,
           sentToSavedEmail: emailMismatch,
           maskedEmail: emailMismatch ? maskedSavedEmail : null
         });
       } catch (emailError) {
+        if (smsSent) {
+          return res.status(200).json({ message: "OTP sent to your mobile number", smsSent, sentToSavedEmail: false, maskedEmail: null });
+        }
         return res.status(500).json({ message: "Failed to send OTP email", error: emailError.message });
       }
     }
