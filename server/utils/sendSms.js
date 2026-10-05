@@ -56,11 +56,10 @@ async function sendSms(mobileNumber, message, kind = "otp") {
   return res.data;
 }
 
-// The SMS people receive. Deliberately PLAIN: one short line, no links, no
-// extra lines. Messages from an ordinary mobile number that contain a URL or
-// look like a template get dropped by carrier / Samsung spam filters.
+// The SMS people receive: just "<code> is the code". Deliberately minimal —
+// no brand, link or extra wording — to get past carrier spam filters.
 function otpSmsText(otp) {
-  return `${otp} is your ggnHome OTP. Valid for 5 minutes. Do not share it with anyone.`;
+  return `${otp} is the code`;
 }
 
 function sendOtpSms(mobileNumber, otp) {
