@@ -88,6 +88,40 @@ function useNavHeight() {
   return height;
 }
 
+const PROMO_POOLS = {
+  rent: ["rewards", "preferences", "visits", "post"],
+  sale: ["rewards", "price", "visits", "post"],
+  all: ["rewards", "preferences", "price", "visits", "post"],
+};
+const PROMO_ROUTES = {
+  rewards: "/rewards",
+  post: "/add-property",
+  preferences: "/userpreferenceform",
+  price: "/price-predictor",
+  visits: "/support",
+};
+const PROMO_DISMISS_KEY = "dismissedPromos";
+const CARD_MIN = 300;
+const GRID_GAP = 20;
+
+function readDismissed() {
+  try {
+    return JSON.parse(sessionStorage.getItem(PROMO_DISMISS_KEY) || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
+ * Where promo tiles go for a given column count: each one closes out a row,
+ * so the grid never has a ragged hole. Phones (1 column) space them further.
+ */
+function promoSlots(cols, count) {
+  const first = cols >= 3 ? cols - 2 : 2;
+  const second = cols === 1 ? 7 : first + 2 * cols - 1;
+  return [first, second].filter((i) => i < count - 1);
+}
+
 function ResultSkeleton() {
   return (
     <Box sx={{ borderRadius: `${radii.lg}px`, overflow: "hidden", border: "1px solid", borderColor: "divider", backgroundColor: "background.paper" }}>
@@ -129,6 +163,9 @@ export default function Searchproperty() {
   const [error, setError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [viewMode, setViewMode] = useState("grid");
+  const [gridCols, setGridCols] = useState(1);
+  const [dismissedPromos, setDismissedPromos] = useState(readDismissed);
+  const gridRef = useRef(null);
   const [showFilters, setShowFilters] = useState(false);
   const [savedIds, setSavedIds] = useState(new Set());
   const [shareLink, setShareLink] = useState("");
@@ -176,6 +213,17 @@ export default function Searchproperty() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, paramsKey, reloadKey]);
+
+  // Column count of the results grid, so promos can end a row cleanly.
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return undefined;
+    const update = () => setGridCols(Math.max(1, Math.floor((el.clientWidth + GRID_GAP) / (CARD_MIN + GRID_GAP))));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loading, results.length]);
 
   // ------------------------------------------------------ area suggestions --
   useEffect(() => {
@@ -308,6 +356,34 @@ export default function Searchproperty() {
   const heading = `${headingPrefix} ${where}`;
   const shownCount = total != null ? total : results.length;
   const countLabel = `${shownCount.toLocaleString("en-IN")} ${shownCount === 1 ? "Home" : "Homes"}${query ? ` In ${where}` : ""}`;
+
+  // Promos rotate with the page and adapt to rent/sale, skipping any the
+  // visitor has closed this session.
+  const promoPool = PROMO_POOLS[type || "all"].filter((v) => !dismissedPromos.includes(v));
+  const slots = viewMode === "grid" && results.length > 3 ? promoSlots(gridCols, results.length) : [];
+  const promoAt = {};
+  slots.forEach((slot, n) => {
+    if (promoPool.length > n) promoAt[slot] = promoPool[((page - 1) * 2 + n) % promoPool.length];
+  });
+  // Two slots on one page must never show the same promo.
+  if (slots.length === 2 && promoAt[slots[0]] && promoAt[slots[0]] === promoAt[slots[1]]) delete promoAt[slots[1]];
+
+  const dismissPromo = (variant) => {
+    const next = [...dismissedPromos, variant];
+    setDismissedPromos(next);
+    try {
+      sessionStorage.setItem(PROMO_DISMISS_KEY, JSON.stringify(next));
+    } catch (e) {
+      // storage unavailable — the promo just returns on the next visit
+    }
+  };
+
+  const openPromo = (variant) => {
+    const route = PROMO_ROUTES[variant];
+    const needsLogin = variant === "rewards" || variant === "post" || variant === "visits";
+    if (needsLogin && !user) navigate("/login", { state: { from: route } });
+    else navigate(route);
+  };
 
   // Neighbouring sectors, so a thin result set is one tap from a wider one.
   const sectorNum = Number((query.match(/^\s*(?:sector|sec)?\s*-?\s*(\d{1,3})\s*$/i) || [])[1]);
@@ -548,6 +624,7 @@ export default function Searchproperty() {
         ) : (
           <>
             <Box
+              ref={gridRef}
               sx={{
                 display: "grid",
                 gap: 5,
@@ -569,12 +646,12 @@ export default function Searchproperty() {
                   }}
                   onContact={openProperty}
                 />
-                {/* Promo tiles between listings, grid view only */}
-                {viewMode === "grid" && i === 3 && results.length > 5 && (
-                  <PromoCard variant="rewards" onClick={() => navigate(user ? "/rewards" : "/login", user ? undefined : { state: { from: "/rewards" } })} />
-                )}
-                {viewMode === "grid" && i === 8 && results.length > 10 && (
-                  <PromoCard variant="post" onClick={() => navigate(user ? "/add-property" : "/login", user ? undefined : { state: { from: "/add-property" } })} />
+                {promoAt[i] && (
+                  <PromoCard
+                    variant={promoAt[i]}
+                    onClick={() => openPromo(promoAt[i])}
+                    onDismiss={() => dismissPromo(promoAt[i])}
+                  />
                 )}
                 </React.Fragment>
               ))}

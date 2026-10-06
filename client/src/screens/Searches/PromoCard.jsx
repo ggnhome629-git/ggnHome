@@ -1,6 +1,6 @@
 import React from "react";
-import { Box, Button, Stack, Typography } from "@mui/material";
-import { ArrowRight, Gift, Home } from "lucide-react";
+import { Box, Button, IconButton, Stack, Typography } from "@mui/material";
+import { ArrowRight, Calculator, Car, Gift, Home, ListChecks, X } from "lucide-react";
 import { radii } from "../../theme/theme";
 
 const VARIANTS = {
@@ -26,10 +26,43 @@ const VARIANTS = {
     buttonColor: "#003366",
     buttonBg: "#FFFFFF",
   },
+  preferences: {
+    icon: ListChecks,
+    overline: "Personal shortlist",
+    title: "Tell us what you need, we'll shortlist homes for you",
+    text: "Share your budget, BHK and preferred sectors once — we match new listings to you.",
+    cta: "Share my preferences",
+    background: "linear-gradient(150deg, #0B4A6F 0%, #00857D 60%, #00A79D 100%)",
+    accent: "#B8F2EC",
+    buttonColor: "#00594F",
+    buttonBg: "#FFFFFF",
+  },
+  price: {
+    icon: Calculator,
+    overline: "Price check",
+    title: "Is this the right price? Check in seconds",
+    text: "Our price predictor estimates a fair value from area, size and sector.",
+    cta: "Try price predictor",
+    background: "linear-gradient(150deg, #1E1B4B 0%, #3730A3 55%, #4A6A8A 100%)",
+    accent: "#C7D2FE",
+    buttonColor: "#1E1B4B",
+    buttonBg: "#FFFFFF",
+  },
+  visits: {
+    icon: Car,
+    overline: "Site visits",
+    title: "Plan your visits — free cab for every site visit",
+    text: "Pick the homes you like and our team schedules the visits for you.",
+    cta: "Plan a visit",
+    background: "linear-gradient(150deg, #0E7490 0%, #0891B2 55%, #22D3EE 100%)",
+    accent: "#E0F7FF",
+    buttonColor: "#0E4D63",
+    buttonBg: "#FFFFFF",
+  },
 };
 
 /** A promo tile that sits in the results grid between listings. */
-export default function PromoCard({ variant = "rewards", onClick }) {
+export default function PromoCard({ variant = "rewards", onClick, onDismiss }) {
   const v = VARIANTS[variant];
   const Icon = v.icon;
   return (
@@ -62,8 +95,18 @@ export default function PromoCard({ variant = "rewards", onClick }) {
           border: "28px solid rgba(255,255,255,0.08)",
         }}
       />
+      {onDismiss && (
+        <IconButton
+          size="small"
+          aria-label="Hide this suggestion"
+          onClick={onDismiss}
+          sx={{ position: "absolute", top: 8, right: 8, zIndex: 1, color: "rgba(255,255,255,0.75)", "&:hover": { color: "common.white", backgroundColor: "rgba(255,255,255,0.12)" } }}
+        >
+          <X size={16} />
+        </IconButton>
+      )}
       <Box sx={{ position: "relative" }}>
-        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 4 }}>
+        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 4, pr: 6 }}>
           <Box
             sx={{
               width: 40,

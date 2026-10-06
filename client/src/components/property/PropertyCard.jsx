@@ -140,8 +140,9 @@ export default function PropertyCard({
   ].filter(Boolean);
   const listedLabel = listedAgo(property?.createdAt);
   const isNew = property?.createdAt && Date.now() - new Date(property.createdAt).getTime() < 3 * 86400000;
-  const postedBy =
-    property?.ownerType === "Admin" ? "ggnHome" : property?.ownerType === "Agent" ? "Agent" : property?.ownerType === "Owner" ? "Owner" : null;
+  // "By owner / agent / ggnHome" label — hidden for now; restore with the JSX below.
+  // const postedBy =
+  //   property?.ownerType === "Admin" ? "ggnHome" : property?.ownerType === "Agent" ? "Agent" : property?.ownerType === "Owner" ? "Owner" : null;
   const rental = isRentalProperty(property);
 
   const overlayButton = {
@@ -381,7 +382,7 @@ export default function PropertyCard({
           </Typography>
         </Stack>
 
-        {(listedLabel || postedBy || onContact) && (
+        {(listedLabel || onContact) && (
           <Stack
             direction="row"
             alignItems="center"
@@ -389,12 +390,14 @@ export default function PropertyCard({
             sx={{ mt: "auto", pt: 3, borderTop: "1px solid", borderColor: "divider" }}
           >
             <Typography variant="caption" sx={{ color: "text.secondary" }} noWrap>
+              {/* Posted-by label, hidden for now:
               {postedBy && (
                 <Box component="span" sx={{ fontWeight: 700, color: postedBy === "ggnHome" ? "secondary.main" : "text.primary" }}>
                   {postedBy === "ggnHome" ? "By ggnHome" : `By ${postedBy.toLowerCase()}`}
                 </Box>
               )}
               {postedBy && listedLabel ? " · " : ""}
+              */}
               {listedLabel || ""}
             </Typography>
             {onContact && (
