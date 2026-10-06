@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Button, Container, Stack, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
-import { ArrowRight, CheckCircle, Gift, Home, Shield } from 'lucide-react';
+import { ArrowRight, CheckCircle, Home, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatedNumber } from '../../components/motion';
 import { radii, elevationShadows } from '../../theme/theme';
@@ -135,102 +135,6 @@ export default function Banners({ user }) {
 
             <StatCard kicker="Trusted by" value={500} suffix="+" sub="Happy clients" />
           </Stack>
-        </Box>
-
-        {/* Banner 2: cashback offer */}
-        <Box
-          component={motion.div}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.3 }}
-          variants={fadeUp}
-          sx={{
-            position: 'relative',
-            overflow: 'hidden',
-            borderRadius: `${radii.xl}px`,
-            p: { xs: 6, md: 10 },
-            background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
-            boxShadow: '0 10px 30px rgba(0, 167, 157, 0.25)',
-          }}
-        >
-          <GlowOrb size={280} sx={{ bottom: -80, left: -80, background: 'rgba(255,255,255,0.12)' }} />
-          <Box
-            component={motion.div}
-            animate={{ y: [0, -14, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            sx={{ position: 'absolute', top: 20, right: { xs: 16, md: 40 }, opacity: 0.35, display: { xs: 'none', sm: 'block' } }}
-            aria-hidden
-          >
-            <Gift size={56} color="#FFFFFF" />
-          </Box>
-
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={6}
-            alignItems={{ xs: 'stretch', md: 'center' }}
-            sx={{ position: 'relative' }}
-          >
-            <Box
-              sx={{
-                width: { xs: 56, md: 80 },
-                height: { xs: 56, md: 80 },
-                borderRadius: '50%',
-                backgroundColor: 'common.white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                mx: { xs: 'auto', md: 0 },
-                boxShadow: '0 4px 20px rgba(0, 51, 102, 0.15)',
-              }}
-            >
-              <Gift size={36} color="#003366" strokeWidth={2.5} />
-            </Box>
-
-            <Box sx={{ flex: 1, textAlign: { xs: 'center', md: 'left' } }}>
-              <Box
-                sx={{
-                  display: 'inline-block',
-                  backgroundColor: 'rgba(255,255,255,0.28)',
-                  color: 'common.white',
-                  px: 4,
-                  py: 1,
-                  borderRadius: 999,
-                  fontSize: 12,
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                  mb: 3,
-                }}
-              >
-                🎉 Limited time offer
-              </Box>
-              <Typography variant="h3" sx={{ color: 'common.white', mb: 3 }}>
-                Celebrate your new beginning
-              </Typography>
-              <Typography variant="body1" sx={{ color: 'primary.main', fontWeight: 500 }}>
-                Close the deal and unlock exclusive cashback rewards plus premium goodies worth thousands.
-              </Typography>
-            </Box>
-
-            <StatCard kicker="Get up to" value={1} suffix="K" sub="Cashback* · + free goodies" tone="paper" />
-          </Stack>
-
-          <Typography
-            variant="caption"
-            sx={{
-              display: 'block',
-              mt: 6,
-              p: 3,
-              borderRadius: `${radii.sm}px`,
-              backgroundColor: 'rgba(255,255,255,0.2)',
-              color: 'primary.main',
-              textAlign: 'center',
-              position: 'relative',
-            }}
-          >
-            *Terms & conditions apply. Offer valid on successful deal closure.
-          </Typography>
         </Box>
 
         {/* Banner 3: post property free */}

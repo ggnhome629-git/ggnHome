@@ -28,8 +28,8 @@ export default function DashboardSeo() {
       <meta property="og:title" content="GgnHome — Get Space & Get Rewarded" />
       <meta property="og:description" content="Register with us, Deal with us & Get Rewarded. Personalised recommendations, AI search, sector filters and easy scheduling. Visit GgnHome now." />
       <meta property="og:url" content="https://www.ggnhome.com/" />
-      <meta property="og:image" content="https://www.ggnhome.com/og-image-whatsapp.jpg?v=1" />
-      <meta property="og:image:secure_url" content="https://www.ggnhome.com/og-image-whatsapp.jpg?v=1" />
+      <meta property="og:image" content="https://www.ggnhome.com/og-image-whatsapp.jpg?v=2" />
+      <meta property="og:image:secure_url" content="https://www.ggnhome.com/og-image-whatsapp.jpg?v=2" />
       <meta property="og:image:type" content="image/jpeg" />
       <meta property="og:image:alt" content="GgnHome — Get Space & Get Rewarded" />
       <meta property="og:image:width" content="1200" />
@@ -50,7 +50,7 @@ export default function DashboardSeo() {
       <meta name="twitter:creator" content="@GgnHome" />
       <meta name="twitter:title" content="GgnHome — Get Space & Get Rewarded" />
       <meta name="twitter:description" content="Register with us, Deal with us & Get Rewarded. Personalised recommendations, AI search, sector filters and easy scheduling. Visit GgnHome now." />
-      <meta name="twitter:image" content="https://www.ggnhome.com/og-image-whatsapp.jpg?v=1" />
+      <meta name="twitter:image" content="https://www.ggnhome.com/og-image-whatsapp.jpg?v=2" />
     
       {/* App-like meta & preconnect */}
       <meta name="theme-color" content="#00A79D" />

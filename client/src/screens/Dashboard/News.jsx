@@ -100,8 +100,12 @@ const PropertyHeroSection = () => {
         }
 
         setArticlesByCategory(newArticles);
-        localStorage.setItem("articlesByCategory", JSON.stringify(newArticles));
-        localStorage.setItem("articlesTimestamp", now.toString());
+        // Only cache a successful fetch; caching an all-empty result would
+        // hide the news for a whole day after a single network blip.
+        if (Object.values(newArticles).some((list) => list.length > 0)) {
+          localStorage.setItem("articlesByCategory", JSON.stringify(newArticles));
+          localStorage.setItem("articlesTimestamp", now.toString());
+        }
       } catch (err) {
         const cachedData = localStorage.getItem("articlesByCategory");
         if (cachedData) {
@@ -217,6 +221,17 @@ const PropertyHeroSection = () => {
                     </Stack>
                   </Stack>
                 ))
+              : activeArticles.length === 0
+              ? (
+                  <Stack spacing={2} alignItems="flex-start" sx={{ py: 6 }}>
+                    <Typography variant="body1" sx={{ color: "primary.main", fontWeight: 600 }}>
+                      No articles right now
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                      Fresh reads appear here every day. Try refreshing in a moment.
+                    </Typography>
+                  </Stack>
+                )
               : activeArticles.map((article) => (
                   <Stack
                     key={article.id}

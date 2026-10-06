@@ -9,6 +9,7 @@ import DashboardSeo from "./DashboardSeo";
 import HeroSearch from "./HeroSearch";
 import GiftBanner from "./GiftBanner";
 import StickySearchBar from "./StickySearchBar";
+import MobileBottomNav from "./MobileBottomNav";
 import FloatingActions from "./FloatingActions";
 
 // Lazy imports — everything below the hero streams in as the user scrolls.
@@ -24,6 +25,7 @@ const PropertyCitiesComponent = React.lazy(() => import("./propertyOptions"));
 const PropertiesInArea = React.lazy(() => import("./RecommendedProperties"));
 const Location = React.lazy(() => import("./Location"));
 const ToolsShowcase = React.lazy(() => import("./Tools"));
+const RewardsSteps = React.lazy(() => import("./RewardsSteps"));
 
 const NAV_ITEMS = [
   "For Buyers",
@@ -293,6 +295,14 @@ export default function RealEstateDashboard() {
 
   const goToPreferences = () => navigate("/userpreferenceform");
 
+  const focusSearch = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setTimeout(() => {
+      const input = document.querySelector('section input[aria-label="Search properties"]');
+      if (input) input.focus({ preventScroll: true });
+    }, 350);
+  };
+
   return (
     <Box sx={{ backgroundColor: "background.paper", overflowX: "clip" }}>
       <DashboardSeo />
@@ -366,24 +376,9 @@ export default function RealEstateDashboard() {
         />
       </LazySection>
 
-      <LazySection fallback={<SectionSkeleton count={3} height={180} />}>
-        <PropertySnapshot />
+      <LazySection fallback={<SectionSkeleton variant="band" height={420} />}>
+        <RewardsSteps user={user} />
       </LazySection>
-
-      <LazySection fallback={<SectionSkeleton variant="row" count={3} height={260} />}>
-        <Box id="news">
-          <PropertyHeroSection />
-        </Box>
-      </LazySection>
-
-      <LazySection fallback={<SectionSkeleton variant="band" height={320} />}>
-        <LandingPage />
-      </LazySection>
-
-      <LazySection fallback={<SectionSkeleton variant="band" height={240} />}>
-        <Banners user={user} />
-      </LazySection>
-
       {/* Properties near the user, with its own pagination affordances */}
       <LazySection fallback={<SectionSkeleton variant="row" count={4} height={300} />}>
         <PropertiesInArea
@@ -444,16 +439,39 @@ export default function RealEstateDashboard() {
         )}
       </Stack>
 
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+        justifyContent="center"
+        sx={{ pb: { xs: 6, md: 8 } }}
+      >
+        <Typography variant="body2" sx={{ color: "text.secondary" }}>
+          Not your area? Update your location
+        </Typography>
+        <Suspense fallback={null}>
+          <Location setUserLocation={setUserLocation} />
+        </Suspense>
+      </Stack>
+      <LazySection fallback={<SectionSkeleton variant="band" height={240} />}>
+        <Banners user={user} />
+      </LazySection>
+      <LazySection fallback={<SectionSkeleton count={3} height={180} />}>
+        <PropertySnapshot />
+      </LazySection>
       <LazySection fallback={<SectionSkeleton count={4} height={220} />}>
         <ToolsShowcase />
       </LazySection>
-
+      <LazySection fallback={<SectionSkeleton variant="row" count={3} height={260} />}>
+        <Box id="news">
+          <PropertyHeroSection />
+        </Box>
+      </LazySection>
+      <LazySection fallback={<SectionSkeleton variant="band" height={320} />}>
+        <LandingPage />
+      </LazySection>
       <LazySection fallback={<SectionSkeleton count={4} height={200} />}>
         <PropertyCitiesComponent />
-      </LazySection>
-
-      <LazySection fallback={<SectionSkeleton variant="band" height={180} />}>
-        <Location setUserLocation={setUserLocation} />
       </LazySection>
 
       <FloatingActions onOpenPreferences={goToPreferences} />
@@ -461,6 +479,8 @@ export default function RealEstateDashboard() {
       <Suspense fallback={null}>
         <Footer user={user} />
       </Suspense>
+
+      <MobileBottomNav user={user} onSearch={focusSearch} />
     </Box>
   );
 }

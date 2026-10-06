@@ -144,20 +144,20 @@ export default function HeroSearch({
         overflow: "hidden",
         color: "common.white",
         backgroundColor: "primary.dark",
-        pt: { xs: 14, md: 26 },
-        pb: { xs: 12, md: 22 },
+        pt: { xs: 14, md: 24 },
+        pb: { xs: 14, md: 22 },
       }}
     >
-      {/* Layered background: photo, brand wash, then a soft teal light source. */}
+      {/* Full-bleed photo with a deep brand wash so white type always reads. */}
       <Box
         aria-hidden
         sx={{
           position: "absolute",
           inset: 0,
-          backgroundImage: "url(/Dashboard.jpg)",
+          backgroundImage: "url(/Dashboard.webp)",
           backgroundSize: "cover",
-          backgroundPosition: "center",
-          opacity: 0.28,
+          backgroundPosition: "center 40%",
+          transform: "scale(1.04)",
         }}
       />
       <Box
@@ -166,7 +166,7 @@ export default function HeroSearch({
           position: "absolute",
           inset: 0,
           background:
-            "linear-gradient(155deg, rgba(0,31,63,0.94) 0%, rgba(0,51,102,0.88) 48%, rgba(0,78,110,0.82) 100%)",
+            "linear-gradient(180deg, rgba(0,20,45,0.78) 0%, rgba(0,31,63,0.62) 45%, rgba(0,31,63,0.88) 100%)",
         }}
       />
       <Box
@@ -175,41 +175,37 @@ export default function HeroSearch({
           position: "absolute",
           inset: 0,
           background:
-            "radial-gradient(60% 55% at 78% 12%, rgba(0,167,157,0.30) 0%, rgba(0,167,157,0) 70%)",
+            "radial-gradient(55% 45% at 50% 30%, rgba(246,196,83,0.16) 0%, rgba(246,196,83,0) 70%)",
         }}
       />
 
       <Container
-        maxWidth="xl"
-        sx={{ position: "relative", px: { xs: 4, sm: 6, md: 8 } }}
+        maxWidth="lg"
+        sx={{ position: "relative", px: { xs: 4, sm: 6, md: 8 }, textAlign: "center" }}
       >
-        <Box sx={{ maxWidth: 880 }}>
+        <Box sx={{ maxWidth: 920, mx: "auto" }}>
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: motionDuration.normal, ease: motionEase.decelerate }}
           >
-            <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 5 }}>
-              <Box
-                sx={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  backgroundColor: "secondary.light",
-                }}
-              />
-              <Typography variant="overline" sx={{ color: "rgba(255,255,255,0.68)" }}>
-                Gurgaon · Verified homes
-              </Typography>
-            </Stack>
-
-            <Typography
-              variant="subtitle1"
-              sx={{ color: "rgba(255,255,255,0.72)", mb: 2 }}
+            <Stack
+              direction="row"
+              spacing={3}
+              alignItems="center"
+              justifyContent="center"
+              sx={{ mb: { xs: 5, md: 6 } }}
             >
-              {greetingFor()}
-              {user?.name ? `, ${String(user.name).split(" ")[0]}` : ""}
-            </Typography>
+              <Box sx={{ width: 28, height: "1px", backgroundColor: "rgba(246,196,83,0.7)" }} />
+              <Typography
+                variant="overline"
+                sx={{ color: "#F6D58A", letterSpacing: "0.22em", fontSize: { xs: 10, md: 12 } }}
+              >
+                {greetingFor()}
+                {user?.name ? `, ${String(user.name).split(" ")[0]}` : ""} · Gurgaon
+              </Typography>
+              <Box sx={{ width: 28, height: "1px", backgroundColor: "rgba(246,196,83,0.7)" }} />
+            </Stack>
           </motion.div>
 
           <motion.div
@@ -224,28 +220,46 @@ export default function HeroSearch({
             <Typography
               variant="h1"
               sx={{
-                fontSize: "clamp(2.5rem, 5.4vw, 4.75rem)",
-                lineHeight: 1.02,
-                letterSpacing: "-0.03em",
+                fontFamily: '"Playfair Display", Georgia, "Times New Roman", serif',
+                fontWeight: 700,
+                fontSize: "clamp(2.6rem, 7vw, 5.75rem)",
+                lineHeight: 1.04,
+                letterSpacing: "-0.015em",
                 color: "common.white",
+                textShadow: "0 4px 30px rgba(0,0,0,0.35)",
               }}
             >
-              Find a place that
-              <Box component="span" sx={{ display: "block", color: "secondary.light" }}>
-                feels like home.
+              Get Space.
+              <Box
+                component="span"
+                sx={{
+                  display: "block",
+                  fontStyle: "italic",
+                  background: "linear-gradient(90deg, #F6D58A 0%, #F0B429 55%, #FFE7A8 100%)",
+                  WebkitBackgroundClip: "text",
+                  backgroundClip: "text",
+                  color: "transparent",
+                }}
+              >
+                Get Rewarded.
               </Box>
             </Typography>
 
             <Typography
               variant="subtitle1"
               sx={{
-                mt: 6,
-                maxWidth: 520,
-                color: "rgba(255,255,255,0.74)",
+                mt: { xs: 5, md: 6 },
+                mx: "auto",
+                maxWidth: 620,
+                fontSize: { xs: "1rem", md: "1.2rem" },
+                color: "rgba(255,255,255,0.86)",
               }}
             >
-              Search every verified rental and resale listing across Gurgaon — by
-              sector, budget, or simply how you want to live.
+              Verified homes. Hassle-free deals.{" "}
+              <Box component="span" sx={{ color: "#F6D58A", fontWeight: 600 }}>
+                Gifts up to ₹1,000
+              </Box>{" "}
+              when you close with us.
             </Typography>
           </motion.div>
         </Box>
@@ -264,13 +278,15 @@ export default function HeroSearch({
             <Paper
               elevation={0}
               sx={{
-                mt: { xs: 8, md: 12 },
+                mt: { xs: 8, md: 10 },
+                mx: "auto",
+                textAlign: "left",
                 p: { xs: 3, md: 4 },
                 borderRadius: `${radii.lg}px`,
                 backgroundColor: "rgba(255,255,255,0.97)",
                 backdropFilter: "blur(12px)",
                 boxShadow: "0 24px 60px rgba(0, 20, 45, 0.32)",
-                maxWidth: 1080,
+                maxWidth: 900,
               }}
             >
               <Stack
@@ -523,9 +539,13 @@ export default function HeroSearch({
         </motion.div>
 
         <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={{ xs: 3, sm: 10 }}
-          sx={{ mt: { xs: 8, md: 10 } }}
+          direction="row"
+          useFlexGap
+          flexWrap="wrap"
+          justifyContent="center"
+          columnGap={{ xs: 5, sm: 10 }}
+          rowGap={3}
+          sx={{ mt: { xs: 7, md: 9 } }}
         >
           {TRUST_MARKERS.map(({ icon: Icon, label }, i) => (
             <Stack

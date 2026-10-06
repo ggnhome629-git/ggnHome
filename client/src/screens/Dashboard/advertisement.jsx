@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { Check } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { radii, elevationShadows } from "../../theme/theme";
 
 const BRANDS = [
@@ -96,6 +97,7 @@ function BrandLogo({ name, domain }) {
 }
 
 export default function LandingPage() {
+  const navigate = useNavigate();
   return (
     <Box sx={{ px: { xs: 4, sm: 6, md: 8 }, py: { xs: 8, md: 12 } }}>
       {/* Top banner */}
@@ -131,6 +133,7 @@ export default function LandingPage() {
         </Box>
         <Button
           variant="contained"
+          onClick={() => navigate("/support")}
           sx={{ backgroundColor: "primary.main", flexShrink: 0, px: 8 }}
         >
           Find out how
@@ -145,7 +148,7 @@ export default function LandingPage() {
           background: "linear-gradient(135deg, #4A6A8A 0%, #003366 100%)",
           boxShadow: elevationShadows[3],
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+          gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0, 0.8fr) minmax(0, 1.2fr)" },
         }}
       >
         {/* Left: brand moment */}
@@ -178,6 +181,7 @@ export default function LandingPage() {
           justifyContent="space-between"
           spacing={6}
           sx={{
+            minWidth: 0,
             backgroundColor: "background.paper",
             p: { xs: 6, md: 8 },
             m: { xs: 0, md: 6 },
@@ -243,10 +247,20 @@ export default function LandingPage() {
           </Box>
 
           <Stack direction={{ xs: "column", sm: "row" }} spacing={4}>
-            <Button variant="contained" fullWidth sx={{ backgroundColor: "primary.main" }}>
-              Explore brands
+            <Button
+              variant="contained"
+              fullWidth
+              onClick={() => navigate("/search?type=sale")}
+              sx={{ backgroundColor: "primary.main" }}
+            >
+              Explore homes
             </Button>
-            <Button variant="outlined" fullWidth sx={{ borderColor: "primary.main", color: "primary.main" }}>
+            <Button
+              variant="outlined"
+              fullWidth
+              onClick={() => navigate("/price-predictor")}
+              sx={{ borderColor: "primary.main", color: "primary.main" }}
+            >
               Get instant quote
             </Button>
           </Stack>

@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { CITY_DATA } from '../../data/cityPropertyOptions';
 
-const CITIES = Object.keys(CITY_DATA);
+// Gurgaon is home turf, so it leads the tabs and is selected by default.
+const CITIES = ['Gurgaon', ...Object.keys(CITY_DATA).filter((c) => c !== 'Gurgaon')];
 
 const COLUMNS = [
   { key: 'flats', heading: (city) => `Flats in ${city}`, label: (area) => `Flats in ${area}`, type: 'flats' },
@@ -21,7 +22,7 @@ const SEARCH_URL = process.env.REACT_APP_PROPERTY_SEARCH_URL;
  * selected city.
  */
 const PropertyCitiesComponent = () => {
-  const [selectedCity, setSelectedCity] = useState('Bangalore');
+  const [selectedCity, setSelectedCity] = useState('Gurgaon');
   const data = CITY_DATA[selectedCity];
 
   return (

@@ -7,10 +7,10 @@ import ImageReveal from '../../components/motion/ImageReveal';
 import { radii } from '../../theme/theme';
 
 const CARDS = [
-  { id: 1, img: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop', title: 'Buying a home', caption: 'Resale homes across every sector', isNew: false },
-  { id: 2, img: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop', title: 'Renting a home', caption: 'Move-in ready rentals, owner listed', isNew: false },
-  { id: 3, img: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&h=600&fit=crop', title: 'Invest in Real Estate', caption: 'Yields, trends and entry points', isNew: true },
-  { id: 4, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop', title: 'Sell/Rent your property', caption: 'List free and reach verified buyers', isNew: false },
+  { id: 1, img: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=640&h=400&fit=crop&auto=format&q=70', title: 'Buying a home', cta: 'Browse homes', caption: 'Resale homes across every sector', isNew: false },
+  { id: 2, img: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=640&h=400&fit=crop&auto=format&q=70', title: 'Renting a home', cta: 'Find rentals', caption: 'Move-in ready rentals, owner listed', isNew: false },
+  { id: 3, img: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=640&h=400&fit=crop&auto=format&q=70', title: 'Invest in Real Estate', cta: 'See insights', caption: 'Yields, trends and entry points', isNew: true },
+  { id: 4, img: 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=640&h=400&fit=crop&auto=format&q=70', title: 'Sell/Rent your property', cta: 'Post for free', caption: 'List free and reach verified buyers', isNew: false },
 ];
 
 const CardSection = ({ user }) => {
@@ -74,7 +74,7 @@ const CardSection = ({ user }) => {
       style={{
         display: 'grid',
         gap: 16,
-        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))',
       }}
     >
       {CARDS.map((card) => (
@@ -108,10 +108,10 @@ const CardSection = ({ user }) => {
               <ImageReveal src={card.img} alt="" aspectRatio="16 / 10" />
             </Box>
 
-            <Stack direction="row" spacing={3} alignItems="flex-start" sx={{ p: 5 }}>
+            <Stack direction="row" spacing={3} alignItems="flex-start" sx={{ p: { xs: 3.5, sm: 5 } }}>
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Stack direction="row" spacing={2} alignItems="center">
-                  <Typography variant="h4" sx={{ color: 'primary.main', fontSize: '1rem' }}>
+                  <Typography variant="h4" sx={{ color: 'primary.main', fontSize: { xs: '0.875rem', sm: '1rem' } }}>
                     {card.title}
                   </Typography>
                   {card.isNew && (
@@ -127,8 +127,14 @@ const CardSection = ({ user }) => {
                     />
                   )}
                 </Stack>
-                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1 }}>
+                <Typography variant="body2" sx={{ color: 'text.secondary', mt: 1, display: { xs: 'none', sm: 'block' } }}>
                   {card.caption}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'secondary.main', fontWeight: 700, mt: { xs: 1.5, sm: 3 }, fontSize: { xs: 12, sm: 14 } }}
+                >
+                  {card.cta} →
                 </Typography>
               </Box>
 

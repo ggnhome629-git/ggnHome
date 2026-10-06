@@ -33,6 +33,8 @@ export default function PropertyCarousel({
   // Without this an in-flight request renders the empty state, so the page
   // flashes "no properties" before the listings arrive.
   loading = false,
+  // Optional controls (e.g. Rent/Buy tabs) rendered under the title.
+  toolbar,
   emptyTitle = "No properties to show yet",
   emptyDescription = "Check back soon, or explore everything we have listed.",
 }) {
@@ -117,6 +119,7 @@ export default function PropertyCarousel({
               {subtitle}
             </Typography>
           )}
+          {toolbar && <Box sx={{ mt: 4 }}>{toolbar}</Box>}
         </Box>
 
         {onSeeAll && !loading && visibleProperties.length > 0 && (

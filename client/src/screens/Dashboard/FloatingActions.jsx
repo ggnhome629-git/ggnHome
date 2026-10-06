@@ -66,7 +66,8 @@ export default function FloatingActions({ onOpenPreferences }) {
         sx={{
           position: "fixed",
           right: { xs: 4, md: 8 },
-          bottom: { xs: 4, md: 8 },
+          // Clears the phone bottom nav bar (64px) on xs.
+          bottom: { xs: 20, sm: 4, md: 8 },
           zIndex: (t) => t.zIndex.speedDial,
         }}
       >

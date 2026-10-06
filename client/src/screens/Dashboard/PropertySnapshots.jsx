@@ -8,8 +8,7 @@ const DESCRIPTION_PREVIEW_LENGTH = 250;
 
 /**
  * Editorial "city snapshot" copy block with a sticky ad rail beside it.
- * City is picked at random from content.json on mount, matching prior
- * behaviour.
+ * Always shows Gurgaon, the market the site serves.
  */
 export default function PropertySnapshot() {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -20,7 +19,7 @@ export default function PropertySnapshot() {
       .then((res) => res.json())
       .then((data) => {
         const cities = data.cities;
-        setCityData(cities[Math.floor(Math.random() * cities.length)]);
+        setCityData(cities.find((c) => c.name === 'Gurgaon') || cities[0]);
       })
       .catch((err) => console.error('Failed to load city data:', err));
   }, []);

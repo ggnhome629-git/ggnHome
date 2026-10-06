@@ -12,14 +12,27 @@ Legend: `[x]` done, `[~]` partly done, `[ ]` not started. Item numbers match the
 - [x] Mic button hidden where voice search is unsupported (no more alert popup)
 - [x] "Personalise" button now visible on phones (icon only)
 - [x] Removed duplicate pre-fetch request on every search
-- [ ] Review every dashboard section for spacing / alignment on phone, tablet, laptop
-- [ ] Dashboard section order and content refresh (see upgrade suggestions)
-- [ ] Real listings in "Explore Properties" (empty state seen when API has no data)
+- [x] Premium Compass-style hero: centered "Get Space. Get Rewarded." tagline (serif, gold), punchy subline
+- [x] Sections reordered: hero → intents → listings → rewards → nearby → trust → snapshot → tools → news → brands → cities
+- [x] "Earn gifts up to ₹1,000" 3-step rewards section (replaces duplicate cashback banner)
+- [x] Rent / Sale tabs on the Explore listings rail
+- [x] Intent cards with clear CTAs; 2-column on phones
+- [x] Phone bottom navigation bar (Home, Search, Saved, Post, Account)
+- [x] Gurgaon shown by default in Property Snapshot and city links (was random / Bangalore)
+- [x] News: proper empty state; failed fetches no longer cached for a day
+- [x] "Why choose us" card overflow fixed; dead buttons (Explore, Get quote, Find out how) now navigate
+- [x] Location pin given a clear "Update your location" label
+- [x] Checked on phone (390px), tablet (820px), laptop (1440px)
+- [ ] Real listings in "Explore Properties" (verify on live site with API data)
+- [ ] Replace Tools section stats (94%, 10K+, 2.5K+) with real numbers or remove
 
 ### Speed and loading
 - [x] Route-level code splitting: first-load JS cut from 840 kB to 301 kB (gzip)
 - [x] Branded page loader while a page downloads
-- [ ] Lazy-load and size images (Unsplash cards, hero photo)
+- [x] Hero photo as WebP (415 kB → 157 kB) and preloaded; Inter + Playfair fonts loaded
+- [x] Share image shrunk (5.7 MB → 100 kB) so WhatsApp previews load
+- [x] Intent card images requested at smaller size and auto-format
+- [x] Removed duplicate meta description / manifest; proper page title
 - [ ] Skeleton loaders on search results and property pages
 - [ ] Lighthouse pass on dashboard (mobile) with target score recorded here
 
