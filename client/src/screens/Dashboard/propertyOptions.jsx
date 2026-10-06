@@ -1,65 +1,79 @@
 import React, { useState } from 'react';
-import { Box, Container, Stack, Typography } from '@mui/material';
+import { Box, Button, Container, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
 import { motion } from 'framer-motion';
-import { ChevronRight } from 'lucide-react';
-import { CITY_DATA } from '../../data/cityPropertyOptions';
+import { MapPin } from 'lucide-react';
+import { Link as RouterLink } from 'react-router-dom';
+import { GURGAON_LOCALITIES } from '../../data/cityPropertyOptions';
+import { radii } from '../../theme/theme';
 
-// Gurgaon is home turf, so it leads the tabs and is selected by default.
-const CITIES = ['Gurgaon', ...Object.keys(CITY_DATA).filter((c) => c !== 'Gurgaon')];
-
-const COLUMNS = [
-  { key: 'flats', heading: (city) => `Flats in ${city}`, label: (area) => `Flats in ${area}`, type: 'flats' },
-  { key: 'houses', heading: (city) => `Houses for sale in ${city}`, label: (area) => `House for sale in ${area}`, type: 'houses' },
-  { key: 'properties', heading: (city) => `Property in ${city}`, label: (area) => `Property in ${area}`, type: 'properties' },
-  { key: 'plots', heading: (city) => `Plots in ${city}`, label: (area) => `Plots in ${area}`, type: 'plots' },
+const TABS = [
+  { key: 'rent', label: 'Flats for rent', type: 'rent' },
+  { key: 'sale', label: 'Homes for sale', type: 'sale' },
+  { key: 'plots', label: 'Plots', type: 'sale' },
 ];
 
-const SEARCH_URL = process.env.REACT_APP_PROPERTY_SEARCH_URL;
+const MOBILE_VISIBLE = 6;
 
 /**
- * SEO-oriented link farm: pick a city, get four columns of area-specific
- * search links. Pure navigation aid — no fetches, no app state beyond the
- * selected city.
+ * Locality shortcuts for Gurgaon: pick a category, tap a locality, land on
+ * the search page already filtered. Chips wrap on every screen; phones show
+ * a short list with "Show all".
  */
 const PropertyCitiesComponent = () => {
-  const [selectedCity, setSelectedCity] = useState('Gurgaon');
-  const data = CITY_DATA[selectedCity];
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down('sm'));
+  const [tab, setTab] = useState(TABS[0]);
+  const [expanded, setExpanded] = useState(false);
+
+  const all = GURGAON_LOCALITIES[tab.key];
+  const visible = isPhone && !expanded ? all.slice(0, MOBILE_VISIBLE) : all;
 
   return (
     <Container maxWidth="xl" sx={{ px: { xs: 4, sm: 6, md: 8 }, py: { xs: 8, md: 12 } }}>
-      <Typography variant="h2" sx={{ color: 'primary.main', mb: 2 }}>
-        Property options in top cities
+      <Typography variant="overline" sx={{ color: 'secondary.main', display: 'block', mb: 2 }}>
+        Explore Gurgaon
       </Typography>
-      <Box sx={{ width: 56, height: 3, backgroundColor: 'secondary.main', borderRadius: 999, mb: 8 }} />
+      <Typography variant="h2" sx={{ color: 'primary.main', mb: { xs: 5, md: 7 } }}>
+        Popular localities
+      </Typography>
 
       <Stack
         direction="row"
-        spacing={6}
-        sx={{ overflowX: 'auto', pb: 3, mb: 8, borderBottom: '1px solid', borderColor: 'divider', "&::-webkit-scrollbar": { display: 'none' } }}
+        spacing={{ xs: 5, md: 7 }}
+        sx={{ overflowX: 'auto', mb: { xs: 5, md: 7 }, borderBottom: '1px solid', borderColor: 'divider', '&::-webkit-scrollbar': { display: 'none' } }}
       >
-        {CITIES.map((city) => {
-          const active = selectedCity === city;
+        {TABS.map((t) => {
+          const active = tab.key === t.key;
           return (
             <Box
-              key={city}
-              onClick={() => setSelectedCity(city)}
+              key={t.key}
+              component="button"
+              type="button"
+              aria-pressed={active}
+              onClick={() => {
+                setTab(t);
+                setExpanded(false);
+              }}
               sx={{
                 position: 'relative',
                 pb: 3,
                 flexShrink: 0,
+                border: 0,
+                background: 'none',
                 cursor: 'pointer',
+                font: 'inherit',
                 whiteSpace: 'nowrap',
-                fontSize: 15,
+                fontSize: { xs: 14, md: 15 },
                 fontWeight: active ? 700 : 500,
                 color: active ? 'primary.main' : 'text.secondary',
                 '&:hover': { color: 'primary.main' },
               }}
             >
-              {city}
+              {t.label}
               {active && (
                 <Box
                   component={motion.div}
-                  layoutId="city-tab-underline"
+                  layoutId="locality-tab-underline"
                   sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, backgroundColor: 'secondary.main', borderRadius: 999 }}
                 />
               )}
@@ -71,44 +85,47 @@ const PropertyCitiesComponent = () => {
       <Box
         sx={{
           display: 'grid',
-          gap: { xs: 8, md: 10 },
-          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' },
+          gap: { xs: 2, md: 3 },
+          gridTemplateColumns: { xs: 'repeat(2, minmax(0, 1fr))', sm: 'repeat(3, minmax(0, 1fr))', md: 'repeat(4, minmax(0, 1fr))', lg: 'repeat(6, minmax(0, 1fr))' },
         }}
       >
-        {COLUMNS.map((column) => (
-          <Box key={column.key}>
-            <Typography variant="h4" sx={{ color: 'primary.main', fontSize: '1rem', mb: 5 }}>
-              {column.heading(selectedCity)}
-            </Typography>
-            <Stack spacing={3}>
-              {data[column.key].map((area) => (
-                <Box
-                  key={area}
-                  component="a"
-                  href={`${SEARCH_URL}?city=${encodeURIComponent(area)}&type=${column.type}`}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    fontSize: 14,
-                    color: 'text.secondary',
-                    textDecoration: 'none',
-                    '&:hover': { color: 'primary.main' },
-                    '&:hover .arrow': { opacity: 1, transform: 'translateX(0)' },
-                  }}
-                >
-                  {column.label(area)}
-                  <ChevronRight
-                    size={14}
-                    className="arrow"
-                    style={{ opacity: 0, transform: 'translateX(-4px)', transition: 'all .2s ease' }}
-                  />
-                </Box>
-              ))}
-            </Stack>
-          </Box>
+        {visible.map((area) => (
+          <Stack
+            key={area}
+            component={RouterLink}
+            to={`/search/${encodeURIComponent(area)}?type=${tab.type}`}
+            direction="row"
+            spacing={2}
+            alignItems="center"
+            sx={{
+              minWidth: 0,
+              px: { xs: 3, md: 4 },
+              py: { xs: 2.5, md: 3 },
+              borderRadius: `${radii.md}px`,
+              border: '1px solid',
+              borderColor: 'divider',
+              backgroundColor: 'background.paper',
+              color: 'text.primary',
+              textDecoration: 'none',
+              fontSize: { xs: 13, md: 14 },
+              fontWeight: 500,
+              transition: 'border-color .2s ease, color .2s ease, background-color .2s ease',
+              '&:hover': { borderColor: 'secondary.main', color: 'primary.main', backgroundColor: 'rgba(0,167,157,0.05)' },
+            }}
+          >
+            <MapPin size={14} color="#00A79D" style={{ flexShrink: 0 }} aria-hidden />
+            <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {area}
+            </Box>
+          </Stack>
         ))}
       </Box>
+
+      {isPhone && all.length > MOBILE_VISIBLE && (
+        <Button onClick={() => setExpanded((v) => !v)} sx={{ mt: 4, px: 0, color: 'secondary.main', fontWeight: 700 }}>
+          {expanded ? 'Show less' : `Show all ${all.length} localities`}
+        </Button>
+      )}
     </Container>
   );
 };

@@ -18,7 +18,7 @@ Legend: `[x]` done, `[~]` partly done, `[ ]` not started. Item numbers match the
 - [x] Rent / Sale tabs on the Explore listings rail
 - [x] Intent cards with clear CTAs; 2-column on phones
 - [x] Phone bottom navigation bar (Home, Search, Saved, Post, Account)
-- [x] Gurgaon shown by default in Property Snapshot and city links (was random / Bangalore)
+- [x] Gurgaon only: Property Snapshot, and a compact "Popular localities" section (rent / sale / plots chips linking to our search; 6 shown on phones with "Show all")
 - [x] News: proper empty state; failed fetches no longer cached for a day
 - [x] "Why choose us" card overflow fixed; dead buttons (Explore, Get quote, Find out how) now navigate
 - [x] Location pin given a clear "Update your location" label
