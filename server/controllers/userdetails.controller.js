@@ -8,6 +8,8 @@ const User = require('../models/user.model');
 const { stripProtectedFields } = require("../utils/protectedFields");
 const RentalProperty = require('../models/Rentalproperty.model');
 const SaleProperty = require('../models/SaleProperty.model');
+const PropertyAnalysis = require('../models/PropertyAnalysis.model');
+const Enquiry = require('../models/EnquirySchema.model');
 const PropertyReviewStatus = require('../models/propertyReviewStatus.model');
 
 const { uploadWithFallback } = require("../config/FileHandling");
@@ -179,7 +181,7 @@ exports.getMyProperties = async (req, res) => {
     }
 
     // Pagination params
-    const limit = parseInt(req.query.limit, 10) || 10;
+    const limit = Math.min(parseInt(req.query.limit, 10) || 10, 200);
     const page = parseInt(req.query.page, 10) || 1;
     const skip = (page - 1) * limit;
 
@@ -250,6 +252,44 @@ exports.getMyProperties = async (req, res) => {
       })
     );
 
+    // Per-listing performance (views, saves, ratings, enquiries) so the
+    // manage-listings page needs no per-card requests.
+    const ids = properties.filter(Boolean).map((p) => p._id);
+    if (ids.length) {
+      const [stats, enquiries] = await Promise.all([
+        PropertyAnalysis.aggregate([
+          { $match: { property: { $in: ids } } },
+          {
+            $project: {
+              property: 1,
+              viewCount: { $size: { $ifNull: ['$views', []] } },
+              saveCount: { $size: { $ifNull: ['$saves', []] } },
+              ratingCount: { $size: { $ifNull: ['$ratings', []] } },
+              avgRating: { $avg: '$ratings.rating' },
+            },
+          },
+        ]),
+        Enquiry.aggregate([
+          { $match: { propertyId: { $in: ids } } },
+          { $group: { _id: '$propertyId', count: { $sum: 1 } } },
+        ]),
+      ]);
+      const statById = new Map(stats.map((st) => [String(st.property), st]));
+      const enqById = new Map(enquiries.map((e) => [String(e._id), e.count]));
+      properties.forEach((p, i) => {
+        if (!p) return;
+        const st = statById.get(String(p._id));
+        properties[i] = {
+          ...p,
+          viewCount: st ? st.viewCount : 0,
+          saveCount: st ? st.saveCount : 0,
+          ratingCount: st ? st.ratingCount : 0,
+          avgRating: st && st.ratingCount ? Math.round(st.avgRating * 10) / 10 : null,
+          enquiryCount: enqById.get(String(p._id)) || 0,
+        };
+      });
+    }
+
     // Send paginated response
     return res.status(200).json({
       total,
@@ -273,13 +313,22 @@ exports.getMyProperties = async (req, res) => {
 // @desc Update a property (rental or sale)
 // @route PUT /api/user/update-property/:id
 // @access Private (owner only)
+
+// Listings a request may manage: its own (owner / ownerId) or ones posted
+// through the agent flow for this account (agentUserId). Works for both the
+// user session and the agent token.
+function ownedBy(req, ownerField) {
+  const ids = [req.user && req.user._id, req.agent && req.agent._id, req.agent && req.agent.userId].filter(Boolean);
+  return { $or: [{ [ownerField]: { $in: ids } }, { agentUserId: { $in: ids } }] };
+}
+
 const updateProperty = async (req, res) => {
   try {
     stripProtectedFields(req.body);
     const { id } = req.params;
 
     // Validate user authentication
-    if (!req.user || !req.user._id) {
+    if (!(req.user && req.user._id) && !(req.agent && req.agent._id)) {
       return res.status(401).json({ message: "Unauthorized: User not logged in" });
     }
 
@@ -502,7 +551,7 @@ const updateProperty = async (req, res) => {
 
     // Try updating rental property first
     let updatedProperty = await RentalProperty.findOneAndUpdate(
-      { _id: id, owner: req.user._id },
+      { _id: id, ...ownedBy(req, 'owner') },
       updateData,
       { new: true }
     );
@@ -532,7 +581,7 @@ const updateProperty = async (req, res) => {
       if (stickyAccountIndex !== null) updateDataSale.cloudinaryAccountIndex = stickyAccountIndex;
 
       updatedProperty = await SaleProperty.findOneAndUpdate(
-        { _id: id, ownerId: req.user._id },
+        { _id: id, ...ownedBy(req, 'ownerId') },
         updateDataSale,
         { new: true }
       );
@@ -596,16 +645,16 @@ const deleteProperty = async (req, res) => {
     const { id } = req.params;
 
     // Validate user authentication
-    if (!req.user || !req.user._id) {
+    if (!(req.user && req.user._id) && !(req.agent && req.agent._id)) {
       return res.status(401).json({ message: "Unauthorized: User not logged in" });
     }
 
     // Try finding rental property first
-    let property = await RentalProperty.findOne({ _id: id, owner: req.user._id });
+    let property = await RentalProperty.findOne({ _id: id, ...ownedBy(req, 'owner') });
 
     // If not found, try sale property
     if (!property) {
-      property = await SaleProperty.findOne({ _id: id, ownerId: req.user._id });
+      property = await SaleProperty.findOne({ _id: id, ...ownedBy(req, 'ownerId') });
     }
 
     // Handle property not found or unauthorized

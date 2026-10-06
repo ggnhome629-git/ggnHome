@@ -532,8 +532,8 @@ function handlePanoFilesSelected(files) {
           }
         }
         if (dataToSend.totalArea) {
-          form.append("totalAreaSqft", dataToSend.totalArea.sqft || "");
-          form.append("totalAreaConfiguration", dataToSend.totalArea.configuration || "");
+          form.append("totalArea.sqft", dataToSend.totalArea.sqft || "");
+          form.append("totalArea.configuration", dataToSend.totalArea.configuration || "");
         }
         form.append("replaceImages", "true");
         newImages.forEach((img) => form.append("images", img));

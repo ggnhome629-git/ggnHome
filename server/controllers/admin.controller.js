@@ -2070,6 +2070,7 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
       ownernumber: ownerCandidateSale ? String(ownerCandidateSale).trim() : undefined,
       Sector: normalizedSector,
       isActive: true,
+      isPostedNew: false, // published straight away, not awaiting review
       cloudinaryAccountIndex: stickyAccountIndex !== null ? stickyAccountIndex : undefined,
       cloudinaryFolder: compositeFolder,
     });

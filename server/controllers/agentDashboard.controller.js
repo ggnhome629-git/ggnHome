@@ -510,6 +510,7 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
       ownerType, // backend-derived
       Sector: normalizedSector,
       isActive: true,
+      isPostedNew: false, // published straight away, not awaiting review
 
       // ✅ REQUIRED FOR AGENT / ADMIN OWNED PROPERTIES
       ...(agentUserId && { agentUserId }),

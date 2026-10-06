@@ -143,14 +143,14 @@ router.get("/api/user/dashboard", verifyToken, getUserDashboard);
 router.get("/api/properties/my", verifyTokenOrAgent, getMyProperties);
 router.put(
   "/api/user/update-property/:id",
-  verifyToken,
+  verifyTokenOrAgent,
   upload.fields([
     { name: "images", maxCount: 8 },
     { name: "panoFiles", maxCount: 6 },
   ]),
   updateProperty
 );
-router.delete("/api/user/delete-property/:id", verifyToken, deleteProperty);
+router.delete("/api/user/delete-property/:id", verifyTokenOrAgent, deleteProperty);
 
 // ================== PROPERTY ROUTES ==================
 router.get("/api/activeproperties", verifyTokenOptional, getAllActiveProperties);
@@ -236,7 +236,7 @@ router.delete("/api/admin/preferences-form/:id", verifyToken, checkAdminEmail, d
 router.get("/api/admin/agents", verifyToken, checkAdminEmail, getAllAgents);
 router.get("/api/admin/getvisibility/:agentId", verifyToken, checkAdminEmail, getAgentVisibility);
 router.post("/api/admin/setvisibility/:agentId", verifyToken, checkAdminEmail, setAgentVisibility);
-router.post("/api/admin/preferences/:prefId/assign", verifyToken, assignPreference);
+router.post("/api/admin/preferences/:prefId/assign", verifyToken, checkAdminEmail, assignPreference);
 
 router.post("/api/admin/approveagent/:agentId", verifyToken, checkAdminEmail, approveAgent);
 router.post("/api/admin/suspendagent/:agentId", verifyToken, checkAdminEmail, suspendAgent);

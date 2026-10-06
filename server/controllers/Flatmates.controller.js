@@ -203,6 +203,14 @@ const updateListing = async (req, res) => {
       if (typeof updates[k] !== 'undefined') listing[k] = updates[k];
     });
 
+    // Like property edits, a changed listing goes back to the admin for
+    // review and stays offline until it's approved again.
+    const isAdmin = req.user && req.user.role === 'admin';
+    if (!isAdmin) {
+      listing.isActive = false;
+      listing.isPostedNew = true;
+    }
+
     await listing.save();
     return res.json({ success: true, data: listing });
   } catch (err) {
@@ -574,6 +582,18 @@ const getListingsByUser = async (req, res) => {
       Flatmates.countDocuments(q),
       Flatmates.find(q).sort({ createdAt: -1 }).skip(skip).limit(limit).lean().populate('ownerId', 'email mobileNumber')
     ]);
+
+    // Enquiry counts per listing for the owner's manage page.
+    if (items.length) {
+      const counts = await FlatmateEnquiry.aggregate([
+        { $match: { listingId: { $in: items.map((i) => i._id) } } },
+        { $group: { _id: '$listingId', count: { $sum: 1 } } },
+      ]);
+      const byId = new Map(counts.map((c) => [String(c._id), c.count]));
+      items.forEach((i) => {
+        i.enquiryCount = byId.get(String(i._id)) || 0;
+      });
+    }
 
     return res.json({ success: true, data: { total, page, limit, items } });
   } catch (err) {

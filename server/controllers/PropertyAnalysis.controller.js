@@ -89,7 +89,7 @@ const getLeadConversion = async (req, res) => {
     const propertyId = req.params.id;
 
     // Count total enquiries (leads) for the property
-    const totalLeads = await Enquiry.countDocuments({ property: propertyId });
+    const totalLeads = await Enquiry.countDocuments({ propertyId });
 
     // Count completed payments for the property
     const completedPayments = await Payment.countDocuments({ property: propertyId, status: 'completed' });
@@ -316,7 +316,7 @@ const getUserPropertyMetrics = async (req, res) => {
 
     // Fetch active sale properties owned by user, selecting only _id
     const saleProps = await SaleProperty.find({
-      owner: userId,
+      ownerId: userId,
       // Only active properties assumed by model or query
     }).select("_id");
 
