@@ -21,10 +21,11 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { ArrowLeft, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Braces, Copy, Pencil, Plus, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import PromoCard from "../../components/promo/PromoCard";
 import { PROMO_ICONS, PROMO_THEMES } from "../../components/promo/promoData";
+import PromoJsonImport from "./PromoJsonImport";
 
 const BASE = process.env.REACT_APP_Base_API;
 
@@ -73,6 +74,23 @@ export default function AdminPromos() {
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [jsonOpen, setJsonOpen] = useState(false);
+  const [copied, setCopied] = useState("");
+
+  const copyJson = async (promo) => {
+    const keys = ["overline", "title", "text", "ctaLabel", "link", "theme", "icon", "imageUrl", "placements", "audience", "weight", "isActive", "startsAt", "endsAt"];
+    const out = {};
+    keys.forEach((k) => {
+      if (promo[k] !== undefined && promo[k] !== null && promo[k] !== "") out[k] = k.endsWith("At") ? toDateInput(promo[k]) : promo[k];
+    });
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(out, null, 2));
+      setCopied(promo._id);
+      setTimeout(() => setCopied(""), 1500);
+    } catch (e) {
+      setError("Could not copy — your browser blocked clipboard access.");
+    }
+  };
 
   const load = useCallback(async () => {
     try {
@@ -150,9 +168,14 @@ export default function AdminPromos() {
           </Alert>
         )}
 
-        <Button variant="contained" startIcon={<Plus size={18} />} onClick={() => setEditing({ ...EMPTY })} sx={{ mb: 6 }}>
-          New promo
-        </Button>
+        <Stack direction="row" spacing={3} sx={{ mb: 6 }}>
+          <Button variant="contained" startIcon={<Plus size={18} />} onClick={() => setEditing({ ...EMPTY })}>
+            New promo
+          </Button>
+          <Button variant="outlined" startIcon={<Braces size={18} />} onClick={() => setJsonOpen(true)}>
+            Add from JSON
+          </Button>
+        </Stack>
 
         <Box sx={{ display: "grid", gap: 5, gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 320px), 1fr))" }}>
           {promos.map((promo) => (
@@ -173,6 +196,11 @@ export default function AdminPromos() {
                   <Tooltip title={promo.isActive ? "Live — click to pause" : "Paused — click to go live"}>
                     <Switch checked={promo.isActive} onChange={() => toggleActive(promo)} color="secondary" />
                   </Tooltip>
+                  <Tooltip title={copied === promo._id ? "Copied!" : "Copy as JSON"}>
+                    <IconButton aria-label="Copy as JSON" onClick={() => copyJson(promo)}>
+                      <Copy size={16} />
+                    </IconButton>
+                  </Tooltip>
                   <IconButton aria-label="Edit" onClick={() => setEditing({ ...EMPTY, ...promo, startsAt: toDateInput(promo.startsAt), endsAt: toDateInput(promo.endsAt) })}>
                     <Pencil size={16} />
                   </IconButton>
@@ -191,6 +219,13 @@ export default function AdminPromos() {
           </Typography>
         )}
       </Container>
+
+      <PromoJsonImport
+        open={jsonOpen}
+        onClose={() => setJsonOpen(false)}
+        onImported={load}
+        createPromo={(promo) => api("/api/admin/promos", { method: "POST", body: JSON.stringify(promo) })}
+      />
 
       <Dialog open={Boolean(editing)} onClose={() => setEditing(null)} maxWidth="md" fullWidth>
         {editing && (

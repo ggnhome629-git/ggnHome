@@ -45,6 +45,7 @@ Legend: `[x]` done, `[~]` partly done, `[ ]` not started. Item numbers match the
 - [x] "Nearby" sector shortcuts and "Share search" link
 - [x] Livelier search (patterns from NoBroker, Flipkart, real-estate UX guides): swipeable card photos with dots/arrows, "New" tag (<3 days), heart pop + "Saved · View" toast, Flipkart-style quick-pick icon strip, sort tabs, rewards + post-property promo tiles in results, animated count, Recently viewed row
 - [x] Promo cards come only from Admin → Promo Cards (title, text, button, link, colour, icon, image, audience, weight, start/end dates, live switch, preview)
+- [x] Admin "Add from JSON": paste one or many promos, live preview with per-promo errors, "Load example" with 6 ready promos; "Copy as JSON" on each promo
 - [x] Dashboard shows up to 3 random admin promos; search shows 2–3 different random ones, placed to close a grid row; closable per session
 - [x] Admin can replace the top banner line (placement "Top banner")
 - [x] Search: one request per page — view counts and ratings come inside the search response (was 1 + 12 requests)
