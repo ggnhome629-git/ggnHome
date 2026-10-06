@@ -970,6 +970,258 @@ See LICENSE file for full text.
 - Admin dashboard UI improvements
 - Security vulnerability fixes
 
+### Work Items / Backlog
+
+#### Phase 1: Core Architecture - Dual Property Source System
+
+**1. Dual Property Source Support** 
+   - **Description**: Make the system support both affiliate properties and our own database properties
+   - **Scope**: 
+     - Implement data model to differentiate between affiliate and owned properties
+     - Add `source` field to property models (affiliate/owned)
+     - Update property search and filtering logic to handle both sources
+     - Implement separate analytics tracking for each property source
+   - **Status**: Pending
+   - **Priority**: CRITICAL
+
+**2. Affiliate Property Display - External URLs**
+   - **Description**: Display URLs of affiliate listings from NoBroker, 99acres, or other property portals
+   - **Scope**:
+     - Add `externalUrl` field to affiliate property schema
+     - Display clickable link to original listing on property detail page
+     - Track which portal property came from (NoBroker/99acres/etc)
+   - **Status**: Pending
+   - **Priority**: HIGH
+
+**3. Own Database Property Management**
+   - **Description**: Full property management for properties posted directly by owners
+   - **Scope**:
+     - Display owner contact number and email
+     - Link property to owner account
+     - Implement commission setting per property
+     - Allow owner to update property details
+     - Track owner information separately from property data
+   - **Status**: Pending
+   - **Priority**: HIGH
+
+**4. Agent Property Posting & Lead Distribution**
+   - **Description**: Allow agents to post properties and distribute leads to both agent and admin
+   - **Scope**:
+     - Create agent property posting endpoint
+     - Implement lead notification system (agent + admin)
+     - Track which agent posted each property
+     - Agent dashboard to view their properties and leads
+     - Admin visibility of all agent-posted properties
+   - **Status**: Pending
+   - **Priority**: HIGH
+
+**5. Affiliate Property Management Panel**
+   - **Description**: Admin interface to manage all affiliate properties with toggle controls
+   - **Scope**:
+     - Assign unique ID to each affiliate property
+     - Create admin dashboard for affiliate property management
+     - Implement toggle button to enable/disable property visibility
+     - Show affiliate property source (NoBroker, 99acres, etc)
+     - Bulk action capability for multiple affiliate properties
+   - **Status**: Pending
+   - **Priority**: HIGH
+
+**6. Affiliate Property Web Scraping - Initial Load**
+   - **Description**: One-time scraping of ~100 properties from affiliate portals
+   - **Scope**:
+     - Set up scraper for NoBroker listings
+     - Set up scraper for 99acres listings
+     - Load initial ~100 properties to database
+     - Assign affiliate IDs and metadata
+     - Log all imported properties with timestamps
+   - **Status**: Pending
+   - **Priority**: CRITICAL
+
+**7. Affiliate Property Web Scraping - Weekly Recurring**
+   - **Description**: Weekly verification that affiliate properties are still live on original portals
+   - **Scope**:
+     - Schedule scraper to run every Friday
+     - Check if property still exists on source portal
+     - Update property status (active/removed)
+     - Auto-disable property if removed from portal
+     - Maintain scraping logs in admin dashboard
+     - Display scraper activity and errors in admin UI
+   - **Status**: Pending
+   - **Priority**: HIGH
+
+**8. Non-Affiliate Properties - No Redirect Option**
+   - **Description**: Prevent redirect on own properties; affiliate properties only redirect via affiliate link
+   - **Scope**:
+     - Remove contact/commission options on affiliate properties
+     - Display "View on [Portal]" button instead for affiliate listings
+     - Own properties show direct owner contact
+     - Implement affiliate tracking/commission logic
+   - **Status**: Pending
+   - **Priority**: HIGH
+
+#### Phase 2: Admin Panel Enhancement - Role-Based Access Control
+
+**9. Normal Admin Panel Implementation**
+   - **Description**: Create role-based admin panel with restricted feature visibility
+   - **Scope**:
+     - Create new "normal_admin" user role
+     - Build separate admin interface for normal admins
+     - Normal admin can only add/manage own properties
+     - Restrict features based on role
+     - Create feature visibility configuration system
+   - **Status**: Pending
+   - **Priority**: HIGH
+
+**10. Super Admin Feature Control**
+   - **Description**: Super admin controls which features are visible to normal admins
+   - **Scope**:
+     - Create feature visibility matrix
+     - Super admin dashboard to toggle features for normal admins
+     - Features: Add Property, Property Manager, Calling Requests, Analytics, etc
+     - Persist feature visibility settings per admin
+     - API endpoints to get available features per admin role
+   - **Status**: Pending
+   - **Priority**: HIGH
+
+**11. Normal Admin Property Management**
+   - **Description**: Normal admins can add and view only their own properties
+   - **Scope**:
+     - Dashboard showing normal admin's added properties
+     - Property add/edit/delete endpoints (own properties only)
+     - View all details and metrics for own properties
+     - Cannot see or modify other admins' properties
+     - Activity logs for audit trail
+   - **Status**: Pending
+   - **Priority**: HIGH
+
+**12. Super Admin Feature Management Interface**
+   - **Description**: Granular control of features available to normal admins
+   - **Scope**:
+     - Features list: All Properties, Property Manager, Calling Requests, Analytics Dashboard, Rewards, Service Requests, etc
+     - Toggle interface for each feature per admin
+     - Batch feature assignment
+     - Feature access audit logs
+   - **Status**: Pending
+   - **Priority**: MEDIUM
+
+#### Phase 3: UI/UX Improvements
+
+**13. Dashboard UI Redesign**
+   - **Description**: Fix loose ends and improve dashboard layout
+   - **Scope**:
+     - Refactor dashboard layout structure
+     - Fix responsive design issues
+     - Improve card layouts and spacing
+     - Better visual hierarchy
+     - Consistent with design system
+   - **Status**: Pending
+   - **Priority**: CRITICAL
+
+**14. Search Page UI Redesign**
+   - **Description**: Fix and enhance search page interface
+   - **Scope**:
+     - Improve filter layout and usability
+     - Better property card display
+     - Enhanced sorting options
+     - Mobile-friendly design
+   - **Status**: Pending
+   - **Priority**: CRITICAL
+
+**15. Property Detail Page UI Redesign**
+   - **Description**: Standardize property view page (no affiliate indicators)
+   - **Scope**:
+     - Unified UI for both affiliate and own properties
+     - Remove affiliate/own property visual distinction
+     - Improve image gallery
+     - Better contact information display
+     - Responsive design for all devices
+   - **Status**: Pending
+   - **Priority**: CRITICAL
+
+**16. Search Page - Property Count & Pagination Display**
+   - **Description**: Show total property count and pagination information
+   - **Scope**:
+     - Display total properties found for sector
+     - Show current page number
+     - Show total number of pages
+     - "Showing X to Y of Z properties" indicator
+     - Better pagination controls
+   - **Status**: Pending
+   - **Priority**: MEDIUM
+
+**17. Dashboard - Rewards/Gift Banner**
+   - **Description**: Add banner promoting gift/reward program (up to ₹1000)
+   - **Scope**:
+     - Create attractive rewards banner component
+     - Display on dashboard prominently
+     - Link to rewards details page
+     - Show user's current reward balance
+     - Responsive design for all devices
+   - **Status**: Pending
+   - **Priority**: MEDIUM
+
+**18. Dashboard - Multi-Device Responsive Design**
+   - **Description**: Optimize dashboard for phone, tablet, and laptop
+   - **Scope**:
+     - Mobile layout (< 640px)
+     - Tablet layout (640px - 1024px)
+     - Desktop layout (> 1024px)
+     - Touch-friendly controls on mobile
+     - Optimize card layouts per device
+     - Test on multiple devices/screen sizes
+   - **Status**: Pending
+   - **Priority**: HIGH
+
+#### Phase 4: Performance & User Experience
+
+**19. Page Load Performance Optimization**
+   - **Description**: Implement fast loading and loading indicators across app
+   - **Scope**:
+     - Add skeleton loaders on property pages
+     - Implement lazy loading for images
+     - Optimize API response times
+     - Cache frequently accessed data
+     - Add page transition loading indicators
+     - Monitor performance metrics
+   - **Status**: Pending
+   - **Priority**: HIGH
+
+**20. Post-Login Property Redirect**
+   - **Description**: Redirect user back to same property after login
+   - **Scope**:
+     - Store property ID before login redirect
+     - After successful login, redirect to property (not dashboard)
+     - Improve user experience for unauthenticated property views
+     - Maintain redirect state across redirects
+   - **Status**: Pending
+   - **Priority**: MEDIUM
+
+**21. Global Loading Screens**
+   - **Description**: Implement consistent loading indicators throughout app
+   - **Scope**:
+     - Create loading skeleton components
+     - Add loading spinners for async operations
+     - Loading screen on page transitions
+     - Loading indicators for modals/dialogs
+     - Loading indicators for data fetches
+   - **Status**: Pending
+   - **Priority**: MEDIUM
+
+#### Phase 5: Mobile App Development
+
+**22. React Native Mobile App**
+   - **Description**: Build React Native app matching website functionality
+   - **Scope**:
+     - Replicate all website features in React Native
+     - iOS and Android compatibility
+     - Native performance optimizations
+     - Offline support where applicable
+     - Push notifications
+     - Platform-specific UI patterns
+   - **Status**: BLOCKED (Waiting for website UI finalization)
+   - **Priority**: MEDIUM
+   - **Dependencies**: Phase 3 (UI improvements) must be completed first
+
 ---
 
 **Last Updated**: September 2026  
