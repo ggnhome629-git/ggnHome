@@ -36,6 +36,14 @@ Legend: `[x]` done, `[~]` partly done, `[ ]` not started. Item numbers match the
 - [~] Skeleton loaders: search results and saved homes done; property pages pending
 - [ ] Lighthouse pass on dashboard (mobile) with target score recorded here
 
+### Flatmates
+- [x] Flatmates dashboard rebuilt in main dashboard style: photo hero "Find Your Flatmate. Share The Rent.", search card with Anyone/Female/Male, quick links, "Rooms available now" and "Most viewed" rows (swipe on phones), how-it-works band, admin offers, locality grid
+- [x] Flatmates search rebuilt like property search: photo header, Budget / Furnished / spots / move-in filters, sort tabs, page X of Y, admin promos, saved hearts (kept in browser), popular localities, list-your-room band
+- [x] API: gender, budget, move-in filters and safe sort; sector searches now respect all filters and approval; removed per-request debug query
+- [x] Privacy fix: public flatmate list no longer returns unapproved listings or owner email/phone
+- [x] Fixed broken links: "Post" → /flatmateslistingform, popup back → /flatmatessearch
+- [ ] Flatmate detail popup, post form and "My listings" still use the old styling
+
 ### Other pages
 - [x] Search page: total homes for the sector at top, "Showing 1–12 of N · Page X of Y" and numbered pages at bottom (#16)
 - [x] Search page redesign (#14): navy header with serif title, sticky BHK / Budget / More filters / Sort bar, active filter chips, skeletons, empty + error states, "Didn't find your home?" lead band

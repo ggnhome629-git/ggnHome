@@ -45,6 +45,11 @@ export default function SearchHero({
   headingPrefix,
   place,
   total,
+  overline = "Gurgaon · Verified homes",
+  types = TYPES,
+  trust = TRUST,
+  placeholder = "Sector, locality or “2 BHK in Sector 46”",
+  noun = ["home", "homes"],
 }) {
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(-1);
@@ -167,7 +172,7 @@ export default function SearchHero({
           <Stack direction="row" spacing={3} alignItems="center" sx={{ mb: { xs: 3, md: 4 } }}>
             <Box sx={{ width: 28, height: "1px", backgroundColor: "rgba(246,196,83,0.8)" }} />
             <Typography variant="overline" sx={{ color: "#F6D58A", letterSpacing: "0.22em", fontSize: { xs: 10, md: 12 } }}>
-              Gurgaon · Verified homes
+              {overline}
             </Typography>
           </Stack>
 
@@ -240,10 +245,10 @@ export default function SearchHero({
                 ? "Searching listings…"
                 : total === null
                 ? "Live verified listings"
-                : `${total.toLocaleString("en-IN")} ${total === 1 ? "home" : "homes"} available`}
+                : `${total.toLocaleString("en-IN")} ${total === 1 ? noun[0] : noun[1]} available`}
             </Box>
-            {TRUST.map(({ icon: Icon, label }) => (
-              <Stack key={label} direction="row" spacing={1.5} alignItems="center" sx={{ display: { xs: label === TRUST[2].label ? "none" : "flex", sm: "flex" } }}>
+            {trust.map(({ icon: Icon, label }, ti) => (
+              <Stack key={label} direction="row" spacing={1.5} alignItems="center" sx={{ display: { xs: ti >= 2 ? "none" : "flex", sm: "flex" } }}>
                 <Icon size={15} color="#3FC2B8" aria-hidden />
                 <Typography sx={{ fontSize: 13, color: "rgba(255,255,255,0.78)" }}>{label}</Typography>
               </Stack>
@@ -277,7 +282,7 @@ export default function SearchHero({
                   onChange={(e) => onQueryChange(e.target.value)}
                   onFocus={() => setOpen(true)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Sector, locality or “2 BHK in Sector 46”"
+                  placeholder={placeholder}
                   inputProps={{ "aria-label": "Search properties", role: "combobox", "aria-expanded": showDropdown }}
                   sx={{ flex: 1, fontSize: 15, color: "text.primary" }}
                 />
@@ -401,7 +406,7 @@ export default function SearchHero({
               },
             }}
           >
-            {TYPES.map((t) => (
+            {types.map((t) => (
               <ToggleButton key={t.label} value={t.value}>
                 {t.label}
               </ToggleButton>

@@ -244,8 +244,10 @@ const getListing = async (req, res) => {
     //   if (onlyActive) q.isActive = true;
 
       // Return the top 10 listings ordered primarily by views desc, then by createdAt desc
-     const limit = 10;
-      const items = await Flatmates.find(q).sort({ views: -1, createdAt: -1 }).limit(limit).populate('ownerId', 'email mobileNumber').lean();
+      // Public endpoint: only approved listings, and never the owner's contact details.
+      q.isActive = true;
+      const limit = 10;
+      const items = await Flatmates.find(q).sort({ views: -1, createdAt: -1 }).limit(limit).select('-ownerId').lean();
       const total = await Flatmates.countDocuments(q);
 
       return res.json({ success: true, data: { total, page: 1, limit, items } });
@@ -372,6 +374,25 @@ const searchListings = async (req, res) => {
       }
     }
 
+    // Gender: "female" matches female-only and open-to-anyone rooms.
+    const gender = norm(req.query.gender || '');
+    if (gender === 'male' || gender === 'female') {
+      q.preferredGender = { $in: [gender, 'any'] };
+      appliedFields.push({ field: 'preferredGender', value: gender });
+    }
+
+    // Budget: show rooms whose range overlaps what the seeker can pay.
+    const toNum = (v) => (v !== undefined && v !== '' && Number.isFinite(Number(v)) ? Number(v) : null);
+    const maxBudget = toNum(req.query.maxBudget);
+    const minBudget = toNum(req.query.minBudget);
+    if (maxBudget !== null) q['budget.min'] = { $lte: maxBudget };
+    if (minBudget !== null) q['budget.max'] = { $gte: minBudget };
+
+    if (req.query.moveInBy) {
+      const d = new Date(req.query.moveInBy);
+      if (!Number.isNaN(d.getTime())) q.moveInDate = { $lte: d };
+    }
+
     // Free-text 'q' matching on title and description, unless consumed as area
     let findQuery = q;
     if (!consumedQForArea && req.query.q && String(req.query.q).trim()) {
@@ -389,19 +410,26 @@ const searchListings = async (req, res) => {
     if (consumedQForArea) {
       const num = consumedSectorNumber;
       const numRegex = { $regex: new RegExp(`\\b${escapeRegex(num)}\\b`, 'i') };
-      findQuery = { $or: [
+      const sectorMatch = { $or: [
         { area: { $regex: `^sector[-\\s]?${escapeRegex(num)}`, $options: 'i' } },
         { title: numRegex },
         { description: numRegex }
       ]};
+      // Keep every other filter (active, gender, budget...) alongside the sector match.
+      const { $or: _ignored, ...rest } = q;
+      findQuery = Object.keys(rest).length ? { $and: [rest, sectorMatch] } : sectorMatch;
     }
 
     // Log normalized query and which fields will be applied to DB search
 
     // sorting
-    const sortBy = req.query.sortBy || 'createdAt';
-    const sortDir = Number(req.query.sortDir || -1);
-    const sortObj = { [sortBy]: sortDir };
+    const SORTS = {
+      newest: { createdAt: -1 },
+      'budget-low': { 'budget.min': 1, createdAt: -1 },
+      'budget-high': { 'budget.max': -1, createdAt: -1 },
+      popular: { views: -1, createdAt: -1 },
+    };
+    const sortObj = SORTS[req.query.sort] || (req.query.sortBy === 'views' ? SORTS.popular : SORTS.newest);
 
     // fetch
     const [total, items] = await Promise.all([
@@ -409,24 +437,6 @@ const searchListings = async (req, res) => {
       Flatmates.find(findQuery).sort(sortObj).skip(skip).limit(limit).lean()
     ]);
 
-
-    // Debug: if we have a normalized area with a sector number, show sample docs containing that number
-    try {
-      if (normalizedQuery.area) {
-        const numMatch = String(normalizedQuery.area).match(/([0-9]{1,3})$/);
-        if (numMatch && numMatch[1]) {
-          const num = numMatch[1];
-          const sample = await Flatmates.find({
-            $or: [
-              { area: { $regex: new RegExp(num, 'i') } }
-            ]
-          }).limit(10).lean();
-          
-        }
-      }
-    } catch (dbgErr) {
-      
-    }
 
     return res.json({ success: true, data: { total, page, limit, items } });
   } catch (err) {

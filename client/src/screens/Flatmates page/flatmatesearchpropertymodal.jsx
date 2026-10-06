@@ -70,7 +70,7 @@ export default function FlatmateSearchPropertyModal({ isOpen: isOpenProp, listin
       if (location.state && location.state.background) {
         navigate(-1);
       } else {
-        navigate('/flatmatesearch', { replace: true });
+        navigate('/flatmatessearch', { replace: true });
       }
     }
   };
