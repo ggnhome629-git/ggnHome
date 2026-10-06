@@ -1,81 +1,82 @@
-import React, { useEffect } from "react";
+import React, { lazy, Suspense, useEffect } from "react";
 
 import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { setupInterceptors } from "./utils/axiosInterceptor";
 import { pageTransitionVariants } from "./theme/motion";
+import PageLoader from "./components/ui/PageLoader";
 import Dashboard from "./screens/Dashboard/dashboard";
 import LoginModal from "./screens/Login Page/login";
-import SmsOtpTest from "./screens/Test Page/SmsOtpTest";
-import PropertyCheckout from "./screens/Visit Schedule/Clientvist";
+const SmsOtpTest = lazy(() => import("./screens/Test Page/SmsOtpTest"));
+const PropertyCheckout = lazy(() => import("./screens/Visit Schedule/Clientvist"));
 
-import PropertySearchInterface from "./screens/AI Assistant/ai";
-import VoiceAssistantRent from "./screens/AI Assistant/Desktop/RENTAL_CLIENT_RASA_MODEL";
-import VoiceAssistantSale from "./screens/AI Assistant/Desktop/SALE_CLIENT_RASA_MODEL";
-import VoiceAssistantRentMobile from "./screens/AI Assistant/Mobile/RENTAL_CLIENT_RASA_MODEL";
-import VoiceAssistantSaleMobile from "./screens/AI Assistant/Mobile/SALE_CLIENT_RASA_MODEL";
-import PropertyListingForm from "./screens/Add property/Propertyadd";
-import PropertyCards from "./screens/User-Properties/propertiesuser";
-import Searchproperty from "./screens/Searches/Searchproperty";
-import AdminProperties from "./screens/Admin Page/admin.properties";
-import RewardsPage from "./screens/Rewards/reward";
+const PropertySearchInterface = lazy(() => import("./screens/AI Assistant/ai"));
+const VoiceAssistantRent = lazy(() => import("./screens/AI Assistant/Desktop/RENTAL_CLIENT_RASA_MODEL"));
+const VoiceAssistantSale = lazy(() => import("./screens/AI Assistant/Desktop/SALE_CLIENT_RASA_MODEL"));
+const VoiceAssistantRentMobile = lazy(() => import("./screens/AI Assistant/Mobile/RENTAL_CLIENT_RASA_MODEL"));
+const VoiceAssistantSaleMobile = lazy(() => import("./screens/AI Assistant/Mobile/SALE_CLIENT_RASA_MODEL"));
+const PropertyListingForm = lazy(() => import("./screens/Add property/Propertyadd"));
+const PropertyCards = lazy(() => import("./screens/User-Properties/propertiesuser"));
+const Searchproperty = lazy(() => import("./screens/Searches/Searchproperty"));
+const AdminProperties = lazy(() => import("./screens/Admin Page/admin.properties"));
+const RewardsPage = lazy(() => import("./screens/Rewards/reward"));
 // import UserDetailsForm from "./screens/User Details/user";
-import PricePredictor from "./screens/Price Predictor Model/pricepredict";
-import CustomerSupportPage from "./screens/Customer Support/Customersupport";
-import  CallbackRequestsDashboard from "./screens/Admin Page/admin.customersupport";
-import Chatbot from "./screens/Dashboard/ChatBot";
-import PaymentsRewardsDashboard from "./screens/Admin Page/admin.enquiryproperties";
-import SeeAllProperties from "./screens/Dashboard/SeeAllProperties";
-import PropertyAnalytics from "./screens/User-Properties/PropertyAnalysis";
-import Savedproperties from "./screens/Dashboard/savedproperties";
-import AdminDashboard from "./screens/Admin Page/admin.dashboardoverview";
-import UserManagementSystem from "./screens/Admin Page/admin.usermanagement";
-import AdminLandingPage from "./screens/Admin Page/LandingAdminPage";
-import EnquiryPage from "./screens/Visit Schedule/enquiry";
-import AboutPage from "./screens/Customer Support/About";
-import AdminPropertyManager from "./screens/Admin Page/admin.propertyManager";
-import AdminProtectedRoute from "./screens/Admin Page/AdminProtectedRoutes";
-import AdminPropertyListingForm from "./screens/Admin Page/admin.addproperty";
-import InvestRealEstatePage from "./screens/Dashboard/InvestinRealEstateCardSection";
-import ServiceRequestApp from "./screens/Managed Services/CreateServices";
-import ServiceTrackingSystem from "./screens/Managed Services/ManageServices";
-import AdminServiceTracking from "./screens/Admin Page/admin.servicesDashboard";
-import VoiceVirtualTourModal from "./screens/3D View Property/propview";
-import CloudinaryDashboard from "./screens/Admin Page/admin.usageManager";
-import AdminUsageDashboard from "./screens/Admin Page/admin.usageManager2";
-import PropertyListingPage from "./screens/Admin Page/admin.allproperties";
-import AdminRewardsSection from "./screens/Admin Page/admin.RewardsSection";
-import AdminUserPreferencesResponses from "./screens/Admin Page/admin.userpreferencesformresponses";
-import UserPreferenceForm from "./screens/User Preference Form/userpreferenceform";
-import FlatmatesDashboard from "./screens/Flatmates page/flatmatesdashboard";
-import FlatmateDiscovery from "./screens/Flatmates page/flatmatessearch";
-import CreateFlatmateListing from "./screens/Flatmates page/flatematespost";
-import FlatmatesListings from "./screens/Flatmates page/flatmatesListings";
-import FlatmateSearchPropertyModal from "./screens/Flatmates page/flatmatesearchpropertymodal"; 
-import AgentRegistration from "./screens/Agent Page/Register Page/AgentRegister";
-import AgentLogin from "./screens/Agent Page/Login Page/AgentLogin";
-import AgentDashboard from "./screens/Agent Page/Dashboard/AgentDashboard";
-import AgentManagement from "./screens/Admin Page/admin.AgentsManagement";
-import AdminSmsDevices from "./screens/Admin Page/admin.smsDevices";
-import PropertyListingFormAgent from "./screens/Agent Page/Add property/Propertyadd";
-import PropertyCardsAgent from "./screens/Agent Page/User-Properties/propertiesuser";
-import PropertyAnalyticsAgent from "./screens/Agent Page/User-Properties/PropertyAnalysis";
-import AgentProtectedRoute from "./screens/Agent Page/Protected Routes/AgentProtectedroute";
-import CustomerSupportPageAgent from "./screens/Agent Page/Customer Support/Customersupport";
-import ProtectedRoutes from "./screens/Protected Routes/protectedroutes";
-import AgentRegistrationAdmin from "./screens/Admin Page/Admin.AgentRegister";
+const PricePredictor = lazy(() => import("./screens/Price Predictor Model/pricepredict"));
+const CustomerSupportPage = lazy(() => import("./screens/Customer Support/Customersupport"));
+const CallbackRequestsDashboard = lazy(() => import("./screens/Admin Page/admin.customersupport"));
+const Chatbot = lazy(() => import("./screens/Dashboard/ChatBot"));
+const PaymentsRewardsDashboard = lazy(() => import("./screens/Admin Page/admin.enquiryproperties"));
+const SeeAllProperties = lazy(() => import("./screens/Dashboard/SeeAllProperties"));
+const PropertyAnalytics = lazy(() => import("./screens/User-Properties/PropertyAnalysis"));
+const Savedproperties = lazy(() => import("./screens/Dashboard/savedproperties"));
+const AdminDashboard = lazy(() => import("./screens/Admin Page/admin.dashboardoverview"));
+const UserManagementSystem = lazy(() => import("./screens/Admin Page/admin.usermanagement"));
+const AdminLandingPage = lazy(() => import("./screens/Admin Page/LandingAdminPage"));
+const EnquiryPage = lazy(() => import("./screens/Visit Schedule/enquiry"));
+const AboutPage = lazy(() => import("./screens/Customer Support/About"));
+const AdminPropertyManager = lazy(() => import("./screens/Admin Page/admin.propertyManager"));
+const AdminProtectedRoute = lazy(() => import("./screens/Admin Page/AdminProtectedRoutes"));
+const AdminPropertyListingForm = lazy(() => import("./screens/Admin Page/admin.addproperty"));
+const InvestRealEstatePage = lazy(() => import("./screens/Dashboard/InvestinRealEstateCardSection"));
+const ServiceRequestApp = lazy(() => import("./screens/Managed Services/CreateServices"));
+const ServiceTrackingSystem = lazy(() => import("./screens/Managed Services/ManageServices"));
+const AdminServiceTracking = lazy(() => import("./screens/Admin Page/admin.servicesDashboard"));
+const VoiceVirtualTourModal = lazy(() => import("./screens/3D View Property/propview"));
+const CloudinaryDashboard = lazy(() => import("./screens/Admin Page/admin.usageManager"));
+const AdminUsageDashboard = lazy(() => import("./screens/Admin Page/admin.usageManager2"));
+const PropertyListingPage = lazy(() => import("./screens/Admin Page/admin.allproperties"));
+const AdminRewardsSection = lazy(() => import("./screens/Admin Page/admin.RewardsSection"));
+const AdminUserPreferencesResponses = lazy(() => import("./screens/Admin Page/admin.userpreferencesformresponses"));
+const UserPreferenceForm = lazy(() => import("./screens/User Preference Form/userpreferenceform"));
+const FlatmatesDashboard = lazy(() => import("./screens/Flatmates page/flatmatesdashboard"));
+const FlatmateDiscovery = lazy(() => import("./screens/Flatmates page/flatmatessearch"));
+const CreateFlatmateListing = lazy(() => import("./screens/Flatmates page/flatematespost"));
+const FlatmatesListings = lazy(() => import("./screens/Flatmates page/flatmatesListings"));
+const FlatmateSearchPropertyModal = lazy(() => import("./screens/Flatmates page/flatmatesearchpropertymodal")); 
+const AgentRegistration = lazy(() => import("./screens/Agent Page/Register Page/AgentRegister"));
+const AgentLogin = lazy(() => import("./screens/Agent Page/Login Page/AgentLogin"));
+const AgentDashboard = lazy(() => import("./screens/Agent Page/Dashboard/AgentDashboard"));
+const AgentManagement = lazy(() => import("./screens/Admin Page/admin.AgentsManagement"));
+const AdminSmsDevices = lazy(() => import("./screens/Admin Page/admin.smsDevices"));
+const PropertyListingFormAgent = lazy(() => import("./screens/Agent Page/Add property/Propertyadd"));
+const PropertyCardsAgent = lazy(() => import("./screens/Agent Page/User-Properties/propertiesuser"));
+const PropertyAnalyticsAgent = lazy(() => import("./screens/Agent Page/User-Properties/PropertyAnalysis"));
+const AgentProtectedRoute = lazy(() => import("./screens/Agent Page/Protected Routes/AgentProtectedroute"));
+const CustomerSupportPageAgent = lazy(() => import("./screens/Agent Page/Customer Support/Customersupport"));
+const ProtectedRoutes = lazy(() => import("./screens/Protected Routes/protectedroutes"));
+const AgentRegistrationAdmin = lazy(() => import("./screens/Admin Page/Admin.AgentRegister"));
 // Static imports for agent property detail views
-import RentalPropertyPageAgentDesktop from "./screens/Agent Page/Property View Agent/Desktop view/RentalPropertyPageView";
-import SalePropertyPageAgentDesktop from "./screens/Agent Page/Property View Agent/Desktop view/SalePropertyPageView";
-import RentalPropertyPageAgentMobile from "./screens/Agent Page/Property View Agent/Mobile view/RentalPropertyPageView";
-import SalePropertyPageAgentMobile from "./screens/Agent Page/Property View Agent/Mobile view/SalePropertyPageView";
+const RentalPropertyPageAgentDesktop = lazy(() => import("./screens/Agent Page/Property View Agent/Desktop view/RentalPropertyPageView"));
+const SalePropertyPageAgentDesktop = lazy(() => import("./screens/Agent Page/Property View Agent/Desktop view/SalePropertyPageView"));
+const RentalPropertyPageAgentMobile = lazy(() => import("./screens/Agent Page/Property View Agent/Mobile view/RentalPropertyPageView"));
+const SalePropertyPageAgentMobile = lazy(() => import("./screens/Agent Page/Property View Agent/Mobile view/SalePropertyPageView"));
 
 
 
 // Single responsive property detail views (MUI breakpoints handle
 // desktop/mobile — no separate component trees per viewport).
-import RentalPropertydetails from "./screens/Property View/RentalPropertyPageView";
-import SalePropertyPage from "./screens/Property View/SalePropertyPageView";
+const RentalPropertydetails = lazy(() => import("./screens/Property View/RentalPropertyPageView"));
+const SalePropertyPage = lazy(() => import("./screens/Property View/SalePropertyPageView"));
 
 
 // Responsive route components (decide at runtime and re-evaluate on resize)
@@ -131,6 +132,7 @@ function App() {
         exit="exit"
         variants={pageTransitionVariants}
       >
+        <Suspense fallback={<PageLoader />}>
         <Routes location={location}>
       <Route path="/" element={<Dashboard />} />
       <Route path="/login" element={<LoginModal />} />
@@ -203,6 +205,7 @@ function App() {
 
 
         </Routes>
+        </Suspense>
       </motion.div>
     </AnimatePresence>
   );

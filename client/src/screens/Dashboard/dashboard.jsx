@@ -7,6 +7,8 @@ import SectionShell from "../../components/ui/SectionShell";
 import SectionSkeleton from "../../components/ui/SectionSkeleton";
 import DashboardSeo from "./DashboardSeo";
 import HeroSearch from "./HeroSearch";
+import GiftBanner from "./GiftBanner";
+import StickySearchBar from "./StickySearchBar";
 import FloatingActions from "./FloatingActions";
 
 // Lazy imports — everything below the hero streams in as the user scrolls.
@@ -110,19 +112,11 @@ export default function RealEstateDashboard() {
       const query = (typeof term === "string" ? term : searchQuery).trim();
       if (!query) return;
       setIsSearching(true);
-      try {
-        // Primes the search endpoint; the results page fetches its own data, so
-        // we never make the user wait on this before navigating.
-        fetch(
-          `${process.env.REACT_APP_SEARCH_PROPERTIES_API}?query=${encodeURIComponent(
-            query
-          )}&type=${encodeURIComponent(propertyTypeFilter)}`,
-          { method: "GET", credentials: "include" }
-        ).catch(() => {});
-        navigate(`/search/${encodeURIComponent(query)}`);
-      } finally {
-        setIsSearching(false);
-      }
+      // The results page fetches its own data. Carry the Rent/Buy choice in the
+      // URL (it reads ?type=) so the chips actually change what is searched.
+      const type = String(propertyTypeFilter).toLowerCase();
+      const qs = type === "rent" || type === "sale" ? `?type=${type}` : "";
+      navigate(`/search/${encodeURIComponent(query)}${qs}`);
     },
     [searchQuery, propertyTypeFilter, navigate]
   );
@@ -300,8 +294,10 @@ export default function RealEstateDashboard() {
   const goToPreferences = () => navigate("/userpreferenceform");
 
   return (
-    <Box sx={{ backgroundColor: "background.paper", overflowX: "hidden" }}>
+    <Box sx={{ backgroundColor: "background.paper", overflowX: "clip" }}>
       <DashboardSeo />
+
+      <GiftBanner />
 
       <Suspense fallback={<Box sx={{ height: { xs: 64, md: 88 } }} />}>
         <TopNavigationBar navItems={NAV_ITEMS} />
@@ -333,6 +329,17 @@ export default function RealEstateDashboard() {
         suggestions={areaSuggestions}
         searching={isSearching}
         onOpenPreferences={goToPreferences}
+      />
+
+      <StickySearchBar
+        query={searchQuery}
+        onQueryChange={setSearchQuery}
+        onSearch={handleSearch}
+        type={propertyTypeFilter}
+        onTypeChange={setPropertyTypeFilter}
+        recentSearches={recentSearches}
+        suggestions={areaSuggestions}
+        searching={isSearching}
       />
 
       {/* Primary intents */}

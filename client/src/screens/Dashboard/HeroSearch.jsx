@@ -24,6 +24,7 @@ import {
   Sparkles,
   CalendarCheck,
 } from "lucide-react";
+import useVoiceSearch from "./useVoiceSearch";
 import { motionDuration, motionEase } from "../../theme/motion";
 import { radii } from "../../theme/theme";
 
@@ -72,7 +73,6 @@ export default function HeroSearch({
   onOpenPreferences,
 }) {
   const [open, setOpen] = useState(false);
-  const [listening, setListening] = useState(false);
   const [highlighted, setHighlighted] = useState(-1);
   const inputRef = useRef(null);
 
@@ -133,30 +133,8 @@ export default function HeroSearch({
     }
   };
 
-  const startVoiceSearch = () => {
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Voice recognition is not supported in this browser.");
-      return;
-    }
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-IN";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.start();
-    setListening(true);
-    recognition.onresult = (event) => {
-      const spoken = event.results[0][0].transcript;
-      setListening(false);
-      commit(spoken);
-    };
-    recognition.onerror = (event) => {
-      setListening(false);
-      console.error("Voice recognition error:", event.error);
-    };
-    recognition.onend = () => setListening(false);
-  };
+  const { listening, start: startVoiceSearch, supported: voiceSupported } =
+    useVoiceSearch((spoken) => commit(spoken));
 
   return (
     <Box
@@ -362,6 +340,7 @@ export default function HeroSearch({
                       }}
                       sx={{ flex: 1, fontSize: 15 }}
                     />
+                    {voiceSupported && (
                     <Tooltip title={listening ? "Listening…" : "Search by voice"}>
                       <IconButton
                         onClick={startVoiceSearch}
@@ -390,6 +369,7 @@ export default function HeroSearch({
                         <Mic size={20} />
                       </IconButton>
                     </Tooltip>
+                    )}
                   </Stack>
 
                   {/* Suggestions / recent searches */}
@@ -492,15 +472,19 @@ export default function HeroSearch({
                       startIcon={<SlidersHorizontal size={18} />}
                       sx={{
                         height: 56,
-                        px: 5,
                         flexShrink: 0,
                         borderColor: "divider",
                         color: "primary.main",
-                        display: { xs: "none", sm: "inline-flex" },
+                        px: { xs: 3, sm: 5 },
+                        minWidth: { xs: 56, sm: 64 },
+                        "& .MuiButton-startIcon": { mr: { xs: 0, sm: 2 }, ml: 0 },
                         "&:hover": { borderColor: "primary.main", backgroundColor: "background.default" },
                       }}
+                      aria-label="Personalise your search"
                     >
-                      Personalise
+                      <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                        Personalise
+                      </Box>
                     </Button>
                   </Tooltip>
                 </Stack>
