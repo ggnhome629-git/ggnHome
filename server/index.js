@@ -31,6 +31,8 @@ const corsOptions = {
   credentials: true,
   methods: ['GET', 'POST', 'PUT','PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  // Lets the search page read the total result count for "page X of Y".
+  exposedHeaders: ['X-Total-Count'],
 };
 
 app.use(cors(corsOptions));

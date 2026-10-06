@@ -116,6 +116,28 @@ const buildFilterObject = ({ parsed, extras = {} }) => {
   if (bedrooms !== null) and.push({ bedrooms });
   if (bathrooms !== null) and.push({ bathrooms });
 
+  // BHK chip from the UI: "1 RK", "2 BHK", "4+ BHK" (or a bare number)
+  if (extras.bhk) {
+    const raw = String(extras.bhk).toLowerCase();
+    const num = (raw.match(/\d+/) || [])[0];
+    if (raw.includes('rk')) {
+      and.push({ 'totalArea.configuration': /\b1\s*-?\s*RK\b/i });
+    } else if (num && raw.includes('+')) {
+      and.push({ 'totalArea.configuration': new RegExp(`\\b0*([${num}-9]|\\d{2})\\s*-?\\s*BHK`, 'i') });
+    } else if (num) {
+      and.push({ 'totalArea.configuration': new RegExp(`\\b0*${num}\\s*-?\\s*BHK`, 'i') });
+    }
+  }
+  if (extras.parking === 'Yes') {
+    and.push({ parking: { $exists: true, $nin: ['', null], $not: /^\s*(no|none)\b/i } });
+  } else if (extras.parking === 'No') {
+    and.push({ $or: [{ parking: { $exists: false } }, { parking: { $in: ['', null] } }, { parking: /^\s*(no|none)\b/i }] });
+  }
+  if (extras.moveInBy) {
+    const d = new Date(extras.moveInBy);
+    if (!Number.isNaN(d.getTime())) and.push({ moveInDate: { $lte: d } });
+  }
+
   if (and.length) filter.$and = and;
   return filter;
 };
@@ -138,44 +160,7 @@ exports.searchProperties = async (req, res) => {
     const normalizedType = type ? String(type).trim().toLowerCase() : '';
     const { limit: parsedLimit, skip } = getPagination(req);
     const userId = req.user?._id;
-    // Fast path: if query is missing/blank but type is present, return top N of that type
-    if (!hasQuery && normalizedType) {
-      try {
-        if (normalizedType === 'rent') {
-          const rentals = await RentalProperty.find({ isActive: true })
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(parsedLimit)
-            .populate('owner', 'name email')
-            .lean();
-          const withType = rentals.map((p) => ({ ...p, type: 'rent', defaultpropertytype: 'rental' }));
-          return res.status(200).json(withType);
-        }
-        if (normalizedType === 'sale') {
-          const sales = await SaleProperty.find({ isActive: true })
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(parsedLimit)
-            .populate({ path: 'ownerId', select: 'name email', strictPopulate: false })
-            .lean();
-          const withType = sales.map((p) => ({ ...p, type: 'sale', defaultpropertytype: 'sale' }));
-          return res.status(200).json(withType);
-        }
-        return res.status(400).json({ message: "Invalid type. Use 'rent' or 'sale'." });
-      } catch (e) {
-        return res.status(500).json({ message: 'Server error while fetching top properties', error: e.message });
-      }
-    }
-
-    // ---------- SAVE SEARCH HISTORY ----------
-    // if (userId) {
-    //   const lastEntry = await SearchHistory.findOne({ user: userId }).sort({
-    //     createdAt: -1,
-    //   });
-    //   if (!lastEntry || lastEntry.query !== query) {
-    //     await SearchHistory.create({ user: userId, query });
-    //   }
-    // }
+    const sortBy = String(req.query.sort || 'relevance');
 
     // ---------- QUERY NORMALIZATION ----------
     const rawQuery = hasQuery ? query : '';
@@ -193,6 +178,9 @@ exports.searchProperties = async (req, res) => {
         minArea: req.query.minArea,
         maxArea: req.query.maxArea,
         price: req.query.price,
+        bhk: req.query.bhk,
+        parking: req.query.parking,
+        moveInBy: req.query.moveInBy,
       },
     });
 
@@ -278,52 +266,52 @@ exports.searchProperties = async (req, res) => {
     };
 
     // ---------- MAIN SEARCH LOGIC ----------
-    let rentalMain = [];
-    let saleMain = [];
-
-    if (normalizedType === 'rent') {
-      rentalMain = await RentalProperty.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parsedLimit)
-        .populate('owner', 'name email')
-        .lean();
-    } else if (normalizedType === 'sale') {
-      saleMain = await SaleProperty.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parsedLimit)
-        .populate({ path: 'ownerId', select: 'name email', strictPopulate: false })
-        .lean();
-    } else {
-      // No explicit type => search both
-      rentalMain = await RentalProperty.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parsedLimit)
-        .populate('owner', 'name email')
-        .lean();
-      saleMain = await SaleProperty.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(parsedLimit)
-        .populate({ path: 'ownerId', select: 'name email', strictPopulate: false })
-        .lean();
-    }
+    const priceOf = (p) => Number(p.monthlyRent ?? p.price ?? 0) || 0;
+    const sortFor = (kind) => {
+      const priceField = kind === 'rent' ? 'monthlyRent' : 'price';
+      if (sortBy === 'price-low') return { [priceField]: 1, _id: 1 };
+      if (sortBy === 'price-high') return { [priceField]: -1, _id: 1 };
+      return { createdAt: -1, _id: 1 };
+    };
+    const fetchKind = async (kind, skipN, limitN) => {
+      const Model = kind === 'rent' ? RentalProperty : SaleProperty;
+      let q = Model.find(filter).sort(sortFor(kind)).skip(skipN).limit(limitN);
+      q = kind === 'rent'
+        ? q.populate('owner', 'name email')
+        : q.populate({ path: 'ownerId', select: 'name email', strictPopulate: false });
+      const docs = await q.lean();
+      return docs.map((p) => ({ ...p, type: kind, defaultpropertytype: kind === 'rent' ? 'rental' : 'sale' }));
+    };
 
     let mainResults = [];
-    if (normalizedType === 'rent') {
-      mainResults = rentalMain.map((p) => ({ ...p, type: 'rent', defaultpropertytype: 'rental' }));
-      mainResults = applyRelevanceSort(mainResults, { sectorNames: sectorNameMatches });
-    } else if (normalizedType === 'sale') {
-      mainResults = saleMain.map((p) => ({ ...p, type: 'sale', defaultpropertytype: 'sale' }));
-      mainResults = applyRelevanceSort(mainResults, { sectorNames: sectorNameMatches });
+    let total = 0;
+    if (normalizedType === 'rent' || normalizedType === 'sale') {
+      const Model = normalizedType === 'rent' ? RentalProperty : SaleProperty;
+      [mainResults, total] = await Promise.all([
+        fetchKind(normalizedType, skip, parsedLimit),
+        Model.countDocuments(filter),
+      ]);
     } else {
-      const rentalsWithType = rentalMain.map((p) => ({ ...p, type: 'rent', defaultpropertytype: 'rental' }));
-      const salesWithType = saleMain.map((p) => ({ ...p, type: 'sale', defaultpropertytype: 'sale' }));
-      mainResults = [...rentalsWithType, ...salesWithType];
+      // Both types: take the top (skip + limit) of each in the same order and
+      // merge, so every page holds exactly `limit` items and none repeat.
+      const [rentals, sales, rentCount, saleCount] = await Promise.all([
+        fetchKind('rent', 0, skip + parsedLimit),
+        fetchKind('sale', 0, skip + parsedLimit),
+        RentalProperty.countDocuments(filter),
+        SaleProperty.countDocuments(filter),
+      ]);
+      const cmp =
+        sortBy === 'price-low' ? (x, y) => priceOf(x) - priceOf(y)
+        : sortBy === 'price-high' ? (x, y) => priceOf(y) - priceOf(x)
+        : (x, y) => new Date(y.createdAt || 0) - new Date(x.createdAt || 0);
+      mainResults = [...rentals, ...sales].sort(cmp).slice(skip, skip + parsedLimit);
+      total = rentCount + saleCount;
+    }
+
+    if (sortBy === 'relevance') {
       mainResults = applyRelevanceSort(mainResults, { sectorNames: sectorNameMatches });
     }
+    res.set('X-Total-Count', String(total));
 
     // For compatibility with the rest of the code
     let allResults;

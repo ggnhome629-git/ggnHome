@@ -12,9 +12,19 @@ export default function MobileBottomNav({ user, onSearch }) {
   const { pathname } = useLocation();
 
   const items = [
-    { label: "Home", icon: Home, active: pathname === "/", onClick: () => window.scrollTo({ top: 0, behavior: "smooth" }) },
-    { label: "Search", icon: Search, onClick: onSearch },
-    { label: "Saved", icon: Heart, onClick: () => navigate(user ? "/savedproperties" : "/login") },
+    {
+      label: "Home",
+      icon: Home,
+      active: pathname === "/",
+      onClick: () => (pathname === "/" ? window.scrollTo({ top: 0, behavior: "smooth" }) : navigate("/")),
+    },
+    { label: "Search", icon: Search, active: pathname.startsWith("/search"), onClick: onSearch || (() => navigate("/search")) },
+    {
+      label: "Saved",
+      icon: Heart,
+      active: pathname === "/savedproperties",
+      onClick: () => navigate(user ? "/savedproperties" : "/login", user ? undefined : { state: { from: "/savedproperties" } }),
+    },
     { label: "Post", icon: PlusSquare, onClick: () => navigate(user ? "/add-property" : "/login") },
     { label: user ? "Account" : "Login", icon: User, onClick: () => navigate(user ? "/my-properties" : "/login") },
   ];

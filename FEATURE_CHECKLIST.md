@@ -33,14 +33,21 @@ Legend: `[x]` done, `[~]` partly done, `[ ]` not started. Item numbers match the
 - [x] Share image shrunk (5.7 MB → 100 kB) so WhatsApp previews load
 - [x] Intent card images requested at smaller size and auto-format
 - [x] Removed duplicate meta description / manifest; proper page title
-- [ ] Skeleton loaders on search results and property pages
+- [~] Skeleton loaders: search results and saved homes done; property pages pending
 - [ ] Lighthouse pass on dashboard (mobile) with target score recorded here
 
 ### Other pages
-- [ ] Search page: sector property count at top, page X of Y at bottom (#16)
-- [ ] Search page UI fix (#14)
+- [x] Search page: total homes for the sector at top, "Showing 1–12 of N · Page X of Y" and numbered pages at bottom (#16)
+- [x] Search page redesign (#14): navy header with serif title, sticky BHK / Budget / More filters / Sort bar, active filter chips, skeletons, empty + error states, "Didn't find your home?" lead band
+- [x] Search state lives in the URL (type, BHK, budget, sort, page) — back button and shared links keep the exact search
+- [x] Fixed: Rent/Buy and filter changes used stale values; filters only applied to the 10 results on screen
+- [x] Backend search: server-side filters (BHK incl. 1 RK / 4+, budget, area, baths, parking, move-in), sort, X-Total-Count, correct paging when mixing rent + sale
+- [x] Save heart now toggles (backend previously only added saves, never removed)
+- [x] Saved homes page rebuilt: header, type/sector/search/sort, unsave with Undo, empty state (was broken on page 2 by double pagination)
+- [x] Property card restyled (price first, ₹ L / Cr for sale, facts line, "Listed N days ago")
+- [x] Login from search, saved or any protected page returns to that page (#20, partial: property pages still to verify)
 - [ ] Property page UI fix; affiliate and own listings look identical (#15)
-- [ ] Return to the same property after login instead of dashboard (#20)
+- [~] Return to the same property after login instead of dashboard (#20) — search page and protected routes done
 
 ## Phase B: Property sources (affiliate + own)
 - [~] Source fields on property models (`sourcePortal`, `sourceUrl`, `sourceStatus`...) (#1, #2)

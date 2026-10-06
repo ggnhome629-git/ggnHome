@@ -49,16 +49,30 @@ const addSave = async (req, res) => {
     // Extract propertyId from request body and userId from authenticated user
     const { propertyId } = req.body;
     const userId = req.user._id;
+    if (!propertyId || !mongoose.Types.ObjectId.isValid(propertyId)) {
+      return res.status(400).json({ error: 'Valid propertyId is required' });
+    }
 
-    // Update or create PropertyAnalysis document by adding a save with the user reference
-    const metrics = await PropertyAnalysis.findOneAndUpdate(
-      { property: propertyId },
-      { $push: { saves: { user: userId } } },
-      { upsert: true, new: true }
-    );
+    // Toggle: a second save by the same user removes it (the heart is a toggle).
+    const alreadySaved = await PropertyAnalysis.exists({ property: propertyId, 'saves.user': userId });
+    const metrics = alreadySaved
+      ? await PropertyAnalysis.findOneAndUpdate(
+          { property: propertyId },
+          { $pull: { saves: { user: userId } } },
+          { new: true }
+        )
+      : await PropertyAnalysis.findOneAndUpdate(
+          { property: propertyId },
+          { $push: { saves: { user: userId } } },
+          { upsert: true, new: true }
+        );
 
-    // Respond with updated metrics
-    res.status(200).json(metrics);
+    const savedDocs = await PropertyAnalysis.find({ 'saves.user': userId }).select('property').lean();
+    res.status(200).json({
+      ...metrics.toObject(),
+      saved: !alreadySaved,
+      savedPropertyIds: savedDocs.map((d) => String(d.property)),
+    });
   } catch (err) {
     // Handle errors and respond with status 500
     res.status(500).json({ error: 'Error adding save' });

@@ -1,31 +1,13 @@
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Button,
-  Chip,
-  Drawer,
-  IconButton,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Chip, Drawer, IconButton, Stack, TextField, Typography } from "@mui/material";
 import { X } from "lucide-react";
+import { BHK_OPTIONS, FILTER_KEYS } from "./searchParams";
 
-const BHK_OPTIONS = ["1 RK", "1 BHK", "2 BHK", "3 BHK", "4 BHK", "4+ BHK"];
 const BATHROOM_OPTIONS = ["1", "2", "3", "4"];
 
-const EMPTY_FILTERS = {
-  bedroomsFilter: "",
-  bathroomsFilter: "",
-  minPriceFilter: "",
-  maxPriceFilter: "",
-  minAreaFilter: "",
-  maxAreaFilter: "",
-  moveInDateFilter: "",
-  parkingFilter: "",
-};
+const EMPTY = FILTER_KEYS.reduce((acc, k) => ({ ...acc, [k]: "" }), {});
 
-function ChipGroup({ label, options, value, onChange }) {
+function ChipGroup({ label, options, value, onChange, format = (o) => o }) {
   return (
     <Box>
       <Typography variant="overline" sx={{ color: "text.secondary", display: "block", mb: 3 }}>
@@ -37,13 +19,18 @@ function ChipGroup({ label, options, value, onChange }) {
           return (
             <Chip
               key={option}
-              label={option}
+              label={format(option)}
+              aria-pressed={active}
               onClick={() => onChange(active ? "" : option)}
               sx={{
+                height: 36,
+                px: 1,
                 fontWeight: 600,
-                backgroundColor: active ? "primary.main" : "background.default",
-                color: active ? "common.white" : "text.secondary",
-                "&:hover": { backgroundColor: active ? "primary.dark" : "divider" },
+                border: "1px solid",
+                borderColor: active ? "primary.main" : "divider",
+                backgroundColor: active ? "primary.main" : "background.paper",
+                color: active ? "common.white" : "text.primary",
+                "&:hover": { backgroundColor: active ? "primary.dark" : "background.default" },
               }}
             />
           );
@@ -53,15 +40,22 @@ function ChipGroup({ label, options, value, onChange }) {
   );
 }
 
-/**
- * Refinement filters that apply on top of the server-side query + type.
- * Rebuilt as a right-hand sheet (the brief explicitly calls for drawers over
- * centered dialogs) — and, unlike the filters panel it replaces, every field
- * here is one a user can actually reach a matching result for: pet/smoking
- * policy and amenities were dropped because the add-property form never
- * collects them, so those filters could only ever return zero results.
- */
-export default function FilterDrawer({ open, onClose, onApply, filters }) {
+function RangeFields({ label, minValue, maxValue, onMin, onMax }) {
+  return (
+    <Box>
+      <Typography variant="overline" sx={{ color: "text.secondary", display: "block", mb: 3 }}>
+        {label}
+      </Typography>
+      <Stack direction="row" spacing={3}>
+        <TextField type="number" label="Min" size="small" fullWidth value={minValue} onChange={(e) => onMin(e.target.value)} inputProps={{ min: 0 }} />
+        <TextField type="number" label="Max" size="small" fullWidth value={maxValue} onChange={(e) => onMax(e.target.value)} inputProps={{ min: 0 }} />
+      </Stack>
+    </Box>
+  );
+}
+
+/** Full refinement sheet; changes apply together on "Show results". */
+export default function FilterDrawer({ open, onClose, onApply, filters, type }) {
   const [local, setLocal] = useState(filters);
 
   useEffect(() => {
@@ -72,122 +66,77 @@ export default function FilterDrawer({ open, onClose, onApply, filters }) {
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose}>
-      <Box sx={{ width: { xs: "100vw", sm: 380 }, height: "100%", display: "flex", flexDirection: "column" }}>
+      <Box sx={{ width: { xs: "100vw", sm: 400 }, height: "100%", display: "flex", flexDirection: "column" }}>
         <Stack
           direction="row"
           justifyContent="space-between"
           alignItems="center"
-          sx={{ p: 5, borderBottom: "1px solid", borderColor: "divider" }}
+          sx={{ px: 6, py: 4, borderBottom: "1px solid", borderColor: "divider" }}
         >
-          <Typography variant="h3" sx={{ fontSize: "1.15rem", color: "primary.main" }}>
-            Refine results
+          <Typography variant="h3" sx={{ fontSize: "1.2rem", color: "primary.main" }}>
+            Filters
           </Typography>
           <IconButton onClick={onClose} aria-label="Close filters">
             <X size={20} />
           </IconButton>
         </Stack>
 
-        <Stack spacing={7} sx={{ p: 5, flex: 1, overflowY: "auto" }}>
-          <ChipGroup
-            label="Bedrooms"
-            options={BHK_OPTIONS}
-            value={local.bedroomsFilter}
-            onChange={set("bedroomsFilter")}
+        <Stack spacing={7} sx={{ px: 6, py: 5, flex: 1, overflowY: "auto" }}>
+          <ChipGroup label="Bedrooms" options={BHK_OPTIONS} value={local.bhk} onChange={set("bhk")} />
+          <RangeFields
+            label={`${type === "sale" ? "Price" : type === "rent" ? "Monthly rent" : "Budget"} (₹)`}
+            minValue={local.minPrice}
+            maxValue={local.maxPrice}
+            onMin={set("minPrice")}
+            onMax={set("maxPrice")}
           />
           <ChipGroup
             label="Bathrooms"
             options={BATHROOM_OPTIONS}
-            value={local.bathroomsFilter}
-            onChange={set("bathroomsFilter")}
+            value={local.bathrooms}
+            onChange={set("bathrooms")}
+            format={(o) => `${o} bath${o === "1" ? "" : "s"}`}
           />
-          <ChipGroup
-            label="Parking"
-            options={["Yes", "No"]}
-            value={local.parkingFilter}
-            onChange={set("parkingFilter")}
+          <RangeFields
+            label="Area (sqft)"
+            minValue={local.minArea}
+            maxValue={local.maxArea}
+            onMin={set("minArea")}
+            onMax={set("maxArea")}
           />
-
-          <Box>
-            <Typography variant="overline" sx={{ color: "text.secondary", display: "block", mb: 3 }}>
-              Monthly rent (₹)
-            </Typography>
-            <Stack direction="row" spacing={3}>
-              <TextField
-                type="number"
-                placeholder="Min"
-                size="small"
-                fullWidth
-                value={local.minPriceFilter}
-                onChange={(e) => set("minPriceFilter")(e.target.value)}
-              />
-              <TextField
-                type="number"
-                placeholder="Max"
-                size="small"
-                fullWidth
-                value={local.maxPriceFilter}
-                onChange={(e) => set("maxPriceFilter")(e.target.value)}
-              />
-            </Stack>
-          </Box>
-
-          <Box>
-            <Typography variant="overline" sx={{ color: "text.secondary", display: "block", mb: 3 }}>
-              Area (sqft)
-            </Typography>
-            <Stack direction="row" spacing={3}>
-              <TextField
-                type="number"
-                placeholder="Min"
-                size="small"
-                fullWidth
-                value={local.minAreaFilter}
-                onChange={(e) => set("minAreaFilter")(e.target.value)}
-              />
-              <TextField
-                type="number"
-                placeholder="Max"
-                size="small"
-                fullWidth
-                value={local.maxAreaFilter}
-                onChange={(e) => set("maxAreaFilter")(e.target.value)}
-              />
-            </Stack>
-          </Box>
-
-          <Box>
-            <Typography variant="overline" sx={{ color: "text.secondary", display: "block", mb: 3 }}>
-              Move in by
-            </Typography>
-            <TextField
-              type="date"
-              size="small"
-              fullWidth
-              value={local.moveInDateFilter}
-              onChange={(e) => set("moveInDateFilter")(e.target.value)}
-            />
-          </Box>
+          {type !== "sale" && (
+            <>
+              <ChipGroup label="Parking" options={["Yes", "No"]} value={local.parking} onChange={set("parking")} />
+              <Box>
+                <Typography variant="overline" sx={{ color: "text.secondary", display: "block", mb: 3 }}>
+                  Move in by
+                </Typography>
+                <TextField
+                  type="date"
+                  size="small"
+                  fullWidth
+                  value={local.moveInBy}
+                  onChange={(e) => set("moveInBy")(e.target.value)}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Box>
+            </>
+          )}
         </Stack>
 
-        <Stack direction="row" spacing={3} sx={{ p: 5, borderTop: "1px solid", borderColor: "divider" }}>
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={() => setLocal(EMPTY_FILTERS)}
-            sx={{ borderColor: "divider", color: "text.secondary" }}
-          >
-            Reset
+        <Stack direction="row" spacing={3} sx={{ px: 6, py: 4, borderTop: "1px solid", borderColor: "divider" }}>
+          <Button fullWidth variant="outlined" onClick={() => setLocal(EMPTY)} sx={{ borderColor: "divider", color: "text.secondary" }}>
+            Clear all
           </Button>
           <Button
             fullWidth
             variant="contained"
-            color="secondary"
             onClick={() => {
               onApply(local);
               onClose();
             }}
           >
-            Apply filters
+            Show results
           </Button>
         </Stack>
       </Box>

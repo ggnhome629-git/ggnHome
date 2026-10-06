@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import PageLoader from "../../components/ui/PageLoader";
 import { useAuth } from "../../Context/AuthContext";
 
 export default function ProtectedRoutes({ redirectTo = "/login" }) {
   const { user, loading: contextLoading } = useAuth();
+  const location = useLocation();
 
   const [checking, setChecking] = useState(true);
   const [authorized, setAuthorized] = useState(false);
@@ -64,10 +66,7 @@ export default function ProtectedRoutes({ redirectTo = "/login" }) {
   // ⏳ Loading state
   if (checking || contextLoading) {
     return (
-      <div style={{ padding: "40px", textAlign: "center" }}>
-        <h3>Checking session…</h3>
-        <p>Please wait</p>
-      </div>
+      <PageLoader />
     );
   }
 
@@ -77,7 +76,11 @@ export default function ProtectedRoutes({ redirectTo = "/login" }) {
       <Navigate
         to={redirectTo}
         replace
-        state={{ message: "Please login to access this page" }}
+        // `from` sends the user back here after logging in, not to the dashboard.
+        state={{
+          message: "Please login to access this page",
+          from: `${location.pathname}${location.search}`,
+        }}
       />
     );
   }
