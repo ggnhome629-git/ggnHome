@@ -71,6 +71,18 @@ Legend: `[x]` done, `[~]` partly done, `[ ]` not started. Item numbers match the
 - [ ] Property page UI fix; affiliate and own listings look identical (#15)
 - [~] Return to the same property after login instead of dashboard (#20) — search page and protected routes done
 
+### Post property & post flatmate forms
+- [x] Six-step forms (Rent/Sale and Flatmate) with step rail on laptop, step pills on tablet, progress bar + sticky Continue on phone
+- [x] Live Visibility Score 0–100 with "add these to reach 100" tips that jump to the step
+- [x] Inline validation per step (area, floors, price ranges, past dates, no phone/email in text)
+- [x] Review step with live card preview, edit links, listing check and confirmation before posting
+- [x] Trust panel (who is posting, verified badge, free/reviewed/private) and admin promos (new "post" placement)
+- [x] Draft autosave and restore; suggested title and "Write it for me" description
+- [x] Sale listings now store type, furnishing, parking, floors, possession and age; rentals store furnishing
+- [x] Server: owners can't set isActive/rankScore/owner/source fields; flatmates can't self-approve; flatmate photos upload
+- [ ] Show the new sale fields (furnishing, possession, age) on the property detail pages
+- [ ] Agent and admin add-property pages still use the old form
+
 ## Phase B: Property sources (affiliate + own)
 - [~] Source fields on property models (`sourcePortal`, `sourceUrl`, `sourceStatus`...) (#1, #2)
 - [ ] Commission field on own properties (#25, #3)

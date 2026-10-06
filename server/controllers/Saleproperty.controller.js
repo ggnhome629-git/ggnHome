@@ -28,6 +28,20 @@ const createSaleProperty = async (req, res) => {
       "totalArea.configuration": totalAreaConfiguration
     } = req.body;
 
+    // Optional profile fields (validated by the schema enums/min).
+    const asList = (v) => (v === undefined || v === null ? [] : Array.isArray(v) ? v : [v]);
+    const optionalNumber = (v) => (v === undefined || v === "" || Number.isNaN(Number(v)) ? undefined : Number(v));
+    const profile = {
+      propertyType: req.body.propertyType || undefined,
+      furnishing: req.body.furnishing || undefined,
+      parking: req.body.parking || undefined,
+      totalFloors: optionalNumber(req.body.totalFloors),
+      floorNumber: optionalNumber(req.body.floorNumber),
+      possessionStatus: req.body.possessionStatus || undefined,
+      propertyAge: req.body.propertyAge || undefined,
+      appliances: asList(req.body["appliances[]"] ?? req.body.appliances).map(String).slice(0, 30),
+    };
+
     const ownerId = req.user?._id || req.user?.id;
     // ------------------------------
     // Ensure user's role transitions from "renter" -> "owner" (unless agent/admin)
@@ -219,6 +233,7 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
       bedrooms,
       bathrooms,
       location,
+      ...profile,
       images,
       panoramas: panoramas.length ? panoramas : undefined,
       ownerId,

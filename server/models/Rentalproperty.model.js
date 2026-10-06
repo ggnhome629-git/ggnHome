@@ -16,7 +16,7 @@ const RentalpropertySchema = new mongoose.Schema(
     Sector: { type: String , required: true},
     propertyType: {
       type: String,
-      enum: ["house", "apartment", "condo", "townhouse", "villa"],
+      enum: ["house", "apartment", "condo", "townhouse", "villa", "1RK", "builder-floor", "studio"],
     },
     purpose: { type: String },
     bedrooms: { type: Number },
@@ -35,6 +35,7 @@ const RentalpropertySchema = new mongoose.Schema(
     },
     layoutFeatures: { type: String },
     appliances: [{ type: String }],
+    furnishing: { type: String, enum: ["unfurnished", "semi-furnished", "furnished"] },
     conditionAge: { type: String },
     renovations: { type: String },
     parking: { type: String },

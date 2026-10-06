@@ -26,6 +26,17 @@ totalArea: {
   location: {
     type: String
   },
+  propertyType: {
+    type: String,
+    enum: ["house", "apartment", "condo", "townhouse", "villa", "plot", "builder-floor", "studio"],
+  },
+  furnishing: { type: String, enum: ["unfurnished", "semi-furnished", "furnished"] },
+  parking: { type: String },
+  totalFloors: { type: Number, min: 0 },
+  floorNumber: { type: Number, min: 0 },
+  possessionStatus: { type: String, enum: ["ready", "under-construction"] },
+  propertyAge: { type: String },
+  appliances: [{ type: String }],
   Sector: { type: String , required: true},
   images: [String],
   // 360° panoramic scenes for this property

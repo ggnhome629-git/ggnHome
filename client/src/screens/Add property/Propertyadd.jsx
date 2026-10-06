@@ -1,2629 +1,753 @@
-import React, { useState, useRef } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { ToastContainer, toast } from "react-toastify";
-import PanoramicImagesModal from "../Add property/panaromicimagesadd.jsx";
-import "react-toastify/dist/ReactToastify.css";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Home,
-  Building2,
-  DollarSign,
-  MapPin,
-  FileText,
-  Upload,
-  Image,
-  Check,
-  ChevronRight,
-  X,
-} from "lucide-react";
+  Alert,
+  Autocomplete,
+  Box,
+  Button,
+  Checkbox,
+  Chip,
+  Dialog,
+  DialogContent,
+  FormControlLabel,
+  InputAdornment,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { motion } from "framer-motion";
+import { CheckCircle2, ClipboardCheck, Eye, MapPin, PencilLine, RotateCcw, Send, ShieldCheck, Sparkles, Wallet, Wand2 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
-import {useAuth} from "../../Context/AuthContext";
-import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
-import axios from "axios";
+import PanoramicImagesModal from "./panaromicimagesadd.jsx";
+import { useAuth } from "../../Context/AuthContext";
+import PostFormLayout from "../../components/postForm/PostFormLayout";
+import { ChoiceChips, ChoiceTiles, FormSection } from "../../components/postForm/ChoiceChips";
+import PhotoUploader from "../../components/postForm/PhotoUploader";
+import TrustPanel from "../../components/postForm/TrustPanel";
+import PostPromos from "../../components/postForm/PostPromos";
+import ReviewChecks from "../../components/postForm/ReviewChecks";
+import PropertyCard from "../../components/property/PropertyCard";
+import { computeScore, todayISO } from "../../components/postForm/scoring";
+import { radii } from "../../theme/theme";
+import {
+  AGES,
+  BATH_OPTIONS,
+  BHK_OPTIONS,
+  FEATURES,
+  FURNISHING,
+  INITIAL,
+  LOCALITY_OPTIONS,
+  PARKING,
+  POSSESSION,
+  PURPOSES,
+  STEP,
+  STEPS,
+  TENANTS,
+  buildFormData,
+  configuration,
+  firstInvalidStep,
+  isPlot,
+  previewProperty,
+  propertyTypes,
+  reviewChecks,
+  rupeesInWords,
+  scoreItems,
+  suggestDescription,
+  suggestTitle,
+  typeLabel,
+  validateStep,
+} from "./propertyFormConfig";
+
+const NAV_ITEMS = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
+const DRAFT_KEY = "postPropertyDraft:v2";
+const HEADER_BADGES = [
+  { icon: Wallet, label: "Free Listing" },
+  { icon: ShieldCheck, label: "Reviewed Before Going Live" },
+  { icon: PencilLine, label: "Edit Anytime" },
+];
+
+function readDraft() {
+  try {
+    const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null");
+    return d && d.f ? d : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function money(n) {
+  return n ? `₹${Number(n).toLocaleString("en-IN")}` : "";
+}
+
+function SummaryBlock({ title, rows, onEdit }) {
+  const shown = rows.filter(([, v]) => v !== "" && v != null && v !== false);
+  return (
+    <Box sx={{ p: 4, borderRadius: `${radii.md}px`, border: "1px solid", borderColor: "divider" }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+        <Typography sx={{ fontWeight: 800, color: "primary.main" }}>{title}</Typography>
+        <Button size="small" onClick={onEdit} startIcon={<PencilLine size={14} />} sx={{ fontWeight: 700 }}>
+          Edit
+        </Button>
+      </Stack>
+      <Box component="dl" sx={{ m: 0, display: "grid", gridTemplateColumns: "minmax(110px, 40%) 1fr", rowGap: 1.5, columnGap: 3 }}>
+        {shown.map(([k, v]) => (
+          <React.Fragment key={k}>
+            <Typography component="dt" variant="body2" sx={{ color: "text.secondary" }}>
+              {k}
+            </Typography>
+            <Typography component="dd" variant="body2" sx={{ m: 0, fontWeight: 600, color: "text.primary", wordBreak: "break-word" }}>
+              {v}
+            </Typography>
+          </React.Fragment>
+        ))}
+      </Box>
+    </Box>
+  );
+}
 
 export default function PropertyListingForm() {
-  // --- Hooks at the top ---
-  const [currentStep, setCurrentStep] = useState(0);
-  const [loading, setLoading] = useState(false);
-  // Hybrid auth: grab userToken from localStorage (for fallback Authorization header)
-  const userToken = localStorage.getItem("accessToken");
-  // 360° panorama modal state
-  const [showPanoModal, setShowPanoModal] = useState(false);
-  const [draftPanoramas, setDraftPanoramas] = useState([]); // [{ title, file, yaw, pitch, notes }]
-  const [formData, setFormData] = useState({
-    // Shared fields
-    purpose: "",
-    title: "",
-    address: "",
-    location: "", // used for Sale, optional for Rent
-    Sector: "",
-    propertyType: "",
-    ownerType: "",
-    bedrooms: "",
-    bathrooms: "",
-    totalArea: {
-      sqft: "",
-      configuration: "",
-    },
-    images: [],
-
-    // Rental-specific fields
-    layoutFeatures: "",
-    appliances: [],
-    conditionAge: "",
-    renovations: "",
-    parking: "",
-    outdoorSpace: "",
-    monthlyRent: "",
-    leaseTerm: "",
-    totalFloors: "",
-floorForRent: "",
-    securityDeposit: "",
-    otherFees: "",
-    utilities: [],
-    tenantRequirements: "",
-    moveInDate: "",
-    neighborhoodVibe: "",
-    transportation: "",
-    localAmenities: "",
-    communityFeatures: [],
-    petPolicy: "",
-    smokingPolicy: "",
-    maintenance: "",
-    insurance: "",
-
-    // Sale-specific fields
-    description: "",
-    price: "",
-  });
-  const [images, setImages] = useState([]);
-  const [showUploadWarning, setShowUploadWarning] = useState(false);
-  const imageInputRef = useRef();
-     const { user } = useAuth();
-  const [errors, setErrors] = useState({});
-  const [submittedProperty, setSubmittedProperty] = useState(null);
-  const [showSubmittedModal, setShowSubmittedModal] = useState(false);
-  const [countdown, setCountdown] = useState(10);
-const countdownRef = useRef(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
+  const userToken = localStorage.getItem("accessToken");
 
+  const initialDraft = useRef(readDraft()).current;
+  const [f, setF] = useState(() => {
+    if (initialDraft) return { ...INITIAL, ...initialDraft.f };
+    const q = new URLSearchParams(location.search).get("purpose");
+    const purpose = /^sale|sell$/i.test(q || "") ? "Sale" : /^rent$/i.test(q || "") ? "Rent" : "";
+    return { ...INITIAL, purpose };
+  });
+  const [step, setStep] = useState(initialDraft?.step ?? 0);
+  const [reached, setReached] = useState(initialDraft?.reached ?? 0);
+  const [restored, setRestored] = useState(Boolean(initialDraft));
+  const [photos, setPhotos] = useState([]);
+  const [panoramas, setPanoramas] = useState([]);
+  const [panoOpen, setPanoOpen] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [declared, setDeclared] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [saved, setSaved] = useState(null);
+
+  // Autosave everything except files (browsers can't store those).
   useEffect(() => {
-  if (!user || !user.role) return;
-  const role = String(user.role).toLowerCase();
-  if (role === "admin") setFormData((p) => ({ ...p, ownerType: "Admin" }));
-  else if (role === "agent") setFormData((p) => ({ ...p, ownerType: "Agent" }));
-  else setFormData((p) => ({ ...p, ownerType: "Owner" }));
-}, [user]);
-    // compute ownerType from current logged-in user's role (used when we reset the form on purpose change)
-    const ownerTypeFromRole = (() => {
+    if (saved) return undefined;
+    const t = setTimeout(() => {
       try {
-        const role = user && user.role ? String(user.role).toLowerCase() : "";
-        if (role === "admin") return "Admin";
-        if (role === "agent") return "Agent";
-      } catch (e) {}
-      return "Owner";
-    })();
-  
+        localStorage.setItem(DRAFT_KEY, JSON.stringify({ f, step, reached }));
+      } catch (e) {
+        // storage full or blocked — the form still works, just without a draft
+      }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [f, step, reached, saved]);
 
-  
-
-  const navItems = [
-    "For Buyers",
-    "For Tenants",
-    "For Owners",
-    "For Dealers / Builders",
-    "Insights",
-  ];
-
-  // --- Step definitions ---
-  const getRentalSteps = () => [
-    { title: "Property Details", icon: Home, color: "#003366" },
-    { title: "Pricing", icon: DollarSign, color: "#00A79D" },
-    // { title: "Location", icon: MapPin, color: "#4A6A8A" },
-    // { title: "Policies", icon: FileText, color: "#22D3EE" },
-    { title: "Photos", icon: Image, color: "#00A79D" },
-  ];
-  const getSaleSteps = () => [
-    { title: "Property Details", icon: Home, color: "#003366" },
-    { title: "Pricing & Info", icon: DollarSign, color: "#00A79D" },
-    { title: "Photos", icon: Image, color: "#4A6A8A" },
-  ];
-  const steps = formData.purpose === "Sale" ? getSaleSteps() : getRentalSteps();
-
-  // --- Handlers ---
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-
-    // ✅ Handle nested totalArea fields
-    if (name.startsWith("totalArea.")) {
-      const key = name.split(".")[1];
-      setFormData((prev) => ({
-        ...prev,
-        totalArea: {
-          ...prev.totalArea,
-          [key]: value,
-        },
-      }));
-      return;
-    }
-
-    // Reset form when purpose changes
-    if (name === "purpose" && value !== formData.purpose) {
-      setFormData({
-        // Shared fields
-        purpose: value,
-        title: "",
-        address: "",
-        location: "",
-        Sector: "",
-        ownerType: ownerTypeFromRole,
-        propertyType: "",
-        bedrooms: "",
-        bathrooms: "",
-        totalArea: { sqft: "", configuration: "" },
-        images: [],
-
-        // Rental-specific fields
-        layoutFeatures: "",
-        appliances: [],
-        conditionAge: "",
-        renovations: "",
-        parking: "",
-        outdoorSpace: "",
-        monthlyRent: "",
-        leaseTerm: "",
-        totalFloors: "",
-floorForRent: "",
-        securityDeposit: "",
-        otherFees: "",
-        utilities: [],
-        tenantRequirements: "",
-        moveInDate: "",
-        neighborhoodVibe: "",
-        transportation: "",
-        localAmenities: "",
-        communityFeatures: [],
-        petPolicy: "",
-        smokingPolicy: "",
-        maintenance: "",
-        insurance: "",
-
-        // Sale-specific fields
-        description: "",
-        price: "",
-      });
-      setImages([]);
-      setCurrentStep(0);
-      return;
-    }
-
-    // Handle checkboxes
-    if (type === "checkbox") {
-      const array = formData[name] || [];
-      setFormData({
-        ...formData,
-        [name]: checked ? [...array, value] : array.filter((v) => v !== value),
-      });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+  const set = (key) => (value) => {
+    setF((prev) => ({ ...prev, [key]: value }));
+    if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
-  const handleImageUpload = (e) => {
-    const files = Array.from(e.target.files);
-    // Check if total images exceed 8
-    if (images.length + files.length > 8) {
-      toast.error(
-        "❌ You can upload a maximum of 8 images. Please reduce the number of images."
-      );
-      return;
-    }
-    // Reject files larger than 5MB
-    const oversized = files.filter(f => f.size > 5 * 1024 * 1024);
-    if (oversized.length > 0) {
-      toast.error("❌ One or more files exceed 5MB and were not added.");
-      return;
-    }
-    const newImages = files.map((f) => ({
-      file: f,
-      url: URL.createObjectURL(f),
-    }));
-    setImages((prev) => [...prev, ...newImages]);
-  };
-  const validateStep = () => {
-    const e = {};
-    const purpose = formData.purpose;
-    // RENT validation
-    if (purpose === "Rent") {
-      if (currentStep === 0) {
-        if (!formData.title?.trim()) e.title = "Property title is required";
-        if (!formData.Sector?.trim()) e.Sector = "Sector is required";
-        if (!String(formData.totalArea?.sqft || "").trim())
-          e.sqft = "Total area (sqft) is required";
-        if (!formData.totalArea?.configuration?.trim())
-          e.configuration = "Configuration (e.g., 3 BHK) is required";
-      } else if (currentStep === 1) {
-        if (
-          formData.monthlyRent === "" ||
-          formData.monthlyRent === null ||
-          isNaN(Number(formData.monthlyRent))
-        ) {
-          e.monthlyRent = "Monthly rent is required";
-        }
-      }
-    }
-    // SALE validation
-    if (purpose === "Sale") {
-      if (currentStep === 0) {
-        if (!formData.title?.trim()) e.title = "Property title is required";
-        if (!formData.location?.trim())
-          e.location = "Location/Address is required";
-        if (!formData.Sector?.trim()) e.Sector = "Sector is required";
-        if (!String(formData.totalArea?.sqft || "").trim())
-          e.sqft = "Total area (sqft) is required";
-        if (!formData.totalArea?.configuration?.trim())
-          e.configuration = "Configuration (e.g., 3 BHK) is required";
-      } else if (currentStep === 1) {
-        if (
-          formData.price === "" ||
-          formData.price === null ||
-          isNaN(Number(formData.price))
-        ) {
-          e.price = "Sale price is required";
-        }
-      }
-    }
-    setErrors(e);
-    if (Object.keys(e).length > 0) {
-      const messages = Object.values(e).join("\n");
-      toast.error(`❌ Please fix the following:\n${messages}`);
-    }
-    return Object.keys(e).length === 0;
-  };
-  const handleNext = () => {
-    if (!validateStep()) {
-      toast.error("❌ Please fill the required fields highlighted above.");
-      return;
-    }
-    if (currentStep < steps.length - 1) setCurrentStep(currentStep + 1);
-  };
-  const handlePrev = () => {
-    if (currentStep > 0) setCurrentStep(currentStep - 1);
-  };
+  const onInput = (key) => (e) => set(key)(e.target.value);
 
-  // —— Helpers to surface backend validation nicely ——
-  const prettyField = (f) => {
-    if (!f) return "Field";
-    const map = {
-      monthlyRent: "Monthly rent",
-      price: "Price",
-      Sector: "Sector",
-      title: "Title",
-      address: "Address",
-      location: "Location",
-      "totalArea.sqft": "Total area (sqft)",
-      "totalArea.configuration": "Configuration",
-    };
-    if (map[f]) return map[f];
-    // convert camelCase / nested to Title Case
-    return String(f)
-      .replace(/\./g, " ")
-      .replace(/([A-Z])/g, " $1")
-      .replace(/^./, (s) => s.toUpperCase())
-      .trim();
-  };
+  const { score, missing } = useMemo(() => computeScore(scoreItems(f.purpose), { f, photos }), [f, photos]);
+  const rent = f.purpose !== "Sale";
+  const roleLabel = (() => {
+    const r = String(user?.role || "").toLowerCase();
+    return r === "admin" ? "Admin" : r === "agent" ? "Agent" : "Owner";
+  })();
 
-  const extractBackendErrors = (payload) => {
-    try {
-      // Mongoose classic: { errors: { field: { message } } }
-      if (payload && payload.errors && typeof payload.errors === "object") {
-        const fieldErrors = {};
-        const messages = [];
-        Object.entries(payload.errors).forEach(([path, val]) => {
-          const msg =
-            val?.message ||
-            (typeof val === "string"
-              ? val
-              : `Invalid value for ${prettyField(path)}`);
-          fieldErrors[path] = msg;
-          messages.push(msg);
-        });
-        return { fieldErrors, messages };
-      }
+  const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
-      // Custom shape: { error: 'ValidationError', details: [ { path, message } ] }
-      if (payload && Array.isArray(payload.details)) {
-        const fieldErrors = {};
-        const messages = [];
-        payload.details.forEach((d) => {
-          if (!d) return;
-          const path = d.path || d.field;
-          const msg = d.message || `${prettyField(path)} is invalid`;
-          if (path) fieldErrors[path] = msg;
-          messages.push(msg);
-        });
-        if (messages.length) return { fieldErrors, messages };
-      }
-
-      // Parse common Mongoose message: "Path `title` is required."
-      if (payload && typeof payload.message === "string") {
-        const fieldErrors = {};
-        const messages = [];
-        const rx = /Path\s+`([^`]+)`\s+is\s+required/gi;
-        let m;
-        while ((m = rx.exec(payload.message))) {
-          const field = m[1];
-          const msg = `${prettyField(field)} is required`;
-          fieldErrors[field] = msg;
-          messages.push(msg);
-        }
-        if (messages.length) return { fieldErrors, messages };
-      }
-    } catch (_) {}
-    return null;
-  };
-
-  const handleSubmit = async () => {
-    if (loading) return;
-    if (!validateStep()) {
-      toast.error("❌ Please complete all required fields before submitting.");
-      return;
-    }
-    setLoading(true);
-    try {
-      // --- Compute a local normalizedSector (do NOT rely on setFormData async update) ---
-      let normalizedSector;
-      if (formData.Sector) {
-        const rawSector = String(formData.Sector).trim();
-        if (/\bdlf\b/i.test(rawSector)) {
-          // preserve DLF named societies exactly as the user provided (trimmed)
-          normalizedSector = rawSector;
-        } else {
-          const formattedSector = rawSector.replace(/[^a-zA-Z0-9]/g, " ").replace(/\s+/g, " ").toLowerCase();
-          const match = formattedSector.match(/sector\s*(\d+)/);
-          if (match) normalizedSector = `Sector-${match[1]}`;
-          else if (/^\d+$/.test(formattedSector)) normalizedSector = `Sector-${formattedSector}`;
-          else if (formattedSector.startsWith("sec")) {
-            const num = formattedSector.replace("sec", "").trim();
-            normalizedSector = num ? `Sector-${num}` : rawSector.charAt(0).toUpperCase() + rawSector.slice(1);
-          } else {
-            normalizedSector = rawSector.charAt(0).toUpperCase() + rawSector.slice(1);
-          }
-        }
-      }
-
-      // Normalize configuration for both Rent and Sale (ensure consistent "X BHK" format)
-      if (formData.totalArea?.configuration) {
-        const rawConfig = formData.totalArea.configuration.trim().toUpperCase();
-        const bhkMatch = rawConfig.match(/(\d+)\s*-?\s*BHK?/i);
-        const normalizedConfig = bhkMatch ? `${bhkMatch[1]} BHK` : rawConfig;
-        // don't mutate original nested object for reliability
-        // we'll use normalizedConfig when appending totalArea.configuration below
-      }
-
-      // Build FormData object (safe: skip empty strings, coerce numbers, use normalizedSector)
-      const form = new FormData();
-      const numericKeys = new Set(['price','monthlyRent','securityDeposit','bedrooms','bathrooms']);
-
-      Object.entries(formData).forEach(([key, value]) => {
-        // ⛔ Fields intentionally removed from UI & backend
-const skippedFields = new Set([
-  "description",
-  "layoutFeatures",
-  "conditionAge",
-  "leaseTerm",
-  "utilities",
-  "otherFees",
-  "tenantRequirements",
-  "location",
-  "petPolicy",
-  "smokingPolicy",
-  "maintenance",
-  "insurance",
-  "renovations"
-]);
-
-if (formData.purpose === "Rent" && skippedFields.has(key)) return;
-        // Use normalizedSector when available
-        const effectiveValue = (key === 'Sector' && typeof normalizedSector !== 'undefined') ? normalizedSector : value;
-
-        // Handle nested totalArea as dotted keys (this matches your controller)
-        if (key === 'totalArea' && effectiveValue && typeof effectiveValue === 'object') {
-          if (effectiveValue.sqft !== undefined && String(effectiveValue.sqft).trim() !== '') {
-            form.append('totalArea.sqft', String(Number(effectiveValue.sqft)));
-          }
-          // prefer the explicit nested configuration value (may have been auto-set from bedrooms or manually entered)
-          if (effectiveValue.configuration !== undefined && String(effectiveValue.configuration).trim() !== '') {
-            form.append('totalArea.configuration', String(effectiveValue.configuration).trim());
-          }
-          return;
-        }
-
-        // Arrays -> append as repeated key[] (server expects this for multipart)
-        if (Array.isArray(effectiveValue)) {
-          effectiveValue.forEach((v) => {
-            if (v !== undefined && v !== null && String(v).trim() !== '') {
-              form.append(`${key}[]`, String(v));
-            }
-          });
-          return;
-        }
-
-        // Skip undefined / null / empty-string
-        if (effectiveValue === undefined || effectiveValue === null || (typeof effectiveValue === 'string' && effectiveValue.trim() === '')) {
-          return;
-        }
-
-        // Numeric coercion for known numeric keys
-        if (numericKeys.has(key)) {
-          const n = Number(effectiveValue);
-          if (!Number.isNaN(n)) form.append(key, String(n));
-          else form.append(key, String(effectiveValue));
-          return;
-        }
-
-        // Fallback - append scalar
-        form.append(key, String(effectiveValue));
-      });
-
-      // Append image files
-      images.forEach((imgObj) => {
-        if (imgObj.file) form.append('images', imgObj.file);
-      });
-
-      // 360° panoramas — filter incomplete entries and append as parallel arrays + files
-      if (draftPanoramas && draftPanoramas.length) {
-        toast.info(`Uploading ${draftPanoramas.length} panoramic scene${draftPanoramas.length>1?'s':''}…`);
-
-        const safeDraftPanos = (draftPanoramas || [])
-          .map(p => ({ ...p, title: (p.title||'').trim(), yaw: Number(p.yaw)||0, pitch: Number(p.pitch)||0, notes: p.notes||'' }))
-          .filter(p => p.title && (p.file || p.url)); // require title and either a file or a url
-
-        safeDraftPanos.forEach((p) => {
-          if (p.file) form.append('panoFiles', p.file); // files
-          form.append('panoTitles[]', p.title || '');
-          form.append('panoYaw[]', String(p.yaw || 0));
-          form.append('panoPitch[]', String(p.pitch || 0));
-          form.append('panoNotes[]', p.notes || '');
-        });
-      }
-
-      const url =
-        formData.purpose === "Sale"
-          ? `${process.env.REACT_APP_ADD_SALE_PROPERTY_API}`
-          : `${process.env.REACT_APP_ADD_RENT_PROPERTY_API}`;
-
-      const res = await fetch(url, {
-        method: "POST",
-        body: form,
-        credentials: "include",
-        headers: {
-          ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
-        },
-      });
-
-      if (res.ok) {
-        // Try to parse the saved property returned by the API
-        let saved = null;
-        try {
-          saved = await res.json();
-        } catch (e) {
-          // If server didn't return JSON, fall back to minimal success
-          console.warn('Create responded ok but no JSON returned');
-        }
-
-        // Prefer to show a modal with the submitted property details so the owner
-        // knows it is pending admin approval and can preview or edit.
-        setSubmittedProperty(saved || null);
-        setShowSubmittedModal(true);
-        setLoading(false);
+  const goTo = (target) => {
+    if (target === step) return;
+    if (target > reached) {
+      const bad = firstInvalidStep(f, target - 1);
+      if (bad !== -1) {
+        setErrors(validateStep(bad, f));
+        setStep(bad);
+        scrollToTop();
         return;
       }
+      setReached(target);
+    }
+    setErrors({});
+    setStep(target);
+    scrollToTop();
+  };
 
-      // ---- Not OK: try to surface field-level errors from backend ----
-      let errPayload = null;
-      const rawText = await res.text();
+  const showErrors = (errs) => {
+    setErrors(errs);
+    const first = Object.keys(errs)[0];
+    setTimeout(() => {
+      const el = document.getElementById(`field-${first}`);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+  };
+
+  const next = () => {
+    const errs = validateStep(step, f);
+    if (Object.keys(errs).length) return showErrors(errs);
+    if (step === STEP.review) return submit();
+    const to = step + 1;
+    setReached((r) => Math.max(r, to));
+    setErrors({});
+    setStep(to);
+    scrollToTop();
+  };
+  const back = () => {
+    setErrors({});
+    setStep((s) => Math.max(0, s - 1));
+    scrollToTop();
+  };
+
+  const startOver = () => {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch (e) {
+      // ignore
+    }
+    setF({ ...INITIAL });
+    setPhotos([]);
+    setPanoramas([]);
+    setStep(0);
+    setReached(0);
+    setErrors({});
+    setRestored(false);
+  };
+
+  async function submit() {
+    if (submitting) return;
+    const bad = firstInvalidStep(f);
+    if (bad !== -1) {
+      setStep(bad);
+      showErrors(validateStep(bad, f));
+      return;
+    }
+    if (!declared) {
+      showErrors({ declaration: "Please confirm the details are accurate" });
+      return;
+    }
+    setSubmitting(true);
+    setSubmitError("");
+    try {
+      const url = rent ? process.env.REACT_APP_ADD_RENT_PROPERTY_API : process.env.REACT_APP_ADD_SALE_PROPERTY_API;
+      const res = await fetch(url, {
+        method: "POST",
+        body: buildFormData(f, photos, panoramas),
+        credentials: "include",
+        headers: userToken ? { Authorization: `Bearer ${userToken}` } : {},
+      });
+      if (res.status === 401) {
+        navigate("/login", { state: { from: "/add-property" } });
+        return;
+      }
+      const text = await res.text();
+      let data = null;
       try {
-        errPayload = rawText ? JSON.parse(rawText) : null;
-      } catch (_) {}
-
-      // 1) Try structured payload first
-      let parsed = extractBackendErrors(errPayload || {});
-
-      // 2) If not, try parsing from the raw text string (common with Mongoose error strings)
-      if (!parsed && typeof rawText === "string" && rawText.trim().length) {
-        parsed = extractBackendErrors({ message: rawText });
+        data = text ? JSON.parse(text) : null;
+      } catch (e) {
+        data = null;
       }
-
-      // 3) If still nothing, manually detect "Path `field` is required" and surface it
-      if (!parsed && typeof rawText === "string") {
-        const rx = /Path\s+`([^`]+)`\s+is\s+required/gi;
-        const fieldErrors = {};
-        const messages = [];
-        let m;
-        while ((m = rx.exec(rawText))) {
-          const field = m[1];
-          const pretty = prettyField(field);
-          const msg = `${pretty} is required`;
-          fieldErrors[field] = msg;
-          messages.push(msg);
-        }
-        if (messages.length) {
-          parsed = { fieldErrors, messages };
-        }
+      if (!res.ok) {
+        const msg = (data && (data.message || data.error)) || "We couldn't post your property. Please try again.";
+        const detail = data && typeof data.error === "string" && data.message ? ` (${data.error})` : "";
+        setSubmitError(`${msg}${detail}`);
+        return;
       }
-
-      if (parsed) {
-        // Highlight fields on the form + show toast with exact missing fields
-        setErrors((prev) => ({ ...prev, ...(parsed.fieldErrors || {}) }));
-        toast.error(
-          `❌ Please fix the following:\n${parsed.messages.join("\n")}`
-        );
-      } else {
-        // Fallback generic message
-        const genericMsg =
-          (errPayload && (errPayload.message || errPayload.error)) ||
-          (typeof rawText === "string" ? rawText : "") ||
-          "❌ Error while creating property";
-        toast.error(genericMsg);
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch (e) {
+        // ignore
       }
-    } catch (error) {
-      toast.error(`❌ Network/Server error: ${error.message}`);
+      setSaved(data?.property || data || {});
+    } catch (err) {
+      setSubmitError(`Network error: ${err.message}. Your details are saved — try again.`);
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
-  };
-  React.useEffect(() => {
-  if (!showSubmittedModal) {
-    setCountdown(10);
-    if (countdownRef.current) {
-      clearInterval(countdownRef.current);
-      countdownRef.current = null;
-    }
-    return;
   }
 
-  // start countdown when modal opens
-  setCountdown(10);
-  if (countdownRef.current) { clearInterval(countdownRef.current); }
-  countdownRef.current = setInterval(() => {
-    setCountdown((prev) => {
-      if (prev <= 1) {
-        // time's up: clear and redirect to root
-        if (countdownRef.current) {
-          clearInterval(countdownRef.current);
-          countdownRef.current = null;
-        }
-        setShowSubmittedModal(false);
-        navigate('/');
-        return 0;
-      }
-      return prev - 1;
-    });
-  }, 1000);
+  // ---------------------------------------------------------------- steps
+  const err = (k) => errors[k];
+  const amountHelper = (v) => (v ? rupeesInWords(v) : " ");
 
-  return () => {
-    if (countdownRef.current) {
-      clearInterval(countdownRef.current);
-      countdownRef.current = null;
-    }
-  };
-}, [showSubmittedModal, navigate]);
+  const stepBasics = (
+    <>
+      <FormSection title="I Want To" required error={err("purpose")} id="field-purpose">
+        <ChoiceTiles
+          ariaLabel="Purpose"
+          options={PURPOSES}
+          value={f.purpose}
+          columns={{ xs: 2 }}
+          error={Boolean(err("purpose"))}
+          onChange={(v) =>
+            setF((prev) => ({
+              ...prev,
+              purpose: v,
+              // Plot and 1 RK only exist on one side.
+              propertyType: propertyTypes(v).some((t) => t.value === prev.propertyType) ? prev.propertyType : "",
+            }))
+          }
+        />
+      </FormSection>
+      <FormSection title="Property Type" required error={err("propertyType")} id="field-propertyType">
+        <ChoiceTiles ariaLabel="Property type" options={propertyTypes(f.purpose)} value={f.propertyType} onChange={set("propertyType")} columns={{ xs: 2, sm: 3 }} error={Boolean(err("propertyType"))} />
+      </FormSection>
+    </>
+  );
 
-  // --- Responsive Styles ---
-  // Get window width for responsive breakpoints
-  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  React.useEffect(() => {
-    const handleResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // Breakpoints
-  const isMobile = windowWidth < 768;
-  const isTablet = windowWidth >= 768 && windowWidth < 1024;
-  const isDesktop = windowWidth >= 1024;
-
-  const containerStyle = {
-    minHeight: "100vh",
-    backgroundColor: "#F4F7F9",
-    padding: "0",
-  };
-  const mainContentStyle = {
-    display: "flex",
-    flexDirection: isMobile ? "column" : "row",
-    maxWidth: isMobile ? "100%" : isTablet ? "96%" : "1400px",
-    margin: "0 auto",
-    padding: isMobile ? "16px 4vw" : isTablet ? "30px 4vw" : "40px 20px",
-    gap: isMobile ? "20px" : "30px",
-  };
-  const sidebarStyle = {
-    width: isMobile ? "100%" : isTablet ? "220px" : "280px",
-    flexShrink: 0,
-    marginBottom: isMobile ? "20px" : 0,
-  };
-  const sidebarCardStyle = {
-    backgroundColor: "#FFFFFF",
-    borderRadius: "12px",
-    padding: isMobile ? "18px" : isTablet ? "20px" : "25px",
-    boxShadow: "0 2px 12px rgba(0,51,102,0.08)",
-    marginBottom: "20px",
-  };
-  const sidebarTitleStyle = {
-    fontSize: isMobile ? "14px" : "16px",
-    fontWeight: "700",
-    color: "#003366",
-    marginBottom: "20px",
-  };
-  const stepItemStyle = (index) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: isMobile ? "8px" : "12px",
-    padding: isMobile ? "8px" : "12px",
-    borderRadius: "8px",
-    marginBottom: "8px",
-    cursor: "pointer",
-    backgroundColor: currentStep === index ? "#F4F7F9" : "transparent",
-    transition: "all 0.3s",
-    border:
-      currentStep === index ? "2px solid #00A79D" : "2px solid transparent",
-  });
-  const stepIconStyle = (index) => ({
-    width: isMobile ? "28px" : "36px",
-    height: isMobile ? "28px" : "36px",
-    borderRadius: "50%",
-    backgroundColor:
-      currentStep === index
-        ? steps[index].color
-        : currentStep > index
-        ? "#00A79D"
-        : "#E5E7EB",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    flexShrink: 0,
-  });
-  const stepTextStyle = (index) => ({
-    fontSize: isMobile ? "12px" : "14px",
-    fontWeight: currentStep === index ? "700" : "500",
-    color: currentStep === index ? "#003366" : "#4A6A8A",
-  });
-  const formAreaStyle = {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: "12px",
-    padding: isMobile ? "18px 10px" : isTablet ? "28px" : "40px",
-    boxShadow: "0 2px 12px rgba(0,51,102,0.08)",
-    width: isMobile ? "100%" : undefined,
-    maxWidth: "100%",
-  };
-  const formTitleStyle = {
-    fontSize: isMobile ? "22px" : isTablet ? "26px" : "32px",
-    fontWeight: "800",
-    color: "#003366",
-    marginBottom: "10px",
-  };
-  const formSubtitleStyle = {
-    fontSize: isMobile ? "13px" : "16px",
-    color: "#4A6A8A",
-    marginBottom: isMobile ? "24px" : "40px",
-  };
-  const inputLabelStyle = {
-    display: "block",
-    fontSize: isMobile ? "12px" : "14px",
-    fontWeight: "600",
-    color: "#333333",
-    marginBottom: "8px",
-  };
-  const inputStyle = {
-    width: "100%",
-    padding: isMobile ? "10px 12px" : "12px 16px",
-    border: "2px solid #E5E7EB",
-    borderRadius: "8px",
-    fontSize: isMobile ? "14px" : "15px",
-    outline: "none",
-    transition: "all 0.3s",
-    boxSizing: "border-box",
-    fontFamily: "inherit",
-  };
-  const textareaStyle = {
-    ...inputStyle,
-    resize: "vertical",
-    minHeight: isMobile ? "60px" : "100px",
-  };
-  const gridStyle = {
-    display: "grid",
-    gridTemplateColumns: isMobile ? "1fr" : "repeat(2, 1fr)",
-    gap: isMobile ? "12px" : "20px",
-    marginBottom: isMobile ? "16px" : "25px",
-  };
-  const fieldStyle = {
-    marginBottom: isMobile ? "16px" : "25px",
-  };
-  const checkboxGroupStyle = {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: isMobile ? "8px" : "15px",
-  };
-  const checkboxLabelStyle = {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    cursor: "pointer",
-    padding: isMobile ? "6px 8px" : "8px 12px",
-    borderRadius: "6px",
-    border: "2px solid #E5E7EB",
-    transition: "all 0.3s",
-    fontSize: isMobile ? "12px" : "inherit",
-  };
-  const buttonContainerStyle = {
-    display: isMobile ? "block" : "flex",
-    justifyContent: "space-between",
-    marginTop: isMobile ? "24px" : "40px",
-    paddingTop: isMobile ? "18px" : "30px",
-    borderTop: "2px solid #F4F7F9",
-    gap: isMobile ? "10px" : 0,
-  };
-  const buttonStyle = (variant) => ({
-    width: isMobile ? "100%" : undefined,
-    padding: isMobile ? "12px" : "14px 32px",
-    borderRadius: "8px",
-    fontSize: isMobile ? "14px" : "16px",
-    fontWeight: "700",
-    border: "none",
-    cursor: "pointer",
-    transition: "all 0.3s",
-    display: "inline-flex",
-    alignItems: "center",
-    gap: "8px",
-    backgroundColor: variant === "primary" ? "#00A79D" : "#FFFFFF",
-    color: variant === "primary" ? "#FFFFFF" : "#4A6A8A",
-    border: variant === "secondary" ? "2px solid #E5E7EB" : "none",
-    marginBottom: isMobile ? "10px" : 0,
-  });
-  const uploadAreaStyle = {
-    border: "3px dashed #00A79D",
-    borderRadius: "12px",
-    padding: isMobile ? "18px" : "40px",
-    textAlign: "center",
-    backgroundColor: "#F4F7F9",
-    transition: "all 0.3s",
-    cursor: "pointer",
-    fontSize: isMobile ? "13px" : undefined,
-  };
-  const uploadedImagesStyle = {
-    display: "grid",
-    gridTemplateColumns: isMobile
-      ? "repeat(2, 1fr)"
-      : isTablet
-      ? "repeat(3, 1fr)"
-      : "repeat(4, 1fr)",
-    gap: isMobile ? "8px" : "15px",
-    marginTop: isMobile ? "16px" : "25px",
-  };
-  const uploadedImageStyle = {
-    width: "100%",
-    height: isMobile ? "85px" : "150px",
-    objectFit: "cover",
-    borderRadius: "8px",
-    border: "2px solid #E5E7EB",
-  };
-
-  // --- Step content rendering ---
-  function renderPhotosStep() {
-    return (
-      <div>
-        <h2 style={formTitleStyle}>Upload Photos</h2>
-        <p style={formSubtitleStyle}>Add photos to showcase your property</p>
-        <div
-          style={uploadAreaStyle}
-          onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#00A79D")}
-          onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#00A79D")}
-          onClick={() => setShowUploadWarning(true)}
-        >
-          <Upload size={48} color="#00A79D" style={{ margin: "0 auto 15px" }} />
-          <p
-            style={{
-              color: "#003366",
-              fontSize: "18px",
-              fontWeight: "600",
-              margin: "10px 0",
-            }}
-          >
-            Click to upload or drag and drop
-          </p>
-          <p style={{ color: "#4A6A8A", fontSize: "14px", margin: 0 }}>
-            PNG, JPG, GIF up to 5MB
-          </p>
-          <input
-            ref={imageInputRef}
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleImageUpload}
-            style={{ display: "none" }}
-          />
-        </div>
-        {showUploadWarning && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              backgroundColor: "rgba(0,0,0,0.45)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 9999,
-            }}
-          >
-            <div
-              style={{
-                width: "90%",
-                maxWidth: "420px",
-                backgroundColor: "#FFFFFF",
-                borderRadius: "14px",
-                padding: "28px",
-                boxShadow: "0 20px 40px rgba(0,51,102,0.25)",
-                borderTop: "6px solid #00A79D",
-              }}
-            >
-              <h3
-                style={{
-                  margin: "0 0 12px 0",
-                  color: "#003366",
-                  fontSize: "20px",
-                  fontWeight: 800,
-                }}
-              >
-                Important Privacy Notice
-              </h3>
-
-              <p
-                style={{
-                  color: "#4A6A8A",
-                  fontSize: "14px",
-                  lineHeight: 1.6,
-                  marginBottom: "22px",
-                }}
-              >
-                For your safety and personal security, please <strong>do not upload
-                photos showing the front of your house</strong>. This helps protect
-                your privacy and maintain platform integrity for both rental and sale
-                listings.
-              </p>
-
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: "12px",
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setShowUploadWarning(false)}
-                  style={{
-                    padding: "10px 18px",
-                    borderRadius: "8px",
-                    border: "2px solid #E5E7EB",
-                    background: "#FFFFFF",
-                    color: "#4A6A8A",
-                    fontWeight: 700,
-                    cursor: "pointer",
-                  }}
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowUploadWarning(false);
-                    imageInputRef.current?.click();
-                  }}
-                  style={{
-                    padding: "10px 18px",
-                    borderRadius: "8px",
-                    border: "none",
-                    background: "#00A79D",
-                    color: "#FFFFFF",
-                    fontWeight: 800,
-                    cursor: "pointer",
-                    boxShadow: "0 6px 14px rgba(0,167,157,0.35)",
-                  }}
-                >
-                  I Understand
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-        {images.length > 0 && (
-          <div>
-            <p
-              style={{
-                color: "#003366",
-                fontWeight: "600",
-                marginTop: "30px",
-                marginBottom: "15px",
-              }}
-            >
-              Uploaded Photos ({images.length})
-            </p>
-            <div style={uploadedImagesStyle}>
-              {images.map((img, idx) => (
-                <div key={idx} style={{ position: "relative" }}>
-                  <img
-                    src={img.url}
-                    alt={`upload-${idx}`}
-                    style={uploadedImageStyle}
-                  />
-                  <button
-                    onClick={() =>
-                      setImages(images.filter((_, i) => i !== idx))
-                    }
-                    style={{
-                      position: "absolute",
-                      top: "5px",
-                      right: "5px",
-                      backgroundColor: "#FF4444",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "50%",
-                      width: "30px",
-                      height: "30px",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <X size={18} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {/* --- 360° Panoramic images (opens modal) --- */}
-        <div
-          style={{
-            marginTop: 24,
-            padding: 16,
-            border: "2px dashed #a9c7e6",
-            borderRadius: 12,
-            background: "#f7fbff",
-            transition: "all .2s ease-in-out",
+  const stepLocation = (
+    <>
+      <FormSection title="City">
+        <Chip icon={<MapPin size={14} />} label="Gurgaon (Gurugram)" color="primary" variant="outlined" sx={{ fontWeight: 700 }} />
+      </FormSection>
+      <FormSection title="Sector / Locality" required hint="Pick from the list or type your own — e.g. Sector 56, DLF Phase 3" id="field-Sector">
+        <Autocomplete
+          freeSolo
+          options={LOCALITY_OPTIONS}
+          inputValue={f.Sector}
+          onInputChange={(e, v) => set("Sector")(v || "")}
+          filterOptions={(opts, state) => {
+            const q = state.inputValue.trim().toLowerCase();
+            if (!q) return opts.slice(0, 40);
+            const digits = q.replace(/\D/g, "");
+            return opts.filter((o) => o.toLowerCase().includes(q) || (digits && o === `Sector ${digits}`)).slice(0, 40);
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#7fb3e3")}
-          onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#a9c7e6")}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 12,
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <div style={{ fontWeight: 800, color: "#003366" }}>
-                Add 360° Panoramic Scenes
-              </div>
-              <div style={{ color: "#4A6A8A", fontSize: 13 }}>
-                Optional: Upload equirectangular (2:1) images with room titles
-                for the 3D viewer. Saved locally until you submit.
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                toast.info("Open panoramic editor");
-                setShowPanoModal(true);
-              }}
-              style={{
-                background: "#003366",
-                color: "#fff",
-                border: "none",
-                padding: "10px 14px",
-                borderRadius: 10,
-                fontWeight: 800,
-                cursor: "pointer",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-              }}
-            >
-              + Add 360° Scenes
-            </button>
-          </div>
-
-          {/* Summary chips if any panoramas saved */}
-          {draftPanoramas?.length > 0 && (
-            <div style={{ marginTop: 12 }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <span
-                  style={{
-                    background: "#e6f4ff",
-                    color: "#0b3a60",
-                    border: "1px solid #cfe0ee",
-                    borderRadius: 999,
-                    padding: "6px 10px",
-                    fontWeight: 800,
-                    fontSize: 12,
-                    animation: "pulse 1.3s ease-in-out 2",
-                  }}
-                >
-                  {draftPanoramas.length} scene
-                  {draftPanoramas.length > 1 ? "s" : ""} saved
-                </span>
-                {draftPanoramas.map((p, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      padding: "6px 10px",
-                      borderRadius: 999,
-                      border: "1px solid #cfe0ee",
-                      background: "#fff",
-                      color: "#0b3a60",
-                      fontSize: 12,
-                      fontWeight: 700,
-                    }}
-                  >
-                    {i + 1}. {p.title}
-                  </span>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => setShowPanoModal(true)}
-                  style={{
-                    marginLeft: "auto",
-                    background: "#ffffff",
-                    color: "#003366",
-                    border: "1px solid #a9c7e6",
-                    padding: "8px 12px",
-                    borderRadius: 10,
-                    fontWeight: 800,
-                    cursor: "pointer",
-                  }}
-                >
-                  Edit scenes
-                </button>
-              </div>
-
-              {/* thumbnail strip */}
-              <div
-                style={{
-                  marginTop: 12,
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
-                  gap: 10,
-                }}
-              >
-                {draftPanoramas.map((p, i) => {
-                  const url = p?.file ? URL.createObjectURL(p.file) : null;
-                  return (
-                    <div
-                      key={i}
-                      style={{
-                        border: "1px solid #e1ebf5",
-                        borderRadius: 8,
-                        overflow: "hidden",
-                        background: "#fff",
-                      }}
-                    >
-                      {url ? (
-                        <img
-                          src={url}
-                          alt={p.title || `scene-${i + 1}`}
-                          style={{
-                            width: "100%",
-                            height: 80,
-                            objectFit: "cover",
-                          }}
-                          onLoad={(e) => URL.revokeObjectURL(url)}
-                        />
-                      ) : (
-                        <div
-                          style={{
-                            height: 80,
-                            display: "grid",
-                            placeItems: "center",
-                            color: "#99a9bb",
-                            fontSize: 12,
-                          }}
-                        >
-                          No preview
-                        </div>
-                      )}
-                      <div
-                        style={{
-                          padding: 6,
-                          fontSize: 12,
-                          color: "#0b3a60",
-                          fontWeight: 700,
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {p.title || `Scene ${i + 1}`}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* pulse keyframes */}
-              <style>{`
-        @keyframes pulse {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.05); }
-          100% { transform: scale(1); }
-        }
-      `}</style>
-            </div>
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              placeholder="Search sector or locality"
+              error={Boolean(err("Sector"))}
+              helperText={err("Sector") || " "}
+              InputProps={{ ...params.InputProps, startAdornment: <MapPin size={18} color="#00A79D" style={{ marginLeft: 6 }} /> }}
+            />
           )}
-        </div>
-      </div>
-    );
-  }
+        />
+      </FormSection>
+      <FormSection title={rent ? "Society / Street Address" : "Full Address"} required={!rent} hint="Shown only as the area name on the card" id="field-address">
+        <TextField
+          fullWidth
+          value={f.address}
+          onChange={onInput("address")}
+          placeholder={rent ? "e.g. Tower B, Orchid Petals, Sohna Road" : "e.g. House 123, Block C, Sushant Lok 1"}
+          error={Boolean(err("address"))}
+          helperText={err("address") || " "}
+          inputProps={{ maxLength: 200 }}
+        />
+      </FormSection>
+    </>
+  );
 
-  function renderStepContent() {
-    if (!formData.purpose) {
-      return (
-        <div>
-          <h2 style={formTitleStyle}>Choose Property Purpose</h2>
-          <p style={formSubtitleStyle}>
-            Select whether you want to list your property for rent or sale
-          </p>
-          <div style={{ display: "flex", gap: "20px", marginTop: "40px" }}>
-            <div
-              onClick={() =>
-                handleChange({ target: { name: "purpose", value: "Rent" } })
-              }
-              style={{
-                flex: 1,
-                padding: "40px",
-                border: "3px solid #E5E7EB",
-                borderRadius: "12px",
-                textAlign: "center",
-                cursor: "pointer",
-                transition: "all 0.3s",
-                backgroundColor: "#FFFFFF",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#00A79D";
-                e.currentTarget.style.backgroundColor = "#F4F7F9";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#E5E7EB";
-                e.currentTarget.style.backgroundColor = "#FFFFFF";
-              }}
-            >
-              <Home
-                size={48}
-                color="#00A79D"
-                style={{ margin: "0 auto 20px" }}
+  const stepProfile = (
+    <>
+      {!isPlot(f) && f.propertyType !== "1RK" && (
+        <FormSection title="Bedrooms" required error={err("bhk")} id="field-bhk">
+          <ChoiceChips ariaLabel="Bedrooms" options={BHK_OPTIONS} value={f.bhk} onChange={set("bhk")} error={Boolean(err("bhk"))} />
+        </FormSection>
+      )}
+      {!isPlot(f) && (
+        <FormSection title="Bathrooms">
+          <ChoiceChips ariaLabel="Bathrooms" options={BATH_OPTIONS} value={f.bathrooms} onChange={set("bathrooms")} />
+        </FormSection>
+      )}
+      <FormSection title={isPlot(f) ? "Plot Area" : "Built-Up Area"} required id="field-sqft">
+        <TextField
+          type="number"
+          value={f.sqft}
+          onChange={onInput("sqft")}
+          placeholder="e.g. 1450"
+          error={Boolean(err("sqft"))}
+          helperText={err("sqft") || (Number(f.sqft) > 0 ? `≈ ${Math.round(Number(f.sqft) / 9).toLocaleString("en-IN")} sq yd · ${Math.round(Number(f.sqft) * 0.0929).toLocaleString("en-IN")} sq m` : " ")}
+          InputProps={{ endAdornment: <InputAdornment position="end">sqft</InputAdornment> }}
+          inputProps={{ min: 0, inputMode: "numeric" }}
+          sx={{ width: { xs: "100%", sm: 320 } }}
+        />
+      </FormSection>
+      {!isPlot(f) && (
+        <FormSection title="Floor Details">
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
+            <TextField id="field-totalFloors" type="number" label="Total floors in building" value={f.totalFloors} onChange={onInput("totalFloors")} error={Boolean(err("totalFloors"))} helperText={err("totalFloors") || " "} inputProps={{ min: 0, inputMode: "numeric" }} fullWidth />
+            <TextField id="field-floor" type="number" label={rent ? "Floor for rent (0 = ground)" : "Property on floor (0 = ground)"} value={f.floor} onChange={onInput("floor")} error={Boolean(err("floor"))} helperText={err("floor") || " "} inputProps={{ min: 0, inputMode: "numeric" }} fullWidth />
+          </Stack>
+        </FormSection>
+      )}
+      {!isPlot(f) && (
+        <FormSection title="Furnishing">
+          <ChoiceChips ariaLabel="Furnishing" options={FURNISHING} value={f.furnishing} onChange={set("furnishing")} />
+        </FormSection>
+      )}
+      <FormSection title="Parking">
+        <ChoiceChips ariaLabel="Parking" options={PARKING} value={f.parking} onChange={set("parking")} />
+      </FormSection>
+      {!isPlot(f) && (
+        <FormSection title="Features & Amenities" hint="Tick everything that's included">
+          <ChoiceChips multiple size="sm" ariaLabel="Features" options={FEATURES} value={f.appliances} onChange={set("appliances")} />
+        </FormSection>
+      )}
+    </>
+  );
+
+  const perSqft = (() => {
+    const amount = Number(rent ? f.monthlyRent : f.price);
+    const sq = Number(f.sqft);
+    return amount > 0 && sq > 0 ? Math.round(amount / sq) : 0;
+  })();
+
+  const stepPrice = (
+    <>
+      {rent ? (
+        <>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
+<Box sx={{ flex: 1 }}>
+            <FormSection title="Monthly Rent" required id="field-monthlyRent">
+              <TextField
+                type="number"
+                fullWidth
+                value={f.monthlyRent}
+                onChange={onInput("monthlyRent")}
+                placeholder="e.g. 35000"
+                error={Boolean(err("monthlyRent"))}
+                helperText={err("monthlyRent") || (perSqft ? `${amountHelper(f.monthlyRent)} · ₹${perSqft}/sqft` : amountHelper(f.monthlyRent))}
+                InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment>, endAdornment: <InputAdornment position="end">/month</InputAdornment> }}
+                inputProps={{ min: 0, inputMode: "numeric" }}
               />
-              <h3
-                style={{
-                  color: "#003366",
-                  fontSize: "24px",
-                  fontWeight: "700",
-                  marginBottom: "10px",
-                }}
-              >
-                For Rent
-              </h3>
-              <p style={{ color: "#4A6A8A", fontSize: "15px", margin: 0 }}>
-                List your property for rental purposes with detailed amenities
-                and policies
-              </p>
-            </div>
-            <div
-              onClick={() =>
-                handleChange({ target: { name: "purpose", value: "Sale" } })
-              }
-              style={{
-                flex: 1,
-                padding: "40px",
-                border: "3px solid #E5E7EB",
-                borderRadius: "12px",
-                textAlign: "center",
-                cursor: "pointer",
-                transition: "all 0.3s",
-                backgroundColor: "#FFFFFF",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "#00A79D";
-                e.currentTarget.style.backgroundColor = "#F4F7F9";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#E5E7EB";
-                e.currentTarget.style.backgroundColor = "#FFFFFF";
-              }}
-            >
-              <DollarSign
-                size={48}
-                color="#00A79D"
-                style={{ margin: "0 auto 20px" }}
+            </FormSection>
+            </Box>
+            <Box sx={{ flex: 1 }}>
+            <FormSection title="Security Deposit" id="field-securityDeposit">
+              <TextField
+                type="number"
+                fullWidth
+                value={f.securityDeposit}
+                onChange={onInput("securityDeposit")}
+                placeholder="e.g. 70000"
+                error={Boolean(err("securityDeposit"))}
+                helperText={err("securityDeposit") || amountHelper(f.securityDeposit)}
+                InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
+                inputProps={{ min: 0, inputMode: "numeric" }}
               />
-              <h3
-                style={{
-                  color: "#003366",
-                  fontSize: "24px",
-                  fontWeight: "700",
-                  marginBottom: "10px",
-                }}
-              >
-                For Sale
-              </h3>
-              <p style={{ color: "#4A6A8A", fontSize: "15px", margin: 0 }}>
-                List your property for sale with pricing and description
-              </p>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    // RENTAL PROPERTY STEPS
-    if (formData.purpose === "Rent") {
-      switch (currentStep) {
-        case 0:
-          return (
-            <div>
-              <h2 style={formTitleStyle}>Property Details</h2>
-              <p style={formSubtitleStyle}>
-                Tell us about your rental property's basic information
-              </p>
-              <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Property Title *</label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  placeholder="e.g., Spacious 2BHK Apartment in Sector 46"
-                  style={{
-                    ...inputStyle,
-                    borderColor: errors.title
-                      ? "#ef4444"
-                      : inputStyle.borderColor,
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                  required
-                />
-                {errors.title && (
-                  <p
-                    style={{
-                      color: "#ef4444",
-                      fontSize: "12px",
-                      marginTop: "6px",
-                    }}
-                  >
-                    {errors.title}
-                  </p>
-                )}
-              </div>
-
-              {/* <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Property Description</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Provide a short description highlighting key features, condition, and location..."
-                  style={textareaStyle}
-                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                />
-              </div> */}
-
-              <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Property Address</label>
-                <input
-                  type="text"
-                  name="address"
-                  value={formData.address}
-                  onChange={handleChange}
-                  placeholder="Enter complete address"
-                  style={{
-                    ...inputStyle,
-                    
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                />
-              </div>
-              <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Sector *</label>
-                <input
-                  type="text"
-                  name="Sector"
-                  value={formData.Sector}
-                  onChange={handleChange}
-                  placeholder="e.g., Sector 46, Gurugram , Haryana"
-                  style={{
-                    ...inputStyle,
-                    borderColor: errors.Sector
-                      ? "#ef4444"
-                      : inputStyle.borderColor,
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                  required
-                />
-                {errors.Sector && (
-                  <p
-                    style={{
-                      color: "#ef4444",
-                      fontSize: "12px",
-                      marginTop: "6px",
-                    }}
-                  >
-                    {errors.Sector}
-                  </p>
-                )}
-              </div>
-              <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Listing By</label>
-                <input
-  type="text"
-  name="ownerType"
-  value={formData.ownerType}
-  readOnly
-  style={{ ...inputStyle, backgroundColor: "#F3F4F6", cursor: "not-allowed" }}
-/>
-              </div>
-              <div style={gridStyle}>
-                <div>
-                  <label style={inputLabelStyle}>Bedrooms *</label>
-                  <input
-                    type="number"
-                    name="bedrooms"
-                    value={formData.bedrooms}
-                    onChange={(e) => {
-                      // Update bedrooms normally
-                      handleChange(e);
-                      // Also set the totalArea.configuration to `${n} BHK` and make sure state stays consistent
-                      const val = e.target.value;
-                      setFormData((prev) => ({
-                        ...prev,
-                        bedrooms: val,
-                        totalArea: {
-                          ...prev.totalArea,
-                          configuration: val ? `${val} BHK` : "",
-                        },
-                      }));
-                    }}
-                    placeholder="e.g., 3"
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                    onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                  />
-                </div>
-                <div>
-                  <label style={inputLabelStyle}>Bathrooms *</label>
-                  <input
-                    type="number"
-                    name="bathrooms"
-                    value={formData.bathrooms}
-                    onChange={handleChange}
-                    placeholder="e.g., 2"
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                    onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                  />
-                </div>
-                <div style={gridStyle}>
-  <div>
-    <label style={inputLabelStyle}>Total Number of Floors</label>
-    <input
-      type="number"
-      name="totalFloors"
-      value={formData.totalFloors}
-      onChange={handleChange}
-      placeholder="e.g., 10"
-      min="0"
-      style={inputStyle}
-      onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-      onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-    />
-  </div>
-
-  <div>
-    <label style={inputLabelStyle}>Floor for Rent</label>
-    <input
-      type="number"
-      name="floorForRent"
-      value={formData.floorForRent}
-      onChange={handleChange}
-      placeholder="e.g., 3"
-      min="0"
-      style={inputStyle}
-      onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-      onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-    />
-  </div>
-</div>
-              </div>
-              <div style={gridStyle}>
-                <div>
-                  <label style={inputLabelStyle}>Property Type *</label>
-                  <select
-                    name="propertyType"
-                    value={formData.propertyType}
-                    onChange={handleChange}
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                    onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                  >
-                    <option value="">Select type</option>
-                    <option value="house">House</option>
-                    <option value="apartment">Apartment</option>
-                    <option value="condo">Condo</option>
-                    <option value="townhouse">Townhouse</option>
-                    <option value="villa">Villa</option>
-                    <option value="1RK">1 RK</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={inputLabelStyle}>Total Area *</label>
-                  <div style={{ display: "flex", gap: "10px" }}>
-                    <input
-                      type="number"
-                      name="totalArea.sqft"
-                      value={formData.totalArea.sqft}
-                      onChange={handleChange}
-                      placeholder="Area in sqft (e.g., 1200)"
-                      style={{
-                        ...inputStyle,
-                        flex: 1,
-                        borderColor: errors.sqft
-                          ? "#ef4444"
-                          : inputStyle.borderColor,
-                      }}
-                    />
-                    {errors.sqft && (
-                      <p
-                        style={{
-                          color: "#ef4444",
-                          fontSize: "12px",
-                          marginTop: "6px",
-                        }}
-                      >
-                        {errors.sqft}
-                      </p>
-                    )}
-                    <input
-                      type="text"
-                      name="totalArea.configuration"
-                      value={formData.totalArea.configuration}
-                      readOnly
-                      placeholder="Configuration (auto from bedrooms)"
-                      style={{
-                        ...inputStyle,
-                        flex: 1,
-                        backgroundColor: '#F3F4F6',
-                        color: '#374151',
-                        borderColor: errors.configuration
-                          ? "#ef4444"
-                          : inputStyle.borderColor,
-                        cursor: 'not-allowed'
-                      }}
-                    />
-                    {errors.configuration && (
-                      <p
-                        style={{
-                          color: "#ef4444",
-                          fontSize: "12px",
-                          marginTop: "6px",
-                        }}
-                      >
-                        {errors.configuration}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              
-              {/* <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Key Features</label>
-                <textarea
-                  name="layoutFeatures"
-                  value={formData.layoutFeatures}
-                  onChange={handleChange}
-                  placeholder="Describe what makes your property special..."
-                  style={textareaStyle}
-                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                />
-              </div> */}
-              <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Appliances Included</label>
-                <div style={checkboxGroupStyle}>
-                  {[
-                    "Refrigerator",
-                    "Stove",
-                    "Dishwasher",
-                    "Washer/Dryer",
-                    "Microwave",
-                    "Air Conditioning",
-                  ].map((app) => (
-                    <label
-                      key={app}
-                      style={checkboxLabelStyle}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.borderColor = "#00A79D")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.borderColor = "#E5E7EB")
-                      }
-                    >
-                      <input
-                        type="checkbox"
-                        name="appliances"
-                        value={app}
-                        checked={(formData.appliances || []).includes(app)}
-                        onChange={handleChange}
-                        style={{
-                          width: "18px",
-                          height: "18px",
-                          cursor: "pointer",
-                          accentColor: "#00A79D",
-                        }}
-                      />
-                      <span style={{ fontSize: "14px", color: "#333333" }}>
-                        {app}
-                      </span>
-                    </label>
+              {Number(f.monthlyRent) > 0 && (
+                <Stack direction="row" spacing={1.5} sx={{ mt: -1 }}>
+                  {[1, 2, 3].map((m) => (
+                    <Chip key={m} size="small" variant="outlined" label={`${m} month${m > 1 ? "s" : ""}`} onClick={() => set("securityDeposit")(String(m * Number(f.monthlyRent)))} />
                   ))}
-                </div>
-              </div>
-              <div style={gridStyle}>
-                {/* <div>
-                  <label style={inputLabelStyle}>Property Age</label>
-                  <input
-                    type="text"
-                    name="conditionAge"
-                    value={formData.conditionAge}
-                    onChange={handleChange}
-                    placeholder="e.g., Built in 2015"
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                    onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                  />
-                </div> */}
-                <div>
-                  <label style={inputLabelStyle}>Parking</label>
-                  <select
-                    name="parking"
-                    value={formData.parking || ""}
-                    onChange={handleChange}
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                    onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                  >
-                    <option value="">Select</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          );
-        case 1:
-          return (
-            <div>
-              <h2 style={formTitleStyle}>Pricing & Terms</h2>
-              <p style={formSubtitleStyle}>
-                Set your rental pricing 
-              </p>
-              <div style={gridStyle}>
-                <div>
-                  <label style={inputLabelStyle}>Monthly Rent (₹) *</label>
-                  <input
-                    type="number"
-                    name="monthlyRent"
-                    value={formData.monthlyRent}
-                    onChange={handleChange}
-                    placeholder="e.g., 50000"
-                    style={{
-                      ...inputStyle,
-                      borderColor: errors.monthlyRent
-                        ? "#ef4444"
-                        : inputStyle.borderColor,
-                    }}
-                    onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                    onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                  />
-                  {errors.monthlyRent && (
-                    <p
-                      style={{
-                        color: "#ef4444",
-                        fontSize: "12px",
-                        marginTop: "6px",
-                      }}
-                    >
-                      {errors.monthlyRent}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label style={inputLabelStyle}>Security Deposit (₹) *</label>
-                  <input
-                    type="number"
-                    name="securityDeposit"
-                    value={formData.securityDeposit}
-                    onChange={handleChange}
-                    placeholder="e.g., 100000"
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                    onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                  />
-                </div>
-              </div>
-              <div style={gridStyle}>
-                {/* <div>
-                  <label style={inputLabelStyle}>Lease Term *</label>
-                  <select
-                    name="leaseTerm"
-                    value={formData.leaseTerm}
-                    onChange={handleChange}
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                    onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                  >
-                    <option value="">Select term</option>
-                    <option value="6">6 months</option>
-                    <option value="12">12 months</option>
-                    <option value="24">24 months</option>
-                    <option value="flexible">Flexible</option>
-                  </select>
-                </div> */}
-                <div>
-                  <label style={inputLabelStyle}>Available From *</label>
-                  <input
-                    type="date"
-                    name="moveInDate"
-                    value={formData.moveInDate}
-                    onChange={handleChange}
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                    onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                  />
-                </div>
-              </div>
-              {/* <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Utilities Included</label>
-                <div style={checkboxGroupStyle}>
-                  {[
-                    "Electricity",
-                    "Water",
-                    "Gas",
-                    "Internet",
-                    "Maintenance",
-                  ].map((util) => (
-                    <label
-                      key={util}
-                      style={checkboxLabelStyle}
-                      onMouseEnter={(e) =>
-                        (e.currentTarget.style.borderColor = "#00A79D")
-                      }
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.borderColor = "#E5E7EB")
-                      }
-                    >
-                      <input
-                        type="checkbox"
-                        name="utilities"
-                        value={util}
-                        checked={(formData.utilities || []).includes(util)}
-                        onChange={handleChange}
-                        style={{
-                          width: "18px",
-                          height: "18px",
-                          cursor: "pointer",
-                          accentColor: "#00A79D",
-                        }}
-                      />
-                      <span style={{ fontSize: "14px", color: "#333333" }}>
-                        {util}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div> */}
-              {/* <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Additional Fees</label>
-                <textarea
-                  name="otherFees"
-                  value={formData.otherFees}
-                  onChange={handleChange}
-                  placeholder="Mention any additional fees (application fee, pet deposit, etc.)"
-                  style={textareaStyle}
-                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                />
-              </div> */}
-              {/* <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Tenant Requirements</label>
-                <textarea
-                  name="tenantRequirements"
-                  value={formData.tenantRequirements}
-                  onChange={handleChange}
-                  placeholder="e.g., Minimum credit score, proof of income, references..."
-                  style={textareaStyle}
-                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                />
-              </div> */}
-            </div>
-          );
-        // case 2:
-          // return (
-          //   <div>
-          //     <h2 style={formTitleStyle}>Location & Amenities</h2>
-          //     <p style={formSubtitleStyle}>
-          //       Highlight what makes your location special
-          //     </p>
-          //     <div style={fieldStyle}>
-          //       <label style={inputLabelStyle}>Neighborhood Description</label>
-          //       <textarea
-          //         name="neighborhoodVibe"
-          //         value={formData.neighborhoodVibe}
-          //         onChange={handleChange}
-          //         placeholder="Describe the neighborhood vibe, safety, and lifestyle..."
-          //         style={textareaStyle}
-          //         onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-          //         onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-          //       />
-          //     </div>
-          //     <div style={fieldStyle}>
-          //       <label style={inputLabelStyle}>Transportation Access</label>
-          //       <textarea
-          //         name="transportation"
-          //         value={formData.transportation}
-          //         onChange={handleChange}
-          //         placeholder="Mention nearby metro, bus stops, highway access..."
-          //         style={textareaStyle}
-          //         onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-          //         onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-          //       />
-          //     </div>
-          //     <div style={fieldStyle}>
-          //       <label style={inputLabelStyle}>Local Amenities</label>
-          //       <textarea
-          //         name="localAmenities"
-          //         value={formData.localAmenities}
-          //         onChange={handleChange}
-          //         placeholder="Schools, hospitals, shopping centers, restaurants nearby..."
-          //         style={textareaStyle}
-          //         onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-          //         onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-          //       />
-          //     </div>
-          //     <div style={fieldStyle}>
-          //       <label style={inputLabelStyle}>Community Features</label>
-          //       <div style={checkboxGroupStyle}>
-          //         {[
-          //           "Swimming Pool",
-          //           "Fitness Center",
-          //           "Clubhouse",
-          //           "24/7 Security",
-          //           "Playground",
-          //           "Garden",
-          //           "Parking",
-          //         ].map((feat) => (
-          //           <label
-          //             key={feat}
-          //             style={checkboxLabelStyle}
-          //             onMouseEnter={(e) =>
-          //               (e.currentTarget.style.borderColor = "#00A79D")
-          //             }
-          //             onMouseLeave={(e) =>
-          //               (e.currentTarget.style.borderColor = "#E5E7EB")
-          //             }
-          //           >
-          //             <input
-          //               type="checkbox"
-          //               name="communityFeatures"
-          //               value={feat}
-          //               checked={(formData.communityFeatures || []).includes(
-          //                 feat
-          //               )}
-          //               onChange={handleChange}
-          //               style={{
-          //                 width: "18px",
-          //                 height: "18px",
-          //                 cursor: "pointer",
-          //                 accentColor: "#00A79D",
-          //               }}
-          //             />
-          //             <span style={{ fontSize: "14px", color: "#333333" }}>
-          //               {feat}
-          //             </span>
-          //           </label>
-          //         ))}
-          //       </div>
-          //     </div>
-          //     <div style={fieldStyle}>
-          //       <label style={inputLabelStyle}>Outdoor Space</label>
-          //       <input
-          //         type="text"
-          //         name="outdoorSpace"
-          //         value={formData.outdoorSpace}
-          //         onChange={handleChange}
-          //         placeholder="e.g., Private balcony, terrace, garden"
-          //         style={inputStyle}
-          //         onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-          //         onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-          //       />
-          //     </div>
-          //   </div>
-        // );
-        
-          
-        // case 3:
-        //   return (
-        //     <div>
-        //       <h2 style={formTitleStyle}>Policies & Rules</h2>
-        //       <p style={formSubtitleStyle}>
-        //         Set clear expectations for tenants
-        //       </p>
-        //       <div style={gridStyle}>
-        //         <div>
-        //           <label style={inputLabelStyle}>Pet Policy *</label>
-        //           <select
-        //             name="petPolicy"
-        //             value={formData.petPolicy}
-        //             onChange={handleChange}
-        //             style={inputStyle}
-        //             onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-        //             onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-        //           >
-        //             <option value="">Select policy</option>
-        //             <option value="allowed">Pets Allowed</option>
-        //             <option value="not-allowed">No Pets</option>
-        //             <option value="restrictions">With Restrictions</option>
-        //             <option value="negotiable">Negotiable</option>
-        //           </select>
-        //         </div>
-        //         <div>
-        //           <label style={inputLabelStyle}>Smoking Policy *</label>
-        //           <select
-        //             name="smokingPolicy"
-        //             value={formData.smokingPolicy}
-        //             onChange={handleChange}
-        //             style={inputStyle}
-        //             onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-        //             onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-        //           >
-        //             <option value="">Select policy</option>
-        //             <option value="allowed">Smoking Allowed</option>
-        //             <option value="not-allowed">No Smoking</option>
-        //             <option value="outdoor-only">Outdoor Only</option>
-        //           </select>
-        //         </div>
-        //       </div>
-        //       <div style={fieldStyle}>
-        //         <label style={inputLabelStyle}>Insurance Requirements</label>
-        //         <select
-        //           name="insurance"
-        //           value={formData.insurance}
-        //           onChange={handleChange}
-        //           style={inputStyle}
-        //           onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-        //           onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-        //         >
-        //           <option value="">Select requirement</option>
-        //           <option value="required">Required</option>
-        //           <option value="optional">Optional</option>
-        //           <option value="not-required">Not Required</option>
-        //         </select>
-        //       </div>
-        //       <div style={fieldStyle}>
-        //         <label style={inputLabelStyle}>
-        //           Maintenance Responsibilities
-        //         </label>
-        //         <textarea
-        //           name="maintenance"
-        //           value={formData.maintenance}
-        //           onChange={handleChange}
-        //           placeholder="Clarify maintenance responsibilities between landlord and tenant..."
-        //           style={textareaStyle}
-        //           onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-        //           onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-        //         />
-        //       </div>
-        //       <div style={fieldStyle}>
-        //         <label style={inputLabelStyle}>Renovations History</label>
-        //         <textarea
-        //           name="renovations"
-        //           value={formData.renovations}
-        //           onChange={handleChange}
-        //           placeholder="Recent renovations, upgrades, or improvements..."
-        //           style={textareaStyle}
-        //           onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-        //           onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-        //         />
-        //       </div>
-        //     </div>
-        // );
-          // return null;
-        case 2:
-          return renderPhotosStep();
-        default:
-          return null;
-      }
-    }
-    // SALE PROPERTY STEPS
-    if (formData.purpose === "Sale") {
-      switch (currentStep) {
-        case 0:
-          return (
-            <div>
-              <h2 style={formTitleStyle}>Property Details</h2>
-              <p style={formSubtitleStyle}>
-                Provide essential information about your property for sale
-              </p>
-              <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Property Title *</label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  placeholder="e.g., Luxurious 3BHK Villa in Prime Location"
-                  style={{
-                    ...inputStyle,
-                    borderColor: errors.title
-                      ? "#ef4444"
-                      : inputStyle.borderColor,
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                />
-                {errors.title && (
-                  <p
-                    style={{
-                      color: "#ef4444",
-                      fontSize: "12px",
-                      marginTop: "6px",
-                    }}
-                  >
-                    {errors.title}
-                  </p>
-                )}
-              </div>
-              <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Location/Address *</label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleChange}
-                  placeholder="Enter complete address or location"
-                  style={{
-                    ...inputStyle,
-                    borderColor: errors.location
-                      ? "#ef4444"
-                      : inputStyle.borderColor,
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                />
-                {errors.location && (
-                  <p
-                    style={{
-                      color: "#ef4444",
-                      fontSize: "12px",
-                      marginTop: "6px",
-                    }}
-                  >
-                    {errors.location}
-                  </p>
-                )}
-              </div>
-              <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Sector *</label>
-                <input
-                  type="text"
-                  name="Sector"
-                  value={formData.Sector}
-                  onChange={handleChange}
-                  placeholder="e.g., Sector 46"
-                  style={{
-                    ...inputStyle,
-                    borderColor: errors.Sector
-                      ? "#ef4444"
-                      : inputStyle.borderColor,
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                />
-                {errors.Sector && (
-                  <p
-                    style={{
-                      color: "#ef4444",
-                      fontSize: "12px",
-                      marginTop: "6px",
-                    }}
-                  >
-                    {errors.Sector}
-                  </p>
-                )}
-              </div>
-              <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Listing By</label>
-                            <input
-  type="text"
-  name="ownerType"
-  value={formData.ownerType}
-  readOnly
-  style={{ ...inputStyle, backgroundColor: "#F3F4F6", cursor: "not-allowed" }}
-/>
-              </div>
-              <div style={gridStyle}>
-                <div>
-                  <label style={inputLabelStyle}>Bedrooms</label>
-                  <input
-                    type="number"
-                    name="bedrooms"
-                    value={formData.bedrooms}
-                    onChange={(e) => {
-                      // update bedrooms and also set totalArea.configuration to `${n} BHK` for Sale as well
-                      handleChange(e);
-                      const val = e.target.value;
-                      setFormData((prev) => ({
-                        ...prev,
-                        bedrooms: val,
-                        totalArea: {
-                          ...prev.totalArea,
-                          configuration: val ? `${val} BHK` : "",
-                        },
-                      }));
-                    }}
-                    placeholder="e.g., 3"
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                    onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                  />
-                </div>
-                <div>
-                  <label style={inputLabelStyle}>Bathrooms</label>
-                  <input
-                    type="number"
-                    name="bathrooms"
-                    value={formData.bathrooms}
-                    onChange={handleChange}
-                    placeholder="e.g., 2"
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                    onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                  />
-                </div>
-              </div>
+                </Stack>
+              )}
+            </FormSection>
+            </Box>
+          </Stack>
+          <FormSection title="Available From" id="field-moveInDate">
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={3} alignItems={{ sm: "flex-start" }}>
+              <Chip
+                label="Immediately"
+                color={f.moveInDate === todayISO() ? "secondary" : "default"}
+                variant={f.moveInDate === todayISO() ? "filled" : "outlined"}
+                onClick={() => set("moveInDate")(todayISO())}
+                sx={{ fontWeight: 700, alignSelf: { xs: "flex-start", sm: "center" } }}
+              />
+              <TextField type="date" value={f.moveInDate} onChange={onInput("moveInDate")} error={Boolean(err("moveInDate"))} helperText={err("moveInDate") || " "} inputProps={{ min: todayISO() }} sx={{ width: { xs: "100%", sm: 240 } }} />
+            </Stack>
+          </FormSection>
+          <FormSection title="Preferred Tenants">
+            <ChoiceChips multiple ariaLabel="Preferred tenants" options={TENANTS} value={f.tenants} onChange={set("tenants")} />
+          </FormSection>
+        </>
+      ) : (
+        <>
+          <FormSection title="Expected Price" required id="field-price">
+            <TextField
+              type="number"
+              value={f.price}
+              onChange={onInput("price")}
+              placeholder="e.g. 18500000"
+              error={Boolean(err("price"))}
+              helperText={err("price") || (perSqft ? `${amountHelper(f.price)} · ₹${perSqft.toLocaleString("en-IN")}/sqft` : amountHelper(f.price))}
+              InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }}
+              inputProps={{ min: 0, inputMode: "numeric" }}
+              sx={{ width: { xs: "100%", sm: 360 } }}
+            />
+          </FormSection>
+          <FormSection title="Possession Status">
+            <ChoiceChips ariaLabel="Possession status" options={POSSESSION} value={f.possessionStatus} onChange={set("possessionStatus")} />
+          </FormSection>
+          {!isPlot(f) && (
+            <FormSection title="Age Of Property">
+              <ChoiceChips ariaLabel="Age of property" options={AGES} value={f.propertyAge} onChange={set("propertyAge")} />
+            </FormSection>
+          )}
+        </>
+      )}
 
-              <div style={gridStyle}>
-                <div>
-                  <label style={inputLabelStyle}>Property Type</label>
-                  <select
-                    name="propertyType"
-                    value={formData.propertyType}
-                    onChange={handleChange}
-                    style={inputStyle}
-                    onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                    onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                  >
-                    <option value="">Select type</option>
-                    <option value="house">House</option>
-                    <option value="apartment">Apartment</option>
-                    <option value="condo">Condo</option>
-                    <option value="townhouse">Townhouse</option>
-                    <option value="villa">Villa</option>
-                    <option value="plot">Plot/Land</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={inputLabelStyle}>Total Area *</label>
-                  <div style={{ display: "flex", gap: "10px" }}>
-                    <input
-                      type="number"
-                      name="totalArea.sqft"
-                      value={formData.totalArea.sqft}
-                      onChange={handleChange}
-                      placeholder="Area in sqft (e.g., 1200)"
-                      style={{
-                        ...inputStyle,
-                        flex: 1,
-                        borderColor: errors.sqft
-                          ? "#ef4444"
-                          : inputStyle.borderColor,
-                      }}
-                    />
-                    {errors.sqft && (
-                      <p
-                        style={{
-                          color: "#ef4444",
-                          fontSize: "12px",
-                          marginTop: "6px",
-                        }}
-                      >
-                        {errors.sqft}
-                      </p>
-                    )}
-                    <input
-                      type="text"
-                      name="totalArea.configuration"
-                      value={formData.totalArea.configuration}
-                      readOnly
-                      placeholder="Configuration (auto from bedrooms)"
-                      style={{
-                        ...inputStyle,
-                        flex: 1,
-                        backgroundColor: '#F3F4F6',
-                        color: '#374151',
-                        borderColor: errors.configuration
-                          ? "#ef4444"
-                          : inputStyle.borderColor,
-                        cursor: 'not-allowed'
-                      }}
-                    />
-                    {errors.configuration && (
-                      <p
-                        style={{
-                          color: "#ef4444",
-                          fontSize: "12px",
-                          marginTop: "6px",
-                        }}
-                      >
-                        {errors.configuration}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Property Description *</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Provide detailed description of the property, its features, condition, and unique selling points..."
-                  style={textareaStyle}
-                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                />
-              </div>
-            </div>
-          );
-        case 1:
-          return (
-            <div>
-              <h2 style={formTitleStyle}>Pricing & Information</h2>
-              <p style={formSubtitleStyle}>
-                Set the sale price and additional details
-              </p>
-              <div style={fieldStyle}>
-                <label style={inputLabelStyle}>Sale Price (₹) *</label>
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleChange}
-                  placeholder="e.g., 5000000"
-                  style={{
-                    ...inputStyle,
-                    borderColor: errors.price
-                      ? "#ef4444"
-                      : inputStyle.borderColor,
-                  }}
-                  onFocus={(e) => (e.target.style.borderColor = "#00A79D")}
-                  onBlur={(e) => (e.target.style.borderColor = "#E5E7EB")}
-                />
-                {errors.price && (
-                  <p
-                    style={{
-                      color: "#ef4444",
-                      fontSize: "12px",
-                      marginTop: "6px",
-                    }}
-                  >
-                    {errors.price}
-                  </p>
-                )}
-              </div>
-              <div
-                style={{
-                  marginTop: "40px",
-                  padding: "25px",
-                  backgroundColor: "#F4F7F9",
-                  borderRadius: "8px",
-                  borderLeft: "4px solid #00A79D",
-                }}
-              >
-                <h4
-                  style={{
-                    color: "#003366",
-                    fontSize: "18px",
-                    fontWeight: "700",
-                    margin: "0 0 15px 0",
-                  }}
-                >
-                  Property Summary
-                </h4>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(2, 1fr)",
-                    gap: "15px",
-                  }}
-                >
-                  <div>
-                    <p
-                      style={{
-                        margin: "0 0 5px 0",
-                        fontSize: "13px",
-                        color: "#4A6A8A",
-                        fontWeight: "600",
-                      }}
-                    >
-                      Title
-                    </p>
-                    <p
-                      style={{ margin: 0, fontSize: "15px", color: "#003366" }}
-                    >
-                      {formData.title || "Not provided"}
-                    </p>
-                  </div>
-                  <div>
-                    <p
-                      style={{
-                        margin: "0 0 5px 0",
-                        fontSize: "13px",
-                        color: "#4A6A8A",
-                        fontWeight: "600",
-                      }}
-                    >
-                      Location
-                    </p>
-                    <p
-                      style={{ margin: 0, fontSize: "15px", color: "#003366" }}
-                    >
-                      {formData.location || "Not provided"}
-                    </p>
-                  </div>
-                  <div>
-                    <p
-                      style={{
-                        margin: "0 0 5px 0",
-                        fontSize: "13px",
-                        color: "#4A6A8A",
-                        fontWeight: "600",
-                      }}
-                    >
-                      Bedrooms
-                    </p>
-                    <p
-                      style={{ margin: 0, fontSize: "15px", color: "#003366" }}
-                    >
-                      {formData.bedrooms || "Not specified"}
-                    </p>
-                  </div>
-                  <div>
-                    <p
-                      style={{
-                        margin: "0 0 5px 0",
-                        fontSize: "13px",
-                        color: "#4A6A8A",
-                        fontWeight: "600",
-                      }}
-                    >
-                      Bathrooms
-                    </p>
-                    <p
-                      style={{ margin: 0, fontSize: "15px", color: "#003366" }}
-                    >
-                      {formData.bathrooms || "Not specified"}
-                    </p>
-                  </div>
-                  <div>
-                    <p
-                      style={{
-                        margin: "0 0 5px 0",
-                        fontSize: "13px",
-                        color: "#4A6A8A",
-                        fontWeight: "600",
-                      }}
-                    >
-                      Area
-                    </p>
-                    <p
-                      style={{ margin: 0, fontSize: "15px", color: "#003366" }}
-                    >
-                      {formData.area || "Not specified"}
-                    </p>
-                  </div>
-                  <div>
-                    <p
-                      style={{
-                        margin: "0 0 5px 0",
-                        fontSize: "13px",
-                        color: "#4A6A8A",
-                        fontWeight: "600",
-                      }}
-                    >
-                      Price
-                    </p>
-                    <p
-                      style={{ margin: 0, fontSize: "15px", color: "#003366" }}
-                    >
-                      {formData.price || "Not specified"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        case 2:
-          return renderPhotosStep();
-        default:
-          return null;
-      }
-    }
-    return null;
-  }
+      <FormSection title="Listing Title" required id="field-title">
+        <TextField
+          fullWidth
+          value={f.title}
+          onChange={onInput("title")}
+          placeholder="e.g. Furnished 3 BHK Apartment for Rent in Sector 56"
+          error={Boolean(err("title"))}
+          helperText={err("title") || `${f.title.length}/100`}
+          inputProps={{ maxLength: 100 }}
+        />
+        <Button size="small" startIcon={<Sparkles size={14} />} onClick={() => set("title")(suggestTitle(f))} sx={{ mt: 1, fontWeight: 700 }}>
+          Suggest a title
+        </Button>
+      </FormSection>
+      <FormSection title="Description" hint="What's nearby, condition, society facilities, rules" id="field-description">
+        <TextField
+          fullWidth
+          multiline
+          minRows={5}
+          value={f.description}
+          onChange={onInput("description")}
+          placeholder="Describe the home in a few lines…"
+          error={Boolean(err("description"))}
+          helperText={err("description") || `${f.description.length}/2000 · Don't add phone numbers — enquiries reach you through ggnHome`}
+          inputProps={{ maxLength: 2000 }}
+        />
+        <Button
+          size="small"
+          startIcon={<Wand2 size={14} />}
+          onClick={() => {
+            const draft = suggestDescription(f);
+            set("description")(f.description.trim() ? `${f.description.trim()}\n\n${draft}` : draft);
+          }}
+          sx={{ mt: 1, fontWeight: 700 }}
+        >
+          Write it for me
+        </Button>
+      </FormSection>
+    </>
+  );
 
-  // --- Main render ---
+  const stepPhotos = (
+    <>
+      <PhotoUploader
+        value={photos}
+        onChange={setPhotos}
+        max={8}
+        privacyNotice="For your safety, please don't upload photos that show the front of your house or your house number. Photos of rooms, kitchen, bathrooms and the view work best."
+        tips={["Shoot in daylight with lights on", "Hold the phone horizontally and capture whole rooms", "The first photo is the cover — pick your best one"]}
+      />
+      <Box sx={{ mt: 6, p: 5, borderRadius: `${radii.md}px`, border: "1.5px dashed #A9C7E6", backgroundColor: "#F7FBFF" }}>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={3} justifyContent="space-between" alignItems={{ sm: "center" }}>
+          <Box>
+            <Typography sx={{ fontWeight: 800, color: "primary.main" }}>360° Virtual Tour (Optional)</Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              {panoramas.length ? `${panoramas.length} panoramic scene${panoramas.length > 1 ? "s" : ""} added.` : "Upload 2:1 panoramic photos with room names for the 3D viewer."}
+            </Typography>
+          </Box>
+          <Button variant="outlined" onClick={() => setPanoOpen(true)} sx={{ fontWeight: 700, flexShrink: 0 }}>
+            {panoramas.length ? "Edit 360° Scenes" : "Add 360° Scenes"}
+          </Button>
+        </Stack>
+      </Box>
+    </>
+  );
+
+  const checks = reviewChecks(f, photos);
+  const stepReview = (
+    <>
+      <Box sx={{ display: "grid", gap: 6, gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 340px) minmax(0, 1fr)" }, alignItems: "start" }}>
+        <Box>
+          <Typography variant="overline" sx={{ color: "text.secondary", display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+            <Eye size={14} /> Preview
+          </Typography>
+          <Box sx={{ maxWidth: 360, pointerEvents: "none" }}>
+            <PropertyCard property={previewProperty(f, photos)} />
+          </Box>
+        </Box>
+        <Stack spacing={4}>
+          <SummaryBlock
+            title="Basics & Location"
+            onEdit={() => goTo(STEP.basics)}
+            rows={[
+              ["Listing for", rent ? "Rent" : "Sale"],
+              ["Type", typeLabel(f.propertyType)],
+              ["Sector", f.Sector],
+              [rent ? "Address" : "Full address", f.address],
+            ]}
+          />
+          <SummaryBlock
+            title="Property Profile"
+            onEdit={() => goTo(STEP.profile)}
+            rows={[
+              ["Configuration", configuration(f)],
+              ["Bathrooms", f.bathrooms],
+              ["Area", f.sqft ? `${Number(f.sqft).toLocaleString("en-IN")} sqft` : ""],
+              ["Floor", f.floor !== "" ? `${f.floor}${f.totalFloors !== "" ? ` of ${f.totalFloors}` : ""}` : f.totalFloors !== "" ? `${f.totalFloors} floors` : ""],
+              ["Furnishing", FURNISHING.find((x) => x.value === f.furnishing)?.label],
+              ["Parking", f.parking],
+              ["Features", f.appliances.join(", ")],
+            ]}
+          />
+          <SummaryBlock
+            title="Price & Description"
+            onEdit={() => goTo(STEP.price)}
+            rows={
+              rent
+                ? [
+                    ["Rent", f.monthlyRent ? `${money(f.monthlyRent)}/month` : ""],
+                    ["Deposit", money(f.securityDeposit)],
+                    ["Available from", f.moveInDate ? new Date(f.moveInDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : ""],
+                    ["Preferred tenants", f.tenants.join(", ")],
+                    ["Title", f.title],
+                    ["Description", f.description],
+                  ]
+                : [
+                    ["Price", f.price ? `${money(f.price)} (${rupeesInWords(f.price)})` : ""],
+                    ["Possession", POSSESSION.find((x) => x.value === f.possessionStatus)?.label],
+                    ["Age", f.propertyAge],
+                    ["Title", f.title],
+                    ["Description", f.description],
+                  ]
+            }
+          />
+        </Stack>
+      </Box>
+
+      <Box sx={{ mt: 7 }}>
+        <Typography sx={{ fontWeight: 800, color: "primary.main", mb: 3, display: "flex", alignItems: "center", gap: 2 }}>
+          <ClipboardCheck size={18} /> Listing Check
+        </Typography>
+        <ReviewChecks checks={checks} onJump={goTo} />
+      </Box>
+
+      <Box id="field-declaration" sx={{ mt: 6, p: 4, borderRadius: `${radii.md}px`, backgroundColor: err("declaration") ? "#FEF2F2" : "#F4F7F9" }}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={declared}
+              color="secondary"
+              onChange={(e) => {
+                setDeclared(e.target.checked);
+                if (errors.declaration) setErrors((p) => ({ ...p, declaration: undefined }));
+              }}
+            />
+          }
+          label={
+            <Typography variant="body2" sx={{ color: "text.primary" }}>
+              I confirm these details are accurate and I'm the owner or authorised to list this property. I understand the listing goes live after ggnHome's review.
+            </Typography>
+          }
+        />
+        {err("declaration") && (
+          <Typography variant="caption" sx={{ color: "#DC2626", fontWeight: 600, ml: 8 }} role="alert">
+            {err("declaration")}
+          </Typography>
+        )}
+      </Box>
+      {submitError && (
+        <Alert severity="error" sx={{ mt: 4 }} onClose={() => setSubmitError("")}>
+          {submitError}
+        </Alert>
+      )}
+    </>
+  );
+
+  const content = [stepBasics, stepLocation, stepProfile, stepPrice, stepPhotos, stepReview][step];
+  const hasErrors = Object.values(errors).some(Boolean);
+  const steps = STEPS.map((s, i) => ({ ...s, complete: i < STEP.review && !Object.keys(validateStep(i, f)).length }));
+
+  const savedProperty = saved && (saved.property || saved);
+  const openSaved = () => {
+    const id = savedProperty?._id;
+    if (!id) return navigate("/my-properties");
+    navigate(rent ? `/Rentaldetails/${id}` : `/Saledetails/${id}`, { state: { preview: true } });
+  };
+
   return (
-    <div style={containerStyle}>
-      <ToastContainer
-        position="top-right"
-        autoClose={4000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-        toastStyle={{
-          backgroundColor: "#003366", // Prussian Blue
-          color: "#FFFFFF", // White text
-          borderLeft: "6px solid #00A79D", // Teal accent
-          fontWeight: "600",
-        }}
-        progressStyle={{
-          background: "#22D3EE", // Cyan progress bar
+    <>
+      <PostFormLayout
+        nav={<TopNavigationBar navItems={NAV_ITEMS} />}
+        eyebrow="Post Property · Free"
+        title={f.purpose === "Sale" ? "Sell Your Property Faster" : f.purpose === "Rent" ? "Rent Out Your Property" : "Post Your Property For Free"}
+        subtitle="Reach tenants and buyers across Gurgaon. Fill in the details, preview your listing and post — our team reviews it before it goes live."
+        badges={HEADER_BADGES}
+        steps={steps}
+        current={step}
+        reached={reached}
+        onStepClick={goTo}
+        score={score}
+        missing={missing}
+        onBack={back}
+        onNext={next}
+        nextLabel={step === STEP.review ? "Post Property" : step === STEP.photos ? "Preview Listing" : "Continue"}
+        nextIcon={step === STEP.review ? Send : undefined}
+        loading={submitting}
+        notice={
+          <>
+            {restored && (
+              <Alert
+                severity="info"
+                icon={<RotateCcw size={18} />}
+                sx={{ mb: 4, borderRadius: `${radii.md}px` }}
+                action={
+                  <Button color="inherit" size="small" onClick={startOver} sx={{ fontWeight: 700 }}>
+                    Start Over
+                  </Button>
+                }
+                onClose={() => setRestored(false)}
+              >
+                We restored your unfinished listing. Photos need to be added again.
+              </Alert>
+            )}
+            {hasErrors && (
+              <Alert severity="error" sx={{ mb: 4, borderRadius: `${radii.md}px` }}>
+                Please fix the highlighted fields to continue.
+              </Alert>
+            )}
+          </>
+        }
+        aside={
+          <>
+            <TrustPanel user={user} roleLabel={roleLabel} />
+            <PostPromos type={f.purpose === "Sale" ? "sale" : f.purpose === "Rent" ? "rent" : ""} />
+          </>
+        }
+      >
+        {content}
+      </PostFormLayout>
+
+      <PanoramicImagesModal
+        open={panoOpen}
+        onClose={() => setPanoOpen(false)}
+        initialItems={panoramas}
+        onApply={(items) => {
+          setPanoramas(items || []);
+          setPanoOpen(false);
         }}
       />
 
-      {/* Submitted modal: shows after successful create instead of immediate redirect */}
-      {showSubmittedModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 }}>
-          <div style={{ width: 'min(720px, 96%)', background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 8px 40px rgba(2,6,23,0.18)' }}>
-            <h3 style={{ margin: 0, color: '#003366' }}>Property submitted — pending admin approval</h3>
-            <p style={{ color: '#4A6A8A', marginTop: 8 }}>
-              Your property has been submitted and is awaiting admin approval. It will be visible to other users once approved.
-            </p>
-            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-  <div style={{
-    background: '#e6f4ff',
-    color: '#003366',
-    padding: '6px 10px',
-    borderRadius: 8,
-    fontWeight: 800,
-    fontSize: 13
-  }}>
-    Auto-redirect in {countdown}s
-  </div>
-  <div style={{ color: '#6b7280', fontSize: 13 }}>
-    Or choose an action below.
-  </div>
-</div>
-
-            {submittedProperty && (
-              <div style={{ borderRadius: 8, padding: 12, background: '#F8FAFC', marginTop: 12 }}>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 800, color: '#003366' }}>{submittedProperty.title || submittedProperty.name || 'Untitled'}</div>
-                    <div style={{ color: '#4A6A8A', fontSize: 13 }}>{submittedProperty.address || submittedProperty.location || ''}</div>
-                    <div style={{ marginTop: 8, fontSize: 13 }}>
-                      <strong>Status:</strong> {submittedProperty.isPostedNew === true ? 'Pending approval' : (submittedProperty.isActive ? 'Active' : 'Inactive')}
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      onClick={() => {
-  if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
-  const p = submittedProperty?.property || submittedProperty;
-  const t = (p?.defaultPropertyType || p?.defaultpropertytype || '').toLowerCase();
-
-  setShowSubmittedModal(false);
-  if (t === 'rental') navigate(`/Rentaldetails/${p._id}`, { state: { preview: true } });
-  else if (t === 'sale') navigate(`/Saledetails/${p._id}`, { state: { preview: true } });
-  else navigate(`/Rentaldetails/${p._id}`, { state: { preview: true } });
-}}
-                      style={{ background: '#00A79D', color: '#fff', border: 'none', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}
-                    >
-                      Preview Property
-                    </button>
-                    <button
-                      onClick={() => {
-  if (countdownRef.current) { clearInterval(countdownRef.current); countdownRef.current = null; }
-
-  setShowSubmittedModal(false);
-  navigate('/my-properties');
-}}
-                      style={{ background: '#FFFFFF', color: '#003366', border: '2px solid #E5E7EB', padding: '8px 12px', borderRadius: 8, cursor: 'pointer', fontWeight: 700 }}
-                    >
-                      Edit in Manage Listings
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
-              <button
-                onClick={() => { setShowSubmittedModal(false); navigate('/'); }}
-                style={{ background: '#E5E7EB', color: '#003366', border: 'none', padding: '8px 12px', borderRadius: 8, cursor: 'pointer' }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {/* Loading overlay */}
-      {loading && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(255,255,255,0.8)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 9999,
-            pointerEvents: "all",
-          }}
-        >
-          <div
-            style={{
-              width: 64,
-              height: 64,
-              border: "8px solid #e0e0e0",
-              borderTop: "8px solid #00A79D",
-              borderRadius: "50%",
-              animation: "spin 1s linear infinite",
-            }}
-          />
-          <style>
-            {`@keyframes spin {
-                0% { transform: rotate(0deg);}
-                100% { transform: rotate(360deg);}
-              }`}
-          </style>
-        </div>
-      )}
-      {/* Top Navigation Bar */}
-      <div
-        style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: "100%",
-          zIndex: 999,
-          backgroundColor: "#FFFFFF", // or match your navbar background
-        }}
-      >
-        <TopNavigationBar
-          
-          navItems={navItems}
-        />
-      </div>
-      <div style={mainContentStyle}>
-        {/* Sidebar with steps */}
-        {formData.purpose && (
-          <div style={sidebarStyle}>
-            <div style={sidebarCardStyle}>
-              <h3 style={sidebarTitleStyle}>Progress</h3>
-              {steps.map((step, idx) => {
-                const StepIcon = step.icon;
-                return (
-                  <div
-                    key={idx}
-                    style={stepItemStyle(idx)}
-                    onClick={() => setCurrentStep(idx)}
-                  >
-                    <div style={stepIconStyle(idx)}>
-                      {currentStep > idx ? (
-                        <Check size={isMobile ? 16 : 20} color="#FFFFFF" />
-                      ) : (
-                        <StepIcon size={isMobile ? 16 : 20} color="#FFFFFF" />
-                      )}
-                    </div>
-                    <span style={stepTextStyle(idx)}>{step.title}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        {/* Main Form Area */}
-        <div style={formAreaStyle}>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={`${formData.purpose}-${currentStep}`}
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -16 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
+      <Dialog open={Boolean(saved)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: `${radii.lg}px` } }}>
+        <DialogContent sx={{ textAlign: "center", p: { xs: 6, sm: 8 } }}>
+          <motion.div initial={{ scale: 0.4, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 260, damping: 16 }}>
+            <CheckCircle2 size={64} color="#16A34A" style={{ margin: "0 auto" }} />
+          </motion.div>
+          <Typography sx={{ mt: 3, fontWeight: 800, fontSize: "1.4rem", color: "primary.main" }}>Listing Submitted!</Typography>
+          <Typography variant="body2" sx={{ mt: 2, color: "text.secondary" }}>
+            Our team will review it shortly. It goes live as soon as it's approved — you can edit it any time from Manage Listings.
+          </Typography>
+          <Chip label={`Visibility score ${score}/100`} color="secondary" variant="outlined" sx={{ mt: 4, fontWeight: 700 }} />
+          <Stack spacing={2} sx={{ mt: 6 }}>
+            <Button variant="contained" color="secondary" onClick={openSaved} sx={{ fontWeight: 800, borderRadius: 999, py: 1.5 }}>
+              Preview Listing
+            </Button>
+            <Button variant="outlined" onClick={() => navigate("/my-properties")} sx={{ fontWeight: 700, borderRadius: 999 }}>
+              Manage Listings
+            </Button>
+            <Button
+              onClick={() => {
+                setSaved(null);
+                setDeclared(false);
+                startOver();
+              }}
+              sx={{ fontWeight: 700 }}
             >
-              {renderStepContent()}
-            </motion.div>
-          </AnimatePresence>
-          {/* Navigation Buttons */}
-          {formData.purpose && (
-            <div style={buttonContainerStyle}>
-              <button
-                onClick={handlePrev}
-                style={buttonStyle("secondary")}
-                disabled={currentStep === 0}
-              >
-                ← Previous
-              </button>
-              {currentStep === steps.length - 1 ? (
-                <button
-                  onClick={handleSubmit}
-                  style={buttonStyle("primary")}
-                  disabled={loading}
-                >
-                  Submit Property
-                </button>
-              ) : (
-                <button
-                  onClick={handleNext}
-                  style={buttonStyle("primary")}
-                  disabled={loading}
-                >
-                  Next <ChevronRight size={isMobile ? 15 : 18} />
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-        <PanoramicImagesModal
-  open={showPanoModal}
-  onClose={() => {
-    setShowPanoModal(false);
-    toast.info("Panoramic editor closed.");
-  }}
-  initialItems={draftPanoramas}
-  onApply={(items) => {
-    setDraftPanoramas(items);
-    setShowPanoModal(false);
-    if (items?.length) {
-      toast.success(`✅ Saved ${items.length} panoramic scene${items.length>1?'s':''}`);
-    } else {
-      toast.warn("No panoramic scenes added.");
-    }
-  }}
-/>
-      </div>
-    </div>
+              Post Another Property
+            </Button>
+          </Stack>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

@@ -152,6 +152,7 @@ function App() {
         <Route path="/AIassistant-Rent" element={<VoiceAssistantRentResponsive />} />
         <Route path="/AIassistant-Sale" element={<VoiceAssistantSaleResponsive />} />
         <Route path="/add-property" element={<PropertyListingForm />} />
+        <Route path="/flatmateslistingform" element={<CreateFlatmateListing />} />
         <Route path="/my-properties/:id" element={<MyProperties />} />
         <Route path="/my-properties" element={<PropertyCards />} />
         <Route path="/rewards" element={<RewardsPage />} />
@@ -170,7 +171,6 @@ function App() {
       <Route path="/flatmatesdashboard" element={<FlatmatesDashboard />} />
       <Route path="/flatmatessearch" element={<FlatmateDiscovery />} />
       <Route path="/flatmatesearchpropertymodal/:id" element={<FlatmateSearchPropertyModal />} />
-      <Route path="/flatmateslistingform" element={<CreateFlatmateListing />} />
       <Route path="/flatmatesmylistings" element={<FlatmatesListings />} />
       <Route path="/agent/register" element={<AgentRegistration />} />
       <Route path="/agent/login" element={<AgentLogin />} />
