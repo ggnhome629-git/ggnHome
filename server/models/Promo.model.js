@@ -13,8 +13,9 @@ const PromoSchema = new mongoose.Schema(
     icon: { type: String, enum: ["gift", "home", "list", "calculator", "car", "sparkles", "percent", "megaphone"], default: "sparkles" },
     imageUrl: { type: String, trim: true, maxlength: 500 },
     // "banner" = the one-line strip at the very top of the dashboard.
+    // "post" = beside the post-property / post-flatmate forms.
     placements: {
-      type: [{ type: String, enum: ["dashboard", "search", "banner"] }],
+      type: [{ type: String, enum: ["dashboard", "search", "banner", "post"] }],
       default: ["dashboard", "search"],
     },
     audience: { type: String, enum: ["all", "rent", "sale"], default: "all" },

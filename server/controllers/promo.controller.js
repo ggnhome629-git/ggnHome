@@ -56,7 +56,7 @@ const pick = (body) => {
 // GET /api/promos?placement=search&type=rent — public, live promos only.
 exports.getActivePromos = async (req, res) => {
   try {
-    const placement = ["dashboard", "search", "banner"].includes(req.query.placement) ? req.query.placement : "dashboard";
+    const placement = ["dashboard", "search", "banner", "post"].includes(req.query.placement) ? req.query.placement : "dashboard";
     const type = ["rent", "sale"].includes(req.query.type) ? req.query.type : null;
     const now = new Date();
     const promos = await Promo.find({

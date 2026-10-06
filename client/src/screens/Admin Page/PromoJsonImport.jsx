@@ -15,7 +15,7 @@ import {
 import PromoCard from "../../components/promo/PromoCard";
 import { PROMO_ICONS, PROMO_THEMES } from "../../components/promo/promoData";
 
-const PLACEMENTS = ["dashboard", "search", "banner"];
+const PLACEMENTS = ["dashboard", "search", "banner", "post"];
 const AUDIENCES = ["all", "rent", "sale"];
 
 // Friendlier names people tend to type, mapped to the real field names.
@@ -219,7 +219,7 @@ export default function PromoJsonImport({ open, onClose, onImported, createPromo
               Paste one promo <code>{"{ ... }"}</code> or a list <code>{"[ {...}, {...} ]"}</code>. Only{" "}
               <b>title</b> is required. Fields: overline, title, text, ctaLabel, link, theme (
               {Object.keys(PROMO_THEMES).join(" / ")}), icon ({Object.keys(PROMO_ICONS).join(" / ")}), imageUrl,
-              placements (dashboard / search / banner), audience (all / rent / sale), weight (1–10), isActive,
+              placements (dashboard / search / banner / post), audience (all / rent / sale), weight (1–10), isActive,
               startsAt, endsAt (YYYY-MM-DD).
             </Typography>
             <Stack direction="row" spacing={2}>

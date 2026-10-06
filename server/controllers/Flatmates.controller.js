@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Flatmates = require('../models/Flatmates.model'); // ensure path matches your project
 const User = require('../models/user.model'); // optional: used for populating owner info
 const multer = require('multer');
+const { uploadWithFallback } = require('../config/FileHandling');
 const upload = multer({ storage: multer.memoryStorage() });
 const FlatmateEnquiry = require('../models/FlatmateEnquiry.model');
 
@@ -14,7 +15,7 @@ const FlatmateEnquiry = require('../models/FlatmateEnquiry.model');
 const createListing = async (req, res) => {
 
   try {
-    const ownerId = req.user && req.user._id ? req.user._id : req.body.ownerId;
+    const ownerId = req.user && req.user._id ? req.user._id : null;
     if (!ownerId) return res.status(401).json({ success: false, message: 'Authentication required' });
 
     const isAdmin = req.user && req.user.role === 'admin';
@@ -31,9 +32,7 @@ const createListing = async (req, res) => {
       currentOccupants = 1,
       furnished = false,
       amenities = [],
-      photos = [],
       contactMethods = { phone: false, email: false },
-      autoApprove = false,
     } = req.body || {};
 
     // --- begin snippet: normalize incoming FormData strings into proper types ---
@@ -137,7 +136,20 @@ const createListing = async (req, res) => {
     const description_norm = normalizeText(description);
     const amenities_norm = normalizeAmenities(amenities);
 
-    const willAutoApprove = isAdmin || autoApprove === true || autoApprove === 'true';
+    // Only admins skip review; owners can't self-approve via the request body.
+    const willAutoApprove = isAdmin;
+
+    // Photos come only from uploaded files (never URLs from the body).
+    const uploaded = [...((req.files && req.files.photos) || []), ...((req.files && req.files.images) || [])].slice(0, 8);
+    const photos = [];
+    for (const file of uploaded) {
+      try {
+        const result = await uploadWithFallback(file.path, `flatmates/${String(area_norm).replace(/[^a-zA-Z0-9-]/g, '_')}`);
+        if (result && result.secure_url) photos.push({ url: result.secure_url, provider: 'cloudinary' });
+      } catch (uploadErr) {
+        console.error('Flatmate photo upload failed:', uploadErr && uploadErr.message);
+      }
+    }
 
     const listing = new Flatmates({
       ownerId,
@@ -157,7 +169,7 @@ const createListing = async (req, res) => {
       furnished: Boolean(furnished),
       amenities: Array.isArray(amenities) ? amenities : (typeof amenities === 'string' ? amenities.split(',').map(s => s.trim()) : []),
       amenities_norm,
-      photos: Array.isArray(photos) ? photos : [],
+      photos,
       contactMethods: typeof contactMethods === 'object' ? contactMethods : { phone: false, email: false },
       // default flags
       isActive: willAutoApprove,
@@ -185,7 +197,8 @@ const updateListing = async (req, res) => {
     if (!userId || listing.ownerId.toString() !== userId) return res.status(403).json({ success: false, message: 'Not allowed' });
 
     // Apply allowed updates only
-    const allowed = ['title','description','city','area','moveInDate','budget','preferredGender','occupancyWanted','currentOccupants','furnished','amenities','photos','contactMethods','isActive'];
+    // isActive is admin/approval-controlled and photos must be uploaded, so neither is editable here.
+    const allowed = ['title','description','city','area','moveInDate','budget','preferredGender','occupancyWanted','currentOccupants','furnished','amenities','contactMethods'];
     allowed.forEach((k) => {
       if (typeof updates[k] !== 'undefined') listing[k] = updates[k];
     });
@@ -220,6 +233,11 @@ const deleteListing = async (req, res) => {
       desiredActive = (req.body.active === 'true' || req.body.active === 1 || req.body.active === true);
     } else {
       desiredActive = !Boolean(listing.isActive);
+    }
+
+    // Owners may pause a listing, but a never-approved one can only go live through admin approval.
+    if (desiredActive && !isAdmin && listing.isPostedNew) {
+      return res.status(403).json({ success: false, message: 'This listing is awaiting admin approval' });
     }
 
     listing.isActive = Boolean(desiredActive);

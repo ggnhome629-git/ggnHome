@@ -45,6 +45,7 @@ const PLACEMENTS = [
   { value: "dashboard", label: "Dashboard offers" },
   { value: "search", label: "Search results (between listings)" },
   { value: "banner", label: "Top banner line (dashboard)" },
+  { value: "post", label: "Post property / flatmate forms" },
 ];
 
 const EMPTY = {

@@ -345,7 +345,13 @@ router.get('/api/news', getNews);
 
 
 // ================== Flatmates Listing Routes ==================
-router.post("/api/flatmates/listings", verifyToken, upload.fields([{ name: "images", maxCount: 8 }]), createListing);
+// Room photos: images only, 5 MB each, at most 8 (the form sends "photos"; "images" kept for older clients).
+const flatmatePhotoUpload = multer({
+  dest: "/tmp",
+  limits: { fileSize: 5 * 1024 * 1024, files: 8 },
+  fileFilter: (req, file, cb) => cb(null, /^image\//.test(file.mimetype)),
+});
+router.post("/api/flatmates/listings", verifyToken, flatmatePhotoUpload.fields([{ name: "photos", maxCount: 8 }, { name: "images", maxCount: 8 }]), createListing);
 router.get("/api/flatmates/listings/search", verifyTokenOptional, searchListings);
 router.get("/api/flatmates/listings", getListing);
 router.delete("/api/flatmates/listings/:id", verifyToken, deleteListing);
