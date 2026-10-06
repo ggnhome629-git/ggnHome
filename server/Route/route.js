@@ -48,7 +48,7 @@ const { getLocationIQApiKey } = require("../controllers/mapintegration.js");
 const {getAccountsUsage , getBrevoUsage , getLocationIQUsage , getMongoUsage , getGNewsUsage} = require("../controllers/admin.Accountsusage.js");
 const { getNews } = require("../controllers/news.controller");
 const {savePreferenceForm, getPreferenceForm , listPreferenceForms , matchPreferencesToUsers , deletePreferenceForm} = require("../controllers/userpreferencesform.controller.js");
-const { createListing, searchListings, getListing, deleteListing, updateListing, incrementView, flatmateListingDetails, flatmateEnquiry, getListingsByUser } = require("../controllers/Flatmates.controller.js");
+const { createListing, searchListings, getListing, deleteListing, updateListing, incrementView, flatmateListingDetails, flatmateEnquiry, getListingsByUser, getListingsByIds } = require("../controllers/Flatmates.controller.js");
 
 
 // Agents
@@ -355,6 +355,7 @@ const flatmatePhotoUpload = multer({
 });
 router.post("/api/flatmates/listings", verifyToken, flatmatePhotoUpload.fields([{ name: "photos", maxCount: 8 }, { name: "images", maxCount: 8 }]), createListing);
 router.get("/api/flatmates/listings/search", verifyTokenOptional, searchListings);
+router.get("/api/flatmates/listings/by-ids", getListingsByIds);
 router.get("/api/flatmates/listings", getListing);
 router.delete("/api/flatmates/listings/:id", verifyToken, deleteListing);
 router.put("/api/flatmates/listings/:id", verifyToken, updateListing);

@@ -27,8 +27,7 @@ import {
   Search,
   ShieldCheck,
   Sofa,
-  UserRound,
-} from "lucide-react";
+  UserRound, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../Context/AuthContext";
 import MobileBottomNav from "../Dashboard/MobileBottomNav";
@@ -62,6 +61,7 @@ const QUICK_LINKS = [
   { label: "Move in now", icon: KeyRound, to: () => `/flatmatessearch?moveInBy=${today()}` },
   { label: "List your room", icon: PlusSquare, to: "/flatmateslistingform", auth: true },
   { label: "My listings", icon: ClipboardList, to: "/flatmatesmylistings", auth: true },
+  { label: "Saved rooms", icon: Heart, to: "/savedproperties?tab=rooms", auth: true },
 ];
 
 const STEPS = [

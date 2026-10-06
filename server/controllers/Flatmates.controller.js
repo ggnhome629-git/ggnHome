@@ -693,7 +693,26 @@ async function flatmateEnquiry(req, res) {
 }
 
 
+
+// GET /api/flatmates/listings/by-ids?ids=a,b — public; active listings only,
+// without owner details. Used for a user's saved rooms (kept in the browser).
+const getListingsByIds = async (req, res) => {
+  try {
+    const ids = String(req.query.ids || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => mongoose.Types.ObjectId.isValid(s))
+      .slice(0, 100);
+    if (!ids.length) return res.json({ success: true, data: { items: [] } });
+    const items = await Flatmates.find({ _id: { $in: ids }, isActive: true }).select('-ownerId -contactMethods').lean();
+    return res.json({ success: true, data: { items } });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server error' });
+  }
+};
+
 module.exports = {
+  getListingsByIds,
   createListing,
   updateListing,
   deleteListing,

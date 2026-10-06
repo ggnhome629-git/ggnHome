@@ -9,6 +9,8 @@ import {
   Skeleton,
   Snackbar,
   Stack,
+  Tab,
+  Tabs,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
@@ -19,6 +21,7 @@ import { useAuth } from "../../Context/AuthContext";
 import PropertyCard, { isRentalProperty, propertyDetailPath } from "../../components/property/PropertyCard";
 import ShareDialog from "../../components/ui/ShareDialog";
 import MobileBottomNav from "./MobileBottomNav";
+import SavedFlatmates from "../Flatmates page/SavedFlatmates";
 import { radii } from "../../theme/theme";
 
 const TopNavigationBar = React.lazy(() => import("./TopNavigationBar"));
@@ -26,10 +29,10 @@ const Footer = React.lazy(() => import("./Footer"));
 
 const NAV_ITEMS = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 const SORTS = [
-  { value: "saved", label: "Recently saved" },
-  { value: "price-low", label: "Price: low to high" },
-  { value: "price-high", label: "Price: high to low" },
-  { value: "listed", label: "Newest listings" },
+  { value: "saved", label: "Recently Saved" },
+  { value: "price-low", label: "Price: Low To High" },
+  { value: "price-high", label: "Price: High To Low" },
+  { value: "listed", label: "Newest Listings" },
 ];
 
 const authHeaders = () => {
@@ -64,6 +67,8 @@ export default function SavedProperties() {
   const [sector, setSector] = useState("all");
   const [text, setText] = useState("");
   const [sortBy, setSortBy] = useState("saved");
+  const [section, setSection] = useState(() => (new URLSearchParams(window.location.search).get("tab") === "rooms" ? "rooms" : "homes"));
+  const [roomCount, setRoomCount] = useState(null);
   const [shareLink, setShareLink] = useState("");
   const [removed, setRemoved] = useState(null);
 
@@ -183,17 +188,19 @@ export default function SavedProperties() {
           <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
             <Heart size={16} color="#F6D58A" fill="#F6D58A" />
             <Typography variant="overline" sx={{ color: "#F6D58A", letterSpacing: "0.2em" }}>
-              Your shortlist
+              Your Shortlist
             </Typography>
           </Stack>
           <Typography
             component="h1"
             sx={{ fontFamily: '"Playfair Display", Georgia, serif', fontWeight: 700, fontSize: { xs: "2rem", md: "3rem" }, lineHeight: 1.1 }}
           >
-            Saved homes
+            Saved Homes & Rooms
           </Typography>
           <Typography sx={{ mt: 3, color: "rgba(255,255,255,0.8)" }}>
-            {loading
+            {section === "rooms"
+              ? "Rooms you saved from flatmate search."
+              : loading
               ? "Loading your shortlist…"
               : properties.length
               ? `${properties.length} saved · ${rentCount} for rent · ${properties.length - rentCount} for sale`
@@ -203,6 +210,19 @@ export default function SavedProperties() {
       </Box>
 
       <Container maxWidth="xl" sx={{ px: { xs: 4, sm: 6, md: 8 }, py: { xs: 6, md: 8 } }}>
+        <Tabs
+          value={section}
+          onChange={(e, v) => setSection(v)}
+          sx={{ mb: 5, borderBottom: "1px solid", borderColor: "divider", "& .MuiTab-root": { textTransform: "none", fontWeight: 700, fontSize: 15 } }}
+          TabIndicatorProps={{ sx: { height: 3, borderRadius: 2, backgroundColor: "secondary.main" } }}
+        >
+          <Tab value="homes" label={`Homes${loading ? "" : ` (${properties.length})`}`} />
+          <Tab value="rooms" label={`Flatmate Rooms${roomCount == null ? "" : ` (${roomCount})`}`} />
+        </Tabs>
+        {section === "rooms" ? (
+          <SavedFlatmates onCount={setRoomCount} />
+        ) : (
+        <>
         {!loading && !error && properties.length > 0 && (
           <Stack
             direction={{ xs: "column", md: "row" }}
@@ -226,8 +246,8 @@ export default function SavedProperties() {
               sx={{ "& .MuiToggleButton-root": { px: 4, textTransform: "none", fontWeight: 600 } }}
             >
               <ToggleButton value="all">All</ToggleButton>
-              <ToggleButton value="rent">For rent</ToggleButton>
-              <ToggleButton value="sale">For sale</ToggleButton>
+              <ToggleButton value="rent">For Rent</ToggleButton>
+              <ToggleButton value="sale">For Sale</ToggleButton>
             </ToggleButtonGroup>
 
             <Stack
@@ -248,7 +268,7 @@ export default function SavedProperties() {
 
             <Stack direction="row" spacing={3}>
               <Select size="small" value={sector} onChange={(e) => setSector(e.target.value)} SelectDisplayProps={{ "aria-label": "Sector" }} sx={{ minWidth: 150, fontSize: 14, flex: { xs: 1, md: "none" } }}>
-                <MenuItem value="all">All sectors</MenuItem>
+                <MenuItem value="all">All Sectors</MenuItem>
                 {sectors.map((s) => (
                   <MenuItem key={s} value={s}>
                     {s}
@@ -275,10 +295,10 @@ export default function SavedProperties() {
         ) : error ? (
           <Stack alignItems="center" spacing={4} sx={{ py: 16, textAlign: "center", backgroundColor: "background.paper", borderRadius: `${radii.lg}px`, border: "1px solid", borderColor: "divider" }}>
             <Typography variant="h3" sx={{ color: "primary.main", fontSize: "1.25rem" }}>
-              We couldn't load your saved homes
+              We Couldn't Load Your Saved Homes
             </Typography>
             <Button variant="contained" startIcon={<RefreshCw size={16} />} onClick={() => setReloadKey((k) => k + 1)}>
-              Try again
+              Try Again
             </Button>
           </Stack>
         ) : visible.length === 0 ? (
@@ -287,7 +307,7 @@ export default function SavedProperties() {
               <Heart size={28} color="#E11D48" />
             </Box>
             <Typography variant="h3" sx={{ color: "primary.main", fontSize: "1.25rem" }}>
-              {filtered ? "Nothing matches these filters" : "No saved homes yet"}
+              {filtered ? "Nothing Matches These Filters" : "No Saved Homes Yet"}
             </Typography>
             <Typography variant="body2" sx={{ color: "text.secondary", maxWidth: 420 }}>
               {filtered
@@ -303,11 +323,11 @@ export default function SavedProperties() {
                   setText("");
                 }}
               >
-                Clear filters
+                Clear Filters
               </Button>
             ) : (
               <Button variant="contained" onClick={() => navigate("/search")}>
-                Browse homes
+                Browse Homes
               </Button>
             )}
           </Stack>
@@ -325,6 +345,8 @@ export default function SavedProperties() {
               />
             ))}
           </Box>
+        )}
+        </>
         )}
       </Container>
 
