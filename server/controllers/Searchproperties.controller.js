@@ -6,6 +6,7 @@ const RentalProperty = require("../models/Rentalproperty.model");
 const SaleProperty = require("../models/SaleProperty.model");
 const SearchHistory = require("../models/SearchHistory.model");
 const UserPreferencesARIA = require("../models/UserPreferencesARIA.model");
+const PropertyAnalysis = require("../models/PropertyAnalysis.model");
 
 // ===============================
 // 🛠️ Helper Utilities (internal-only, no API contract change)
@@ -289,7 +290,8 @@ exports.searchProperties = async (req, res) => {
       const priceField = kind === 'rent' ? 'monthlyRent' : 'price';
       if (sortBy === 'price-low') return { [priceField]: 1, _id: 1 };
       if (sortBy === 'price-high') return { [priceField]: -1, _id: 1 };
-      return { createdAt: -1, _id: 1 };
+      if (sortBy === 'newest') return { createdAt: -1, _id: 1 };
+      return { rankScore: -1, createdAt: -1, _id: 1 };
     };
     const fetchKind = async (kind, skipN, limitN) => {
       const Model = kind === 'rent' ? RentalProperty : SaleProperty;
@@ -318,16 +320,44 @@ exports.searchProperties = async (req, res) => {
         RentalProperty.countDocuments(filter),
         SaleProperty.countDocuments(filter),
       ]);
+      const byNewest = (x, y) => new Date(y.createdAt || 0) - new Date(x.createdAt || 0);
       const cmp =
         sortBy === 'price-low' ? (x, y) => priceOf(x) - priceOf(y)
         : sortBy === 'price-high' ? (x, y) => priceOf(y) - priceOf(x)
-        : (x, y) => new Date(y.createdAt || 0) - new Date(x.createdAt || 0);
+        : sortBy === 'newest' ? byNewest
+        : (x, y) => (Number(y.rankScore) || 0) - (Number(x.rankScore) || 0) || byNewest(x, y);
       mainResults = [...rentals, ...sales].sort(cmp).slice(skip, skip + parsedLimit);
       total = rentCount + saleCount;
     }
 
     if (sortBy === 'relevance') {
-      mainResults = applyRelevanceSort(mainResults, { sectorNames: sectorNameMatches });
+      // Text relevance only breaks ties: rankScore decides visibility first.
+      mainResults = applyRelevanceSort(mainResults, { sectorNames: sectorNameMatches })
+        .sort((a, b) => (Number(b.rankScore) || 0) - (Number(a.rankScore) || 0));
+    }
+
+    // View counts and ratings ride along, so cards need no per-card requests.
+    if (mainResults.length) {
+      const stats = await PropertyAnalysis.aggregate([
+        { $match: { property: { $in: mainResults.map((p) => p._id) } } },
+        {
+          $project: {
+            property: 1,
+            viewCount: { $size: { $ifNull: ['$views', []] } },
+            avgRating: { $avg: '$ratings.rating' },
+            ratingCount: { $size: { $ifNull: ['$ratings', []] } },
+          },
+        },
+      ]);
+      const byId = new Map(stats.map((st) => [String(st.property), st]));
+      mainResults = mainResults.map((p) => {
+        const st = byId.get(String(p._id));
+        return {
+          ...p,
+          viewCount: st ? st.viewCount : 0,
+          avgRating: st && st.ratingCount ? Math.round(st.avgRating * 10) / 10 : null,
+        };
+      });
     }
     res.set('X-Total-Count', String(total));
 

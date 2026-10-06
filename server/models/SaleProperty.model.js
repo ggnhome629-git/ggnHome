@@ -53,6 +53,9 @@ totalArea: {
   sourceCheckedAt: { type: Date },
   sourceRemovalFlaggedAt: { type: Date },
 
+    // Visibility rank: higher shows first in the default ("Most relevant")
+    // search order. Set by admin for now; an AI model will own it later.
+    rankScore: { type: Number, default: 0 },
     isActive: { type: Boolean, default: false },
     isPostedNew: { type: Boolean, default: true }, // true = new post awaiting admin approval (hidden from manage listings/searches until approved)
      isEdited: { type: Boolean, default: false }, // true = edited post awaiting admin re-approval (original listing remains live until approved)
@@ -80,6 +83,7 @@ totalArea: {
 
 // Indexes — mirrors RentalProperty; see that model for the rationale.
 SalePropertySchema.index({ isActive: 1, createdAt: -1 });
+SalePropertySchema.index({ isActive: 1, rankScore: -1, createdAt: -1 });
 SalePropertySchema.index({ isActive: 1, Sector: 1 });
 SalePropertySchema.index({ isPostedNew: 1, isEdited: 1 });
 SalePropertySchema.index({ sourcePortal: 1, sourceListingId: 1 });

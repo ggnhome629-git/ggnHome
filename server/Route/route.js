@@ -24,7 +24,7 @@ const {
   
 } = require("../controllers/Rentalproperty.controller.js");
 const { getUserDashboard, searchProperties,getSectorSuggestions, getSearchHistory, searchPropertiesonLocation } = require("../controllers/Searchproperties.controller");
-const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests , getUserRewardsStatus, toggleActiveStatus, toggleReviewStatus, updateUserRole , getAllProperties , updateServiceRequestDetails , deletePropertyAdmin , updatePropertyAdmin  , createRentalPropertyAdmin , createSalePropertyAdmin} = require("../controllers/admin.controller");
+const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests , getUserRewardsStatus, toggleActiveStatus, toggleReviewStatus, updateUserRole , getAllProperties , updateServiceRequestDetails , deletePropertyAdmin , updatePropertyAdmin  , createRentalPropertyAdmin , createSalePropertyAdmin , setPropertyRank} = require("../controllers/admin.controller");
 const {
   getAllAgents,
   assignPreference,
@@ -201,6 +201,15 @@ router.put(
 router.delete("/api/admin/delete-property/:id", verifyToken, deletePropertyAdmin);
 router.patch("/api/admin/property/:id/toggle-active", verifyToken, checkAdminEmail, toggleActiveStatus);
 router.patch("/api/admin/property/:id/toggle-review", verifyToken, checkAdminEmail, toggleReviewStatus);
+router.patch("/api/admin/property/:id/rank", verifyToken, checkAdminEmail, setPropertyRank);
+
+// ================== PROMO CARDS ==================
+const { getActivePromos, listPromosAdmin, createPromo, updatePromo, deletePromo } = require("../controllers/promo.controller");
+router.get("/api/promos", getActivePromos);
+router.get("/api/admin/promos", verifyToken, checkAdminEmail, listPromosAdmin);
+router.post("/api/admin/promos", verifyToken, checkAdminEmail, createPromo);
+router.put("/api/admin/promos/:id", verifyToken, checkAdminEmail, updatePromo);
+router.delete("/api/admin/promos/:id", verifyToken, checkAdminEmail, deletePromo);
 router.post(
   "/api/admin/addsaleproperties",
   verifyToken,

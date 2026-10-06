@@ -21,7 +21,9 @@ import SearchHero from "./SearchHero";
 import SearchToolbar from "./SearchToolbar";
 import SearchResultCard from "./SearchResultCard";
 import QuickPicks from "./QuickPicks";
-import PromoCard from "./PromoCard";
+import PromoCard from "../../components/promo/PromoCard";
+import usePromos, { dashboardPromoIds } from "../../components/promo/usePromos";
+import { openLink } from "../../components/promo/openLink";
 import RecentlyViewed from "../Property View/sections/RecentlyViewed";
 import { getRecentlyViewed } from "../../utils/propertyAnalytics";
 import AnimatedNumber from "../../components/motion/AnimatedNumber";
@@ -88,18 +90,6 @@ function useNavHeight() {
   return height;
 }
 
-const PROMO_POOLS = {
-  rent: ["rewards", "preferences", "visits", "post"],
-  sale: ["rewards", "price", "visits", "post"],
-  all: ["rewards", "preferences", "price", "visits", "post"],
-};
-const PROMO_ROUTES = {
-  rewards: "/rewards",
-  post: "/add-property",
-  preferences: "/userpreferenceform",
-  price: "/price-predictor",
-  visits: "/support",
-};
 const PROMO_DISMISS_KEY = "dismissedPromos";
 const CARD_MIN = 300;
 const GRID_GAP = 20;
@@ -118,8 +108,8 @@ function readDismissed() {
  */
 function promoSlots(cols, count) {
   const first = cols >= 3 ? cols - 2 : 2;
-  const second = cols === 1 ? 7 : first + 2 * cols - 1;
-  return [first, second].filter((i) => i < count - 1);
+  const gap = cols === 1 ? 4 : 2 * cols - 1;
+  return [first, first + gap, first + 2 * gap].filter((i) => i < count - 1);
 }
 
 function ResultSkeleton() {
@@ -165,6 +155,7 @@ export default function Searchproperty() {
   const [viewMode, setViewMode] = useState("grid");
   const [gridCols, setGridCols] = useState(1);
   const [dismissedPromos, setDismissedPromos] = useState(readDismissed);
+  const { promos } = usePromos("search", type);
   const gridRef = useRef(null);
   const [showFilters, setShowFilters] = useState(false);
   const [savedIds, setSavedIds] = useState(new Set());
@@ -357,32 +348,28 @@ export default function Searchproperty() {
   const shownCount = total != null ? total : results.length;
   const countLabel = `${shownCount.toLocaleString("en-IN")} ${shownCount === 1 ? "Home" : "Homes"}${query ? ` In ${where}` : ""}`;
 
-  // Promos rotate with the page and adapt to rent/sale, skipping any the
-  // visitor has closed this session.
-  const promoPool = PROMO_POOLS[type || "all"].filter((v) => !dismissedPromos.includes(v));
+  // Admin promos only, in random order. Up to three per page; ones the
+  // dashboard just showed go last so search feels different, and anything
+  // the visitor closed stays hidden this session.
+  const promoPool = useMemo(() => {
+    const seen = new Set(dashboardPromoIds());
+    const open = promos.filter((p) => !dismissedPromos.includes(p._id));
+    return [...open.filter((p) => !seen.has(p._id)), ...open.filter((p) => seen.has(p._id))];
+  }, [promos, dismissedPromos]);
   const slots = viewMode === "grid" && results.length > 3 ? promoSlots(gridCols, results.length) : [];
   const promoAt = {};
-  slots.forEach((slot, n) => {
-    if (promoPool.length > n) promoAt[slot] = promoPool[((page - 1) * 2 + n) % promoPool.length];
+  slots.slice(0, promoPool.length).forEach((slot, n) => {
+    promoAt[slot] = promoPool[((page - 1) * slots.length + n) % promoPool.length];
   });
-  // Two slots on one page must never show the same promo.
-  if (slots.length === 2 && promoAt[slots[0]] && promoAt[slots[0]] === promoAt[slots[1]]) delete promoAt[slots[1]];
 
-  const dismissPromo = (variant) => {
-    const next = [...dismissedPromos, variant];
+  const dismissPromo = (id) => {
+    const next = [...dismissedPromos, id];
     setDismissedPromos(next);
     try {
       sessionStorage.setItem(PROMO_DISMISS_KEY, JSON.stringify(next));
     } catch (e) {
       // storage unavailable — the promo just returns on the next visit
     }
-  };
-
-  const openPromo = (variant) => {
-    const route = PROMO_ROUTES[variant];
-    const needsLogin = variant === "rewards" || variant === "post" || variant === "visits";
-    if (needsLogin && !user) navigate("/login", { state: { from: route } });
-    else navigate(route);
   };
 
   // Neighbouring sectors, so a thin result set is one tap from a wider one.
@@ -648,9 +635,9 @@ export default function Searchproperty() {
                 />
                 {promoAt[i] && (
                   <PromoCard
-                    variant={promoAt[i]}
-                    onClick={() => openPromo(promoAt[i])}
-                    onDismiss={() => dismissPromo(promoAt[i])}
+                    promo={promoAt[i]}
+                    onClick={() => openLink(navigate, promoAt[i].link)}
+                    onDismiss={() => dismissPromo(promoAt[i]._id)}
                   />
                 )}
                 </React.Fragment>

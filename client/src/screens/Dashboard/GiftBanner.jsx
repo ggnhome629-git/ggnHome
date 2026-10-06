@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import { Box, IconButton, Typography } from "@mui/material";
 import { Gift, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import usePromos from "../../components/promo/usePromos";
+import { DEFAULT_BANNER } from "../../components/promo/promoData";
+import { openLink } from "../../components/promo/openLink";
 
 const DISMISS_KEY = "giftBannerDismissed";
 
@@ -20,6 +23,9 @@ function wasDismissed() {
 export default function GiftBanner() {
   const navigate = useNavigate();
   const [hidden, setHidden] = useState(wasDismissed);
+  // The admin can replace this line from Admin → Promo cards ("Top banner").
+  const { promos } = usePromos("banner");
+  const banner = promos[0] || DEFAULT_BANNER;
 
   if (hidden) return null;
 
@@ -37,7 +43,7 @@ export default function GiftBanner() {
     <Box
       role="region"
       aria-label="Rewards offer"
-      onClick={() => navigate("/rewards")}
+      onClick={() => openLink(navigate, banner.link)}
       sx={{
         position: "relative",
         cursor: "pointer",
@@ -77,10 +83,7 @@ export default function GiftBanner() {
             lineHeight: 1.3,
           }}
         >
-          Register, deal with us &amp; get rewarded —{" "}
-          <Box component="span" sx={{ whiteSpace: "nowrap" }}>
-            gifts worth up to ₹1,000
-          </Box>
+          {banner.title}
         </Typography>
       </Box>
 

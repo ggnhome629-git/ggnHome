@@ -44,7 +44,13 @@ Legend: `[x]` done, `[~]` partly done, `[ ]` not started. Item numbers match the
 - [x] More filters: property type, posted by owner/agent, listed within 24h/7/30 days, with photos only (server-side)
 - [x] "Nearby" sector shortcuts and "Share search" link
 - [x] Livelier search (patterns from NoBroker, Flipkart, real-estate UX guides): swipeable card photos with dots/arrows, "New" tag (<3 days), heart pop + "Saved · View" toast, Flipkart-style quick-pick icon strip, sort tabs, rewards + post-property promo tiles in results, animated count, Recently viewed row
-- [x] Promo tiles are dynamic: placed to close a row at the current column count, rotate by page, adapt to rent/sale (rewards, preferences, price check, site visits, post property), closable per session
+- [x] Promo cards come only from Admin → Promo Cards (title, text, button, link, colour, icon, image, audience, weight, start/end dates, live switch, preview)
+- [x] Dashboard shows up to 3 random admin promos; search shows 2–3 different random ones, placed to close a grid row; closable per session
+- [x] Admin can replace the top banner line (placement "Top banner")
+- [x] Search: one request per page — view counts and ratings come inside the search response (was 1 + 12 requests)
+- [x] `rankScore` field on every listing; default "Most relevant" order sorts by it (AI model to own it later). Admin API: PATCH /api/admin/property/:id/rank
+- [ ] Admin UI to edit rankScore per property (API ready)
+- [x] Dashboard: Flipkart-style quick links strip (rent, under ₹25K, 2 BHK, villas, new, by owner, saved, post), "Offers for you" row, Recently viewed row
 - [ ] "By owner / agent / ggnHome" card label — built, currently commented out in PropertyCard
 - [x] Search state lives in the URL (type, BHK, budget, sort, page) — back button and shared links keep the exact search
 - [x] Fixed: Rent/Buy and filter changes used stale values; filters only applied to the 10 results on screen

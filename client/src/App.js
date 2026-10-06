@@ -58,6 +58,7 @@ const AgentLogin = lazy(() => import("./screens/Agent Page/Login Page/AgentLogin
 const AgentDashboard = lazy(() => import("./screens/Agent Page/Dashboard/AgentDashboard"));
 const AgentManagement = lazy(() => import("./screens/Admin Page/admin.AgentsManagement"));
 const AdminSmsDevices = lazy(() => import("./screens/Admin Page/admin.smsDevices"));
+const AdminPromos = lazy(() => import("./screens/Admin Page/admin.promos"));
 const PropertyListingFormAgent = lazy(() => import("./screens/Agent Page/Add property/Propertyadd"));
 const PropertyCardsAgent = lazy(() => import("./screens/Agent Page/User-Properties/propertiesuser"));
 const PropertyAnalyticsAgent = lazy(() => import("./screens/Agent Page/User-Properties/PropertyAnalysis"));
@@ -200,6 +201,7 @@ function App() {
       <Route path="/admin/userpreferenceformresponses" element={<AdminProtectedRoute element={<AdminUserPreferencesResponses />} />} />
       <Route path="/admin/agentsmanagement" element={<AdminProtectedRoute element={<AgentManagement />} />} />
       <Route path="/admin/sms-devices" element={<AdminProtectedRoute element={<AdminSmsDevices />} />} />
+      <Route path="/admin/promos" element={<AdminProtectedRoute element={<AdminPromos />} />} />
       <Route path="/admin/agent-registration" element={<AgentRegistrationAdmin />} />
 
 

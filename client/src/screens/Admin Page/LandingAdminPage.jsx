@@ -11,6 +11,7 @@ import {
   BarChart3,
   Settings,
   Smartphone,
+  Megaphone,
 } from 'lucide-react';
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
 import { useNavigate } from "react-router-dom";
@@ -105,6 +106,15 @@ const AdminLandingPage = () => {
   };
 
   const adminCards = [
+    {
+      id: 'promos',
+      title: 'Promo Cards',
+      description: 'Offers on the dashboard, between search results and the top banner',
+      icon: Megaphone,
+      route: '/admin/promos',
+      color: '#F0B429',
+      gradient: 'linear-gradient(135deg, #F6C453 0%, #C68A0C 100%)',
+    },
     {
       id: 'dashboard',
       title: 'Dashboard',

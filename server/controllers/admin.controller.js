@@ -50,6 +50,24 @@ const toggleActiveStatus = async (req, res) => {
   }
 };
 
+// Set the visibility rank used by the default search order (higher = shown first).
+const setPropertyRank = async (req, res) => {
+  try {
+    const rankScore = Number(req.body?.rankScore);
+    if (!Number.isFinite(rankScore) || rankScore < -1000 || rankScore > 1000) {
+      return res.status(400).json({ message: "rankScore must be a number between -1000 and 1000" });
+    }
+    const update = { $set: { rankScore } };
+    const property =
+      (await RentalProperty.findByIdAndUpdate(req.params.id, update, { new: true })) ||
+      (await SaleProperty.findByIdAndUpdate(req.params.id, update, { new: true }));
+    if (!property) return res.status(404).json({ message: "Property not found" });
+    res.status(200).json({ message: "Rank updated", id: property._id, rankScore: property.rankScore });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating rank", error: error.message });
+  }
+};
+
 // Toggle REVIEWED / NOT REVIEWED for Rental or Sale property (using PropertyReviewStatus model)
 const PropertyReviewStatus = require('../models/propertyReviewStatus.model');
 const toggleReviewStatus = async (req, res) => {
@@ -2065,6 +2083,7 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
 
 
 module.exports = {
+  setPropertyRank,
   getPendingPayments,
   updatePaymentStatus,
   getApprovedPayments,

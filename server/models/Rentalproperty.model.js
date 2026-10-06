@@ -97,6 +97,9 @@ const RentalpropertySchema = new mongoose.Schema(
     sourceCheckedAt: { type: Date },
     sourceRemovalFlaggedAt: { type: Date },
 
+    // Visibility rank: higher shows first in the default ("Most relevant")
+    // search order. Set by admin for now; an AI model will own it later.
+    rankScore: { type: Number, default: 0 },
   isActive: { type: Boolean, default: false },
     isPostedNew: { type: Boolean, default: true } ,// true = new post awaiting admin approval (hidden from manage listings/searches until approved)
     isEdited: { type: Boolean, default: false }, // true = edited post awaiting admin re-approval (original listing remains live until approved)
@@ -119,6 +122,7 @@ const RentalpropertySchema = new mongoose.Schema(
 // so the compound index serves the filter and the sort from one structure —
 // without it every listing request is a full collection scan.
 RentalpropertySchema.index({ isActive: 1, createdAt: -1 });
+RentalpropertySchema.index({ isActive: 1, rankScore: -1, createdAt: -1 });
 // Sector drives location search and the "similar properties" rail.
 RentalpropertySchema.index({ isActive: 1, Sector: 1 });
 // Admin queues filter on the approval flags.

@@ -1,5 +1,5 @@
 import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { Box, Button, CircularProgress, LinearProgress, Stack, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, Container, LinearProgress, Stack, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../Context/AuthContext";
 import Reveal from "../../components/motion/Reveal";
@@ -10,6 +10,9 @@ import HeroSearch from "./HeroSearch";
 import GiftBanner from "./GiftBanner";
 import StickySearchBar from "./StickySearchBar";
 import MobileBottomNav from "./MobileBottomNav";
+import QuickLinks from "./QuickLinks";
+import RecentlyViewed from "../Property View/sections/RecentlyViewed";
+import { getRecentlyViewed } from "../../utils/propertyAnalytics";
 import FloatingActions from "./FloatingActions";
 
 // Lazy imports — everything below the hero streams in as the user scrolls.
@@ -26,6 +29,7 @@ const PropertiesInArea = React.lazy(() => import("./RecommendedProperties"));
 const Location = React.lazy(() => import("./Location"));
 const ToolsShowcase = React.lazy(() => import("./Tools"));
 const RewardsSteps = React.lazy(() => import("./RewardsSteps"));
+const OffersCarousel = React.lazy(() => import("./OffersCarousel"));
 
 const NAV_ITEMS = [
   "For Buyers",
@@ -77,6 +81,7 @@ export default function RealEstateDashboard() {
   const [areaError, setAreaError] = useState(false);
 
   const areaLoadingRef = useRef(false);
+  const [recentlyViewed] = useState(() => getRecentlyViewed().slice(0, 8));
 
   // ---------------------------------------------------------------- search --
 
@@ -352,6 +357,8 @@ export default function RealEstateDashboard() {
         searching={isSearching}
       />
 
+      <QuickLinks />
+
       {/* Primary intents */}
       <SectionShell
         tone="muted"
@@ -365,6 +372,10 @@ export default function RealEstateDashboard() {
         </Suspense>
       </SectionShell>
 
+      <LazySection fallback={<SectionSkeleton variant="row" count={3} height={260} />}>
+        <OffersCarousel />
+      </LazySection>
+
       {/* Recommended / explore */}
       <LazySection fallback={<SectionSkeleton variant="row" count={4} height={300} />}>
         <PropertyDashboard
@@ -375,6 +386,12 @@ export default function RealEstateDashboard() {
           onPropertyClick={handlePropertyClick}
         />
       </LazySection>
+
+      {recentlyViewed.length > 0 && (
+        <Container maxWidth="xl" sx={{ px: { xs: 4, sm: 6, md: 8 }, pb: { xs: 10, md: 12 } }}>
+          <RecentlyViewed items={recentlyViewed} />
+        </Container>
+      )}
 
       <LazySection fallback={<SectionSkeleton variant="band" height={420} />}>
         <RewardsSteps user={user} />
