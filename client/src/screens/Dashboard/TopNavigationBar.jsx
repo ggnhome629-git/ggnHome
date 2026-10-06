@@ -52,6 +52,17 @@ const TopNavigationBar = ({  navItems = [] }) => {
     return flatmatesPrefixes.some((prefix) => path.startsWith(prefix));
   }, [location]);
   const { user, loading, logout } = useAuth();
+
+  // Post button: flatmate form inside the flatmates section, the normal post
+  // form everywhere else — same for every role, admins included.
+  const postTarget = isFlatmatesRoute ? "/flatmateslistingform" : "/add-property";
+  const goToPost = () => {
+    if (!user) {
+      navigate("/login", { state: { from: postTarget } });
+      return;
+    }
+    navigate(postTarget);
+  };
   // NOTE: Navbar should render immediately.
   // AuthContext will revalidate user in background.
   
@@ -454,6 +465,8 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
             {isSideMenuOpen && (
               <SideMenuBar
                 currentUser={user}
+                onPost={goToPost}
+                postLabel={isFlatmatesRoute ? "Post Room" : "Post Property"}
                 onLoginClick={() =>
                   navigate("/login", { state: { from: location.pathname } })
                 }
@@ -689,34 +702,14 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
               e.currentTarget.style.boxShadow =
                 "0 4px 12px rgba(0,167,157,0.25)";
             }}
-            onClick={() => {
-  if (!user) {
-    navigate(`${process.env.REACT_APP_LOGIN_PAGE}`);
-    return;
-  }
-
-  // NEW: If admin on admin landing page → redirect to admin add property
-  if (
-    location?.pathname &&
-    String(location.pathname).toLowerCase().startsWith("/admin/landingpage")
-  ) {
-    navigate("/admin/add-property");
-    return;
-  }
-
-  if(user.role === "admin") {
-    navigate("/admin/add-property");
-  } else {
-    navigate(`/add-property`);
-  }
-}}
+            onClick={goToPost}
           >
             {density === "icon" ? (
               <Square size={18} color="#FFFFFF" />
             ) : (
               <>
                 <PlusSquare size={16} />
-                <span>{density === "compact" ? "Post" : "Post property"}</span>
+                <span>{density === "compact" ? "Post" : isFlatmatesRoute ? "Post room" : "Post property"}</span>
                 {density === "full" && (
                   <span
                     style={{
@@ -1036,12 +1029,10 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
 
                       <MenuItem
                         icon={Square}
-                        label="Post Property"
+                        label={isFlatmatesRoute ? "Post Room" : "Post Property"}
                         onClick={() => {
                           setShowMenu(false);
-                          navigate(
-                            `${process.env.REACT_APP_ADD_PROPERTY_PAGE}`
-                          );
+                          goToPost();
                         }}
                       />
                     </div>

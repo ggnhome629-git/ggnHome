@@ -5,13 +5,17 @@ const ad2 = process.env.PUBLIC_URL + "/Ad/ad2.jpg";
 const ad3 = process.env.PUBLIC_URL + "/Ad/ad3.jpg";
 const ad4 = process.env.PUBLIC_URL + "/Ad/ad4.jpg";
 
-export default function SideMenuBar({ currentUser, onLoginClick }) {
+export default function SideMenuBar({ currentUser, onLoginClick, onPost, postLabel = 'Post Property' }) {
+  const post = () => {
+    if (onPost) return onPost();
+    window.location.href = currentUser ? '/add-property' : '/login';
+  };
   const [isOpen, setIsOpen] = useState(true);
   const [hoveredItem, setHoveredItem] = useState(null);
 
   const menuSections = [{title: null, items: [{icon: User, label: currentUser
     ? (currentUser.mobileNumber || currentUser.email || 'User')
-    : 'LOGIN / REGISTER', color: '#0066FF', special: true, onClick: !currentUser ? onLoginClick : undefined}]}, {title: 'Quick Actions', items: [{icon: Home, label: 'Post Property', color: '#00A79D', badge: 'FREE', onClick: () => { if(currentUser){ window.location.href = '/add-property'; } else { window.location.href = '/login'; } }}, {icon: Sparkles, label: 'AI Search', color: '#22D3EE', badge: 'NEW', link: '/AIassistant'}, {icon: Scale, label: 'Legal Laws', color: '#4A6A8A', onClick: () => {
+    : 'LOGIN / REGISTER', color: '#0066FF', special: true, onClick: !currentUser ? onLoginClick : undefined}]}, {title: 'Quick Actions', items: [{icon: Home, label: postLabel, color: '#00A79D', badge: 'FREE', onClick: post}, {icon: Sparkles, label: 'AI Search', color: '#22D3EE', badge: 'NEW', link: '/AIassistant'}, {icon: Scale, label: 'Legal Laws', color: '#4A6A8A', onClick: () => {
     const el = document.getElementById('news');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -101,15 +105,7 @@ export default function SideMenuBar({ currentUser, onLoginClick }) {
       position: 'relative',
       zIndex: '1',
     }}
-    onClick={() => {
-      if (currentUser) {
-        // Redirect to post property page if logged in
-        window.location.href = '/add-property';
-      } else {
-        // Otherwise, redirect to login
-        window.location.href = '/login';
-      }
-    }}
+    onClick={post}
     onMouseEnter={(e) => {
       e.target.style.backgroundColor = '#0052CC';
       e.target.style.transform = 'translateY(-2px)';
@@ -121,7 +117,7 @@ export default function SideMenuBar({ currentUser, onLoginClick }) {
       e.target.style.boxShadow = 'none';
     }}
   >
-    Post Property
+    {postLabel}
   </button>
 </div>
 

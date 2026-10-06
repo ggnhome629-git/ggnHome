@@ -539,15 +539,6 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
     return;
   }
 
-  const path = location?.pathname
-    ? String(location.pathname).toLowerCase()
-    : "";
-
-  // NEW: If admin on admin landing page → redirect to admin add property
-  if (path.startsWith("/admin/landingpage")) {
-    navigate("/admin/add-property");
-    return;
-  }
 
 
 
