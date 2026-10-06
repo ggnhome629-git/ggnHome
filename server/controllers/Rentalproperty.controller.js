@@ -8,6 +8,7 @@
 // Imports
 // ==============================
 const SearchHistory = require("../models/SearchHistory.model.js");
+const { stripProtectedFields } = require("../utils/protectedFields");
 const RentalProperty = require("../models/Rentalproperty.model.js");
 const Sector = require("../models/Sector.model.js");
 const User = require("../models/user.model.js");
@@ -25,6 +26,7 @@ const excelUpload = multer({ storage: excelStorage });
 // ==============================
 const createRentalProperty = async (req, res) => {
   try {
+    stripProtectedFields(req.body);
     // ------------------------------
     // Extract owner ID from authenticated user
     // ------------------------------

@@ -1,5 +1,6 @@
 // server/controllers/agentDashboard.controller.js
 const mongoose = require('mongoose');
+const { stripProtectedFields } = require("../utils/protectedFields");
 const Agent = require('../models/Agent.model');
 const UserPreferenceForm = require('../models/userpreferenceForm.model');
 const SearchHistory = require("../models/SearchHistory.model.js");
@@ -22,6 +23,7 @@ const User = require('../models/user.model.js');
 // ==============================
 const createRentalPropertyAgent = async (req, res) => {
   try {
+    stripProtectedFields(req.body);
     // ------------------------------
     // Unified owner/agent resolution logic
     // ------------------------------
@@ -290,6 +292,7 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
 };
 const createSalePropertyAgent = async (req, res) => {
   try {
+    stripProtectedFields(req.body);
     // Destructure request body
     const {
       title,

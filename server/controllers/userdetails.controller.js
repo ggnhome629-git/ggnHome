@@ -5,6 +5,7 @@
  */
 
 const User = require('../models/user.model');
+const { stripProtectedFields } = require("../utils/protectedFields");
 const RentalProperty = require('../models/Rentalproperty.model');
 const SaleProperty = require('../models/SaleProperty.model');
 const PropertyReviewStatus = require('../models/propertyReviewStatus.model');
@@ -274,6 +275,7 @@ exports.getMyProperties = async (req, res) => {
 // @access Private (owner only)
 const updateProperty = async (req, res) => {
   try {
+    stripProtectedFields(req.body);
     const { id } = req.params;
 
     // Validate user authentication
