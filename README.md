@@ -1028,25 +1028,26 @@ See LICENSE file for full text.
 
 **6. Affiliate Property Web Scraping - Initial Load**
    - **Description**: One-time scraping of ~100 properties from affiliate portals
-   - **Scope**:
-     - Set up scraper for NoBroker listings
-     - Set up scraper for 99acres listings
-     - Load initial ~100 properties to database
+   - **Already in place**: Source fields on both property models (`sourcePortal`, `sourceListingId`, `sourceUrl`, `sourceStatus`, `sourceCheckedAt`, `sourceRemovalFlaggedAt`) and an index on `sourcePortal` + `sourceListingId`
+   - **Scope (remaining)**:
+     - Bulk import script for the initial ~100 listings (import method to be decided)
+     - Scraper for 99acres listings (only NoBroker exists today)
      - Assign affiliate IDs and metadata
      - Log all imported properties with timestamps
-   - **Status**: Pending
+   - **Status**: Partially done (data model ready, import and 99acres pending)
    - **Priority**: CRITICAL
 
 **7. Affiliate Property Web Scraping - Weekly Recurring**
    - **Description**: Weekly verification that affiliate properties are still live on original portals
-   - **Scope**:
-     - Schedule scraper to run every Friday
-     - Check if property still exists on source portal
-     - Update property status (active/removed)
-     - Auto-disable property if removed from portal
-     - Maintain scraping logs in admin dashboard
-     - Display scraper activity and errors in admin UI
-   - **Status**: Pending
+   - **Already in place**: NoBroker sync (`server/scripts/nobrokerSync.js`) that checks each listing's live status, a two-stage removal confirmation (12h apart), a circuit breaker against blocking, and a cron (`server/cron/nobrokerSyncCron.js`) running daily at 3:30 AM IST
+   - **Scope (remaining)**:
+     - Change schedule from daily to every Friday (schedule to be finalised; make it configurable via env)
+     - Add a `ScraperLog` model and save a record for every run (portal, start/end, summary, errors, breaker status)
+     - Admin UI to view scraper logs and the latest run summary
+     - Manual "run now" endpoint for admins
+     - Alert admin when the circuit breaker trips
+     - Extend sync to Sale properties and to 99acres
+   - **Status**: Partially done (NoBroker rental sync running; logging, admin UI, schedule change pending)
    - **Priority**: HIGH
 
 **8. Non-Affiliate Properties - No Redirect Option**
@@ -1202,7 +1203,7 @@ See LICENSE file for full text.
      - Create loading skeleton components
      - Add loading spinners for async operations
      - Loading screen on page transitions
-     - Loading states in modals/dialogs
+     - Loading indicators for modals/dialogs
      - Loading indicators for data fetches
    - **Status**: Pending
    - **Priority**: MEDIUM
@@ -1221,6 +1222,70 @@ See LICENSE file for full text.
    - **Status**: BLOCKED (Waiting for website UI finalization)
    - **Priority**: MEDIUM
    - **Dependencies**: Phase 3 (UI improvements) must be completed first
+
+#### Phase 6: Additional Affiliate Work (from production review)
+
+**23. Affiliate Properties Admin Page**
+   - **Description**: Dedicated admin page to manage affiliate listings (today admins can only toggle active per property)
+   - **Scope**:
+     - `GET /api/admin/affiliate-properties` with filters (`sourcePortal`, `sourceStatus`) and pagination
+     - Stats endpoint: totals per portal, active vs inactive
+     - Columns: title, portal, original URL, status, last checked, toggle
+     - Bulk enable/disable
+   - **Status**: Pending
+   - **Priority**: HIGH
+
+**24. Affiliate Search Filter & Source Info in API**
+   - **Description**: Let search and property APIs expose and filter by source
+   - **Scope**:
+     - `sourcePortal` / own-vs-affiliate filter in search endpoints
+     - Return `sourcePortal` and `sourceUrl` in property responses (UI must still look identical for both types)
+   - **Status**: Pending
+   - **Priority**: MEDIUM
+
+**25. Commission Field on Own Properties**
+   - **Description**: Neither property model has a commission field yet
+   - **Scope**:
+     - Add `commission` and `commissionType` (percentage/fixed) to Rental and Sale models
+     - Settable by admin/owner; never shown or set on affiliate listings
+   - **Status**: Pending
+   - **Priority**: HIGH
+
+**26. Normal Admin Role in User Model**
+   - **Description**: `user.model.js` role enum is only `renter, owner, admin, Agent`
+   - **Scope**:
+     - Add normal-admin role/level and per-admin feature permissions
+     - `checkAdminFeature(featureKey)` middleware replacing the single `checkAdminEmail` check on admin routes
+   - **Status**: Pending
+   - **Priority**: HIGH
+
+#### Phase 7: Production Readiness
+
+**27. Security Hardening** (see `SECURITY_AUDIT.md`)
+   - Rate limiting on all endpoints (express-rate-limit)
+   - Helmet security headers
+   - Fix open CRITICAL/HIGH findings (C-1, C-2, H-1 to H-4)
+   - Sanitize upload filenames; validate file types and sizes
+
+**28. Monitoring & Logging**
+   - Centralized structured logging and error tracking (e.g. Sentry)
+   - Request logging middleware (the current debug middleware in `server/index.js` is empty)
+   - Health check and uptime monitoring; scraper failure alerts
+
+**29. CI/CD & Testing**
+   - GitHub Actions workflow to run backend and frontend tests and build
+   - Staging environment mirroring production; documented rollback procedure
+
+**30. Database & Infrastructure**
+   - MongoDB authentication, network ACLs, automated backups
+   - Redis caching enabled in production
+   - Environment variable documentation and secrets rotation
+
+#### Open Questions
+- Scraper schedule: Friday only, or keep daily plus a Friday full check?
+- How to run the initial ~100 property import (script, CSV, or one-off scraper run)?
+- Commission model: fixed amount or percentage? Any affiliate revenue share?
+- How many admin role levels are needed beyond super admin and normal admin?
 
 ---
 
