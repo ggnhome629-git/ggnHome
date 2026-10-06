@@ -9,7 +9,32 @@ export const FILTER_KEYS = [
   "maxArea",
   "parking",
   "moveInBy",
+  "propertyType",
+  "postedBy",
+  "listedWithin",
+  "withPhotos",
 ];
+
+export const PROPERTY_TYPE_OPTIONS = [
+  { value: "apartment", label: "Apartment" },
+  { value: "house", label: "Independent house" },
+  { value: "villa", label: "Villa" },
+  { value: "townhouse", label: "Townhouse" },
+  { value: "condo", label: "Condo" },
+];
+
+export const POSTED_BY_OPTIONS = [
+  { value: "Owner", label: "Owner" },
+  { value: "Agent", label: "Agent" },
+];
+
+export const LISTED_WITHIN_OPTIONS = [
+  { value: "1", label: "Last 24 hours" },
+  { value: "7", label: "Last 7 days" },
+  { value: "30", label: "Last 30 days" },
+];
+
+const labelFor = (options, value) => options.find((o) => o.value === value)?.label || value;
 
 export const SORT_OPTIONS = [
   { value: "relevance", label: "Most relevant" },
@@ -57,5 +82,9 @@ export function activeFilterChips(filters) {
   }
   if (filters.parking) chips.push({ keys: ["parking"], label: `Parking: ${filters.parking}` });
   if (filters.moveInBy) chips.push({ keys: ["moveInBy"], label: `Move in by ${filters.moveInBy}` });
+  if (filters.propertyType) chips.push({ keys: ["propertyType"], label: labelFor(PROPERTY_TYPE_OPTIONS, filters.propertyType) });
+  if (filters.postedBy) chips.push({ keys: ["postedBy"], label: `By ${filters.postedBy.toLowerCase()}` });
+  if (filters.listedWithin) chips.push({ keys: ["listedWithin"], label: labelFor(LISTED_WITHIN_OPTIONS, filters.listedWithin) });
+  if (filters.withPhotos) chips.push({ keys: ["withPhotos"], label: "With photos" });
   return chips;
 }

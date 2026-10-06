@@ -39,6 +39,10 @@ Legend: `[x]` done, `[~]` partly done, `[ ]` not started. Item numbers match the
 ### Other pages
 - [x] Search page: total homes for the sector at top, "Showing 1–12 of N · Page X of Y" and numbered pages at bottom (#16)
 - [x] Search page redesign (#14): navy header with serif title, sticky BHK / Budget / More filters / Sort bar, active filter chips, skeletons, empty + error states, "Didn't find your home?" lead band
+- [x] Search header: photo background with slow zoom, navy/gold lighting, gold rule, serif title with gold area name, live "N homes available" count, trust points
+- [x] Headings in title case ("Homes For Rent In Sector 46", "10 Homes In Sector 46"; BHK/DLF/MG kept upper case)
+- [x] More filters: property type, posted by owner/agent, listed within 24h/7/30 days, with photos only (server-side)
+- [x] "Nearby" sector shortcuts and "Share search" link
 - [x] Search state lives in the URL (type, BHK, budget, sort, page) — back button and shared links keep the exact search
 - [x] Fixed: Rent/Buy and filter changes used stale values; filters only applied to the 10 results on screen
 - [x] Backend search: server-side filters (BHK incl. 1 RK / 4+, budget, area, baths, parking, move-in), sort, X-Total-Count, correct paging when mixing rent + sale

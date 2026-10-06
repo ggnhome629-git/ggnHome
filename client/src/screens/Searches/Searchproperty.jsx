@@ -12,7 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import axios from "axios";
-import { ArrowRight, RefreshCw, SearchX } from "lucide-react";
+import { ArrowRight, MapPin, RefreshCw, SearchX, Share2 } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../Context/AuthContext";
 import { propertyDetailPath } from "../../components/property/PropertyCard";
@@ -30,14 +30,17 @@ const Footer = React.lazy(() => import("../Dashboard/Footer"));
 
 const NAV_ITEMS = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 const RECENT_KEY = "recentSearches";
-const MORE_FILTER_KEYS = ["bathrooms", "minArea", "maxArea", "parking", "moveInBy"];
+const MORE_FILTER_KEYS = ["bathrooms", "minArea", "maxArea", "parking", "moveInBy", "propertyType", "postedBy", "listedWithin", "withPhotos"];
 
 const authHeaders = () => {
   const token = localStorage.getItem("accessToken");
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-const titleCase = (s) => s.replace(/\b\w/g, (c) => c.toUpperCase());
+// Every word capitalised, with real-estate acronyms kept upper case.
+const ACRONYMS = { bhk: "BHK", rk: "RK", dlf: "DLF", mg: "MG", nh: "NH" };
+const titleCase = (s) =>
+  s.replace(/\b([a-z0-9]+)\b/gi, (w) => ACRONYMS[w.toLowerCase()] || w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
 
 function readRecent() {
   try {
@@ -123,6 +126,7 @@ export default function Searchproperty() {
   const [showFilters, setShowFilters] = useState(false);
   const [savedIds, setSavedIds] = useState(new Set());
   const [shareLink, setShareLink] = useState("");
+  const [shareTitle, setShareTitle] = useState("Share property");
 
   useEffect(() => setInputText(query), [query]);
 
@@ -291,12 +295,16 @@ export default function Searchproperty() {
   const hasMoreFallback = total == null && results.length === PAGE_LIMIT;
 
   const where = query ? titleCase(query) : "Gurgaon";
-  const heading =
-    type === "rent" ? `Homes for rent in ${where}` : type === "sale" ? `Homes for sale in ${where}` : `Homes in ${where}`;
-  const countLabel =
-    total != null
-      ? `${total.toLocaleString("en-IN")} ${total === 1 ? "home" : "homes"}${query ? ` in ${where}` : ""}`
-      : `${results.length} ${results.length === 1 ? "home" : "homes"}`;
+  const headingPrefix = type === "rent" ? "Homes For Rent In" : type === "sale" ? "Homes For Sale In" : "Homes In";
+  const heading = `${headingPrefix} ${where}`;
+  const shownCount = total != null ? total : results.length;
+  const countLabel = `${shownCount.toLocaleString("en-IN")} ${shownCount === 1 ? "Home" : "Homes"}${query ? ` In ${where}` : ""}`;
+
+  // Neighbouring sectors, so a thin result set is one tap from a wider one.
+  const sectorNum = Number((query.match(/^\s*(?:sector|sec)?\s*-?\s*(\d{1,3})\s*$/i) || [])[1]);
+  const nearbySectors = sectorNum
+    ? [sectorNum - 2, sectorNum - 1, sectorNum + 1, sectorNum + 2].filter((n) => n > 0).map((n) => `Sector ${n}`)
+    : [];
 
   useEffect(() => {
     document.title = `${heading} | GgnHome`;
@@ -313,11 +321,16 @@ export default function Searchproperty() {
         onQueryChange={setInputText}
         onSearch={handleSearch}
         type={type}
-        onTypeChange={(t) => updateParams({ type: t })}
+        onTypeChange={(t) =>
+          // Sale listings have no property type, parking or move-in date fields.
+          updateParams({ type: t, ...(t === "sale" ? { propertyType: "", parking: "", moveInBy: "" } : {}) })
+        }
         recentSearches={recentSearches}
         areaSuggestions={areaSuggestions}
         onHome={() => navigate("/")}
-        heading={heading}
+        headingPrefix={headingPrefix}
+        place={where}
+        total={loading ? undefined : error ? null : total ?? results.length}
       />
 
       <SearchToolbar
@@ -341,7 +354,7 @@ export default function Searchproperty() {
         onApply={(next) => updateParams(next)}
       />
 
-      <ShareDialog open={Boolean(shareLink)} onClose={() => setShareLink("")} link={shareLink} />
+      <ShareDialog open={Boolean(shareLink)} onClose={() => setShareLink("")} link={shareLink} title={shareTitle} />
 
       <Container ref={resultsTopRef} maxWidth="xl" sx={{ px: { xs: 4, sm: 6, md: 8 }, py: { xs: 6, md: 8 } }}>
         {/* Result summary: total count for the area, range shown, active filters */}
@@ -368,12 +381,25 @@ export default function Searchproperty() {
               </Typography>
             )}
           </Box>
+          <Stack direction="row" spacing={2} alignItems="center">
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<Share2 size={15} />}
+            onClick={() => {
+              setShareTitle("Share this search");
+              setShareLink(window.location.href);
+            }}
+            sx={{ borderRadius: 999, borderColor: "divider", color: "primary.main", fontWeight: 600, px: 4, height: 40, backgroundColor: "background.paper", "&:hover": { borderColor: "primary.main" } }}
+          >
+            Share search
+          </Button>
           <Select
             size="small"
             value={sortBy}
             onChange={(e) => updateParams({ sort: e.target.value === "relevance" ? "" : e.target.value })}
             SelectDisplayProps={{ "aria-label": "Sort results" }}
-            sx={{ display: { xs: "inline-flex", md: "none" }, minWidth: 200, fontSize: 14, fontWeight: 600, borderRadius: 999, backgroundColor: "background.paper" }}
+            sx={{ display: { xs: "inline-flex", md: "none" }, minWidth: 170, fontSize: 14, fontWeight: 600, borderRadius: 999, backgroundColor: "background.paper" }}
           >
             {SORT_OPTIONS.map((o) => (
               <MenuItem key={o.value} value={o.value}>
@@ -381,7 +407,26 @@ export default function Searchproperty() {
               </MenuItem>
             ))}
           </Select>
+          </Stack>
         </Stack>
+
+        {nearbySectors.length > 0 && (
+          <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap" alignItems="center" sx={{ mb: chips.length ? 3 : 6 }}>
+            <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 600, mr: 1 }}>
+              Nearby:
+            </Typography>
+            {nearbySectors.map((name) => (
+              <Chip
+                key={name}
+                label={name}
+                icon={<MapPin size={13} />}
+                onClick={() => handleSearch(name)}
+                variant="outlined"
+                sx={{ fontWeight: 600, backgroundColor: "background.paper", "& .MuiChip-icon": { color: "secondary.main" } }}
+              />
+            ))}
+          </Stack>
+        )}
 
         {chips.length > 0 && (
           <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap" alignItems="center" sx={{ mb: 6 }}>
@@ -457,7 +502,10 @@ export default function Searchproperty() {
                   onClick={() => openProperty(property)}
                   onSave={handleSave}
                   isSaved={savedIds.has(String(property._id))}
-                  onShare={(p) => setShareLink(`${window.location.origin}${propertyDetailPath(p)}`)}
+                  onShare={(p) => {
+                    setShareTitle("Share property");
+                    setShareLink(`${window.location.origin}${propertyDetailPath(p)}`);
+                  }}
                   onContact={openProperty}
                 />
               ))}

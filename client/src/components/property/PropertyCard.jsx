@@ -72,7 +72,8 @@ export function getPropertyBadge(property, analytics) {
   if (match >= 70 && avgRating >= 4) {
     return { type: "verified", label: "Verified" };
   }
-  if (price >= 5000000 || avgRating >= 4.6) {
+  // ₹3 Cr+: in Gurgaon most resale homes clear ₹50 L, so a lower bar tags nearly everything.
+  if (price >= 30000000 || avgRating >= 4.6) {
     return { type: "premium", label: "Premium" };
   }
   if (match >= 60) {

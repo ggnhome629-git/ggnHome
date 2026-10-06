@@ -133,6 +133,20 @@ const buildFilterObject = ({ parsed, extras = {} }) => {
   } else if (extras.parking === 'No') {
     and.push({ $or: [{ parking: { $exists: false } }, { parking: { $in: ['', null] } }, { parking: /^\s*(no|none)\b/i }] });
   }
+  const PROPERTY_TYPES = ['house', 'apartment', 'condo', 'townhouse', 'villa'];
+  if (extras.propertyType && PROPERTY_TYPES.includes(String(extras.propertyType).toLowerCase())) {
+    and.push({ propertyType: String(extras.propertyType).toLowerCase() });
+  }
+  if (extras.postedBy === 'Owner' || extras.postedBy === 'Agent') {
+    and.push({ ownerType: extras.postedBy });
+  }
+  const listedWithin = toNum(extras.listedWithin);
+  if (listedWithin !== null && listedWithin > 0) {
+    and.push({ createdAt: { $gte: new Date(Date.now() - listedWithin * 24 * 60 * 60 * 1000) } });
+  }
+  if (extras.withPhotos === '1') {
+    and.push({ 'images.0': { $exists: true } });
+  }
   if (extras.moveInBy) {
     const d = new Date(extras.moveInBy);
     if (!Number.isNaN(d.getTime())) and.push({ moveInDate: { $lte: d } });
@@ -181,6 +195,10 @@ exports.searchProperties = async (req, res) => {
         bhk: req.query.bhk,
         parking: req.query.parking,
         moveInBy: req.query.moveInBy,
+        propertyType: req.query.propertyType,
+        postedBy: req.query.postedBy,
+        listedWithin: req.query.listedWithin,
+        withPhotos: req.query.withPhotos,
       },
     });
 

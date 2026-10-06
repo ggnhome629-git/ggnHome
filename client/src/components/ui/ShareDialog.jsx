@@ -7,7 +7,7 @@ import { radii } from "../../theme/theme";
  * Replaces the old centered <Modal> with a proper MUI Dialog carrying the
  * same share actions (copy link, WhatsApp, Facebook, Twitter, native share).
  */
-export default function ShareDialog({ open, onClose, link }) {
+export default function ShareDialog({ open, onClose, link, title = "Share property" }) {
   const [copied, setCopied] = useState(false);
 
   const copyLink = async () => {
@@ -25,7 +25,7 @@ export default function ShareDialog({ open, onClose, link }) {
       <Stack spacing={5} sx={{ p: 4 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="h3" sx={{ fontSize: "1.1rem", color: "primary.main" }}>
-            Share property
+            {title}
           </Typography>
           <IconButton onClick={onClose} size="small" aria-label="Close">
             <X size={18} />
@@ -71,7 +71,7 @@ export default function ShareDialog({ open, onClose, link }) {
             variant="outlined"
             onClick={() => {
               if (navigator.share) {
-                navigator.share({ title: "Property from GgnHome", url: link }).catch(() => {});
+                navigator.share({ title: `${title} — GgnHome`, url: link }).catch(() => {});
               }
             }}
             sx={{ borderColor: "divider", color: "text.secondary" }}

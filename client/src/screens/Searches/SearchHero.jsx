@@ -12,9 +12,15 @@ import {
   Typography,
 } from "@mui/material";
 import { AnimatePresence, motion } from "framer-motion";
-import { Clock, MapPin, Search, X } from "lucide-react";
+import { CalendarCheck, Clock, Gift, MapPin, Search, ShieldCheck, X } from "lucide-react";
 import { motionDuration } from "../../theme/motion";
 import { radii } from "../../theme/theme";
+
+const TRUST = [
+  { icon: ShieldCheck, label: "Verified listings only" },
+  { icon: Gift, label: "Gifts up to ₹1,000" },
+  { icon: CalendarCheck, label: "Visits in 24 hours" },
+];
 
 const TYPES = [
   { value: "", label: "All" },
@@ -36,7 +42,9 @@ export default function SearchHero({
   recentSearches,
   areaSuggestions,
   onHome,
-  heading,
+  headingPrefix,
+  place,
+  total,
 }) {
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(-1);
@@ -78,25 +86,67 @@ export default function SearchHero({
         position: "relative",
         overflow: "hidden",
         color: "common.white",
-        background: "linear-gradient(160deg, #001F3F 0%, #003366 60%, #0B4A6F 100%)",
-        pt: { xs: 6, md: 9 },
-        pb: { xs: 7, md: 10 },
+        backgroundColor: "#001F3F",
+        pt: { xs: 7, md: 11 },
+        pb: { xs: 9, md: 13 },
       }}
     >
+      {/* Photo with a slow, continuous zoom for a premium, living feel. */}
+      <Box
+        aria-hidden
+        sx={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage: "url(/Dashboard.webp)",
+          backgroundSize: "cover",
+          backgroundPosition: "center 35%",
+          animation: "searchHeroZoom 24s ease-in-out infinite alternate",
+          "@keyframes searchHeroZoom": {
+            from: { transform: "scale(1.04)" },
+            to: { transform: "scale(1.14) translate3d(-1%, -1%, 0)" },
+          },
+          "@media (prefers-reduced-motion: reduce)": { animation: "none", transform: "scale(1.04)" },
+        }}
+      />
+      {/* Navy wash: dense on the left where the text sits, lighter on the right to let the photo show. */}
+      <Box
+        aria-hidden
+        sx={{
+          position: "absolute",
+          inset: 0,
+          background: {
+            xs: "linear-gradient(180deg, rgba(0,20,45,0.86) 0%, rgba(0,31,63,0.82) 100%)",
+            md: "linear-gradient(95deg, rgba(0,20,45,0.94) 0%, rgba(0,31,63,0.84) 42%, rgba(0,51,102,0.45) 100%)",
+          },
+        }}
+      />
       <Box
         aria-hidden
         sx={{
           position: "absolute",
           inset: 0,
           background:
-            "radial-gradient(45% 70% at 90% 0%, rgba(246,196,83,0.16) 0%, rgba(246,196,83,0) 70%), radial-gradient(40% 60% at 5% 100%, rgba(0,167,157,0.18) 0%, rgba(0,167,157,0) 70%)",
+            "radial-gradient(40% 60% at 85% 10%, rgba(246,196,83,0.22) 0%, rgba(246,196,83,0) 70%), radial-gradient(35% 55% at 0% 100%, rgba(0,167,157,0.25) 0%, rgba(0,167,157,0) 70%)",
+        }}
+      />
+      {/* Thin gold rule along the bottom edge, echoing the dashboard tagline. */}
+      <Box
+        aria-hidden
+        sx={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: 3,
+          background: "linear-gradient(90deg, rgba(246,196,83,0) 0%, #F6C453 30%, #FFE08A 50%, #F6C453 70%, rgba(246,196,83,0) 100%)",
+          opacity: 0.85,
         }}
       />
 
       <Container maxWidth="xl" sx={{ position: "relative", px: { xs: 4, sm: 6, md: 8 } }}>
         <Breadcrumbs
           separator="/"
-          sx={{ mb: { xs: 3, md: 4 }, fontSize: 13, "& .MuiBreadcrumbs-separator": { color: "rgba(255,255,255,0.4)" } }}
+          sx={{ mb: { xs: 4, md: 6 }, fontSize: 13, "& .MuiBreadcrumbs-separator": { color: "rgba(255,255,255,0.4)" } }}
         >
           <MuiLink
             component="button"
@@ -109,18 +159,97 @@ export default function SearchHero({
           <Typography sx={{ color: "rgba(255,255,255,0.9)", fontSize: 13 }}>Search</Typography>
         </Breadcrumbs>
 
-        <Typography
-          component="h1"
-          sx={{
-            fontFamily: '"Playfair Display", Georgia, serif',
-            fontWeight: 700,
-            fontSize: { xs: "1.85rem", sm: "2.4rem", md: "3rem" },
-            lineHeight: 1.1,
-            mb: { xs: 5, md: 7 },
-          }}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0, 0, 0.2, 1] }}
         >
-          {heading}
-        </Typography>
+          <Stack direction="row" spacing={3} alignItems="center" sx={{ mb: { xs: 3, md: 4 } }}>
+            <Box sx={{ width: 28, height: "1px", backgroundColor: "rgba(246,196,83,0.8)" }} />
+            <Typography variant="overline" sx={{ color: "#F6D58A", letterSpacing: "0.22em", fontSize: { xs: 10, md: 12 } }}>
+              Gurgaon · Verified homes
+            </Typography>
+          </Stack>
+
+          <Typography
+            component="h1"
+            sx={{
+              fontFamily: '"Playfair Display", Georgia, serif',
+              fontWeight: 700,
+              fontSize: { xs: "2rem", sm: "2.75rem", md: "3.6rem" },
+              lineHeight: 1.08,
+              letterSpacing: "-0.01em",
+              textShadow: "0 4px 24px rgba(0,0,0,0.35)",
+            }}
+          >
+            {headingPrefix}{" "}
+            <Box
+              component="span"
+              sx={{
+                fontStyle: "italic",
+                background: "linear-gradient(90deg, #F6D58A 0%, #F0B429 55%, #FFE7A8 100%)",
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
+              }}
+            >
+              {place}
+            </Box>
+          </Typography>
+
+          <Stack
+            direction="row"
+            useFlexGap
+            flexWrap="wrap"
+            alignItems="center"
+            columnGap={{ xs: 4, md: 6 }}
+            rowGap={2}
+            sx={{ mt: { xs: 4, md: 5 }, mb: { xs: 6, md: 8 } }}
+          >
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 2,
+                px: 3,
+                py: 1.25,
+                borderRadius: 999,
+                backgroundColor: "rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255,255,255,0.18)",
+                backdropFilter: "blur(8px)",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              <Box
+                sx={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  backgroundColor: "#3FC2B8",
+                  boxShadow: "0 0 0 0 rgba(63,194,184,0.7)",
+                  animation: "liveDot 2s ease-out infinite",
+                  "@keyframes liveDot": {
+                    "0%": { boxShadow: "0 0 0 0 rgba(63,194,184,0.7)" },
+                    "100%": { boxShadow: "0 0 0 8px rgba(63,194,184,0)" },
+                  },
+                  "@media (prefers-reduced-motion: reduce)": { animation: "none" },
+                }}
+              />
+              {total === undefined
+                ? "Searching listings…"
+                : total === null
+                ? "Live verified listings"
+                : `${total.toLocaleString("en-IN")} ${total === 1 ? "home" : "homes"} available`}
+            </Box>
+            {TRUST.map(({ icon: Icon, label }) => (
+              <Stack key={label} direction="row" spacing={1.5} alignItems="center" sx={{ display: { xs: label === TRUST[2].label ? "none" : "flex", sm: "flex" } }}>
+                <Icon size={15} color="#3FC2B8" aria-hidden />
+                <Typography sx={{ fontSize: 13, color: "rgba(255,255,255,0.78)" }}>{label}</Typography>
+              </Stack>
+            ))}
+          </Stack>
+        </motion.div>
 
         <Stack
           direction={{ xs: "column", md: "row" }}
