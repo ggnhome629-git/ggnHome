@@ -87,3 +87,5 @@ Legend: `[x]` done, `[~]` partly done, `[ ]` not started. Item numbers match the
 
 ## Phase E: Mobile app
 - [ ] React Native app, after website UI is final (#22)
+
+- [ ] promo cards from admin and to be shown on dashboard and search page both
