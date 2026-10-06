@@ -970,6 +970,25 @@ See LICENSE file for full text.
 - Admin dashboard UI improvements
 - Security vulnerability fixes
 
+### Work Items / Backlog
+
+#### High Priority
+1. **Dual Property Source Support** 
+   - **Description**: Make the system support both affiliate properties and our own database properties
+   - **Scope**: 
+     - Implement data model to differentiate between affiliate and owned properties
+     - Update property search and filtering logic to handle both sources
+     - Modify property display UI to indicate property source (affiliate vs. owned)
+     - Update property management endpoints for both sources
+     - Implement separate analytics tracking for each property source
+   - **Affected Components**:
+     - Property models (Rental/Sale)
+     - Property controllers and routes
+     - Search and filter functionality
+     - Admin property management interface
+     - User-facing property display components
+   - **Status**: Pending
+
 ---
 
 **Last Updated**: September 2026  
