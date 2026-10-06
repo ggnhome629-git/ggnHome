@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Button, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { Heart, ImageIcon, MapPin, Phone, Share2 } from "lucide-react";
-import ImageReveal from "../motion/ImageReveal";
+import CardPhotos from "./CardPhotos";
 import { radii, elevationShadows } from "../../theme/theme";
 
 /**
@@ -139,6 +139,9 @@ export default function PropertyCard({
     sqft ? `${sqft.toLocaleString("en-IN")} sqft` : null,
   ].filter(Boolean);
   const listedLabel = listedAgo(property?.createdAt);
+  const isNew = property?.createdAt && Date.now() - new Date(property.createdAt).getTime() < 3 * 86400000;
+  const postedBy =
+    property?.ownerType === "Admin" ? "ggnHome" : property?.ownerType === "Agent" ? "Agent" : property?.ownerType === "Owner" ? "Owner" : null;
   const rental = isRentalProperty(property);
 
   const overlayButton = {
@@ -189,8 +192,8 @@ export default function PropertyCard({
           "& img": { transition: "transform .6s ease" },
         }}
       >
-        <ImageReveal
-          src={property?.images?.[0] || "/default-property.jpg"}
+        <CardPhotos
+          images={property?.images}
           alt={property?.title || property?.type || "Property"}
           aspectRatio={isList ? "4 / 3" : `4 / ${imageHeight > 200 ? 3 : 2.4}`}
           // Cards never render wider than a quarter of a desktop viewport, so
@@ -202,7 +205,7 @@ export default function PropertyCard({
               ? "(max-width: 600px) 92vw, 300px"
               : "(max-width: 600px) 92vw, (max-width: 900px) 46vw, (max-width: 1200px) 31vw, 23vw"
           }
-          sx={isList ? { height: "100%" } : undefined}
+          fill={isList}
         />
 
         {/* Soft scrim so overlay chips read on bright photos. */}
@@ -243,7 +246,22 @@ export default function PropertyCard({
             />
             <span>{rental ? "For rent" : "For sale"}</span>
           </Stack>
-          {badge && (
+          {isNew && (
+            <Box
+              sx={{
+                px: 2.5,
+                py: 1,
+                borderRadius: 999,
+                backgroundColor: "#16A34A",
+                color: "common.white",
+                fontSize: 11,
+                fontWeight: 700,
+              }}
+            >
+              New
+            </Box>
+          )}
+          {badge && !isNew && (
             <Box
               sx={{
                 px: 2.5,
@@ -283,11 +301,19 @@ export default function PropertyCard({
                   onClick={(e) => stop(e, () => onSave(property._id, e))}
                   sx={overlayButton}
                 >
-                  <Heart
-                    size={16}
-                    fill={isSaved ? "#E11D48" : "none"}
-                    color={isSaved ? "#E11D48" : "#003366"}
-                  />
+                  <motion.span
+                    key={isSaved ? "saved" : "unsaved"}
+                    initial={{ scale: isSaved ? 0.4 : 1 }}
+                    animate={{ scale: isSaved ? [0.4, 1.35, 1] : 1 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    style={{ display: "inline-flex" }}
+                  >
+                    <Heart
+                      size={16}
+                      fill={isSaved ? "#E11D48" : "none"}
+                      color={isSaved ? "#E11D48" : "#003366"}
+                    />
+                  </motion.span>
                 </IconButton>
               </Tooltip>
             )}
@@ -355,14 +381,20 @@ export default function PropertyCard({
           </Typography>
         </Stack>
 
-        {(listedLabel || onContact) && (
+        {(listedLabel || postedBy || onContact) && (
           <Stack
             direction="row"
             alignItems="center"
             justifyContent="space-between"
             sx={{ mt: "auto", pt: 3, borderTop: "1px solid", borderColor: "divider" }}
           >
-            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+            <Typography variant="caption" sx={{ color: "text.secondary" }} noWrap>
+              {postedBy && (
+                <Box component="span" sx={{ fontWeight: 700, color: postedBy === "ggnHome" ? "secondary.main" : "text.primary" }}>
+                  {postedBy === "ggnHome" ? "By ggnHome" : `By ${postedBy.toLowerCase()}`}
+                </Box>
+              )}
+              {postedBy && listedLabel ? " · " : ""}
               {listedLabel || ""}
             </Typography>
             {onContact && (

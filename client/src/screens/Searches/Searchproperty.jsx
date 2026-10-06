@@ -8,6 +8,7 @@ import {
   Pagination,
   Select,
   Skeleton,
+  Snackbar,
   Stack,
   Typography,
 } from "@mui/material";
@@ -19,6 +20,11 @@ import { propertyDetailPath } from "../../components/property/PropertyCard";
 import SearchHero from "./SearchHero";
 import SearchToolbar from "./SearchToolbar";
 import SearchResultCard from "./SearchResultCard";
+import QuickPicks from "./QuickPicks";
+import PromoCard from "./PromoCard";
+import RecentlyViewed from "../Property View/sections/RecentlyViewed";
+import { getRecentlyViewed } from "../../utils/propertyAnalytics";
+import AnimatedNumber from "../../components/motion/AnimatedNumber";
 import FilterDrawer from "./FilterDrawer";
 import ShareDialog from "../../components/ui/ShareDialog";
 import MobileBottomNav from "../Dashboard/MobileBottomNav";
@@ -127,6 +133,8 @@ export default function Searchproperty() {
   const [savedIds, setSavedIds] = useState(new Set());
   const [shareLink, setShareLink] = useState("");
   const [shareTitle, setShareTitle] = useState("Share property");
+  const [savedToast, setSavedToast] = useState(false);
+  const [recentlyViewed] = useState(() => getRecentlyViewed().slice(0, 8));
 
   useEffect(() => setInputText(query), [query]);
 
@@ -215,6 +223,7 @@ export default function Searchproperty() {
   const handleSave = async (propertyId) => {
     if (!user) return goToLogin(`${window.location.pathname}${window.location.search}`);
     const id = String(propertyId);
+    if (!savedIds.has(id)) setSavedToast(true);
     setSavedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -338,8 +347,6 @@ export default function Searchproperty() {
         type={type}
         filters={filters}
         onFilterChange={(patch) => updateParams(patch)}
-        sortBy={sortBy}
-        onSortChange={(v) => updateParams({ sort: v === "relevance" ? "" : v })}
         onOpenFilters={() => setShowFilters(true)}
         moreFilterCount={moreFilterCount}
         viewMode={viewMode}
@@ -357,6 +364,8 @@ export default function Searchproperty() {
       <ShareDialog open={Boolean(shareLink)} onClose={() => setShareLink("")} link={shareLink} title={shareTitle} />
 
       <Container ref={resultsTopRef} maxWidth="xl" sx={{ px: { xs: 4, sm: 6, md: 8 }, py: { xs: 6, md: 8 } }}>
+        <QuickPicks filters={filters} type={type} onPick={(patch) => updateParams(patch)} />
+
         {/* Result summary: total count for the area, range shown, active filters */}
         <Stack
           direction={{ xs: "column", sm: "row" }}
@@ -369,8 +378,9 @@ export default function Searchproperty() {
             {loading ? (
               <Skeleton width={220} height={40} />
             ) : (
-              <Typography component="h2" sx={{ fontSize: { xs: "1.4rem", md: "1.75rem" }, fontWeight: 800, color: "primary.main" }}>
-                {countLabel}
+              <Typography component="h2" aria-label={countLabel} sx={{ fontSize: { xs: "1.4rem", md: "1.75rem" }, fontWeight: 800, color: "primary.main" }}>
+                <AnimatedNumber value={shownCount} /> {shownCount === 1 ? "Home" : "Homes"}
+                {query ? ` In ${where}` : ""}
               </Typography>
             )}
             {!loading && results.length > 0 && (
@@ -381,7 +391,58 @@ export default function Searchproperty() {
               </Typography>
             )}
           </Box>
-          <Stack direction="row" spacing={2} alignItems="center">
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap rowGap={2}>
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            role="group"
+            aria-label="Sort results"
+            sx={{ display: { xs: "none", md: "flex" }, mr: 2 }}
+          >
+            <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 600, mr: 2 }}>
+              Sort by
+            </Typography>
+            {SORT_OPTIONS.map((o) => {
+              const active = sortBy === o.value;
+              return (
+                <Box
+                  key={o.value}
+                  component="button"
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => updateParams({ sort: o.value === "relevance" ? "" : o.value })}
+                  sx={{
+                    position: "relative",
+                    border: 0,
+                    background: "none",
+                    cursor: "pointer",
+                    font: "inherit",
+                    fontSize: 14,
+                    px: 2,
+                    py: 1.5,
+                    fontWeight: active ? 700 : 500,
+                    color: active ? "primary.main" : "text.secondary",
+                    "&:hover": { color: "primary.main" },
+                    "&::after": {
+                      content: '""',
+                      position: "absolute",
+                      left: 8,
+                      right: 8,
+                      bottom: 0,
+                      height: 2,
+                      borderRadius: 2,
+                      backgroundColor: "secondary.main",
+                      transform: active ? "scaleX(1)" : "scaleX(0)",
+                      transition: "transform .2s ease",
+                    },
+                  }}
+                >
+                  {o.label}
+                </Box>
+              );
+            })}
+          </Stack>
           <Button
             variant="outlined"
             size="small"
@@ -494,9 +555,9 @@ export default function Searchproperty() {
                   viewMode === "list" ? "minmax(0, 1fr)" : "repeat(auto-fill, minmax(min(100%, 300px), 1fr))",
               }}
             >
-              {results.map((property) => (
+              {results.map((property, i) => (
+                <React.Fragment key={property._id}>
                 <SearchResultCard
-                  key={property._id}
                   property={property}
                   layout={viewMode}
                   onClick={() => openProperty(property)}
@@ -508,6 +569,14 @@ export default function Searchproperty() {
                   }}
                   onContact={openProperty}
                 />
+                {/* Promo tiles between listings, grid view only */}
+                {viewMode === "grid" && i === 3 && results.length > 5 && (
+                  <PromoCard variant="rewards" onClick={() => navigate(user ? "/rewards" : "/login", user ? undefined : { state: { from: "/rewards" } })} />
+                )}
+                {viewMode === "grid" && i === 8 && results.length > 10 && (
+                  <PromoCard variant="post" onClick={() => navigate(user ? "/add-property" : "/login", user ? undefined : { state: { from: "/add-property" } })} />
+                )}
+                </React.Fragment>
               ))}
             </Box>
 
@@ -541,6 +610,12 @@ export default function Searchproperty() {
               </Typography>
             </Stack>
           </>
+        )}
+
+        {recentlyViewed.length > 0 && (
+          <Box sx={{ mt: { xs: 12, md: 16 } }}>
+            <RecentlyViewed items={recentlyViewed} />
+          </Box>
         )}
 
         {/* Didn't find it? — the lead-capture moment, styled like the dashboard rewards band */}
@@ -589,6 +664,19 @@ export default function Searchproperty() {
       <Suspense fallback={null}>
         <Footer user={user} />
       </Suspense>
+
+      <Snackbar
+        open={savedToast}
+        autoHideDuration={3500}
+        onClose={(_, reason) => reason !== "clickaway" && setSavedToast(false)}
+        message="Saved to your shortlist"
+        action={
+          <Button color="secondary" size="small" onClick={() => navigate("/savedproperties")} sx={{ fontWeight: 700 }}>
+            View
+          </Button>
+        }
+        sx={{ bottom: { xs: 80, sm: 24 } }}
+      />
 
       <MobileBottomNav
         user={user}

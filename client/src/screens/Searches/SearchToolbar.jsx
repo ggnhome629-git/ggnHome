@@ -6,16 +6,14 @@ import {
   Chip,
   Container,
   IconButton,
-  MenuItem,
   Popover,
-  Select,
   Stack,
   TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
 import { ChevronDown, Grid as GridIcon, List as ListIcon, SlidersHorizontal } from "lucide-react";
-import { BHK_OPTIONS, SORT_OPTIONS, formatINR } from "./searchParams";
+import { BHK_OPTIONS, formatINR } from "./searchParams";
 import { radii } from "../../theme/theme";
 
 const RENT_PRESETS = [
@@ -135,8 +133,6 @@ export default function SearchToolbar({
   type,
   filters,
   onFilterChange,
-  sortBy,
-  onSortChange,
   onOpenFilters,
   moreFilterCount,
   viewMode,
@@ -224,26 +220,6 @@ export default function SearchToolbar({
             </Badge>
           </Stack>
 
-          <Select
-            size="small"
-            value={sortBy}
-            onChange={(e) => onSortChange(e.target.value)}
-            SelectDisplayProps={{ "aria-label": "Sort results" }}
-            sx={{
-              flexShrink: 0,
-              display: { xs: "none", md: "inline-flex" },
-              minWidth: 190,
-              fontSize: 14,
-              fontWeight: 600,
-              borderRadius: 999,
-            }}
-          >
-            {SORT_OPTIONS.map((o) => (
-              <MenuItem key={o.value} value={o.value}>
-                {o.label}
-              </MenuItem>
-            ))}
-          </Select>
 
           <Stack
             direction="row"

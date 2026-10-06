@@ -43,6 +43,7 @@ Legend: `[x]` done, `[~]` partly done, `[ ]` not started. Item numbers match the
 - [x] Headings in title case ("Homes For Rent In Sector 46", "10 Homes In Sector 46"; BHK/DLF/MG kept upper case)
 - [x] More filters: property type, posted by owner/agent, listed within 24h/7/30 days, with photos only (server-side)
 - [x] "Nearby" sector shortcuts and "Share search" link
+- [x] Livelier search (patterns from NoBroker, Flipkart, real-estate UX guides): swipeable card photos with dots/arrows, "New" tag (<3 days), "By owner / agent / ggnHome", heart pop + "Saved · View" toast, Flipkart-style quick-pick icon strip, sort tabs, rewards + post-property promo tiles in results, animated count, Recently viewed row
 - [x] Search state lives in the URL (type, BHK, budget, sort, page) — back button and shared links keep the exact search
 - [x] Fixed: Rent/Buy and filter changes used stale values; filters only applied to the 10 results on screen
 - [x] Backend search: server-side filters (BHK incl. 1 RK / 4+, budget, area, baths, parking, move-in), sort, X-Total-Count, correct paging when mixing rent + sale
