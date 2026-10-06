@@ -1,5 +1,6 @@
 // server/controllers/agentDashboard.controller.js
 const mongoose = require('mongoose');
+const { saleProfileFields } = require("../utils/saleProfile");
 const { stripProtectedFields } = require("../utils/protectedFields");
 const Agent = require('../models/Agent.model');
 const UserPreferenceForm = require('../models/userpreferenceForm.model');
@@ -501,6 +502,7 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
       bedrooms,
       bathrooms,
       location,
+      ...saleProfileFields(req.body),
       images,
       panoramas: panoramas.length ? panoramas : undefined,
 

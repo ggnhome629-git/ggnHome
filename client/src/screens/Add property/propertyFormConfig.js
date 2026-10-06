@@ -74,7 +74,55 @@ export const INITIAL = {
   propertyAge: "",
   title: "",
   description: "",
+  ownerMobile: "",
+  // Admin-only rental extras (the admin form has always collected these).
+  layoutFeatures: "",
+  outdoorSpace: "",
+  conditionAge: "",
+  renovations: "",
+  leaseTerm: "",
+  utilities: [],
+  otherFees: "",
+  maintenance: "",
+  insurance: "",
+  petPolicy: "",
+  smokingPolicy: "",
+  neighborhoodVibe: "",
+  transportation: "",
+  localAmenities: "",
+  communityFeatures: [],
 };
+
+export const EXTRA = {
+  outdoorSpace: ["Balcony", "Terrace", "Private Garden", "Lawn", "None"],
+  leaseTerm: [
+    { value: "6", label: "6 Months" },
+    { value: "11", label: "11 Months" },
+    { value: "12", label: "12 Months" },
+    { value: "24", label: "24 Months" },
+    { value: "flexible", label: "Flexible" },
+  ],
+  utilities: ["Electricity", "Water", "Gas", "Internet", "Maintenance"],
+  insurance: [
+    { value: "required", label: "Required" },
+    { value: "optional", label: "Optional" },
+    { value: "not-required", label: "Not Required" },
+  ],
+  petPolicy: [
+    { value: "allowed", label: "Pets Allowed" },
+    { value: "not-allowed", label: "No Pets" },
+    { value: "restrictions", label: "With Restrictions" },
+    { value: "negotiable", label: "Negotiable" },
+  ],
+  smokingPolicy: [
+    { value: "allowed", label: "Smoking Allowed" },
+    { value: "not-allowed", label: "No Smoking" },
+    { value: "outdoor-only", label: "Outdoor Only" },
+  ],
+  communityFeatures: ["Swimming Pool", "Fitness Center", "Clubhouse", "24/7 Security", "Playground", "Garden", "Parking"],
+};
+const EXTRA_TEXT = ["layoutFeatures", "renovations", "otherFees", "maintenance", "neighborhoodVibe", "transportation", "localAmenities"];
+export const EXTRA_TEXT_FIELDS = EXTRA_TEXT;
 
 export const isPlot = (f) => f.propertyType === "plot";
 const isRK = (f) => f.propertyType === "1RK";
@@ -149,6 +197,8 @@ export function validateStep(step, f) {
     if (f.Sector.trim().length < 2) e.Sector = "Enter the sector or locality (e.g. Sector 56)";
     if (!rent && f.address.trim().length < 5) e.address = "Enter the property address";
     if (containsContactInfo(f.address)) e.address = "Please remove phone numbers / emails from the address";
+    // Admin-only field; owners and agents never see it so it stays empty.
+    if (f.ownerMobile && !/^(?:\+?91)?[6-9]\d{9}$/.test(String(f.ownerMobile).replace(/[\s-]/g, ""))) e.ownerMobile = "Enter a valid 10-digit mobile number";
   }
   if (step === STEP.profile) {
     if (hasRooms(f) && !f.bhk) e.bhk = "Pick the number of bedrooms";
@@ -179,6 +229,10 @@ export function validateStep(step, f) {
     else if (t.length < 10) e.title = "Make the title at least 10 characters";
     else if (t.length > 100) e.title = "Keep the title under 100 characters";
     else if (containsContactInfo(t)) e.title = "Please remove phone numbers / emails from the title";
+    EXTRA_TEXT.forEach((k) => {
+      if (String(f[k] || "").length > 500) e[k] = "Keep this under 500 characters";
+      else if (containsContactInfo(f[k])) e[k] = "Please remove phone numbers / emails";
+    });
     if (f.description.length > 2000) e.description = "Keep the description under 2,000 characters";
     else if (containsContactInfo(f.description)) e.description = "Please remove phone numbers / emails — enquiries reach you through ggnHome";
   }
@@ -272,6 +326,7 @@ export function buildFormData(f, photos, panoramas) {
     list("appliances", f.appliances);
   }
   put("parking", f.parking);
+  put("ownerMobile", String(f.ownerMobile || "").replace(/[\s-]/g, ""));
   put("totalFloors", f.totalFloors);
 
   if (rent) {
@@ -281,6 +336,10 @@ export function buildFormData(f, photos, panoramas) {
     put("securityDeposit", f.securityDeposit === "" ? "" : Number(f.securityDeposit));
     put("moveInDate", f.moveInDate);
     put("tenantRequirements", f.tenants.join(", "));
+    // Admin-only extras; always empty for owners and agents.
+    ["outdoorSpace", "conditionAge", "leaseTerm", "insurance", "petPolicy", "smokingPolicy", ...EXTRA_TEXT].forEach((k) => put(k, f[k]));
+    list("utilities", f.utilities);
+    list("communityFeatures", f.communityFeatures);
   } else {
     put("location", f.address);
     put("floorNumber", f.floor);

@@ -213,6 +213,7 @@ router.delete("/api/admin/promos/:id", verifyToken, checkAdminEmail, deletePromo
 router.post(
   "/api/admin/addsaleproperties",
   verifyToken,
+  checkAdminEmail,
   upload.fields([
     { name: "images", maxCount: 8 },
     { name: "panoFiles", maxCount: 6 },
@@ -221,7 +222,8 @@ router.post(
 );
 router.post(
   "/api/admin/addrentproperties",
-  verifyTokenOptional,
+  verifyToken,
+  checkAdminEmail,
   upload.fields([
     { name: "images", maxCount: 8 },
     { name: "panoFiles", maxCount: 6 },

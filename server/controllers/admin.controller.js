@@ -1,4 +1,5 @@
 const Payment = require('../models/Payment.model');
+const { saleProfileFields } = require("../utils/saleProfile");
 const mongoose = require('mongoose');
 const RentalProperty = mongoose.models.RentalProperty || require('../models/RentalProperty.model');
 const SaleProperty = mongoose.models.SaleProperty || require('../models/SaleProperty.model');
@@ -2063,6 +2064,7 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
       bedrooms,
       bathrooms,
       location,
+      ...saleProfileFields(req.body),
       images,
       panoramas: panoramas.length ? panoramas : undefined,
       ownernumber: ownerCandidateSale ? String(ownerCandidateSale).trim() : undefined,

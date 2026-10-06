@@ -81,7 +81,9 @@ Legend: `[x]` done, `[~]` partly done, `[ ]` not started. Item numbers match the
 - [x] Sale listings now store type, furnishing, parking, floors, possession and age; rentals store furnishing
 - [x] Server: owners can't set isActive/rankScore/owner/source fields; flatmates can't self-approve; flatmate photos upload
 - [ ] Show the new sale fields (furnishing, possession, age) on the property detail pages
-- [ ] Agent and admin add-property pages still use the old form
+- [x] Agent and admin add-property pages use the same new form (one shared component)
+- [x] Admin form keeps owner's mobile number and all extra rental fields (lease, utilities, fees, policies, neighbourhood)
+- [x] Admin add-property endpoints now admin-only (rent endpoint was open to anyone)
 
 ## Phase B: Property sources (affiliate + own)
 - [~] Source fields on property models (`sourcePortal`, `sourceUrl`, `sourceStatus`...) (#1, #2)
