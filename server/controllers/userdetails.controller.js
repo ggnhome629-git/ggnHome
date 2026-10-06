@@ -613,6 +613,11 @@ const deleteProperty = async (req, res) => {
       return res.status(404).json({ message: "Property not found or unauthorized" });
     }
 
+    // A new or edited listing awaiting review can't be switched on by the owner.
+    if (!property.isActive && property.isPostedNew) {
+      return res.status(403).json({ message: "This listing is awaiting admin approval" });
+    }
+
     // Toggle isActive status
     property.isActive = !property.isActive;
     await property.save();

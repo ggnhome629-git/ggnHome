@@ -536,6 +536,12 @@ const getListingsByUser = async (req, res) => {
     const userIdFromParams = req.params.userId || req.query.userId;
     const authUserId = req.user && (req.user._id || req.user.id || req.user.userId);
 
+    // Only admins may look at someone else's listings (they include inactive
+    // ones and the owner's contact details).
+    const isAdmin = req.user && req.user.role === 'admin';
+    if (userIdFromParams && !isAdmin && String(userIdFromParams) !== String(authUserId)) {
+      return res.status(403).json({ success: false, message: 'Not allowed' });
+    }
     const userId = userIdFromParams || authUserId;
     if (!userId) return res.status(400).json({ success: false, message: 'userId is required' });
 

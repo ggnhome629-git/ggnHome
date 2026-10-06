@@ -262,7 +262,7 @@ router.post("/api/userpreferenceform", savePreferenceForm);
 router.post("/api/predict-price", verifyToken, predictPrice);
 
 // ================== REWARDS ROUTES ==================
-router.post("/api/distribute-reward", verifyToken, distributeReward);
+router.post("/api/distribute-reward", verifyToken, checkAdminEmail, distributeReward);
 router.get("/api/check-eligibility", verifyToken, checkEligibility);
 
 // ================== CUSTOMER SUPPORT ROUTES ==================
