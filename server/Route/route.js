@@ -112,7 +112,7 @@ router.get("/api/users", verifyToken, checkAdminEmail, async (req, res) => {
 router.post("/login/request-otp", requestOtp);
 router.post("/login/password", loginWithPassword);
 router.post("/login/verify-otp", verifyOtp);
-router.post("/auth/set-password", setPassword);
+router.post("/auth/set-password", verifyToken, setPassword);
 router.post("/auth/check-mobile", checkMobile);
 
 // ================== SMS GATEWAY (Android app polls these) ==================
@@ -134,7 +134,8 @@ router.post(
 );
 
 router.get("/auth/me", verifyToken, userDetails);
-router.post("/auth/logout", verifyToken, verifyAgentTokenOptional, logoutUser);
+// Logout must work even when the access cookie has already expired.
+router.post("/auth/logout", verifyTokenOptional, verifyAgentTokenOptional, logoutUser);
 
 // ================== USER ROUTES ==================
 router.post("/api/user/save-details", verifyToken, saveUserDetails);
@@ -368,7 +369,7 @@ router.post('/flatmateenquiry',verifyToken,flatmateEnquiry);
 
 
 //Agents
-router.get("/api/agent/unique-code",verifyTokenOptional, getUniqueAgentCode);
+router.get("/api/agent/unique-code", verifyToken, checkAdminEmail, getUniqueAgentCode);
 router.post(
   "/api/agent/register",
   verifyTokenOptional,
@@ -379,16 +380,28 @@ router.post(
   ]),
   registerAgent
 );
-router.post("/api/agentcheck", checkAgentExists);
-router.post("/api/agent/send-otp", requestOtpAgent);
-router.post("/api/agent/login/otp", verifyTokenOptional, loginAgentOtp);
-router.post("/api/agent/login/password", verifyTokenOptional, loginAgentPassword);
-router.post("/api/agent/reset-password", verifyTokenOptional, resetAgentPassword);
-// 🔐 Session-based Agent Login (when USER cookies already exist)
-router.post(
-  "/api/agent/login/session",
-  loginAgentSession
-);
+// Agents now sign in with the normal mobile + OTP login (/login/request-otp,
+// /login/verify-otp), which also opens their agent session. The old
+// code-based endpoints (agent code + OTP / password / DOB reset) are retired:
+// codes were guessable and the DOB reset allowed account takeover.
+const retired = (req, res) => res.status(410).json({ message: "Please log in with your mobile number and OTP." });
+router.post("/api/agentcheck", retired);
+router.post("/api/agent/send-otp", retired);
+router.post("/api/agent/login/otp", retired);
+router.post("/api/agent/login/password", retired);
+router.post("/api/agent/reset-password", retired);
+// Already logged in on the main site → open the agent session too.
+router.post("/api/agent/login/session", verifyToken, async (req, res) => {
+  try {
+    const { issueAgentSession } = require("../utils/agentSession");
+    const result = await issueAgentSession(req, res, req.user);
+    if (!result.agent) return res.status(404).json({ message: "No agent account on this mobile number", agent: null });
+    if (!result.agentAccessToken) return res.status(403).json({ message: "Agent account is not active yet", agent: result.agent });
+    return res.json({ agent: result.agent, agentAccessToken: result.agentAccessToken });
+  } catch (e) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
 router.post("/agent/set-recovery-email", verifyAgentToken, setAgentRecoveryEmail);
 router.get("/agent/me", verifyAgentToken, agentDetails);
 router.get("/api/agent/me", verifyAgentToken, agentDetails);

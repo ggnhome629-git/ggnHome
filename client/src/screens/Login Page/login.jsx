@@ -192,6 +192,11 @@ export default function LoginModal() {
 
       if (response.ok) {
         if (data.accessToken) localStorage.setItem("accessToken", data.accessToken);
+        // Approved agents get their agent session from the same login.
+        if (data.agentAccessToken) {
+          localStorage.setItem("agentAccessToken", data.agentAccessToken);
+          window.dispatchEvent(new Event("agent:login"));
+        }
         setMessage({ text: "OTP verified — signing you in…", type: "success" });
         await completeLogin();
       } else {

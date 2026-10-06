@@ -125,11 +125,19 @@ exports.approveAgent = async (req, res) => {
 
     const agent = await Agent.findByIdAndUpdate(
       agentId,
-      { $set: { status: 'active' } },
+      { $set: { status: 'active', isVerified: true, verifiedAt: new Date(), ...(req.user && req.user._id ? { verifiedBy: req.user._id } : {}) } },
       { new: true }
-    ).select('status name email agentCode');
+    ).select('status name email agentCode userId mobileNumber');
 
     if (!agent) return res.status(404).json({ success: false, message: 'Agent not found' });
+
+    // Approval is what makes the linked user an Agent (admins keep their role).
+    const user = await User.findOne(agent.userId ? { _id: agent.userId } : { mobileNumber: agent.mobileNumber });
+    if (user) {
+      if (user.role !== 'admin') user.role = 'Agent';
+      await user.save();
+      if (!agent.userId) await Agent.updateOne({ _id: agent._id }, { $set: { userId: user._id } });
+    }
 
     return res.json({ success: true, agentId, status: agent.status });
   } catch (err) {
@@ -150,11 +158,14 @@ exports.suspendAgent = async (req, res) => {
 
     const agent = await Agent.findByIdAndUpdate(
       agentId,
-      { $set: { status: 'suspended' } },
+      { $set: { status: 'suspended' }, $unset: { AccessTokenAgent: 1, RefreshTokenAgent: 1 } },
       { new: true }
-    ).select('status name email agentCode');
+    ).select('status name email agentCode userId');
 
     if (!agent) return res.status(404).json({ success: false, message: 'Agent not found' });
+
+    // A suspended agent goes back to being a normal user on the main site.
+    if (agent.userId) await User.updateOne({ _id: agent.userId, role: 'Agent' }, { $set: { role: 'renter' } });
 
     return res.json({ success: true, agentId, status: agent.status });
   } catch (err) {

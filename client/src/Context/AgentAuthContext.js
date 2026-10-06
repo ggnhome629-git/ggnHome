@@ -41,6 +41,14 @@ export function AgentAuthProvider({ children }) {
         isFetchingRef.current = true;
         // console.log("[AgentAuthContext] fetchAgent() calling /agent/me");
         const agentToken = localStorage.getItem("agentAccessToken");
+        // Not an agent session: nothing to check (and never sign the user out).
+        if (!agentToken) {
+          if (mountedRef.current) setAgent(null);
+          try { sessionStorage.removeItem("agent"); } catch (e) {}
+          isFetchingRef.current = false;
+          if (mountedRef.current) setAuthChecked(true);
+          return null;
+        }
         const res = await fetch(AGENT_ME_API, {
           method: "GET",
           credentials: "include",
@@ -61,9 +69,10 @@ export function AgentAuthProvider({ children }) {
             try { localStorage.removeItem("agentAccessToken"); } catch (e) {}
             try { localStorage.removeItem("agentRefreshToken"); } catch (e) {}
 
-            // 🔔 notify entire app (top nav, user context, etc.)
+            // Only the agent session ended (expired, pending or suspended);
+            // the main-site login stays as it is.
             try {
-              window.dispatchEvent(new Event("auth:logout"));
+              window.dispatchEvent(new Event("agent:logout"));
             } catch (e) {}
 
             if (mountedRef.current) {

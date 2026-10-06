@@ -112,3 +112,14 @@ Legend: `[x]` done, `[~]` partly done, `[ ]` not started. Item numbers match the
 - [ ] React Native app, after website UI is final (#22)
 
 - [x] Promo cards from admin, shown on dashboard and search page (see Phase A)
+
+### Manage listings, rewards, saved, agent login
+- [x] Manage-listings pages for owners, agents and flatmate rooms (status tabs, stats, quality meter, pause/activate, edit, share)
+- [x] Rewards page redesign; Saved page with Flatmate Rooms tab
+- [x] Agent login and registration: mobile + 4-letter OTP, no agent code to type, no password
+- [x] One login for both sites: main login also opens the agent session for approved agents; agent area opens from a main-site login
+- [x] Admin approval sets the user role to Agent; suspension reverts it
+- [ ] Property detail pages: show the new sale fields (furnishing, possession, age)
+- [ ] Analytics page: server data for sources, amenities, heatmap, funnel
+- [ ] Rate-limit agent/user OTP requests per mobile on the server (in-memory per-IP limit only today)
+

@@ -202,7 +202,7 @@ function App() {
       <Route path="/admin/agentsmanagement" element={<AdminProtectedRoute element={<AgentManagement />} />} />
       <Route path="/admin/sms-devices" element={<AdminProtectedRoute element={<AdminSmsDevices />} />} />
       <Route path="/admin/promos" element={<AdminProtectedRoute element={<AdminPromos />} />} />
-      <Route path="/admin/agent-registration" element={<AgentRegistrationAdmin />} />
+      <Route path="/admin/agent-registration" element={<AdminProtectedRoute element={<AgentRegistrationAdmin />} />} />
 
 
 
