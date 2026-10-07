@@ -2,19 +2,18 @@ import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import {
-  Alert,
   Box,
   Breadcrumbs,
   Button,
   Container,
   Link as MuiLink,
   Skeleton,
-  Snackbar,
   Stack,
   Typography,
 } from "@mui/material";
 import { CalendarCheck } from "lucide-react";
 import ShareDialog from "../../components/ui/ShareDialog";
+import { radii, elevationShadows } from "../../theme/theme";
 import {
   PROPERTY_TYPE,
   normaliseProperty,
@@ -35,8 +34,6 @@ import PropertyGalleryPro from "./sections/PropertyGalleryPro";
 import { QuickActionsBar, StickyActionBar } from "./sections/PropertyActions";
 import EnquiryCard from "./sections/EnquiryCard";
 import ContactCard from "./sections/ContactCard";
-import PriceActionsCard from "./sections/PriceActionsCard";
-import AffiliateListingCard from "./sections/AffiliateListingCard";
 import CallbackDialog from "./sections/CallbackDialog";
 import EmiCalculatorDialog from "./sections/EmiCalculatorDialog";
 import ScheduleVisitDialog from "./sections/ScheduleVisitDialog";
@@ -112,7 +109,6 @@ export default function PropertyDetailPage({ type }) {
   const [visitOpen, setVisitOpen] = useState(false);
   const [callbackOpen, setCallbackOpen] = useState(false);
   const [recent, setRecent] = useState([]);
-  const [toast, setToast] = useState(null);
 
   const property = useMemo(() => normaliseProperty(raw, type), [raw, type]);
 
@@ -204,12 +200,6 @@ export default function PropertyDetailPage({ type }) {
 
   const scrollToEnquiry = () => document.getElementById("enquiry")?.scrollIntoView({ behavior: "smooth" });
 
-  const showToast = (payload) => {
-    setToast(payload);
-    // Success toasts dismiss themselves; errors stay until dismissed.
-    if (payload?.severity !== "error") setTimeout(() => setToast(null), 4000);
-  };
-
   const openVirtualTour = () =>
     navigate(`/property/${property.id}/virtual-tour`, {
       state: { panoramas: property.panoramas, propertyName: property.propertyType || "Property", propertyId: property.id },
@@ -253,10 +243,6 @@ export default function PropertyDetailPage({ type }) {
   const pageTitle = `${property.configuration || property.propertyType || "Property"} ${
     property.isRental ? "for Rent" : "for Sale"
   } in ${property.sector || "Gurgaon"} | GgnHome`;
-
-  // Affiliate (sourced) listings get no contact card, no callback, no visit
-  // booking and no enquiry — every action routes to the source portal.
-  const isAffiliate = property.isAffiliate;
 
   return (
     <>
@@ -334,43 +320,36 @@ export default function PropertyDetailPage({ type }) {
             )}
           </Breadcrumbs>
 
-          {/* Hero: full-width banner (navy gradient + photo) */}
-          <Box sx={{ mb: 6 }}>
-            <PropertyHero property={property} />
-          </Box>
-
+          {/* Hero: identity + price + specs, with the enquiry card alongside */}
           <Stack direction={{ xs: "column", lg: "row" }} spacing={6} alignItems="flex-start" sx={{ mb: 6 }}>
-            {/* Sticky sidebar — on mobile it sits directly below the hero */}
             <Box
               sx={{
-                width: { xs: "100%", lg: 340 },
-                flexShrink: 0,
-                order: { xs: -1, lg: 2 },
-                alignSelf: { lg: "stretch" },
+                flex: 1,
+                minWidth: 0,
+                p: { xs: 5, md: 7 },
+                borderRadius: `${radii.lg}px`,
+                backgroundColor: "background.paper",
+                border: "1px solid",
+                borderColor: "divider",
+                boxShadow: elevationShadows[1],
               }}
             >
-              <Box sx={{ position: { lg: "sticky" }, top: { lg: 88 } }}>
-                <Stack spacing={4}>
-                  <PriceActionsCard
-                    property={property}
-                    saved={saved}
-                    onSave={handleSave}
-                    onShare={openShare}
-                    onScheduleVisit={openVisit}
-                    onRequestCallback={openCallback}
-                    onMessage={scrollToEnquiry}
-                    onEvent={emit}
-                  />
-
-                  {isAffiliate ? (
-                    <AffiliateListingCard property={property} onSearch={() => navigate("/search")} onEvent={emit} />
-                  ) : (
-                    <ContactCard property={property} onMessage={scrollToEnquiry} onEvent={emit} />
-                  )}
-                </Stack>
-              </Box>
+              <PropertyHero property={property} />
             </Box>
 
+            <Box sx={{ width: { xs: "100%", lg: 340 }, flexShrink: 0 }}>
+              <Box sx={{ position: { lg: "sticky" }, top: { lg: 88 } }}>
+                <ContactCard
+                  property={property}
+                  onScheduleVisit={openVisit}
+                  onRequestCallback={openCallback}
+                  onEvent={emit}
+                />
+              </Box>
+            </Box>
+          </Stack>
+
+          <Stack direction={{ xs: "column", lg: "row" }} spacing={6} alignItems="flex-start">
             <Stack spacing={6} sx={{ flex: 1, minWidth: 0, width: "100%" }}>
               <PropertyGalleryPro
                 images={property.images}
@@ -398,48 +377,43 @@ export default function PropertyDetailPage({ type }) {
 
               <LocationSection
                 property={property}
-                hasConnectivity={property.connectivity.length > 0 || Boolean(property.transportation)}
                 onDirections={() => emit(EVENTS.DIRECTIONS_CLICKED)}
                 mapSlot={<MapIntegration sector={property.sector} type={property.propertyType} />}
               />
 
-              {!isAffiliate && (
-                <ListedBySection
-                  property={property}
-                  whatsappHref={property.contactNumber ? whatsappUrl(property, property.contactNumber) : undefined}
-                  onCall={() => emit(EVENTS.CALL_CLICKED)}
-                  onWhatsapp={() => emit(EVENTS.WHATSAPP_CLICKED)}
-                  onEnquire={scrollToEnquiry}
-                />
-              )}
+              <ListedBySection
+                property={property}
+                whatsappHref={property.contactNumber ? whatsappUrl(property, property.contactNumber) : undefined}
+                onCall={() => emit(EVENTS.CALL_CLICKED)}
+                onWhatsapp={() => emit(EVENTS.WHATSAPP_CLICKED)}
+                onEnquire={scrollToEnquiry}
+              />
 
               <DocumentsSection documents={property.documents} onDownload={() => emit(EVENTS.BROCHURE_DOWNLOAD)} />
 
-              {/* Site visit conversion block — never for affiliate listings */}
-              {!isAffiliate && (
-                <SectionCard
-                  title="Want to see this property in person?"
-                  sx={{ backgroundColor: "primary.main", borderColor: "primary.main", "& h2": { color: "common.white" } }}
-                >
-                  <Stack direction={{ xs: "column", sm: "row" }} spacing={5} alignItems={{ sm: "center" }} justifyContent="space-between">
-                    <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.8)" }}>
-                      Schedule a site visit at a time convenient for you.
-                    </Typography>
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      size="large"
-                      startIcon={<CalendarCheck size={18} />}
-                      onClick={openVisit}
-                      sx={{ flexShrink: 0 }}
-                    >
-                      Schedule site visit
-                    </Button>
-                  </Stack>
-                </SectionCard>
-              )}
+              {/* Site visit conversion block */}
+              <SectionCard
+                title="Want to see this property in person?"
+                sx={{ backgroundColor: "primary.main", borderColor: "primary.main", "& h2": { color: "common.white" } }}
+              >
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={5} alignItems={{ sm: "center" }} justifyContent="space-between">
+                  <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.8)" }}>
+                    Schedule a site visit at a time convenient for you.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    size="large"
+                    startIcon={<CalendarCheck size={18} />}
+                    onClick={openVisit}
+                    sx={{ flexShrink: 0 }}
+                  >
+                    Schedule site visit
+                  </Button>
+                </Stack>
+              </SectionCard>
 
-              {!isAffiliate && <EnquiryCard property={property} onEvent={emit} onToast={showToast} />}
+              <EnquiryCard property={property} onEvent={emit} />
             </Stack>
           </Stack>
 
@@ -458,36 +432,24 @@ export default function PropertyDetailPage({ type }) {
           property={property}
           saved={saved}
           onSave={handleSave}
-          onShare={openShare}
           onScheduleVisit={openVisit}
-          onEnquire={scrollToEnquiry}
           onEvent={emit}
         />
 
         <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} link={shareLink} />
         <EmiCalculatorDialog open={emiOpen} onClose={() => setEmiOpen(false)} propertyPrice={property.price} />
-        {!isAffiliate && (
-          <CallbackDialog open={callbackOpen} onClose={() => setCallbackOpen(false)} property={property} onEvent={emit} />
-        )}
-        {!isAffiliate && (
-          <ScheduleVisitDialog open={visitOpen} onClose={() => setVisitOpen(false)} property={property} onEvent={emit} onToast={showToast} />
-        )}
-
-        <Snackbar
-          open={Boolean(toast)}
-          autoHideDuration={4000}
-          onClose={() => setToast(null)}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        >
-          <Alert
-            onClose={() => setToast(null)}
-            severity={toast?.severity || "success"}
-            variant="filled"
-            sx={{ width: "100%", alignItems: "center" }}
-          >
-            {toast?.message}
-          </Alert>
-        </Snackbar>
+        <CallbackDialog
+          open={callbackOpen}
+          onClose={() => setCallbackOpen(false)}
+          property={property}
+          onEvent={emit}
+        />
+        <ScheduleVisitDialog
+          open={visitOpen}
+          onClose={() => setVisitOpen(false)}
+          property={property}
+          onEvent={emit}
+        />
       </Box>
     </>
   );
