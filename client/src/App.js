@@ -28,6 +28,7 @@ const Chatbot = lazy(() => import("./screens/Dashboard/ChatBot"));
 const PaymentsRewardsDashboard = lazy(() => import("./screens/Admin Page/admin.enquiryproperties"));
 const SeeAllProperties = lazy(() => import("./screens/Dashboard/SeeAllProperties"));
 const PropertyAnalytics = lazy(() => import("./screens/User-Properties/PropertyAnalysis"));
+const Analytics = lazy(() => import("./screens/User-Properties/Analytics"));
 const Savedproperties = lazy(() => import("./screens/Dashboard/savedproperties"));
 const AdminDashboard = lazy(() => import("./screens/Admin Page/admin.dashboardoverview"));
 const UserManagementSystem = lazy(() => import("./screens/Admin Page/admin.usermanagement"));
@@ -162,6 +163,7 @@ function App() {
         <Route path="/my-properties/:id" element={<MyProperties />} />
         <Route path="/my-properties" element={<PropertyCards />} />
         <Route path="/rewards" element={<RewardsPage />} />
+        <Route path="/analytics" element={<Analytics />} />
         <Route path="/price-predictor" element={<PricePredictor />} />
         <Route path="/investrealestate" element={<InvestRealEstatePage />} />
         <Route path="/support" element={<CustomerSupportPage />} />

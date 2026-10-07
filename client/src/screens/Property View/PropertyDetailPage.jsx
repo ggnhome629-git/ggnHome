@@ -49,6 +49,7 @@ import {
   NearbyPlacesSection,
   OverviewSection,
   PriceSection,
+  SaleSpecificSection,
   SectionCard,
 } from "./sections/ContentSections";
 
@@ -369,6 +370,7 @@ export default function PropertyDetailPage({ type }) {
 
               <OverviewSection property={property} />
               <PriceSection property={property} onOpenEmi={() => setEmiOpen(true)} />
+              <SaleSpecificSection property={property} />
               <DescriptionSection description={property.description} />
               <HighlightsSection highlights={property.highlights} />
               <AmenitiesSection amenities={property.amenities} />
