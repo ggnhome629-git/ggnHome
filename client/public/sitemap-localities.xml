@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <!-- NOTE: This is a template. In production, generate dynamically from database -->
+  <!-- Popular sectors and localities in Gurgaon -->
+
+  <url>
+    <loc>https://www.ggnhome.com/search?sector=1</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.ggnhome.com/search?sector=31</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.ggnhome.com/search?sector=56</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.ggnhome.com/search?sector=57</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Generation Instructions -->
+  <!--
+    For production implementation:
+
+    1. Create API endpoint: /api/sitemap/localities
+    2. Query database for:
+       - All active sectors/localities with 10+ active properties
+       - Generated: lastmod from most recent property update in that sector
+       - Priority: 0.8 for top sectors (50+ properties), 0.6 for others
+
+    3. Generate XML with:
+       - Search URLs with sector/locality filters
+       - Format: /search?sector={id} or /search?locality={name}
+       - Max 50,000 URLs per sitemap (Google limit)
+       - Split into multiple files if needed
+
+    4. Update weekly or when properties added/removed
+       - Set max-age=604800 (7 days) in cache headers
+       - Include both sector IDs and locality names for flexibility
+
+    5. Include popular filter combinations:
+       - /search?sector=X&type=rent
+       - /search?sector=X&type=sale
+       - /search?locality=Y&bhk=2
+       - Maintain 80 char limit per URL for compatibility
+  -->
+
+</urlset>

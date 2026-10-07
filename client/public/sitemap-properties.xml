@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+
+  <!-- NOTE: This is a template. In production, generate dynamically from database -->
+  <!-- Top rental properties by views -->
+
+  <url>
+    <loc>https://www.ggnhome.com/Rentaldetails/prop_001</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://www.ggnhome.com/og-image-whatsapp.jpg</image:loc>
+      <image:title>Rental Property</image:title>
+    </image:image>
+  </url>
+
+  <url>
+    <loc>https://www.ggnhome.com/Saledetails/prop_001</loc>
+    <lastmod>2026-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://www.ggnhome.com/og-image-whatsapp.jpg</image:loc>
+      <image:title>Sale Property</image:title>
+    </image:image>
+  </url>
+
+  <!-- Generation Instructions -->
+  <!--
+    For production implementation:
+
+    1. Create API endpoint: /api/sitemap/properties
+    2. Query database for:
+       - Top 50,000 active properties (by views, recency)
+       - Generated: lastmod from last_updated timestamp
+       - Priority: 0.9 for recent, 0.7 for old
+       - Include property image URL in image:loc
+
+    3. Generate XML with:
+       - Max 50,000 URLs per sitemap (Google limit)
+       - Split into multiple files if needed (1, 2, 3...)
+       - Reference all in main sitemap.xml
+
+    4. Update monthly or when new properties added
+       - Set max-age=2592000 (30 days) in cache headers
+  -->
+
+</urlset>

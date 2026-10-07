@@ -131,15 +131,18 @@
     <priority>0.4</priority>
   </url>
 
-  <!-- Dynamic property pages (optional example) -->
-  <!-- These are placeholders; dynamic sitemap needed later -->
-  <!--
+  <!-- Analytics page -->
   <url>
-    <loc>https://www.ggnhome.com/Rentaldetails/{id}</loc>
+    <loc>https://www.ggnhome.com/analytics</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
   </url>
-  <url>
-    <loc>https://www.ggnhome.com/Saledetails/{id}</loc>
-  </url>
-  -->
+
+  <!-- Property detail pages generated dynamically - see sitemap-properties.xml -->
+  <!-- Dynamic property listings are generated server-side and submitted separately -->
 
 </urlset>
+
+<!-- Note: Dynamic property sitemaps are generated automatically -->
+<!-- See: sitemap-properties.xml for rental and sale property listings -->
+<!-- See: sitemap-localities.xml for sector/locality pages -->

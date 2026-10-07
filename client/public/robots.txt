@@ -1,4 +1,69 @@
+# GgnHome Robots.txt - SEO Configuration
+# Last Updated: 2026-10-07
+
+# Default rules for all bots
 User-agent: *
 Allow: /
+Allow: /*.js$
+Allow: /*.css$
+Allow: /api/
+Allow: /*.json$
+Disallow: /admin/
+Disallow: /agent/
+Disallow: /user/
+Disallow: /api/admin/
+Disallow: /api/auth/
+Disallow: *?*sort=
+Disallow: *?*page=
+Disallow: /*?utm_
+Disallow: /*?ref=
+Disallow: /*?fbclid=
+Disallow: /*preview
+Disallow: /*test
+Disallow: *.pdf$
+Disallow: /node_modules/
+Disallow: /.git/
+Disallow: /.env
+Disallow: /build/
+Disallow: /dist/
 
+# Slow bots - reduced crawl rate
+User-agent: AhrefsBot
+User-agent: SemrushBot
+User-agent: SemrushBot-SA
+User-agent: MJ12bot
+Disallow: /
+Crawl-delay: 10
+
+# Bing
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Google
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Yandex
+User-agent: YandexBot
+Allow: /
+Crawl-delay: 1
+
+# Block bad bots
+User-agent: MiiosBot
+User-agent: PetalBot
+User-agent: DotBot
+Disallow: /
+
+# Sitemap locations
 Sitemap: https://www.ggnhome.com/sitemap.xml
+Sitemap: https://www.ggnhome.com/sitemap-properties.xml
+Sitemap: https://www.ggnhome.com/sitemap-localities.xml
+
+# Crawl delay and request rate
+# All in milliseconds
+Request-rate: 30/1m
+
+# Crawl delay (general)
+Crawl-delay: 0.5
