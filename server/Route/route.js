@@ -505,5 +505,9 @@ router.get("/api/admin/ranking/suspicious", verifyToken, checkAdminEmail, getSus
 const advancedSearchRoutes = require("../routes/advancedSearch.routes");
 router.use("/api", advancedSearchRoutes);
 
+// ================== RECOMMENDATIONS ROUTES ==================
+const recommendationsRoutes = require("./recommendations");
+router.use("/api/recommendations", recommendationsRoutes);
+
 module.exports = router;
 
