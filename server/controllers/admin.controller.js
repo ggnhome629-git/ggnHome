@@ -13,6 +13,7 @@ const CustomerSupport = require('../models/CustomerSupport.model');
 const ServiceRequest = require('../models/serviceRequests.model');
 // ensure FileHandling runs so cloudinary is configured and we can use uploadWithFallback
 const { uploadWithFallback } = require('../config/FileHandling');
+const { calculateRankingAfterSave } = require('../hooks/propertyRankingHook');
 
 // cloudinary client for Admin API calls (delete_resources, delete_resources_by_prefix, delete_folder)
 const cloudinary = require('cloudinary').v2;
@@ -1857,6 +1858,9 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
     const Rentalproperty = new RentalProperty(propertyData);
     const savedProperty = await Rentalproperty.save();
 
+    // Auto-calculate ranking asynchronously (don't block response)
+    calculateRankingAfterSave(savedProperty._id, "rental", "Own");
+
     // ------------------------------
     // Respond with success and saved property
     // ------------------------------
@@ -2077,6 +2081,10 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
 
     // Step 6: Save property and respond
     const savedProperty = await newProperty.save();
+
+    // Auto-calculate ranking asynchronously (don't block response)
+    calculateRankingAfterSave(savedProperty._id, "sale", "Own");
+
     res.status(201).json(savedProperty);
 
   } catch (error) {

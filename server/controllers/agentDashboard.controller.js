@@ -11,9 +11,7 @@ const Sector = require("../models/Sector.model.js");
 const multer = require("multer");
 const xlsx = require("xlsx");
 const { uploadWithFallback } = require("../config/FileHandling");
-
-
-
+const { calculateRankingAfterSave } = require("../hooks/propertyRankingHook");
 
 const SaleProperty = require('../models/SaleProperty.model.js');
 const User = require('../models/user.model.js');
@@ -275,6 +273,9 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
     const Rentalproperty = new RentalProperty(propertyData);
     const savedProperty = await Rentalproperty.save();
 
+    // Auto-calculate ranking asynchronously (don't block response)
+    calculateRankingAfterSave(savedProperty._id, "rental", "Agent");
+
     // ------------------------------
     // Respond with success and saved property
     // ------------------------------
@@ -521,6 +522,10 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
 
     // Step 6: Save property and respond
     const savedProperty = await newProperty.save();
+
+    // Auto-calculate ranking asynchronously (don't block response)
+    calculateRankingAfterSave(savedProperty._id, "sale", "Agent");
+
     res.status(201).json(savedProperty);
 
   } catch (error) {

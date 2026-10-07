@@ -9,6 +9,7 @@ const User = require("../models/user.model.js");
 
 const SaleProperty = require('../models/SaleProperty.model.js');
 const Sector = require('../models/Sector.model.js');
+const { calculateRankingAfterSave } = require('../hooks/propertyRankingHook');
 
 
 // ================================
@@ -236,6 +237,11 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
 
     // Step 6: Save property and respond
     const savedProperty = await newProperty.save();
+
+    // Auto-calculate ranking asynchronously (don't block response)
+    const rankingSource = ownerType === "Agent" ? "Agent" : "Own";
+    calculateRankingAfterSave(savedProperty._id, "sale", rankingSource);
+
     res.status(201).json(savedProperty);
 
   } catch (error) {

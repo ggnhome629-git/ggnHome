@@ -16,6 +16,7 @@ const User = require("../models/user.model.js");
 const multer = require("multer");
 const xlsx = require("xlsx");
 const { uploadWithFallback } = require("../config/FileHandling");
+const { calculateRankingAfterSave } = require("../hooks/propertyRankingHook");
 
 // Multer setup for Excel file uploads (if needed)
 const excelStorage = multer.memoryStorage();
@@ -284,6 +285,10 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
     // ------------------------------
     const Rentalproperty = new RentalProperty(propertyData);
     const savedProperty = await Rentalproperty.save();
+
+    // Auto-calculate ranking asynchronously (don't block response)
+    const rankingSource = ownerType === "Agent" ? "Agent" : "Own";
+    calculateRankingAfterSave(savedProperty._id, "rental", rankingSource);
 
     // ------------------------------
     // Respond with success and saved property
