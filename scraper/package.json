@@ -1,0 +1,39 @@
+{
+  "name": "ggnhome-property-scraper",
+  "version": "1.0.0",
+  "description": "Property scraper for ggnHome - imports from NoBroker, 99acres and other platforms",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "scrape:nobroker": "node scrapers/nobroker.js",
+    "scrape:99acres": "node scrapers/99acres.js",
+    "scrape:all": "node scrapers/all.js",
+    "schedule": "node scheduler.js",
+    "test": "node test/test-scraper.js",
+    "db:init": "node scripts/init-db.js"
+  },
+  "keywords": [
+    "real-estate",
+    "scraper",
+    "nobroker",
+    "99acres",
+    "ggnHome"
+  ],
+  "author": "ggnHome Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.0",
+    "cheerio": "^1.0.0-rc.12",
+    "dotenv": "^16.0.3",
+    "mongoose": "^7.0.0",
+    "node-cron": "^3.0.2",
+    "winston": "^3.8.2",
+    "puppeteer": "^19.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
