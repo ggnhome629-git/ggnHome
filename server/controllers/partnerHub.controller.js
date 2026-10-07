@@ -1,4 +1,4 @@
-// server/controllers/agentHub.controller.js
+// server/controllers/partnerHub.controller.js
 const mongoose = require('mongoose');
 const Agent = require('../models/Agent.model');
 const User = require('../models/user.model');
@@ -7,19 +7,19 @@ const RentalProperty = require('../models/Rentalproperty.model');
 const EnquirySchema = require('../models/EnquirySchema.model');
 
 /**
- * AgentHub Dashboard — main entry point
- * Returns agent's stats: properties, leads, recent activities
+ * PartnerHub Dashboard — main entry point
+ * Returns partner's stats: properties, leads, recent activities
  */
 const getAgentHubDashboard = async (req, res) => {
   try {
-    // Agent auth via token (req.agent from verifyAgentToken middleware)
+    // Partner auth via token (req.agent from verifyAgentToken middleware)
     if (!req.agent) {
-      return res.status(401).json({ message: "Unauthorized: Agent authentication required" });
+      return res.status(401).json({ message: "Unauthorized: Partner authentication required" });
     }
 
     const agent = await Agent.findById(req.agent._id);
     if (!agent || agent.status !== "active") {
-      return res.status(403).json({ message: "Agent account is not active" });
+      return res.status(403).json({ message: "Partner account is not active" });
     }
 
     // Count properties created by this agent
@@ -76,7 +76,7 @@ const getAgentHubDashboard = async (req, res) => {
 };
 
 /**
- * Get Agent's Properties — paginated list of all properties added by agent
+ * Get Partner's Properties — paginated list of all properties added by partner
  */
 const getAgentProperties = async (req, res) => {
   try {
@@ -89,7 +89,7 @@ const getAgentProperties = async (req, res) => {
 
     const agent = await Agent.findById(req.agent._id);
     if (!agent) {
-      return res.status(404).json({ message: "Agent not found" });
+      return res.status(404).json({ message: "Partner not found" });
     }
 
     const baseFilter = { agentUserId: agent.userId, ownerType: "Agent" };
@@ -157,7 +157,7 @@ const getAgentProperties = async (req, res) => {
 };
 
 /**
- * Get Agent's Leads (Enquiries) — callback requests for agent's properties
+ * Get Partner's Leads (Enquiries) — callback requests for partner's properties
  */
 const getAgentLeads = async (req, res) => {
   try {
@@ -170,7 +170,7 @@ const getAgentLeads = async (req, res) => {
 
     const agent = await Agent.findById(req.agent._id);
     if (!agent) {
-      return res.status(404).json({ message: "Agent not found" });
+      return res.status(404).json({ message: "Partner not found" });
     }
 
     // Get all property IDs for this agent
@@ -266,7 +266,7 @@ const updateLeadStatus = async (req, res) => {
 };
 
 /**
- * Get Agent Profile
+ * Get Partner Profile
  */
 const getAgentProfile = async (req, res) => {
   try {
@@ -276,7 +276,7 @@ const getAgentProfile = async (req, res) => {
 
     const agent = await Agent.findById(req.agent._id);
     if (!agent) {
-      return res.status(404).json({ message: "Agent not found" });
+      return res.status(404).json({ message: "Partner not found" });
     }
 
     return res.json({
@@ -300,7 +300,7 @@ const getAgentProfile = async (req, res) => {
 };
 
 /**
- * Update Agent Profile (partial updates only — name, email, phone, photo)
+ * Update Partner Profile (partial updates only — name, email, phone, photo)
  */
 const updateAgentProfile = async (req, res) => {
   try {
@@ -312,7 +312,7 @@ const updateAgentProfile = async (req, res) => {
     const agent = await Agent.findById(req.agent._id);
 
     if (!agent) {
-      return res.status(404).json({ message: "Agent not found" });
+      return res.status(404).json({ message: "Partner not found" });
     }
 
     if (name) agent.name = name;

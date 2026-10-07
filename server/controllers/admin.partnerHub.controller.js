@@ -1,14 +1,10 @@
-// server/controllers/admin.agentHub.controller.js
+// server/controllers/admin.partnerHub.controller.js
 const Agent = require('../models/Agent.model');
-const User = require('../models/user.model');
 const mongoose = require('mongoose');
-const jwt = require('jsonwebtoken');
-const { sendOtpSms } = require('../utils/sendSms');
-const { generateUniqueCode } = require('../utils/generateCode');
 
 /**
- * Admin: Create/Register a new agent for AgentHub portal
- * Generates credentials and sends OTP to agent's mobile
+ * Admin: Create/Register a new partner for PartnerHub portal
+ * Partner can then login to their portal with mobile + OTP
  */
 const createAgentForHub = async (req, res) => {
   try {
@@ -23,25 +19,21 @@ const createAgentForHub = async (req, res) => {
       return res.status(400).json({ message: 'Invalid mobile number format' });
     }
 
-    // Check if agent already exists
+    // Check if partner already exists
     const existingAgent = await Agent.findOne({ mobileNumber });
     if (existingAgent) {
-      return res.status(409).json({ message: 'Agent already exists with this mobile number' });
+      return res.status(409).json({ message: 'Partner already exists with this mobile number' });
     }
 
-    // Generate unique agent code
-    const agentCode = await generateUniqueCode();
-
-    // Create new agent
+    // Create new partner
     const newAgent = new Agent({
       name,
       mobileNumber,
       email: email || null,
       agentType,
       agencyName: agencyName || null,
-      agentCode,
-      status: 'active', // Admin-created agents start as active
-      isVerified: true, // Admin verification
+      status: 'active',
+      isVerified: true,
       verificationStatus: 'approved',
       verifiedBy: req.user._id,
       verifiedAt: new Date(),
@@ -49,40 +41,25 @@ const createAgentForHub = async (req, res) => {
 
     await newAgent.save();
 
-    // Send OTP SMS to agent
-    const otp = Math.random().toString().slice(2, 6);
-    newAgent.otp = otp;
-    newAgent.otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
-
-    await newAgent.save();
-
-    try {
-      await sendOtpSms(mobileNumber, otp);
-    } catch (smsErr) {
-      console.error('SMS sending failed:', smsErr);
-      // Don't fail the request if SMS fails
-    }
-
     return res.status(201).json({
-      message: 'Agent created successfully. OTP sent to their mobile.',
+      message: 'Partner created successfully. They can now login to their portal with mobile + OTP.',
       agent: {
         _id: newAgent._id,
         name: newAgent.name,
         mobileNumber: newAgent.mobileNumber,
         email: newAgent.email,
-        agentCode: newAgent.agentCode,
         status: newAgent.status,
         createdAt: newAgent.createdAt,
       },
     });
   } catch (error) {
-    console.error('Error creating agent:', error);
-    res.status(500).json({ message: 'Server error creating agent' });
+    console.error('Error creating partner:', error);
+    res.status(500).json({ message: 'Server error creating partner' });
   }
 };
 
 /**
- * Admin: List all agents with pagination and filtering
+ * Admin: List all partners with pagination and filtering
  */
 const listAgentsForHub = async (req, res) => {
   try {
@@ -118,36 +95,36 @@ const listAgentsForHub = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error listing agents:', error);
-    res.status(500).json({ message: 'Server error listing agents' });
+    console.error('Error listing partners:', error);
+    res.status(500).json({ message: 'Server error listing partners' });
   }
 };
 
 /**
- * Admin: Get agent details
+ * Admin: Get partner details
  */
 const getAgentDetailsForHub = async (req, res) => {
   try {
     const { agentId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(agentId)) {
-      return res.status(400).json({ message: 'Invalid agent ID' });
+      return res.status(400).json({ message: 'Invalid partner ID' });
     }
 
     const agent = await Agent.findById(agentId).select('-otp -otpExpiry -AccessTokenAgent -RefreshTokenAgent');
     if (!agent) {
-      return res.status(404).json({ message: 'Agent not found' });
+      return res.status(404).json({ message: 'Partner not found' });
     }
 
     return res.json(agent);
   } catch (error) {
-    console.error('Error getting agent details:', error);
-    res.status(500).json({ message: 'Server error fetching agent details' });
+    console.error('Error getting partner details:', error);
+    res.status(500).json({ message: 'Server error fetching partner details' });
   }
 };
 
 /**
- * Admin: Update agent status (activate/deactivate/suspend)
+ * Admin: Update partner status (activate/deactivate/suspend)
  */
 const updateAgentStatus = async (req, res) => {
   try {
@@ -159,19 +136,19 @@ const updateAgentStatus = async (req, res) => {
     }
 
     if (!mongoose.Types.ObjectId.isValid(agentId)) {
-      return res.status(400).json({ message: 'Invalid agent ID' });
+      return res.status(400).json({ message: 'Invalid partner ID' });
     }
 
     const agent = await Agent.findById(agentId);
     if (!agent) {
-      return res.status(404).json({ message: 'Agent not found' });
+      return res.status(404).json({ message: 'Partner not found' });
     }
 
     agent.status = status;
     await agent.save();
 
     return res.json({
-      message: `Agent status updated to ${status}`,
+      message: `Partner status updated to ${status}`,
       agent: {
         _id: agent._id,
         name: agent.name,
@@ -179,13 +156,13 @@ const updateAgentStatus = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error updating agent status:', error);
-    res.status(500).json({ message: 'Server error updating agent status' });
+    console.error('Error updating partner status:', error);
+    res.status(500).json({ message: 'Server error updating partner status' });
   }
 };
 
 /**
- * Admin: Update agent sectors covered
+ * Admin: Update partner sectors covered
  */
 const updateAgentSectors = async (req, res) => {
   try {
@@ -193,7 +170,7 @@ const updateAgentSectors = async (req, res) => {
     const { sectorsCovered } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(agentId)) {
-      return res.status(400).json({ message: 'Invalid agent ID' });
+      return res.status(400).json({ message: 'Invalid partner ID' });
     }
 
     if (!Array.isArray(sectorsCovered)) {
@@ -202,53 +179,53 @@ const updateAgentSectors = async (req, res) => {
 
     const agent = await Agent.findById(agentId);
     if (!agent) {
-      return res.status(404).json({ message: 'Agent not found' });
+      return res.status(404).json({ message: 'Partner not found' });
     }
 
     agent.sectorsCovered = sectorsCovered;
     await agent.save();
 
     return res.json({
-      message: 'Agent sectors updated',
+      message: 'Partner sectors updated',
       agent: {
         _id: agent._id,
         sectorsCovered: agent.sectorsCovered,
       },
     });
   } catch (error) {
-    console.error('Error updating agent sectors:', error);
-    res.status(500).json({ message: 'Server error updating agent sectors' });
+    console.error('Error updating partner sectors:', error);
+    res.status(500).json({ message: 'Server error updating partner sectors' });
   }
 };
 
 /**
- * Admin: Delete/Remove an agent from the system
+ * Admin: Delete/Remove a partner from the system
  */
 const deleteAgent = async (req, res) => {
   try {
     const { agentId } = req.params;
 
     if (!mongoose.Types.ObjectId.isValid(agentId)) {
-      return res.status(400).json({ message: 'Invalid agent ID' });
+      return res.status(400).json({ message: 'Invalid partner ID' });
     }
 
     const agent = await Agent.findByIdAndDelete(agentId);
     if (!agent) {
-      return res.status(404).json({ message: 'Agent not found' });
+      return res.status(404).json({ message: 'Partner not found' });
     }
 
     return res.json({
-      message: 'Agent deleted successfully',
+      message: 'Partner deleted successfully',
       agentId: agent._id,
     });
   } catch (error) {
-    console.error('Error deleting agent:', error);
-    res.status(500).json({ message: 'Server error deleting agent' });
+    console.error('Error deleting partner:', error);
+    res.status(500).json({ message: 'Server error deleting partner' });
   }
 };
 
 /**
- * Admin: Get agent hub statistics
+ * Admin: Get partner hub statistics
  */
 const getAgentHubStats = async (req, res) => {
   try {
@@ -257,7 +234,7 @@ const getAgentHubStats = async (req, res) => {
     const suspendedAgents = await Agent.countDocuments({ status: 'suspended' });
     const pendingAgents = await Agent.countDocuments({ status: 'pending' });
 
-    // Get top-rated agents
+    // Get top-rated partners
     const topAgents = await Agent.find()
       .sort({ rating: -1 })
       .limit(5)
