@@ -32,6 +32,7 @@ import ShareDialog from "../../components/ui/ShareDialog";
 import MobileBottomNav from "../Dashboard/MobileBottomNav";
 import { FILTER_KEYS, PAGE_LIMIT, SORT_OPTIONS, activeFilterChips, readFilters } from "./searchParams";
 import { radii } from "../../theme/theme";
+import { cacheUtils, CACHE_DURATIONS } from "../../utils/cacheManager";
 
 const TopNavigationBar = React.lazy(() => import("../Dashboard/TopNavigationBar"));
 const Footer = React.lazy(() => import("../Dashboard/Footer"));
@@ -178,32 +179,72 @@ export default function Searchproperty() {
     params.set("page", String(page));
     params.set("limit", String(PAGE_LIMIT));
 
-    setLoading(true);
-    setError(false);
-    axios
-      .get(`${process.env.REACT_APP_SEARCH_PROPERTIES_API}?${params.toString()}`, {
-        withCredentials: true,
-        headers: authHeaders(),
-      })
-      .then((res) => {
-        if (cancelled) return;
-        const list = Array.isArray(res.data) ? res.data : [];
-        setResults(list.slice(0, PAGE_LIMIT));
-        const header = res.headers?.["x-total-count"];
-        setTotal(header != null && header !== "" ? Number(header) : null);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setResults([]);
-        setTotal(null);
-        setError(true);
-      })
-      .finally(() => !cancelled && setLoading(false));
+    const cacheKey = `search_${paramsKey}`;
+
+    const loadResults = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+
+        // Try to get from cache first (30 minute cache for search results)
+        const cached = await cacheUtils.getSearchResults(params.toString());
+        if (cached && !cancelled) {
+          setResults(cached.list.slice(0, PAGE_LIMIT));
+          setTotal(cached.total);
+          setLoading(false);
+          // Fetch fresh data in background
+          fetchAndCacheSearchResults(params.toString());
+          return;
+        }
+
+        // No cache, fetch immediately
+        await fetchAndCacheSearchResults(params.toString());
+      } catch (err) {
+        if (!cancelled) {
+          setResults([]);
+          setTotal(null);
+          setError(true);
+          setLoading(false);
+        }
+      }
+    };
+
+    loadResults();
+
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, paramsKey, reloadKey]);
+
+  const fetchAndCacheSearchResults = async (paramsString) => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_SEARCH_PROPERTIES_API}?${paramsString}`, {
+        withCredentials: true,
+        headers: authHeaders(),
+      });
+
+      const list = Array.isArray(res.data) ? res.data : [];
+      const header = res.headers?.["x-total-count"];
+      const total = header != null && header !== "" ? Number(header) : null;
+
+      const searchData = { list, total };
+
+      // Cache search results for 30 minutes
+      await cacheUtils.cacheSearchResults(paramsString, searchData);
+
+      setResults(list.slice(0, PAGE_LIMIT));
+      setTotal(total);
+      setError(false);
+    } catch (err) {
+      console.error("Search error:", err);
+      setResults([]);
+      setTotal(null);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Column count of the results grid, so promos can end a row cleanly.
   useEffect(() => {

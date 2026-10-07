@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Box, Card, CardContent, Container, Grid, Stack, Typography, Tab, Tabs, Chip, LineChart } from "@mui/material";
 import { Eye, Heart, Phone, Share2, TrendingUp, MapPin, Calendar, Home } from "lucide-react";
 import { radii, elevationShadows } from "../../theme/theme";
+import { cacheUtils, CACHE_DURATIONS } from "../../utils/cacheManager";
 
 /**
  * Analytics Page - Property performance analytics for owners/agents
@@ -27,8 +28,39 @@ export default function Analytics() {
     try {
       setLoading(true);
       const token = localStorage.getItem("accessToken");
+      const userId = localStorage.getItem("userId") || "current";
       const analyticsApi = process.env.REACT_APP_ANALYTICS_API || `${process.env.REACT_APP_Base_API}/user/analytics`;
 
+      // Try to get from cache first (5 minute cache)
+      const cached = await cacheUtils.getAnalytics(userId);
+      if (cached) {
+        setAnalytics(cached);
+        setLoading(false);
+        // Fetch fresh data in background
+        fetchAndCacheAnalytics(token, analyticsApi, userId);
+        return;
+      }
+
+      // No cache, fetch immediately
+      await fetchAndCacheAnalytics(token, analyticsApi, userId);
+    } catch (err) {
+      console.error("Error loading analytics:", err);
+      // Fallback to mock data on all errors
+      const mockData = {
+        totalViews: 1240,
+        totalSaves: 89,
+        totalEnquiries: 34,
+        totalShares: 156,
+        avgEngagementTime: 240,
+        recentViews: [],
+      };
+      setAnalytics(mockData);
+      setLoading(false);
+    }
+  };
+
+  const fetchAndCacheAnalytics = async (token, analyticsApi, userId) => {
+    try {
       const res = await fetch(analyticsApi, {
         method: "GET",
         credentials: "include",
@@ -40,36 +72,32 @@ export default function Analytics() {
 
       if (res.ok) {
         const data = await res.json();
-        setAnalytics({
+        const analyticsData = {
           totalViews: data.totalViews || 0,
           totalSaves: data.totalSaves || 0,
           totalEnquiries: data.totalEnquiries || 0,
           totalShares: data.totalShares || 0,
           avgEngagementTime: data.avgEngagementTime || 0,
           recentViews: data.recentViews || [],
-        });
+        };
+        setAnalytics(analyticsData);
+        // Cache for 5 minutes
+        await cacheUtils.cacheAnalytics(userId, analyticsData);
       } else {
-        // Fallback to mock data if API fails
-        setAnalytics({
-          totalViews: 1240,
-          totalSaves: 89,
-          totalEnquiries: 34,
-          totalShares: 156,
-          avgEngagementTime: 240,
-          recentViews: [],
-        });
+        throw new Error("API returned non-ok status");
       }
     } catch (err) {
-      console.error("Error loading analytics:", err);
-      // Fallback to mock data on network error
-      setAnalytics({
+      console.error("Error fetching analytics:", err);
+      // Fallback to mock data if API fails
+      const mockData = {
         totalViews: 1240,
         totalSaves: 89,
         totalEnquiries: 34,
         totalShares: 156,
         avgEngagementTime: 240,
         recentViews: [],
-      });
+      };
+      setAnalytics(mockData);
     } finally {
       setLoading(false);
     }
