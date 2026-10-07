@@ -251,10 +251,19 @@ const AdminLandingPage = () => {
       color: '#0d9488',
       gradient: 'linear-gradient(135deg, #14b8a6 0%, #0f766e 100%)',
     },
-    
+    {
+      id: 'settings',
+      title: 'Settings',
+      description: 'Configure features, promotions, scraper, affiliates, and SMS devices',
+      icon: Settings,
+      route: '/admin/settings',
+      color: '#6b7280',
+      gradient: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+    },
 
 
-    
+
+
 ];
 
   const styles = {
