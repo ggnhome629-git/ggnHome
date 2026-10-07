@@ -135,7 +135,14 @@ if (require.main === module) {
   // Daily background sync: mirrors each scraped listing's live NoBroker status
   if (process.env.DISABLE_CRON !== "true") startNoBrokerSyncCron();
   if (process.env.NODE_ENV !== "test" && process.env.DISABLE_CRON !== "true") startReminderCron();
-  if (process.env.DISABLE_CRON !== "true") startRankingScheduler();
+  if (process.env.DISABLE_CRON !== "true") {
+    try {
+      startRankingScheduler();
+    } catch (error) {
+      console.error('⚠️ Warning: Failed to initialize ranking scheduler:', error.message);
+      // Continue startup even if scheduler fails
+    }
+  }
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`API listening on ${PORT}`);
