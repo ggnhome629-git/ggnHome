@@ -3,7 +3,7 @@ import { Box, Container, Grid, Paper, Typography, Skeleton, Button, Card, CardCo
 import { BarChart3, Home, MessageSquare, TrendingUp, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const AgentHubDashboard = () => {
+const PartnerHubDashboard = () => {
   const navigate = useNavigate();
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,13 +12,13 @@ const AgentHubDashboard = () => {
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const token = localStorage.getItem('agentAccessToken');
+        const token = localStorage.getItem('partnerAccessToken');
         if (!token) {
-          navigate('/agent/login');
+          navigate('/partner/login');
           return;
         }
 
-        const res = await fetch(`${process.env.REACT_APP_Base_API}/api/hub/dashboard`, {
+        const res = await fetch(`${process.env.REACT_APP_Base_API}/api/partner/dashboard`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
@@ -28,7 +28,7 @@ const AgentHubDashboard = () => {
 
         if (!res.ok) {
           if (res.status === 401) {
-            navigate('/agent/login');
+            navigate('/partner/login');
             return;
           }
           throw new Error('Failed to fetch dashboard');
@@ -108,7 +108,7 @@ const AgentHubDashboard = () => {
           Welcome back, {dashboard?.agent?.name}! 👋
         </Typography>
         <Typography variant="body2" sx={{ color: '#6b7280' }}>
-          Here's an overview of your agent portal performance.
+          Here's an overview of your partner portal performance.
         </Typography>
       </Box>
 
@@ -141,7 +141,7 @@ const AgentHubDashboard = () => {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             icon={BarChart3}
-            label="Agent Rating"
+            label="Partner Rating"
             value={dashboard?.agent?.rating?.toFixed(1) || 'N/A'}
             color="#8b5cf6"
           />
@@ -158,7 +158,7 @@ const AgentHubDashboard = () => {
             <Button
               variant="contained"
               startIcon={<Plus size={20} />}
-              onClick={() => navigate('/hub/properties?action=add')}
+              onClick={() => navigate('/partner/properties?action=add')}
               fullWidth
               sx={{
                 backgroundColor: '#3b82f6',
@@ -175,7 +175,7 @@ const AgentHubDashboard = () => {
           <Grid item xs={12} sm={6} md={4}>
             <Button
               variant="outlined"
-              onClick={() => navigate('/hub/properties')}
+              onClick={() => navigate('/partner/properties')}
               fullWidth
               sx={{
                 borderColor: '#3b82f6',
@@ -192,7 +192,7 @@ const AgentHubDashboard = () => {
           <Grid item xs={12} sm={6} md={4}>
             <Button
               variant="outlined"
-              onClick={() => navigate('/hub/leads')}
+              onClick={() => navigate('/partner/leads')}
               fullWidth
               sx={{
                 borderColor: '#10b981',
@@ -224,7 +224,7 @@ const AgentHubDashboard = () => {
                     transition: 'all 0.3s ease',
                     '&:hover': { boxShadow: '0 10px 25px rgba(0,0,0,0.1)' },
                   }}
-                  onClick={() => navigate(`/hub/properties/${property._id}`)}
+                  onClick={() => navigate(`/partner/properties/${property._id}`)}
                 >
                   <Box
                     sx={{
@@ -240,7 +240,7 @@ const AgentHubDashboard = () => {
                     <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1, color: '#0f172a' }}>
                       {property.title}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: '#6b7280', mb: 2 }}>
+                    <Typography variant="caption" sx={{ color: '#6b7280', mb: 2 }}>
                       {property.Sector || 'Location not specified'}
                     </Typography>
                     <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -271,4 +271,4 @@ const AgentHubDashboard = () => {
   );
 };
 
-export default AgentHubDashboard;
+export default PartnerHubDashboard;

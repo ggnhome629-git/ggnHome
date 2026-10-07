@@ -17,7 +17,7 @@ import {
 import { Search, Plus, Trash2, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const AgentHubProperties = () => {
+const PartnerHubProperties = () => {
   const navigate = useNavigate();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,9 +39,9 @@ const AgentHubProperties = () => {
 
   const fetchProperties = async () => {
     try {
-      const token = localStorage.getItem('agentAccessToken');
+      const token = localStorage.getItem('partnerAccessToken');
       if (!token) {
-        navigate('/agent/login');
+        navigate('/partner/login');
         return;
       }
 
@@ -54,7 +54,7 @@ const AgentHubProperties = () => {
       });
 
       const res = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/hub/properties?${params}`,
+        `${process.env.REACT_APP_Base_API}/api/partner/properties?${params}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -65,7 +65,7 @@ const AgentHubProperties = () => {
       );
 
       if (!res.ok) {
-        if (res.status === 401) navigate('/agent/login');
+        if (res.status === 401) navigate('/partner/login');
         throw new Error('Failed to fetch properties');
       }
 
@@ -147,7 +147,7 @@ const AgentHubProperties = () => {
             startIcon={<Edit size={16} />}
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/hub/properties/${property._id}/edit`);
+              navigate(`/partner/properties/${property._id}/edit`);
             }}
             sx={{ fontSize: '0.75rem', flex: 1 }}
           >
@@ -160,7 +160,6 @@ const AgentHubProperties = () => {
             startIcon={<Trash2 size={16} />}
             onClick={(e) => {
               e.stopPropagation();
-              // Delete functionality would go here
             }}
             sx={{ fontSize: '0.75rem', flex: 1 }}
           >
@@ -194,7 +193,7 @@ const AgentHubProperties = () => {
         <Button
           variant="contained"
           startIcon={<Plus size={20} />}
-          onClick={() => navigate('/hub/properties/add')}
+          onClick={() => navigate('/partner/properties/add')}
           sx={{
             backgroundColor: '#3b82f6',
             fontWeight: 600,
@@ -292,7 +291,7 @@ const AgentHubProperties = () => {
           <Button
             variant="contained"
             startIcon={<Plus size={20} />}
-            onClick={() => navigate('/hub/properties/add')}
+            onClick={() => navigate('/partner/properties/add')}
             sx={{
               backgroundColor: '#3b82f6',
               fontWeight: 600,
@@ -337,4 +336,4 @@ const AgentHubProperties = () => {
   );
 };
 
-export default AgentHubProperties;
+export default PartnerHubProperties;

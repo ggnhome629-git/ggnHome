@@ -77,12 +77,12 @@ const SalePropertyPageAgentDesktop = lazy(() => import("./screens/Agent Page/Pro
 const RentalPropertyPageAgentMobile = lazy(() => import("./screens/Agent Page/Property View Agent/Mobile view/RentalPropertyPageView"));
 const SalePropertyPageAgentMobile = lazy(() => import("./screens/Agent Page/Property View Agent/Mobile view/SalePropertyPageView"));
 
-// AgentHub (Portal for agents to manage properties and leads)
-const AgentHubDashboard = lazy(() => import("./screens/AgentHub/Dashboard/AgentHubDashboard"));
-const AgentHubProperties = lazy(() => import("./screens/AgentHub/Properties/AgentHubProperties"));
-const AgentHubLeads = lazy(() => import("./screens/AgentHub/Leads/AgentHubLeads"));
-const AgentHubProfile = lazy(() => import("./screens/AgentHub/Profile/AgentHubProfile"));
-const HubProtectedRoute = lazy(() => import("./screens/AgentHub/HubProtectedRoute"));
+// PartnerHub (ggnHome Partner Portal for partners to manage properties and leads)
+const PartnerHubDashboard = lazy(() => import("./screens/PartnerHub/Dashboard/PartnerHubDashboard"));
+const PartnerHubProperties = lazy(() => import("./screens/PartnerHub/Properties/PartnerHubProperties"));
+const PartnerHubLeads = lazy(() => import("./screens/PartnerHub/Leads/PartnerHubLeads"));
+const PartnerHubProfile = lazy(() => import("./screens/PartnerHub/Profile/PartnerHubProfile"));
+const PartnerHubProtectedRoute = lazy(() => import("./screens/PartnerHub/PartnerHubProtectedRoute"));
 
 // Single responsive property detail views (MUI breakpoints handle
 // desktop/mobile — no separate component trees per viewport).
@@ -188,10 +188,10 @@ function App() {
       <Route path="/agent/login" element={<AgentLogin />} />
 
       {/* AgentHub Portal Routes (Professional agent portal) */}
-      <Route path="/hub/dashboard" element={<HubProtectedRoute element={<AgentHubDashboard />} />} />
-      <Route path="/hub/properties" element={<HubProtectedRoute element={<AgentHubProperties />} />} />
-      <Route path="/hub/leads" element={<HubProtectedRoute element={<AgentHubLeads />} />} />
-      <Route path="/hub/profile" element={<HubProtectedRoute element={<AgentHubProfile />} />} />
+      <Route path="/partner/dashboard" element={<PartnerHubProtectedRoute element={<PartnerHubDashboard />} />} />
+      <Route path="/partner/properties" element={<PartnerHubProtectedRoute element={<PartnerHubProperties />} />} />
+      <Route path="/partner/leads" element={<PartnerHubProtectedRoute element={<PartnerHubLeads />} />} />
+      <Route path="/partner/profile" element={<PartnerHubProtectedRoute element={<PartnerHubProfile />} />} />
 
       {/* <Route element={<AgentProtectedRoute />}>
         //         <Route path="/agent/dashboard" element={<AgentDashboard />} />
