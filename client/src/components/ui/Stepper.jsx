@@ -1,6 +1,7 @@
 import React from 'react';
-import { Box, Stepper as MuiStepper, Step, StepLabel, Typography } from '@mui/material';
-import { radii } from './Theme';
+import { Box, Stepper as MuiStepper, Step, StepLabel, Typography, Button } from '@mui/material';
+import { radii } from '../../theme/theme';
+import { Check, ArrowLeft } from 'lucide-react';
 
 /**
  * PART 11 Stepper/Wizard shell. Sticky progress bar, Back + Save-draft
@@ -163,6 +164,3 @@ export default function Stepper({
     </Box>
   );
 }
-
-// Small inline icon imports kept local to this file only.
-import { Check, ArrowLeft } from 'lucide-react';

@@ -1,7 +1,7 @@
 // PART 11 shared components (built once, used across the screens).
 export { default as OtpInput } from './OtpInput';
 export { default as Stepper } from './Stepper';
-export { default as Toast, ToastContext, useToast, toast } from './Toast';
+export { ToastProvider, useToast, toast, setToastProvider } from './Toast';
 export { default as SlotPicker } from './SlotPicker';
 export { default as StatusTimeline } from './StatusTimeline';
 export { default as StatusChip } from './StatusChip';

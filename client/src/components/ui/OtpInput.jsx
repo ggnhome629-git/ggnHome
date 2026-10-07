@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useEffect } from 'react';
 import { Box, Stack, Typography } from '@mui/material';
-import { radii } from './Theme';
+import { radii } from '../../theme/theme';
 
 /**
  * PART 1 OtpInput — 6 separate boxes, paste the whole code, one-time-code

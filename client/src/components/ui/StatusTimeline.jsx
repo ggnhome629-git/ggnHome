@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Stack, Typography } from '@mui/material';
-import { radii } from './Theme';
+import { radii } from '../../theme/theme';
 import { CheckCircle, Clock, XCircle, AlertTriangle, ChevronRight } from 'lucide-react';
 
 /**

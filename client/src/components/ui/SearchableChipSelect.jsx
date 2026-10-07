@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Box, TextField, Chip, IconButton, Menu, ListItemButton, ListItemText, Typography } from '@mui/material';
-import { X, Plus, Search, TrendingUp } from 'lucide-react';
-import { radii } from './Theme';
+import { X, Plus, Search, TrendingUp, Check } from 'lucide-react';
+import { radii } from '../../theme/theme';
 
 /**
  * PART 11 SearchableChipSelect — searchable multi-select chips for sectors,
@@ -202,5 +202,3 @@ export default function SearchableChipSelect({
     </Box>
   );
 }
-
-import { Check } from 'lucide-react';

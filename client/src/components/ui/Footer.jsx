@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Stack, Typography, Link as MuiLink, IconButton } from '@mui/material';
-import { radii } from './Theme';
+import { radii } from '../../theme/theme';
 import {
   Home,
   Search,

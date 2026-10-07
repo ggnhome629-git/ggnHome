@@ -61,7 +61,7 @@ export default function MobileBottomNav({
             value={v}
             label={l}
             icon={<Icon size={20} />}
-            onClick={() => typeof window !== 'undefined' && window.location.href = path}
+            onClick={() => typeof window !== 'undefined' && (window.location.href = path)}
           />
         ))}
       </BottomNavigation>

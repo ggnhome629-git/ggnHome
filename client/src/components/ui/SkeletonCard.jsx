@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Skeleton, Stack } from '@mui/material';
-import { radii } from './Theme';
+import { radii } from '../../theme/theme';
 
 /**
  * PART 11 SkeletonCard — a card-shaped placeholder that holds the shape of

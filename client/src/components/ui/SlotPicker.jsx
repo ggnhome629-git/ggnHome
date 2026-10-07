@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Stack, Typography, Button } from '@mui/material';
-import { radii } from './Theme';
+import { radii } from '../../theme/theme';
 import { Calendar, Clock, X } from 'lucide-react';
 
 /**
@@ -33,7 +33,8 @@ export default function SlotPicker({
     return {
       backgroundColor: on ? '#00A79D' : 'rgba(0,51,102,0.06)',
       color: on ? '#fff' : 'text.secondary',
-      border: on ? 'none' : `1px solid ${DIVIDER}`,
+      border: on ? 'none' : '1px solid',
+      borderColor: on ? 'transparent' : 'divider',
       cursor: on ? 'pointer' : 'not-allowed',
       opacity: on ? 1 : 0.5,
     };
@@ -75,7 +76,8 @@ export default function SlotPicker({
                 py: 2,
                 backgroundColor: past ? 'rgba(255,255,255,0.3)' : 'transparent',
                 color: past ? 'text.secondary' : 'primary.main',
-                border: `1px solid ${past ? 'transparent' : DIVIDER}`,
+                border: '1px solid',
+                borderColor: past ? 'transparent' : 'divider',
                 '&:hover': {
                   backgroundColor: past ? 'rgba(255,255,255,0.15)' : 'rgba(0,167,157,0.06)',
                 },

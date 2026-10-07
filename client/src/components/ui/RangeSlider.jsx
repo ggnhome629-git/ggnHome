@@ -1,6 +1,6 @@
 import React from 'react';
-import { Box, Typography, Slider, alpha } from '@mui/material';
-import { radii } from './Theme';
+import { Box, Typography, Slider, Stack, alpha } from '@mui/material';
+import { radii } from '../../theme/theme';
 
 /**
  * PART 11 RangeSlider — dual-handle budget/area slider with lakh/crore
@@ -16,6 +16,7 @@ export default function RangeSlider({
   liveText = 'Rs 25k - 40k',
   typicalHint = 'Typical range for your sector: ₹1.5L - ₹6L',
   showLabels = true,
+  label = 'Set your budget',
   sx,
 }) {
   const [display, setDisplay] = React.useState(liveText);

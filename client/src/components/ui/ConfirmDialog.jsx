@@ -8,8 +8,9 @@ import {
   Button,
   Alert,
   Typography,
+  Box,
 } from '@mui/material';
-import { radii } from './Theme';
+import { radii } from '../../theme/theme';
 import { Check } from 'lucide-react';
 
 /**

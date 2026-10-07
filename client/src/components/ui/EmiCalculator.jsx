@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Stack, Typography, alpha } from '@mui/material';
-import { radii } from './Theme';
+import { radii } from '../../theme/theme';
 import { Calculator, ArrowRight, Building2 } from 'lucide-react';
 
 /**

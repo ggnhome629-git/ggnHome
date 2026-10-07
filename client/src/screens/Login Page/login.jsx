@@ -31,7 +31,8 @@ import {
 import { useAuth } from '../../Context/AuthContext';
 import { OtpInput } from '../../components/ui';
 import { Stepper } from '../../components/ui';
-import { radii, spacing, theme } from '../../components/ui/Theme';
+import { radii } from '../../theme/theme';
+import theme from '../../theme/theme';
 
 // ============================================================
 // PART 1 — LOGIN / SIGN-UP

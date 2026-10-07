@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Button, Typography, Stack } from '@mui/material';
 import { AlertTriangle, RefreshCw, ArrowRight } from 'lucide-react';
-import { radii } from './Theme';
+import { radii } from '../../theme/theme';
 
 /**
  * PART 11 ErrorRetry — primary error state for every screen: message, retry

@@ -1,7 +1,7 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Box, Stack, Typography, Button, IconButton, CircularProgress, Tooltip } from '@mui/material';
 import { Radios, Upload, X, Image, File, Cloud, CheckCircle } from 'lucide-react';
-import { radii } from './Theme';
+import { radii } from '../../theme/theme';
 
 /**
  * PART 11 FileDropzone — drag-and-drop + click, image preview, size/type
