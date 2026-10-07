@@ -69,6 +69,7 @@ const AgentRegistrationAdmin = lazy(() => import("./screens/Admin Page/Admin.Age
 const AdminLayout = lazy(() => import("./screens/Admin Page/shell/AdminLayout"));
 const AdminPayments = lazy(() => import("./screens/Admin Page/admin.properties"));
 const FeatureTogglesAdmin = lazy(() => import("./screens/Admin Page/admin.featureToggles"));
+const AdminSettings = lazy(() => import("./screens/Admin Page/admin.settings"));
 // Static imports for agent property detail views
 const RentalPropertyPageAgentDesktop = lazy(() => import("./screens/Agent Page/Property View Agent/Desktop view/RentalPropertyPageView"));
 const SalePropertyPageAgentDesktop = lazy(() => import("./screens/Agent Page/Property View Agent/Desktop view/SalePropertyPageView"));
@@ -206,7 +207,7 @@ function App() {
         <Route path="/admin/add-property" element={<AdminProtectedRoute element={<AdminPropertyListingForm />} />} />
         <Route path="/admin/services" element={<AdminProtectedRoute element={<AdminServiceTracking />} />} />
         <Route path="/admin/usagetrack" element={<AdminProtectedRoute element={<CloudinaryDashboard />} />} />
-        <Route path="/admin/feature-toggles" element={<AdminProtectedRoute element={<FeatureTogglesAdmin />} />} />
+        <Route path="/admin/settings" element={<AdminProtectedRoute element={<AdminSettings />} />} />
         <Route path="/admin/usagetrack2" element={<AdminProtectedRoute element={<AdminUsageDashboard />} />} />
         <Route path="/admin/rewards" element={<AdminProtectedRoute element={<AdminRewardsSection />} />} />
         <Route path="/admin/payments" element={<AdminProtectedRoute element={<AdminPayments />} />} />

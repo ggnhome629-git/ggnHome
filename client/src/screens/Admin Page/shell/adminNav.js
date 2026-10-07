@@ -1,5 +1,6 @@
 import {
   Building2,
+  Settings,
   ClipboardList,
   CreditCard,
   Gift,
