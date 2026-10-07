@@ -8,10 +8,26 @@ const router = express.Router();
 const Joi = require("joi");
 
 const propertySyncController = require("../controllers/propertySync.controller");
-const { authenticate } = require("../middleware/auth");
-const { authorize } = require("../middleware/auth");
+const { verifyToken } = require("../middleware/auth");
 const { validate } = require("../middleware/validate");
 const { apiLimiter } = require("../middleware/rateLimit");
+const User = require("../models/user.model.js");
+
+// Admin check middleware
+const checkAdminEmail = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Unauthorized: No user data found" });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied: Admins only" });
+    }
+    next();
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 // Rate limiter for property sync (more lenient than general API)
 const syncLimiter = require("express-rate-limit")({
@@ -43,8 +59,7 @@ const scheduleSchema = Joi.object({
  */
 router.post(
   "/start",
-  authenticate,
-  authorize("admin"),
+  verifyToken, checkAdminEmail,
   syncLimiter,
   validate(startVerificationSchema, "body"),
   propertySyncController.startVerification
@@ -57,8 +72,7 @@ router.post(
  */
 router.get(
   "/status",
-  authenticate,
-  authorize("admin"),
+  verifyToken, checkAdminEmail,
   propertySyncController.getStatus
 );
 
@@ -69,8 +83,7 @@ router.get(
  */
 router.get(
   "/report",
-  authenticate,
-  authorize("admin"),
+  verifyToken, checkAdminEmail,
   propertySyncController.getDetailedReport
 );
 
@@ -81,8 +94,7 @@ router.get(
  */
 router.post(
   "/stop",
-  authenticate,
-  authorize("admin"),
+  verifyToken, checkAdminEmail,
   syncLimiter,
   propertySyncController.stopVerification
 );
@@ -94,8 +106,7 @@ router.post(
  */
 router.get(
   "/logs",
-  authenticate,
-  authorize("admin"),
+  verifyToken, checkAdminEmail,
   propertySyncController.getLogs
 );
 
@@ -106,8 +117,7 @@ router.get(
  */
 router.get(
   "/statistics",
-  authenticate,
-  authorize("admin"),
+  verifyToken, checkAdminEmail,
   propertySyncController.getStatistics
 );
 
@@ -118,8 +128,7 @@ router.get(
  */
 router.patch(
   "/schedule",
-  authenticate,
-  authorize("admin"),
+  verifyToken, checkAdminEmail,
   validate(scheduleSchema, "body"),
   propertySyncController.updateSchedule
 );

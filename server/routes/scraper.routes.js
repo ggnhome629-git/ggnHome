@@ -8,10 +8,26 @@ const router = express.Router();
 const Joi = require("joi");
 
 const scraperController = require("../controllers/scraper.controller");
-const { authenticate } = require("../middleware/auth");
-const { authorize } = require("../middleware/auth"); // Assuming authorize exists or create it
+const { verifyToken } = require("../middleware/auth");
 const { validate } = require("../middleware/validate");
 const { apiLimiter } = require("../middleware/rateLimit");
+const User = require("../models/user.model.js");
+
+// Admin check middleware
+const checkAdminEmail = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "Unauthorized: No user data found" });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied: Admins only" });
+    }
+    next();
+  } catch (error) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 // Admin scraper rate limiter (more lenient than general API)
 const scraperLimiter = require("express-rate-limit")({
@@ -48,8 +64,7 @@ const updateScheduleSchema = Joi.object({
  */
 router.post(
   "/run",
-  authenticate,
-  authorize("admin"), // Assumes authorize middleware exists
+  verifyToken, checkAdminEmail,
   scraperLimiter,
   validate(startScraperSchema, "body"),
   scraperController.startScraper
@@ -62,8 +77,7 @@ router.post(
  */
 router.get(
   "/status",
-  authenticate,
-  authorize("admin"),
+  verifyToken, checkAdminEmail,
   scraperController.getStatus
 );
 
@@ -74,8 +88,7 @@ router.get(
  */
 router.post(
   "/stop",
-  authenticate,
-  authorize("admin"),
+  verifyToken, checkAdminEmail,
   scraperLimiter,
   scraperController.stopScraper
 );
@@ -87,8 +100,7 @@ router.post(
  */
 router.get(
   "/logs",
-  authenticate,
-  authorize("admin"),
+  verifyToken, checkAdminEmail,
   scraperController.getLogs
 );
 
@@ -99,8 +111,7 @@ router.get(
  */
 router.patch(
   "/schedule",
-  authenticate,
-  authorize("admin"),
+  verifyToken, checkAdminEmail,
   validate(updateScheduleSchema, "body"),
   scraperController.updateSchedule
 );
