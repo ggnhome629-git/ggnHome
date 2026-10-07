@@ -9,6 +9,7 @@ const { requestId, notFound, errorHandler } = require("./middleware/errorHandler
 const { apiLimiter } = require("./middleware/rateLimit");
 const { startNoBrokerSyncCron, startReminderCron } = require("./cron/nobrokerSyncCron");
 const { startRankingScheduler } = require("./jobs/rankingScheduler");
+const redisCache = require("./utils/redisCache");
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
   .split(",")
   .map((o) => o.trim().replace(/\/+$/, ""))
@@ -132,6 +133,12 @@ app.use(errorHandler);
 // Tests import `app` and bring their own database.
 if (require.main === module) {
   db();
+
+  // Initialize Redis cache (optional - gracefully degrades if unavailable)
+  redisCache.initialize().catch(err => {
+    console.warn('⚠️ Warning: Redis cache initialization failed:', err.message);
+  });
+
   // Daily background sync: mirrors each scraped listing's live NoBroker status
   if (process.env.DISABLE_CRON !== "true") startNoBrokerSyncCron();
   if (process.env.NODE_ENV !== "test" && process.env.DISABLE_CRON !== "true") startReminderCron();

@@ -162,6 +162,11 @@ class NoBrokerScraper {
       const sourceUrl = $card.find('a').first().attr('href') || '';
       const imageUrl = $card.find('img').first().attr('src') || '';
 
+      // Extract additional details from card text/elements
+      const cardText = $card.text();
+      const amenitiesText = $card.find('.amenities, .features, [data-testid="amenities"]').text();
+      const addressText = $card.find('.address, .location-detail, [data-testid="address"]').text().trim();
+
       if (!sourceListingId || !title) {
         return null;
       }
@@ -169,18 +174,44 @@ class NoBrokerScraper {
       // Parse extracted data
       const monthlyRent = parsePrice(priceText);
       const totalArea = parseArea(areaText);
-      const bhk = extractBHK(configText);
-      const normalizedSector = normalizeSector(sector);
+      const bhk = extractBHK(configText || title);
+      const normalizedSector = normalizeSector(sector || addressText);
 
-      // Build property object
+      // Extract bedrooms and bathrooms from BHK and card text
+      const { bedrooms, bathrooms } = this.extractBedsBaths(configText || title, bhk);
+
+      // Extract amenities and features
+      const appliances = this.extractAppliances(amenitiesText || cardText);
+      const amenities = this.extractAmenities(amenitiesText || cardText);
+      const furnishing = this.detectFurnishing(title + ' ' + cardText);
+      const parking = this.detectParking(amenitiesText || cardText);
+      const petPolicy = this.detectPetPolicy(amenitiesText || cardText);
+
+      // Build comprehensive property object
       const property = {
+        // Basic info
         title,
-        description: title,
+        description: this.buildDescription(title, bedrooms, bathrooms, furnishing, parking),
+        address: addressText || normalizedSector || 'Unknown',
         Sector: normalizedSector || 'Unknown',
-        propertyType: this.detectPropertyType(configText),
+        propertyType: this.detectPropertyType(configText || title),
+        purpose: 'rent',
+
+        // Specifications
+        bedrooms: bedrooms || null,
+        bathrooms: bathrooms || null,
+        totalArea: totalArea ? { sqft: totalArea, configuration: bhk } : { configuration: bhk },
+        furnishing: furnishing || 'unfurnished',
+
+        // Amenities & Features
+        appliances: appliances,
+        communityFeatures: amenities,
+        parking: parking || null,
+        petPolicy: petPolicy || null,
+
+        // Financial
         monthlyRent: monthlyRent || 0,
-        totalArea: totalArea ? { sqft: totalArea } : {},
-        furnishing: this.detectFurnishing(title),
+        commission: this.commission,
 
         // Source tracking
         sourcePortal: 'nobroker',
@@ -189,15 +220,22 @@ class NoBrokerScraper {
         sourceStatus: 'active',
         sourceCheckedAt: new Date(),
 
-        // Affiliate info
-        affiliateId: this.affiliateId,
-        commission: this.commission,
+        // Media
         images: imageUrl ? [imageUrl] : [],
 
-        // Default values
-        ownerType: 'ggnHome',
-        isActive: true,
-        defaultpropertytype: 'rental'
+        // Ownership & Status
+        ownerType: 'Admin',
+        isActive: false,
+        isPostedNew: true,
+        defaultpropertytype: 'rental',
+
+        // Ranking (will be calculated after save)
+        ranking: {
+          score: 0,
+          status: 'ACTIVE',
+          source: 'Scraped',
+          updatedAt: new Date()
+        }
       };
 
       // Validate
@@ -212,6 +250,115 @@ class NoBrokerScraper {
       logger.debug('Error parsing property card', error);
       return null;
     }
+  }
+
+  /**
+   * Extract bedrooms and bathrooms from BHK string
+   */
+  extractBedsBaths(text, bhkString) {
+    let bedrooms = null;
+    let bathrooms = null;
+
+    // Try to extract from BHK string (e.g., "2 BHK")
+    if (bhkString) {
+      const bhkMatch = bhkString.match(/(\d+)\s*(?:BHK|RK)/i);
+      if (bhkMatch) {
+        bedrooms = parseInt(bhkMatch[1]);
+      }
+    }
+
+    // Try to find explicit bathroom count
+    const bathroomMatch = text.match(/(\d+)\s*bath/i);
+    if (bathroomMatch) {
+      bathrooms = parseInt(bathroomMatch[1]);
+    }
+
+    // Default bathroom to bedrooms-1 if not specified
+    if (bedrooms && !bathrooms) {
+      bathrooms = Math.max(1, bedrooms - 1);
+    }
+
+    return { bedrooms, bathrooms };
+  }
+
+  /**
+   * Extract appliances from amenities text
+   */
+  extractAppliances(text) {
+    const appliances = [];
+    const applianceKeywords = [
+      'ac', 'air conditioning', 'refrigerator', 'fridge', 'microwave',
+      'washing machine', 'washer', 'dishwasher', 'geyser', 'heater',
+      'tv', 'furniture', 'bed', 'sofa', 'tv cabinet'
+    ];
+
+    const textLower = text.toLowerCase();
+    for (const keyword of applianceKeywords) {
+      if (textLower.includes(keyword)) {
+        appliances.push(keyword.charAt(0).toUpperCase() + keyword.slice(1));
+      }
+    }
+
+    return appliances;
+  }
+
+  /**
+   * Extract community features/amenities
+   */
+  extractAmenities(text) {
+    const amenities = [];
+    const amenityKeywords = [
+      'gym', 'pool', 'swimming pool', 'garden', 'park', 'security',
+      'lift', 'elevator', 'parking', 'playground', 'library',
+      'community center', 'visitor parking', 'power backup'
+    ];
+
+    const textLower = text.toLowerCase();
+    for (const keyword of amenityKeywords) {
+      if (textLower.includes(keyword)) {
+        amenities.push(keyword.charAt(0).toUpperCase() + keyword.slice(1));
+      }
+    }
+
+    return amenities;
+  }
+
+  /**
+   * Detect parking info
+   */
+  detectParking(text) {
+    const textLower = text.toLowerCase();
+    if (textLower.includes('covered parking')) return 'covered';
+    if (textLower.includes('open parking')) return 'open';
+    if (textLower.includes('no parking')) return 'none';
+    if (textLower.includes('parking')) return 'available';
+    return null;
+  }
+
+  /**
+   * Detect pet policy
+   */
+  detectPetPolicy(text) {
+    const textLower = text.toLowerCase();
+    if (textLower.includes('pet friendly') || textLower.includes('pets allowed')) return 'allowed';
+    if (textLower.includes('no pets') || textLower.includes('pets not allowed')) return 'not allowed';
+    return null;
+  }
+
+  /**
+   * Build comprehensive description
+   */
+  buildDescription(title, bedrooms, bathrooms, furnishing, parking) {
+    const parts = [title];
+
+    if (bedrooms) parts.push(`${bedrooms} bedroom${bedrooms > 1 ? 's' : ''}`);
+    if (bathrooms) parts.push(`${bathrooms} bathroom${bathrooms > 1 ? 's' : ''}`);
+    if (furnishing && furnishing !== 'unfurnished') {
+      parts.push(`${furnishing}`);
+    }
+    if (parking) parts.push(`${parking} parking`);
+
+    return parts.join(' • ');
   }
 
   /**
