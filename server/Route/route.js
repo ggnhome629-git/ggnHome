@@ -447,8 +447,9 @@ router.post(
   unlockEnquiryContact
 );
 
-
-
+// ================== SCRAPER ROUTES ==================
+const scraperRoutes = require("../routes/scraper.routes");
+router.use("/api/admin/scraper", scraperRoutes);
 
 
 module.exports = router;

@@ -1,7 +1,14 @@
 /**
  * Lightweight Headless Scraper for Render Free Tier (512 MB)
- * Uses Cheerio instead of Puppeteer to minimize memory usage
- * Falls back to HTTP requests with retry logic
+ * Uses Cheerio + Axios for sites that allow scraping (NoBroker)
+ *
+ * IMPORTANT NOTES:
+ * - 99acres blocks direct HTTP requests and requires a real browser
+ * - For 99acres on free tier: Use external API or disable
+ * - For production with 99acres: Upgrade to paid tier or use proxy service
+ * - NoBroker works perfectly with Cheerio (50 MB vs 400 MB for Puppeteer)
+ *
+ * See SCRAPER_BLOCKING_SOLUTIONS.md for alternatives
  */
 
 const axios = require("axios");
@@ -155,10 +162,13 @@ class HeadlessScraper {
   }
 
   /**
-   * Scrape 99acres listings - lightweight version
+   * Scrape 99acres listings - requires real browser
+   *
+   * NOTE: 99acres blocks Cheerio/Axios requests with 403 Forbidden
+   * This method documents the limitation and provides alternatives
    */
   async scrapeNinetyNineAcres() {
-    logger.scraper("info", "Starting 99acres scraper (lightweight)");
+    logger.scraper("warn", "99acres scraping attempted - site blocks HTTP requests");
 
     const properties = [];
     const errors = [];
@@ -166,9 +176,37 @@ class HeadlessScraper {
     try {
       const rentalUrl = "https://www.99acres.com/search/home-rent-gurgaon";
 
+      // Try lightweight approach first (will likely fail)
+      let response;
       try {
-        const response = await this.fetchWithRetry(rentalUrl);
-        const $ = await this.parseHTML(response.data);
+        response = await this.fetchWithRetry(rentalUrl);
+      } catch (error) {
+        // Expected: 99acres blocks Cheerio/Axios
+        const blockingError = {
+          url: rentalUrl,
+          error: "Blocked by site (requires real browser)",
+          solution: "Use alternative method or upgrade to paid tier",
+        };
+        errors.push(blockingError);
+        logger.scraper("error", "99acres blocked HTTP request", blockingError);
+
+        // Return early with helpful info
+        return {
+          source: "99acres",
+          count: 0,
+          properties: [],
+          errors,
+          note: "BLOCKING_ISSUE: Use external API, proxy service, or upgrade to paid tier",
+          alternatives: [
+            "1. Disable 99acres scraping (NoBroker is sufficient)",
+            "2. Use browserless.io API (paid, ~$0.10 per page)",
+            "3. Upgrade to Render paid tier and use Puppeteer",
+            "4. Use 99acres official API if available",
+          ],
+        };
+      }
+
+      const $ = await this.parseHTML(response.data);
 
         // Example selectors - adjust based on actual 99acres HTML structure
         $(".property-card").each((index, element) => {

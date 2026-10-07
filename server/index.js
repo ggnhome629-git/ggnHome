@@ -61,6 +61,41 @@ app.get("/", (req, res) => {
   });
 });
 
+// Keep-alive endpoint (prevent auto-sleep on free tier)
+app.get("/api/keep-alive", (req, res) => {
+  res.json({
+    status: "ok",
+    uptime: Math.round(process.uptime()),
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Cron trigger endpoint (for external cron services)
+app.post("/api/cron/scraper-trigger", (req, res) => {
+  const secret = req.query.secret || req.headers['x-cron-secret'];
+
+  if (secret !== process.env.CRON_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  // Import here to avoid circular dependency
+  const scraperService = require('./services/scraper.service');
+
+  scraperService.startScrapingJob('nobroker')
+    .then((result) => {
+      res.status(202).json({
+        status: 'Scraper job started',
+        jobId: result.jobId
+      });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        error: 'Failed to start scraper',
+        message: error.message
+      });
+    });
+});
+
 // Routes
 app.use(apiLimiter);
 app.use("/", routes);
