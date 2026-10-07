@@ -31,7 +31,7 @@ import {
   Wifi,
   Zap,
 } from "lucide-react";
-import { radii, elevationShadows } from "../../../theme/theme";
+import { radii } from "../../../theme/theme";
 import { directionsUrl, displayAmount, formatCurrency, locationLine } from "../../../utils/propertyModel";
 
 export function SectionCard({ title, action, children, id, sx }) {
@@ -40,17 +40,16 @@ export function SectionCard({ title, action, children, id, sx }) {
       id={id}
       component="section"
       sx={{
-        p: { xs: 5, md: 7 },
+        p: { xs: 5, md: 6 },
         borderRadius: `${radii.lg}px`,
         backgroundColor: "background.paper",
         border: "1px solid",
         borderColor: "divider",
-        boxShadow: elevationShadows[1],
         ...sx,
       }}
     >
-      <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={4} sx={{ mb: 5 }}>
-        <Typography variant="h2" component="h2" sx={{ fontSize: { xs: "1.15rem", md: "1.4rem" }, color: "primary.main" }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={4} sx={{ mb: 4 }}>
+        <Typography variant="h2" component="h2" sx={{ fontSize: { xs: "1.1rem", md: "1.25rem" }, fontWeight: 700, color: "primary.main" }}>
           {title}
         </Typography>
         {action}
@@ -371,35 +370,28 @@ export function HighlightsSection({ highlights }) {
   if (!highlights || highlights.length === 0) return null;
   return (
     <SectionCard title="Key highlights">
-      <Box sx={{ display: "grid", gap: 4, gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" } }}>
-        {highlights.map((item, i) => {
+      <Box sx={{ display: "grid", columnGap: 6, rowGap: 3, gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" } }}>
+        {highlights.map((item) => {
           const { Icon, color } = highlightMeta(item);
           return (
-            <Reveal key={item} delay={(i % 4) * 0.1}>
+            <Stack key={item} direction="row" spacing={3} alignItems="flex-start">
               <Box
                 sx={{
-                  height: "100%",
-                  borderRadius: `${radii.lg}px`,
-                  backgroundColor: "background.paper",
-                  border: "1px solid",
-                  borderColor: "divider",
-                  boxShadow: "0 2px 8px rgba(0,51,102,0.04)",
-                  p: 4,
-                  transition: "transform .2s ease, box-shadow .2s ease",
-                  "&:hover": { transform: "translateY(-2px) scale(1.02)", boxShadow: "0 8px 20px rgba(0,51,102,0.10)" },
+                  width: 32,
+                  height: 32,
+                  flexShrink: 0,
+                  borderRadius: "8px",
+                  backgroundColor: `${color}14`,
+                  display: "grid",
+                  placeItems: "center",
                 }}
               >
-                <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-                  <Icon size={20} color={color} />
-                  <Typography variant="body2" sx={{ fontWeight: 700, color: "primary.main" }}>
-                    {item.length > 44 ? `${item.slice(0, 44)}…` : item}
-                  </Typography>
-                </Stack>
-                <Typography variant="body2" sx={{ color: "text.secondary", lineHeight: 1.7 }}>
-                  {item}
-                </Typography>
+                <Icon size={16} color={color} />
               </Box>
-            </Reveal>
+              <Typography variant="body2" sx={{ color: "text.primary", lineHeight: 1.6, pt: 0.75 }}>
+                {item}
+              </Typography>
+            </Stack>
           );
         })}
       </Box>
@@ -484,9 +476,9 @@ export function AmenitiesSection({ amenities }) {
 
 export function LocationSection({ property, mapSlot, onDirections, hasConnectivity }) {
   const advantages = [
-    property.transportation && { icon: "🚇", label: "Transportation", value: property.transportation },
-    property.localAmenities && { icon: "🏪", label: "What's nearby", value: property.localAmenities },
-    property.neighbourhood && { icon: "🏘️", label: "Neighbourhood", value: property.neighbourhood },
+    property.transportation && { icon: Bus, label: "Transportation", value: property.transportation },
+    property.localAmenities && { icon: ShoppingBag, label: "What's nearby", value: property.localAmenities },
+    property.neighbourhood && { icon: Home, label: "Neighbourhood", value: property.neighbourhood },
   ].filter(Boolean);
 
   return (
@@ -533,9 +525,12 @@ export function LocationSection({ property, mapSlot, onDirections, hasConnectivi
         <Stack spacing={3}>
           {advantages.map((item) => (
             <Stack key={item.label} spacing={1} sx={{ p: 4, borderRadius: `${radii.sm}px`, backgroundColor: "background.default" }}>
-              <Typography variant="overline" sx={{ color: "text.secondary" }}>
-                {item.icon} {item.label}
-              </Typography>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <item.icon size={14} color="#00A79D" />
+                <Typography variant="overline" sx={{ color: "text.secondary", lineHeight: 1.5 }}>
+                  {item.label}
+                </Typography>
+              </Stack>
               <Typography variant="body2" sx={{ color: "text.primary", whiteSpace: "pre-line" }}>
                 {item.value}
               </Typography>
@@ -847,7 +842,7 @@ export function SaleSpecificSection({ property }) {
     { icon: Home, label: "Furnishing", value: property.furnishing },
     { icon: Calendar, label: "Possession", value: property.possession },
     age && { icon: Clock, label: "Age / condition", value: age.display },
-  ].filter(Boolean);
+  ].filter((spec) => spec && spec.value);
 
   if (specs.length === 0) return null;
 

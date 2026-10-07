@@ -196,7 +196,10 @@ export function normaliseProperty(raw, type) {
     totalFloors: clean(raw.totalFloors),
     parking: clean(raw.parking),
     age: clean(raw.conditionAge),
-    possession: isRental ? formatDate(raw.moveInDate) : null,
+    possession: isRental
+      ? formatDate(raw.moveInDate)
+      : { ready: "Ready to move", "under-construction": "Under construction" }[raw.possessionStatus] || null,
+    furnishing: clean(raw.furnishing),
     ownership: clean(raw.ownerType),
 
     // Media

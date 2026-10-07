@@ -1,239 +1,162 @@
 import React from "react";
-import { Box, Chip, Stack, Typography, Button } from "@mui/material";
-import { Bath, Bed, Car, ExternalLink, MapPin, Maximize, ShieldCheck } from "lucide-react";
-import { locationLine, sourcePortalLabel } from "../../../utils/propertyModel";
-import { getBrandedBackground } from "../../../utils/brandedBackgrounds";
+import { Box, Chip, Divider, Stack, Typography } from "@mui/material";
+import { Bath, Bed, Car, ExternalLink, Layers, MapPin, Maximize, ShieldCheck, Sofa } from "lucide-react";
+import { formatCurrency, locationLine, sourcePortalLabel } from "../../../utils/propertyModel";
 
 const TONE_COLORS = {
-  success: { bg: "rgba(46,158,107,0.18)", fg: "#7CE0B4" },
-  info: { bg: "rgba(34,211,238,0.18)", fg: "#8BE9FB" },
-  accent: { bg: "rgba(0,167,157,0.22)", fg: "#7FE9E1" },
+  success: { bg: "rgba(46,158,107,0.10)", fg: "#1E7A50" },
+  info: { bg: "rgba(37,99,235,0.08)", fg: "#1D4ED8" },
+  accent: { bg: "rgba(0,167,157,0.10)", fg: "#00796F" },
 };
 
-// Teal / cyan treatments for the affiliate "Sourced from …" badge — the two
-// portals get visually distinct chips so a scraped listing reads as one at a
-// glance (PART 1 of the upgrade guide).
-const SOURCE_STYLES = {
-  nobroker: { background: "#00A79D", color: "#FFFFFF" },
-  "99acres": { background: "#22D3EE", color: "#003366" },
-};
+const chipSx = { height: 26, fontWeight: 600, fontSize: "0.75rem", borderRadius: "6px" };
 
 /**
- * The banner: navy gradient with the listing photo behind it, the identity
- * badges top-left, a floating price badge and the headline overlaid at the
- * bottom. Every badge shown is derived from data we actually have — the
- * affiliate variant swaps the verification row for the "Sourced from …" chip.
- * 
- * For affiliate properties, the header is wider and shows a redirect button.
+ * Listing header: identity chips, title, location and price, then a strip of
+ * the key specs. Plain surface and solid type so it reads like a listing, not
+ * a banner; every value shown comes from data the listing actually carries.
  */
 export default function PropertyHero({ property }) {
   const tone = TONE_COLORS[property.status.tone] || TONE_COLORS.accent;
-  const sourceStyle = SOURCE_STYLES[property.sourcePortal] || SOURCE_STYLES.nobroker;
-  const brandedBg = getBrandedBackground(property.id);
   const isAffiliate = property.isAffiliate;
+
+  const floor =
+    property.floor != null && property.totalFloors
+      ? `${property.floor} of ${property.totalFloors}`
+      : property.totalFloors
+      ? `${property.totalFloors} floors`
+      : null;
 
   const specs = [
     property.configuration && { icon: Bed, value: property.configuration, label: "Configuration" },
     property.builtUpAreaDisplay && { icon: Maximize, value: property.builtUpAreaDisplay, label: "Built-up area" },
     property.bathrooms != null && { icon: Bath, value: property.bathrooms, label: "Bathrooms" },
+    property.furnishing && { icon: Sofa, value: property.furnishing, label: "Furnishing" },
+    floor && { icon: Layers, value: floor, label: "Floor" },
     property.parking && { icon: Car, value: property.parking, label: "Parking" },
   ].filter(Boolean);
 
   return (
-    <Box
-      sx={{
-        position: "relative",
-        overflow: "hidden",
-        borderRadius: "16px",
-        backgroundImage: brandedBg.gradient,
-        color: "common.white",
-        "@keyframes heroPulse": {
-          "0%": { boxShadow: "0 0 0 0 rgba(34,211,238,0.55)" },
-          "70%": { boxShadow: "0 0 0 10px rgba(34,211,238,0)" },
-          "100%": { boxShadow: "0 0 0 0 rgba(34,211,238,0)" },
-        },
-      }}
-    >
-      {/* Dark overlay keeps every badge and the headline legible. */}
-      <Box sx={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,10,20,0.2)" }} />
+    <Box>
+      <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ mb: 3 }}>
+        <Chip
+          label={property.isRental ? "For Rent" : "For Sale"}
+          size="small"
+          sx={{ ...chipSx, backgroundColor: "primary.main", color: "common.white" }}
+        />
+        <Chip label={property.status.label} size="small" sx={{ ...chipSx, backgroundColor: tone.bg, color: tone.fg }} />
+        {property.propertyType && (
+          <Chip
+            label={property.propertyType}
+            size="small"
+            variant="outlined"
+            sx={{ ...chipSx, borderColor: "divider", color: "text.secondary", textTransform: "capitalize" }}
+          />
+        )}
+        {isAffiliate && (
+          <Chip
+            icon={<ExternalLink size={12} />}
+            label={`Sourced from ${sourcePortalLabel(property.sourcePortal)}`}
+            size="small"
+            variant="outlined"
+            sx={{ ...chipSx, borderColor: "divider", color: "text.secondary", "& .MuiChip-icon": { color: "inherit" } }}
+          />
+        )}
+      </Stack>
 
       <Stack
-        spacing={5}
+        direction={{ xs: "column", md: "row" }}
         justifyContent="space-between"
-        sx={{ position: "relative", p: { xs: 5, md: 7 }, minHeight: { xs: isAffiliate ? 320 : 260, md: isAffiliate ? 380 : 320 } }}
+        alignItems={{ xs: "flex-start", md: "flex-end" }}
+        spacing={{ xs: 3, md: 6 }}
       >
-        {/* Top row: identity badges left, floating price badge right */}
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={3} flexWrap="wrap" useFlexGap>
-          <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
-            <Chip
-              label={property.isRental ? "For rent" : "For sale"}
-              size="small"
-              sx={{
-                backgroundColor: "rgba(255,255,255,0.14)",
-                color: "common.white",
-                fontWeight: 700,
-                border: "1px solid rgba(255,255,255,0.25)",
-                animation: "heroPulse 2.6s ease-out infinite",
-              }}
-            />
-            <Chip
-              label={property.status.label}
-              size="small"
-              sx={{ backgroundColor: tone.bg, color: tone.fg, fontWeight: 700 }}
-            />
-            {property.propertyType && (
-              <Chip
-                label={property.propertyType}
-                size="small"
-                sx={{
-                  backgroundColor: "rgba(255,255,255,0.10)",
-                  color: "rgba(255,255,255,0.85)",
-                  fontWeight: 600,
-                  textTransform: "capitalize",
-                }}
-              />
-            )}
-            {isAffiliate && (
-              <Chip
-                icon={<ExternalLink size={13} />}
-                label={`Sourced from ${sourcePortalLabel(property.sourcePortal)}`}
-                size="small"
-                sx={{
-                  backgroundColor: sourceStyle.background,
-                  color: sourceStyle.color,
-                  fontWeight: 700,
-                  "& .MuiChip-icon": { color: "inherit" },
-                }}
-              />
-            )}
-          </Stack>
-
-          {property.priceDisplay && !isAffiliate && (
-            <Box
-              sx={{
-                backgroundColor: "#FFFFFF",
-                color: "primary.main",
-                borderRadius: "10px",
-                px: 3,
-                py: 2,
-                boxShadow: "0 8px 24px rgba(0,10,25,0.28)",
-                flexShrink: 0,
-              }}
-            >
-              <Typography variant="h4" sx={{ fontSize: { xs: "1.05rem", md: "1.25rem" }, color: "primary.main", lineHeight: 1.2 }}>
-                {property.priceDisplay}
-              </Typography>
-              {property.isRental && (
-                <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                  per month
-                </Typography>
-              )}
-            </Box>
-          )}
-        </Stack>
-
-        {/* Headline block */}
-        <Box>
+        <Box sx={{ minWidth: 0 }}>
           <Typography
             variant="h1"
             component="h1"
-            sx={{
-              fontSize: { xs: "1.5rem", md: "2.35rem" },
-              fontWeight: 700,
-              lineHeight: 1.15,
-              maxWidth: "20ch",
-              mb: 2,
-              backgroundImage: "linear-gradient(90deg, #FFFFFF 0%, #A9F0EA 100%)",
-              backgroundClip: "text",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              color: "transparent",
-            }}
+            sx={{ fontSize: { xs: "1.5rem", md: "1.9rem" }, fontWeight: 700, lineHeight: 1.25, color: "primary.main" }}
           >
             {property.title}
           </Typography>
-
-          <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 4 }}>
-            <MapPin size={16} color="#7FE9E1" />
-            <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.85)" }}>
+          <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2 }}>
+            <MapPin size={15} color="#4A6A8A" style={{ flexShrink: 0 }} />
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
               {locationLine(property)}
             </Typography>
           </Stack>
-
-          {!isAffiliate && property.verification.length > 0 && (
-            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-              {property.verification.slice(0, 4).map((badge) => (
-                <Chip
-                  key={badge}
-                  icon={<ShieldCheck size={13} />}
-                  label={badge}
-                  size="small"
-                  sx={{
-                    backgroundColor: "rgba(255,255,255,0.12)",
-                    color: "rgba(255,255,255,0.92)",
-                    fontWeight: 600,
-                    border: "1px solid rgba(255,255,255,0.18)",
-                    "& .MuiChip-icon": { color: "#7FE9E1" },
-                  }}
-                />
-              ))}
-            </Stack>
-          )}
         </Box>
 
-        {/* For affiliate properties: show redirect button and pricing info */}
-        {isAffiliate && (
-          <Stack spacing={3}>
-            <Box sx={{ p: 3, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.15)" }}>
-              <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.7)", display: "block", mb: 1.5 }}>
-                View full listing on {sourcePortalLabel(property.sourcePortal)}
-              </Typography>
-              <Button
-                variant="contained"
-                color="secondary"
-                fullWidth
-                endIcon={<ExternalLink size={16} />}
-                onClick={() => window.open(property.sourceUrl, "_blank")}
-                sx={{ fontWeight: 700 }}
-              >
-                Visit Original Listing
-              </Button>
-              {property.priceDisplay && (
-                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", mt: 2 }}>
-                  Listed price: <strong>{property.priceDisplay}</strong>
-                  {property.isRental && " per month"}
+        {property.priceDisplay && (
+          <Box sx={{ textAlign: { md: "right" }, flexShrink: 0 }}>
+            <Typography sx={{ fontSize: { xs: "1.5rem", md: "1.75rem" }, fontWeight: 800, color: "primary.main", lineHeight: 1.1 }}>
+              {property.priceDisplay}
+              {property.isRental && (
+                <Typography component="span" sx={{ fontSize: "0.95rem", fontWeight: 500, color: "text.secondary", ml: 1 }}>
+                  /month
                 </Typography>
               )}
-            </Box>
-          </Stack>
+            </Typography>
+            {property.pricePerSqFt && !property.isRental && (
+              <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                {formatCurrency(property.pricePerSqFt)} per sq.ft.
+              </Typography>
+            )}
+          </Box>
         )}
+      </Stack>
 
-        {/* Qualifying specs along the bottom edge */}
-        {specs.length > 0 && (
-          <Stack
-            direction="row"
-            spacing={{ xs: 4, md: 8 }}
-            flexWrap="wrap"
-            useFlexGap
-            alignItems="flex-end"
-            sx={{ pt: 4, borderTop: "1px solid rgba(255,255,255,0.18)" }}
-          >
-            {specs.map(({ icon: Icon, value, label }) => (
-              <Stack key={label} spacing={1}>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Icon size={15} color="#7FE9E1" />
-                  <Typography variant="h4" sx={{ fontSize: "1.05rem", color: "common.white" }}>
-                    {value}
-                  </Typography>
-                </Stack>
-                <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.65)" }}>
+      {specs.length > 0 && (
+        <Box
+          sx={{
+            mt: 5,
+            display: "grid",
+            gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: `repeat(${Math.min(specs.length, 3)}, 1fr)`, md: `repeat(${specs.length}, 1fr)` },
+            border: "1px solid",
+            borderColor: "divider",
+            borderRadius: "12px",
+            overflow: "hidden",
+          }}
+        >
+          {specs.map(({ icon: Icon, value, label }) => (
+            <Stack
+              key={label}
+              spacing={1}
+              sx={{
+                px: 4,
+                py: 3,
+                // Hairlines between cells regardless of how the grid wraps.
+                boxShadow: (t) => `-1px -1px 0 0 ${t.palette.divider}`,
+              }}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Icon size={15} color="#00A79D" />
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>
                   {label}
+                </Typography>
+              </Stack>
+              <Typography variant="body2" sx={{ fontWeight: 700, color: "primary.main", textTransform: "capitalize" }}>
+                {value}
+              </Typography>
+            </Stack>
+          ))}
+        </Box>
+      )}
+
+      {!isAffiliate && property.verification.length > 0 && (
+        <>
+          <Divider sx={{ my: 4 }} />
+          <Stack direction="row" spacing={4} flexWrap="wrap" useFlexGap>
+            {property.verification.slice(0, 4).map((badge) => (
+              <Stack key={badge} direction="row" spacing={1.5} alignItems="center">
+                <ShieldCheck size={15} color="#00A79D" />
+                <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500 }}>
+                  {badge}
                 </Typography>
               </Stack>
             ))}
           </Stack>
-        )}
-      </Stack>
+        </>
+      )}
     </Box>
   );
 }

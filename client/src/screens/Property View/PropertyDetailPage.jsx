@@ -13,11 +13,10 @@ import {
 } from "@mui/material";
 import { CalendarCheck } from "lucide-react";
 import ShareDialog from "../../components/ui/ShareDialog";
-import { radii, elevationShadows } from "../../theme/theme";
+import { radii } from "../../theme/theme";
 import {
   PROPERTY_TYPE,
   normaliseProperty,
-  whatsappUrl,
 } from "../../utils/propertyModel";
 import {
   EVENTS,
@@ -34,6 +33,7 @@ import PropertyGalleryPro from "./sections/PropertyGalleryPro";
 import { QuickActionsBar, StickyActionBar } from "./sections/PropertyActions";
 import EnquiryCard from "./sections/EnquiryCard";
 import ContactCard from "./sections/ContactCard";
+import PriceActionsCard from "./sections/PriceActionsCard";
 import CallbackDialog from "./sections/CallbackDialog";
 import EmiCalculatorDialog from "./sections/EmiCalculatorDialog";
 import ScheduleVisitDialog from "./sections/ScheduleVisitDialog";
@@ -44,13 +44,11 @@ import {
   DescriptionSection,
   DocumentsSection,
   HighlightsSection,
-  ListedBySection,
   LocationSection,
   NearbyPlacesSection,
   OverviewSection,
   PriceSection,
   SaleSpecificSection,
-  SectionCard,
 } from "./sections/ContentSections";
 
 const TopNavigationBar = React.lazy(() => import("../Dashboard/TopNavigationBar"));
@@ -70,55 +68,34 @@ const ROUTE_BASE = {
 function LoadingSkeleton() {
   return (
     <Container maxWidth="lg" sx={{ px: { xs: 4, md: 6 }, py: { xs: 5, md: 7 } }}>
-      {/* Breadcrumbs */}
-      <Stack direction="row" spacing={2} sx={{ mb: 6 }}>
-        {[1, 2, 3].map((i) => (
-          <Box key={i}>
-            <Skeleton variant="text" width={80} height={20} />
-          </Box>
-        ))}
-      </Stack>
-
-      {/* Hero & Contact Card */}
-      <Stack direction={{ xs: "column", lg: "row" }} spacing={6} alignItems="flex-start" sx={{ mb: 6 }}>
-        <Box sx={{ flex: 1, minWidth: 0, p: { xs: 5, md: 7 }, borderRadius: 2, backgroundColor: "background.paper" }}>
-          <Stack spacing={4}>
-            <Skeleton variant="text" width="70%" height={32} />
-            <Skeleton variant="text" width="60%" height={28} />
-            <Skeleton variant="text" width="40%" height={24} />
-            <Stack spacing={2}>
-              {[1, 2].map((i) => (
-                <Skeleton key={i} variant="rounded" height={40} />
-              ))}
-            </Stack>
-          </Stack>
+      <Skeleton variant="text" width={220} height={20} sx={{ mb: 5 }} />
+      <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "2fr 1fr" } }}>
+        <Skeleton variant="rounded" sx={{ height: { xs: 260, sm: 360, md: 460 } }} />
+        <Box sx={{ display: { xs: "none", md: "grid" }, gap: 2, gridTemplateColumns: "1fr 1fr" }}>
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} variant="rounded" height="100%" />
+          ))}
         </Box>
-        <Box sx={{ width: { xs: "100%", lg: 340 }, flexShrink: 0 }}>
-          <Skeleton variant="rounded" height={340} />
-        </Box>
-      </Stack>
-
-      {/* Gallery & Actions */}
-      <Stack direction={{ xs: "column", lg: "row" }} spacing={6} sx={{ mb: 6 }}>
-        <Stack spacing={6} sx={{ flex: 1, minWidth: 0 }}>
-          <Skeleton variant="rounded" height={400} />
-          <Skeleton variant="rounded" height={60} />
+      </Box>
+      <Box
+        sx={{
+          mt: { xs: 5, md: 7 },
+          display: "grid",
+          gap: { xs: 5, lg: 7 },
+          gridTemplateColumns: { xs: "minmax(0, 1fr)", lg: "minmax(0, 1fr) 360px" },
+        }}
+      >
+        <Stack spacing={3}>
+          <Skeleton variant="text" width="30%" height={28} />
+          <Skeleton variant="text" width="75%" height={44} />
+          <Skeleton variant="text" width="45%" height={24} />
+          <Skeleton variant="rounded" height={72} sx={{ mt: 2 }} />
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} variant="rounded" height={180} />
+          ))}
         </Stack>
-      </Stack>
-
-      {/* Content Sections */}
-      <Stack spacing={6}>
-        {[1, 2, 3, 4, 5].map((i) => (
-          <Box key={i} sx={{ p: { xs: 5, md: 7 }, borderRadius: 2, backgroundColor: "background.paper" }}>
-            <Skeleton variant="text" width="25%" height={28} sx={{ mb: 4 }} />
-            <Stack spacing={3}>
-              {[1, 2, 3].map((j) => (
-                <Skeleton key={j} variant="rounded" height={80} />
-              ))}
-            </Stack>
-          </Box>
-        ))}
-      </Stack>
+        <Skeleton variant="rounded" height={360} sx={{ display: { xs: "none", lg: "block" } }} />
+      </Box>
     </Container>
   );
 }
@@ -335,7 +312,7 @@ export default function PropertyDetailPage({ type }) {
         </Suspense>
 
         <Container maxWidth="lg" sx={{ px: { xs: 4, md: 6 }, py: { xs: 5, md: 7 } }}>
-          <Breadcrumbs separator="›" sx={{ mb: 6, fontSize: 13 }}>
+          <Breadcrumbs separator="›" sx={{ mb: 5, fontSize: 13 }}>
             <MuiLink component="button" onClick={() => navigate("/")} sx={{ color: "text.secondary", fontSize: 13 }}>
               Home
             </MuiLink>
@@ -356,53 +333,58 @@ export default function PropertyDetailPage({ type }) {
             )}
           </Breadcrumbs>
 
-          {/* Hero: identity + price + specs, with the enquiry card alongside */}
-          <Stack direction={{ xs: "column", lg: "row" }} spacing={6} alignItems="flex-start" sx={{ mb: 6 }}>
-            <Box
-              sx={{
-                flex: 1,
-                minWidth: 0,
-                p: { xs: 5, md: 7 },
-                borderRadius: `${radii.lg}px`,
-                backgroundColor: "background.paper",
-                border: "1px solid",
-                borderColor: "divider",
-                boxShadow: elevationShadows[1],
-              }}
-            >
-              <PropertyHero property={property} />
-            </Box>
+          <PropertyGalleryPro
+            images={property.images}
+            panoramas={property.panoramas}
+            videos={property.videos}
+            onOpenVirtualTour={openVirtualTour}
+            onEvent={emit}
+          />
 
-            <Box sx={{ width: { xs: "100%", lg: 340 }, flexShrink: 0 }}>
-              <Box sx={{ position: { lg: "sticky" }, top: { lg: 88 } }}>
-                <ContactCard
+          {/* Main column on the left, sticky price/contact sidebar on the right.
+              On phones the sidebar slots in right after the header. */}
+          <Box
+            sx={{
+              mt: { xs: 5, md: 7 },
+              display: "grid",
+              gap: { xs: 5, lg: 7 },
+              alignItems: "start",
+              gridTemplateColumns: { xs: "minmax(0, 1fr)", lg: "minmax(0, 1fr) 360px" },
+              gridTemplateAreas: { xs: '"header" "side" "main"', lg: '"header side" "main side"' },
+            }}
+          >
+            <Box sx={{ gridArea: "header" }}>
+              <PropertyHero property={property} />
+              <Box sx={{ mt: 5 }}>
+                <QuickActionsBar
                   property={property}
-                  onScheduleVisit={openVisit}
-                  onRequestCallback={openCallback}
+                  saved={saved}
+                  onSave={handleSave}
+                  onShare={openShare}
                   onEvent={emit}
                 />
               </Box>
             </Box>
-          </Stack>
 
-          <Stack direction={{ xs: "column", lg: "row" }} spacing={6} alignItems="flex-start">
-            <Stack spacing={6} sx={{ flex: 1, minWidth: 0, width: "100%" }}>
-              <PropertyGalleryPro
-                images={property.images}
-                panoramas={property.panoramas}
-                videos={property.videos}
-                onOpenVirtualTour={openVirtualTour}
-                onEvent={emit}
-              />
+            <Box sx={{ gridArea: "side", alignSelf: "stretch" }}>
+              <Stack spacing={4} sx={{ position: { lg: "sticky" }, top: { lg: 88 } }}>
+                {!property.isAffiliate && (
+                  <PriceActionsCard
+                    property={property}
+                    saved={saved}
+                    onSave={handleSave}
+                    onShare={openShare}
+                    onScheduleVisit={openVisit}
+                    onRequestCallback={openCallback}
+                    onMessage={scrollToEnquiry}
+                    onEvent={emit}
+                  />
+                )}
+                <ContactCard property={property} onMessage={scrollToEnquiry} onEvent={emit} />
+              </Stack>
+            </Box>
 
-              <QuickActionsBar
-                property={property}
-                saved={saved}
-                onSave={handleSave}
-                onShare={openShare}
-                onEvent={emit}
-              />
-
+            <Stack spacing={5} sx={{ gridArea: "main", minWidth: 0 }}>
               <OverviewSection property={property} />
               <PriceSection property={property} onOpenEmi={() => setEmiOpen(true)} />
               <SaleSpecificSection property={property} />
@@ -418,41 +400,45 @@ export default function PropertyDetailPage({ type }) {
                 mapSlot={<MapIntegration sector={property.sector} type={property.propertyType} />}
               />
 
-              <ListedBySection
-                property={property}
-                whatsappHref={property.contactNumber ? whatsappUrl(property, property.contactNumber) : undefined}
-                onCall={() => emit(EVENTS.CALL_CLICKED)}
-                onWhatsapp={() => emit(EVENTS.WHATSAPP_CLICKED)}
-                onEnquire={scrollToEnquiry}
-              />
-
               <DocumentsSection documents={property.documents} onDownload={() => emit(EVENTS.BROCHURE_DOWNLOAD)} />
 
-              {/* Site visit conversion block */}
-              <SectionCard
-                title="Want to see this property in person?"
-                sx={{ backgroundColor: "primary.main", borderColor: "primary.main", "& h2": { color: "common.white" } }}
-              >
-                <Stack direction={{ xs: "column", sm: "row" }} spacing={5} alignItems={{ sm: "center" }} justifyContent="space-between">
-                  <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.8)" }}>
-                    Schedule a site visit at a time convenient for you.
-                  </Typography>
+              {!property.isAffiliate && (
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={4}
+                  alignItems={{ sm: "center" }}
+                  justifyContent="space-between"
+                  sx={{
+                    p: { xs: 5, md: 6 },
+                    borderRadius: `${radii.lg}px`,
+                    background: "linear-gradient(135deg, #003366 0%, #0B4F7A 100%)",
+                    color: "common.white",
+                  }}
+                >
+                  <Box>
+                    <Typography sx={{ fontWeight: 700, fontSize: "1.15rem", color: "common.white" }}>
+                      Want to see this property in person?
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.75)", mt: 1 }}>
+                      Pick a time that suits you and we'll arrange the visit.
+                    </Typography>
+                  </Box>
                   <Button
                     variant="contained"
                     color="secondary"
                     size="large"
                     startIcon={<CalendarCheck size={18} />}
                     onClick={openVisit}
-                    sx={{ flexShrink: 0 }}
+                    sx={{ flexShrink: 0, fontWeight: 700 }}
                   >
                     Schedule site visit
                   </Button>
                 </Stack>
-              </SectionCard>
+              )}
 
               <EnquiryCard property={property} onEvent={emit} />
             </Stack>
-          </Stack>
+          </Box>
 
           <Box sx={{ mt: 10 }}>
             <SimilarProperties sector={property.sector} currentPropertyId={property.id} />
@@ -469,7 +455,9 @@ export default function PropertyDetailPage({ type }) {
           property={property}
           saved={saved}
           onSave={handleSave}
+          onShare={openShare}
           onScheduleVisit={openVisit}
+          onEnquire={scrollToEnquiry}
           onEvent={emit}
         />
 
