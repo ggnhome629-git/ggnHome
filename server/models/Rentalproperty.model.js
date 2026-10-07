@@ -158,6 +158,19 @@ RentalpropertySchema.index({ isPostedNew: 1, isEdited: 1 });
 // Keeps the daily NoBroker sync from scanning the collection per listing.
 RentalpropertySchema.index({ sourcePortal: 1, sourceListingId: 1 });
 
+// Full-text search indexes for better search performance
+RentalpropertySchema.index({ title: 'text', description: 'text', address: 'text', Sector: 'text' });
+
+// Filter optimization indexes
+RentalpropertySchema.index({ isActive: 1, monthlyRent: 1 });
+RentalpropertySchema.index({ isActive: 1, bedrooms: 1 });
+RentalpropertySchema.index({ isActive: 1, bathrooms: 1 });
+RentalpropertySchema.index({ isActive: 1, furnishing: 1 });
+RentalpropertySchema.index({ isActive: 1, propertyType: 1 });
+RentalpropertySchema.index({ isActive: 1, parking: 1 });
+RentalpropertySchema.index({ isActive: 1, petPolicy: 1 });
+RentalpropertySchema.index({ isActive: 1, monthlyRent: 1, bedrooms: 1, Sector: 1 });
+
 // Any write to a listing clears the cached listing feeds.
 RentalpropertySchema.plugin(invalidatePropertyCache);
 

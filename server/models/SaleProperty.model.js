@@ -129,6 +129,18 @@ SalePropertySchema.index({ isActive: 1, Sector: 1 });
 SalePropertySchema.index({ isPostedNew: 1, isEdited: 1 });
 SalePropertySchema.index({ sourcePortal: 1, sourceListingId: 1 });
 
+// Full-text search indexes for better search performance
+SalePropertySchema.index({ title: 'text', description: 'text', location: 'text', Sector: 'text' });
+
+// Filter optimization indexes
+SalePropertySchema.index({ isActive: 1, price: 1 });
+SalePropertySchema.index({ isActive: 1, bedrooms: 1 });
+SalePropertySchema.index({ isActive: 1, bathrooms: 1 });
+SalePropertySchema.index({ isActive: 1, furnishing: 1 });
+SalePropertySchema.index({ isActive: 1, propertyType: 1 });
+SalePropertySchema.index({ isActive: 1, parking: 1 });
+SalePropertySchema.index({ isActive: 1, price: 1, bedrooms: 1, Sector: 1 });
+
 // Any write to a listing clears the cached listing feeds.
 SalePropertySchema.plugin(invalidatePropertyCache);
 

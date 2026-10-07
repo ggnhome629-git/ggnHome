@@ -501,5 +501,9 @@ router.get("/api/admin/ranking/stats", verifyToken, checkAdminEmail, getRankingS
 // Admin: Get suspicious properties
 router.get("/api/admin/ranking/suspicious", verifyToken, checkAdminEmail, getSuspiciousProperties);
 
+// ================== ADVANCED SEARCH ROUTES ==================
+const advancedSearchRoutes = require("../routes/advancedSearch.routes");
+router.use("/api", advancedSearchRoutes);
+
 module.exports = router;
 

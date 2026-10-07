@@ -10,6 +10,7 @@ const { apiLimiter } = require("./middleware/rateLimit");
 const { startNoBrokerSyncCron, startReminderCron } = require("./cron/nobrokerSyncCron");
 const { startRankingScheduler } = require("./jobs/rankingScheduler");
 const redisCache = require("./utils/redisCache");
+const { configureMongoose, enableQueryProfiling } = require("./config/dbOptimization");
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
   .split(",")
   .map((o) => o.trim().replace(/\/+$/, ""))
