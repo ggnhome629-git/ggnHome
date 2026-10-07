@@ -1,7 +1,8 @@
 import React from "react";
-import { Box, Chip, Stack, Typography } from "@mui/material";
+import { Box, Chip, Stack, Typography, Button } from "@mui/material";
 import { Bath, Bed, Car, ExternalLink, MapPin, Maximize, ShieldCheck } from "lucide-react";
 import { locationLine, sourcePortalLabel } from "../../../utils/propertyModel";
+import { getBrandedBackground } from "../../../utils/brandedBackgrounds";
 
 const TONE_COLORS = {
   success: { bg: "rgba(46,158,107,0.18)", fg: "#7CE0B4" },
@@ -22,11 +23,14 @@ const SOURCE_STYLES = {
  * badges top-left, a floating price badge and the headline overlaid at the
  * bottom. Every badge shown is derived from data we actually have — the
  * affiliate variant swaps the verification row for the "Sourced from …" chip.
+ * 
+ * For affiliate properties, the header is wider and shows a redirect button.
  */
 export default function PropertyHero({ property }) {
   const tone = TONE_COLORS[property.status.tone] || TONE_COLORS.accent;
   const sourceStyle = SOURCE_STYLES[property.sourcePortal] || SOURCE_STYLES.nobroker;
-  const cover = property.images[0];
+  const brandedBg = getBrandedBackground(property.id);
+  const isAffiliate = property.isAffiliate;
 
   const specs = [
     property.configuration && { icon: Bed, value: property.configuration, label: "Configuration" },
@@ -41,7 +45,7 @@ export default function PropertyHero({ property }) {
         position: "relative",
         overflow: "hidden",
         borderRadius: "16px",
-        backgroundImage: "linear-gradient(120deg, #002244 0%, #003366 45%, #0B5C7A 100%)",
+        backgroundImage: brandedBg.gradient,
         color: "common.white",
         "@keyframes heroPulse": {
           "0%": { boxShadow: "0 0 0 0 rgba(34,211,238,0.55)" },
@@ -50,32 +54,13 @@ export default function PropertyHero({ property }) {
         },
       }}
     >
-      {cover && (
-        <Box
-          component="img"
-          src={cover}
-          alt=""
-          aria-hidden
-          onError={(e) => {
-            e.currentTarget.style.visibility = "hidden";
-          }}
-          sx={{
-            position: "absolute",
-            inset: 0,
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-            opacity: 0.55,
-          }}
-        />
-      )}
-      {/* Dark overlay keeps every badge and the headline legible over any photo. */}
-      <Box sx={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,10,20,0.3)" }} />
+      {/* Dark overlay keeps every badge and the headline legible. */}
+      <Box sx={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,10,20,0.2)" }} />
 
       <Stack
         spacing={5}
         justifyContent="space-between"
-        sx={{ position: "relative", p: { xs: 5, md: 7 }, minHeight: { xs: 260, md: 320 } }}
+        sx={{ position: "relative", p: { xs: 5, md: 7 }, minHeight: { xs: isAffiliate ? 320 : 260, md: isAffiliate ? 380 : 320 } }}
       >
         {/* Top row: identity badges left, floating price badge right */}
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={3} flexWrap="wrap" useFlexGap>
@@ -108,7 +93,7 @@ export default function PropertyHero({ property }) {
                 }}
               />
             )}
-            {property.isAffiliate && (
+            {isAffiliate && (
               <Chip
                 icon={<ExternalLink size={13} />}
                 label={`Sourced from ${sourcePortalLabel(property.sourcePortal)}`}
@@ -123,7 +108,7 @@ export default function PropertyHero({ property }) {
             )}
           </Stack>
 
-          {property.priceDisplay && (
+          {property.priceDisplay && !isAffiliate && (
             <Box
               sx={{
                 backgroundColor: "#FFFFFF",
@@ -175,7 +160,7 @@ export default function PropertyHero({ property }) {
             </Typography>
           </Stack>
 
-          {!property.isAffiliate && property.verification.length > 0 && (
+          {!isAffiliate && property.verification.length > 0 && (
             <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
               {property.verification.slice(0, 4).map((badge) => (
                 <Chip
@@ -195,6 +180,33 @@ export default function PropertyHero({ property }) {
             </Stack>
           )}
         </Box>
+
+        {/* For affiliate properties: show redirect button and pricing info */}
+        {isAffiliate && (
+          <Stack spacing={3}>
+            <Box sx={{ p: 3, backgroundColor: "rgba(255,255,255,0.08)", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.15)" }}>
+              <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.7)", display: "block", mb: 1.5 }}>
+                View full listing on {sourcePortalLabel(property.sourcePortal)}
+              </Typography>
+              <Button
+                variant="contained"
+                color="secondary"
+                fullWidth
+                endIcon={<ExternalLink size={16} />}
+                onClick={() => window.open(property.sourceUrl, "_blank")}
+                sx={{ fontWeight: 700 }}
+              >
+                Visit Original Listing
+              </Button>
+              {property.priceDisplay && (
+                <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.8)", mt: 2 }}>
+                  Listed price: <strong>{property.priceDisplay}</strong>
+                  {property.isRental && " per month"}
+                </Typography>
+              )}
+            </Box>
+          </Stack>
+        )}
 
         {/* Qualifying specs along the bottom edge */}
         {specs.length > 0 && (

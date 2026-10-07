@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Box, Button, Divider, Stack, Typography } from "@mui/material";
-import { Check, Eye, EyeOff, MessageCircle, Phone, ShieldCheck, UserRound } from "lucide-react";
+import { Check, Eye, EyeOff, MessageCircle, Phone, ShieldCheck, UserRound, ExternalLink, Mail } from "lucide-react";
 import { radii } from "../../../theme/theme";
 import { formatCurrency, whatsappUrl } from "../../../utils/propertyModel";
 
@@ -27,12 +27,16 @@ const initials = (name) =>
  * clipboard on click); everything here is rendered only from data the listing
  * actually carries, so an owner-listed property with no number still reads
  * cleanly as "message us and we'll connect you".
+ * 
+ * For affiliate properties: shows redirect button and fixed contact info.
+ * For own uploads: shows owner/agent contact with number and WhatsApp.
  */
 export default function ContactCard({ property, onMessage, onEvent }) {
   const [revealed, setRevealed] = useState(false);
   const [copied, setCopied] = useState(false);
   const hasNumber = Boolean(property.contactNumber);
   const isAgent = property.ownerType === "Agent";
+  const isAffiliate = property.isAffiliate;
   const commissionValue = property.commission
     ? `Commission: ${formatCurrency(property.commission)}${property.commissionNote ? ` (${property.commissionNote})` : ""}`
     : null;
@@ -52,6 +56,128 @@ export default function ContactCard({ property, onMessage, onEvent }) {
     setRevealed(true);
   };
 
+  // For affiliate properties: show redirect to source portal
+  if (isAffiliate) {
+    return (
+      <Box
+        sx={{
+          borderRadius: `${radii.lg}px`,
+          backgroundColor: "background.paper",
+          border: "1px solid",
+          borderColor: "divider",
+          boxShadow: "0 6px 20px rgba(0,51,102,0.06)",
+          p: 5,
+        }}
+      >
+        <Stack spacing={4}>
+          <Box>
+            <Typography variant="h4" sx={{ fontSize: "1rem", color: "primary.main", mb: 1.5, fontWeight: 700 }}>
+              This is an Affiliate Listing
+            </Typography>
+            <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
+              This property is sourced from an external portal. For the most up-to-date information and to contact the owner, please visit the original listing.
+            </Typography>
+
+            <Box
+              sx={{
+                p: 3,
+                backgroundColor: "rgba(0,167,157,0.08)",
+                borderRadius: `${radii.md}px`,
+                border: "1px solid rgba(0,167,157,0.2)",
+                mb: 3,
+              }}
+            >
+              <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 2, fontWeight: 600 }}>
+                Source Portal
+              </Typography>
+              <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: "8px",
+                    backgroundColor: "#00A79D",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
+                  }}
+                >
+                  {property.sourcePortal === "nobroker" ? "NB" : "99"}
+                </Box>
+                <Typography variant="body1" sx={{ fontWeight: 600, textTransform: "capitalize" }}>
+                  {property.sourcePortal === "nobroker" ? "NoBroker" : "99acres"}
+                </Typography>
+              </Stack>
+              {property.priceDisplay && (
+                <Typography variant="caption" sx={{ color: "text.secondary", display: "block" }}>
+                  Listed Price: <strong>{property.priceDisplay}</strong>
+                  {property.isRental && " per month"}
+                </Typography>
+              )}
+            </Box>
+
+            <Button
+              fullWidth
+              variant="contained"
+              color="secondary"
+              size="large"
+              endIcon={<ExternalLink size={16} />}
+              onClick={() => {
+                onEvent?.("affiliate_redirect_clicked");
+                window.open(property.sourceUrl, "_blank");
+              }}
+              sx={{ fontWeight: 700, mb: 2 }}
+            >
+              View Original Listing
+            </Button>
+          </Box>
+
+          <Divider />
+
+          <Box>
+            <Typography variant="h4" sx={{ fontSize: "0.95rem", color: "primary.main", mb: 2, fontWeight: 700 }}>
+              Need Help?
+            </Typography>
+            <Stack spacing={2}>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Phone size={16} color="#00A79D" />
+                <Box>
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    Call us
+                  </Typography>
+                  <Button
+                    href="tel:+919654131789"
+                    sx={{ p: 0, justifyContent: "flex-start", color: "primary.main", fontWeight: 700 }}
+                  >
+                    +91 96541 31789
+                  </Button>
+                </Box>
+              </Stack>
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Mail size={16} color="#00A79D" />
+                <Box>
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    Email us
+                  </Typography>
+                  <Button
+                    href="mailto:support@ggnhome.com"
+                    sx={{ p: 0, justifyContent: "flex-start", color: "primary.main", fontWeight: 700 }}
+                  >
+                    support@ggnhome.com
+                  </Button>
+                </Box>
+              </Stack>
+            </Stack>
+          </Box>
+        </Stack>
+      </Box>
+    );
+  }
+
+  // For own uploads: show owner/agent contact
   return (
     <Box
       sx={{
@@ -145,7 +271,18 @@ export default function ContactCard({ property, onMessage, onEvent }) {
             </Stack>
 
             <Stack direction="row" spacing={2}>
-              <Button fullWidth variant="outlined" startIcon={<Phone size={15} />} href={`tel:${property.contactNumber}`} onClick={() => onEvent?.("call_clicked")} sx={{ borderColor: "divider", color: "#00A79D", "&:hover": { borderColor: "#00A79D", backgroundColor: "rgba(0,167,157,0.06)" } }}>
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<Phone size={15} />}
+                href={`tel:${property.contactNumber}`}
+                onClick={() => onEvent?.("call_clicked")}
+                sx={{
+                  borderColor: "divider",
+                  color: "#00A79D",
+                  "&:hover": { borderColor: "#00A79D", backgroundColor: "rgba(0,167,157,0.06)" },
+                }}
+              >
                 Call
               </Button>
               <Button
@@ -168,7 +305,13 @@ export default function ContactCard({ property, onMessage, onEvent }) {
           </Typography>
         )}
 
-        <Button fullWidth variant="outlined" startIcon={<MessageCircle size={15} />} onClick={onMessage} sx={{ borderColor: "#00A79D", color: "#00A79D", "&:hover": { borderColor: "#00A79D", backgroundColor: "rgba(0,167,157,0.08)" } }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<MessageCircle size={15} />}
+          onClick={onMessage}
+          sx={{ borderColor: "#00A79D", color: "#00A79D", "&:hover": { borderColor: "#00A79D", backgroundColor: "rgba(0,167,157,0.08)" } }}
+        >
           Send message
         </Button>
       </Stack>
