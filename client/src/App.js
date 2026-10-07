@@ -68,6 +68,7 @@ const ProtectedRoutes = lazy(() => import("./screens/Protected Routes/protectedr
 const AgentRegistrationAdmin = lazy(() => import("./screens/Admin Page/Admin.AgentRegister"));
 const AdminLayout = lazy(() => import("./screens/Admin Page/shell/AdminLayout"));
 const AdminPayments = lazy(() => import("./screens/Admin Page/admin.properties"));
+const FeatureTogglesAdmin = lazy(() => import("./screens/Admin Page/admin.featureToggles"));
 // Static imports for agent property detail views
 const RentalPropertyPageAgentDesktop = lazy(() => import("./screens/Agent Page/Property View Agent/Desktop view/RentalPropertyPageView"));
 const SalePropertyPageAgentDesktop = lazy(() => import("./screens/Agent Page/Property View Agent/Desktop view/SalePropertyPageView"));
@@ -154,8 +155,9 @@ function App() {
         <Route path="/AIassistant-Rent" element={<VoiceAssistantRentResponsive />} />
         <Route path="/AIassistant-Sale" element={<VoiceAssistantSaleResponsive />} />
         <Route path="/add-property" element={<PropertyListingForm />} />
-        <Route path="/flatmateslistingform" element={<CreateFlatmateListing />} />
-        <Route path="/flatmatesmylistings" element={<FlatmatesListings />} />
+        {/* COMMENTED: Flatmates route - controlled by feature toggles */}
+        {/* <Route path="/flatmateslistingform" element={<CreateFlatmateListing />} /> */}
+        {/* <Route path="/flatmatesmylistings" element={<FlatmatesListings />} /> */}
         <Route path="/my-properties/:id" element={<MyProperties />} />
         <Route path="/my-properties" element={<PropertyCards />} />
         <Route path="/rewards" element={<RewardsPage />} />
@@ -171,20 +173,20 @@ function App() {
         <Route path="/services" element={<ServiceTrackingSystem />} />
         <Route path="/property/:id/virtual-tour" element={<VoiceVirtualTourModal />} />
       </Route>
-      <Route path="/flatmatesdashboard" element={<FlatmatesDashboard />} />
-      <Route path="/flatmatessearch" element={<FlatmateDiscovery />} />
-      <Route path="/flatmatesearchpropertymodal/:id" element={<FlatmateSearchPropertyModal />} />
+      {/* <Route path="/flatmatesdashboard" element={<FlatmatesDashboard />} /> */}
+      {/* <Route path="/flatmatessearch" element={<FlatmateDiscovery />} /> */}
+      {/* <Route path="/flatmatesearchpropertymodal/:id" element={<FlatmateSearchPropertyModal />} /> */}
       <Route path="/agent/register" element={<AgentRegistration />} />
       <Route path="/agent/login" element={<AgentLogin />} />
-      <Route element={<AgentProtectedRoute />}> 
-        <Route path="/agent/dashboard" element={<AgentDashboard />} />
-        <Route path="/agent/rentaldetails/:id" element={<RentalPropertyPageAgent />} />
-        <Route path="/agent/saledetails/:id" element={<SalePropertyPageAgent />} />
-        <Route path="/agent/add-property" element={<PropertyListingFormAgent />} />
-        <Route path="/agent/my-properties" element={<PropertyCardsAgent />} />
-        <Route path="/agent/property-analytics/:id" element={<PropertyAnalyticsAgent />} />
-        <Route path="/agent/support" element={<CustomerSupportPageAgent />} />
-      </Route>
+      {/* <Route element={<AgentProtectedRoute />}> 
+        //         <Route path="/agent/dashboard" element={<AgentDashboard />} />
+        //         <Route path="/agent/rentaldetails/:id" element={<RentalPropertyPageAgent />} />
+        //         <Route path="/agent/saledetails/:id" element={<SalePropertyPageAgent />} />
+        //         <Route path="/agent/add-property" element={<PropertyListingFormAgent />} />
+        //         <Route path="/agent/my-properties" element={<PropertyCardsAgent />} />
+        //         <Route path="/agent/property-analytics/:id" element={<PropertyAnalyticsAgent />} />
+        //         <Route path="/agent/support" element={<CustomerSupportPageAgent />} />
+        //       </Route> */}
 
 
 
@@ -204,6 +206,7 @@ function App() {
         <Route path="/admin/add-property" element={<AdminProtectedRoute element={<AdminPropertyListingForm />} />} />
         <Route path="/admin/services" element={<AdminProtectedRoute element={<AdminServiceTracking />} />} />
         <Route path="/admin/usagetrack" element={<AdminProtectedRoute element={<CloudinaryDashboard />} />} />
+        <Route path="/admin/feature-toggles" element={<AdminProtectedRoute element={<FeatureTogglesAdmin />} />} />
         <Route path="/admin/usagetrack2" element={<AdminProtectedRoute element={<AdminUsageDashboard />} />} />
         <Route path="/admin/rewards" element={<AdminProtectedRoute element={<AdminRewardsSection />} />} />
         <Route path="/admin/payments" element={<AdminProtectedRoute element={<AdminPayments />} />} />

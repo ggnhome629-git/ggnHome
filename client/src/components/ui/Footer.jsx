@@ -159,8 +159,10 @@ export default function Footer({ pathname = '/' }) {
             {[
               { label: 'Rental', href: '/add-property?type=rental' },
               { label: 'Sale', href: '/add-property?type=sale' },
-              { label: 'Agent', href: '/agent/add-property' },
-              { label: 'Flatmates', href: '/flatmateslistingform' },
+              // COMMENTED OUT: Agent portal - controlled by feature toggles
+              // { label: 'Agent', href: '/agent/add-property' },
+              // COMMENTED OUT: Flatmates feature - controlled by feature toggles
+              // { label: 'Flatmates', href: '/flatmateslistingform' },
             ].map((l) => (
               <MuiLink
                 key={l.label}
