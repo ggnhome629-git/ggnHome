@@ -836,3 +836,36 @@ export function DocumentsSection({ documents, onDownload }) {
     </SectionCard>
   );
 }
+
+/* --------------------------------------------------------- sale specific details */
+
+export function SaleSpecificSection({ property }) {
+  if (property.isRental) return null;
+
+  const age = ageMeta(property.age);
+  const specs = [
+    { icon: Home, label: "Furnishing", value: property.furnishing },
+    { icon: Calendar, label: "Possession", value: property.possession },
+    age && { icon: Clock, label: "Age / condition", value: age.display },
+  ].filter(Boolean);
+
+  if (specs.length === 0) return null;
+
+  return (
+    <SectionCard title="Sale details">
+      <Box sx={{ display: "grid", gap: 3, gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)" } }}>
+        {specs.map(({ icon: Icon, label, value }) => (
+          <Stack key={label} spacing={2} sx={{ p: 4, borderRadius: `${radii.sm}px`, backgroundColor: "background.default" }}>
+            <Icon size={18} color="#00A79D" />
+            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              {label}
+            </Typography>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: "primary.main", textTransform: "capitalize" }}>
+              {value}
+            </Typography>
+          </Stack>
+        ))}
+      </Box>
+    </SectionCard>
+  );
+}
