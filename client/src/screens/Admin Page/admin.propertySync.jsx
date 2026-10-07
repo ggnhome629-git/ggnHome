@@ -48,7 +48,7 @@ const AdminPropertySync = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [showReport, setShowReport] = useState(false);
 
-  const API_BASE = process.env.REACT_APP_Base_API || "http://localhost:5000";
+  const API_BASE = process.env.REACT_APP_Base_API || "http://localhost:2000";
 
   // Fetch sync status
   const fetchStatus = async () => {

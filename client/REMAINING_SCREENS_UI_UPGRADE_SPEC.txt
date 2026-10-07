@@ -1,0 +1,1177 @@
+================================================================================
+GGNHOME - REMAINING SCREENS UI + FUNCTIONALITY UPGRADE SPECIFICATION
+================================================================================
+Scope: every screen not yet redesigned (the admin panel has its own spec in
+ADMIN_PANEL_UI_UPGRADE_SPEC.txt, the property detail page in UI_UPGRADE_GUIDE.txt).
+No existing feature is removed. Each screen lists: CURRENT (read from the code),
+UPGRADE (UI), FUNCTIONALITY (behaviour), and the reason (what high-traffic
+sites do and why users like it).
+
+Research basis and honesty note
+- Patterns come from web searches on real-estate portals (Housing.com, Zillow,
+  Matterport, 99acres/MagicBricks/NoBroker were searched but their own UIs are
+  mostly behind scripts, so claims below are limited to what the search results
+  and public help pages actually said) plus general UX literature.
+  Sources are listed in PART 12. Nothing here was measured on ggnHome traffic.
+- "[API OK]" = backend call already exists. "[NEEDS API]" = new backend work.
+- Priority: P1 = do first (high traffic or conversion), P2 = next, P3 = polish.
+
+Build rules for ALL screens (so they match the redesigned pages)
+- Reuse the navy/teal system already used on Dashboard, Search, Flatmates and
+  Post forms: theme tokens, SectionShell, rounded cards, 8px spacing grid.
+- Mobile first. 16px side gutter, no horizontal scroll, tap targets >= 44px.
+- One top navigation per audience (user / agent / flatmates) - no screen builds
+  its own header (Customer Support currently hand-builds a fixed navbar).
+- Every screen has explicit loading (skeleton), empty, error and success states.
+- Remove inline COLORS objects and inline <style> blocks; use the shared theme
+  (userpreferenceform.jsx defines its own palette today).
+- No alert(); use one toast/snackbar component. No console.error-only failures.
+- Accessibility: visible focus ring, labels tied to inputs, aria-live for
+  errors, 4.5:1 contrast, prefers-reduced-motion respected.
+- Analytics events on each primary action (see PART 11).
+
+
+================================================================================
+PART 1 - LOGIN / SIGN-UP            client/src/screens/Login Page/login.jsx (841)  P1
+================================================================================
+CURRENT
+ OTP request/verify by mobile, resend, password login, set password,
+ check-mobile, recovery email. Fields: Mobile, Email, Password, Confirm.
+ Calls: /login/request-otp, /login/verify-otp, /auth/check-mobile,
+ /auth/set-password, /login/password, /auth/set-recovery-email.
+
+UPGRADE (UI)
+ 1. One-field-first screen: only "Mobile number" with +91 prefix and a single
+    primary button "Get OTP". Everything else appears after. Fewer visible
+    fields at the start lifts completion (UX literature on signup patterns).
+ 2. Segmented choice under the button: "Use password instead" / "Use email OTP".
+    Equal visual weight - a fallback must never look like a dead end.
+ 3. OTP screen: 6 separate boxes, numeric keypad on mobile, auto-advance,
+    paste-the-whole-code support, "Edit number" link, resend timer
+    ("Resend in 28s"), and a "Didn't get it? Try email / call me" fallback.
+ 4. Auto-fill: input autocomplete="one-time-code" and inputmode="numeric" so
+    the phone offers the SMS code automatically (Twilio OTP form guidance).
+ 5. Left/top trust panel on desktop: 3 benefits ("Verified owners",
+    "Rewards on every visit", "No spam"), a privacy line, and a Gurgaon-first
+    badge. Collapses away on mobile.
+ 6. Inline validation as you type (10 digits, starts 6-9), green tick when
+    valid, red message with fix hint when not. Never clear fields on error.
+ 7. Password creation: strength meter + show/hide eye + rules checklist.
+ 8. Return the user where they came from (save/enquire/schedule intent) and
+    show "Continue saving this home" after login.
+
+FUNCTIONALITY
+ - Rate-limit messaging: "Too many tries - try again in 10 min" from server
+   status 429 instead of a generic error. [API OK]
+ - Remember last used method (OTP vs password) in localStorage.
+ - "Logging in as +91 98xxxxx210" masked echo on the OTP step.
+ - Optional Google sign-in as a shortcut, never the only path (UX pattern from
+   Housing.com help: phone + OTP, or Gmail). [NEEDS API]
+ - Account-exists detection already via check-mobile: show "Welcome back" vs
+   "Create your account" headline accordingly.
+
+WHY: Housing.com's published flow is phone + OTP with an alternative; the
+dominant failure is OTP not arriving, so resend, fallback and auto-fill matter.
+
+
+================================================================================
+PART 2 - AGENT REGISTER         Agent Page/Register Page/AgentRegister.jsx (1237)  P2
+================================================================================
+CURRENT
+ Sections: Personal information, Areas you cover (sectors), Identity
+ verification. Fields: full name, mobile, email, WhatsApp, experience,
+ password. Calls /auth/me, /api/agent/register, /auth/set-password.
+
+UPGRADE (UI)
+ 1. Convert to a 3-step wizard with a sticky progress bar and "Save and
+    continue later" (draft kept in localStorage).
+ 2. Sector picker: searchable multi-select chips (type "Sector 5", pick, chip
+    appears) with a "Popular sectors" row. Show a count "6 areas selected".
+ 3. Document upload: drag-and-drop zone, image preview, file size/type hint,
+    progress bar, retry on failure, camera capture on mobile.
+ 4. "Same as mobile" checkbox for WhatsApp.
+ 5. Final review card summarizing every answer with Edit links, then Submit.
+ 6. After submit: status screen "Under review - usually within 24 hours" with
+    timeline (Submitted > Verification > Live) instead of a bare success text.
+
+FUNCTIONALITY
+ - Duplicate mobile/email check on blur. [API OK via check-mobile pattern]
+ - Email notification + WhatsApp message when approved. [NEEDS API]
+ - Agent can return and see verification status. [API OK /auth/me]
+
+
+================================================================================
+PART 3 - USER PREFERENCE FORM     User Preference Form/userpreferenceform.jsx (1470)  P1
+================================================================================
+CURRENT
+ Single long page with its own colour palette and 3-step progress indicator:
+ name, mobile, preferred location, budget range, BHK, property type,
+ furnishing, move-in date, brokerage 1499. POST /api/userpreferenceform.
+
+UPGRADE (UI)
+ 1. One question per screen on mobile ("What is your budget?"), full form on
+    desktop. Big tappable cards for BHK (1,2,3,4+), furnishing, type - no
+    dropdowns for 3-5 options.
+ 2. Budget as a dual-handle slider with lakh/crore labels and live text
+    "Rs 25k - 40k / month" plus typical-range hint for the chosen sector.
+ 3. Location: autocomplete over Gurgaon sectors with recent + popular chips,
+    allow up to 3 areas.
+ 4. Move-in date: quick chips ("Immediately", "Within 15 days", "1 month",
+    pick date).
+ 5. Live right-hand panel (desktop) / bottom sheet (mobile): "Homes matching
+    your needs: 128" and a thumbnail strip - instant reward for answering.
+ 6. Brokerage explanation moves into a small info popover, not a section.
+ 7. Remove the inline palette; use shared theme.
+ 8. Success screen: "We're matching you - first picks within 24h" with buttons
+    "See matches now" (opens Search with the filters pre-applied) and "Add
+    another requirement".
+
+FUNCTIONALITY
+ - Prefill name and mobile for logged-in users. [API OK /me]
+ - Save partial answers as a draft.
+ - Edit or pause an existing request from the profile ("My requirements").
+   [NEEDS API]
+ - Match count endpoint for the live panel (reuse search count header
+   X-Total-Count already exposed by the server). [API OK]
+ - Consent line and WhatsApp/SMS opt-in checkbox before submit.
+
+
+================================================================================
+PART 4 - VISIT SCHEDULE / BOOKING    Visit Schedule/Clientvist.jsx (798), enquiry.jsx (553)  P1
+================================================================================
+CURRENT
+ Clientvist: loads rental/sale property by id, shows Payment Summary / Bill
+ Details (monthly rent, security deposit, property price, payment option:
+ Deposit only / Both rent & deposit, amount payable) and an approval status
+ modal; two POSTs. enquiry.jsx: enquiry modal posting to the create-enquiry
+ API.
+
+UPGRADE (UI)
+ Visit scheduling (separate from payment)
+ 1. Slot picker like Zillow Instant Tour: a 7-day date strip, then time-slot
+    chips (morning/afternoon/evening) showing only available slots; pick, then
+    confirm. No waiting for a callback.
+ 2. Visit type toggle: "In person" or "Video tour".
+ 3. Confirmation screen: property thumbnail, date/time, address with map link,
+    owner/agent name, "Add to calendar" (.ics / Google), "Share with family",
+    "Reschedule" and "Cancel" buttons.
+ 4. "My visits" list: Upcoming / Completed / Cancelled tabs with status chips.
+
+ Payment summary
+ 5. Sticky summary card (right on desktop, bottom bar on mobile) listing each
+    line, a total, and a plain-language note on what is refundable.
+ 6. Payment option as large radio cards with the amount on each.
+ 7. Approval status as a stepper: Requested > Owner approved > Paid > Confirmed.
+ 8. Trust strip: secure payment icon, "Refund policy" link.
+
+ Enquiry modal
+ 9. Prefill name/phone for logged-in users, 2 fields max for guests (phone +
+    optional message), quick-message chips ("Is it still available?", "Can I
+    visit this weekend?", "Is rent negotiable?").
+ 10. After sending: "Sent to owner. Typical reply: 2 hrs" + similar homes.
+
+FUNCTIONALITY
+ - Reminders: 24 hours and 2 hours before visit by SMS/WhatsApp/email; ask for
+   confirmation a few hours before (reduces no-shows). [NEEDS API]
+ - Owner/agent availability calendar so only real slots show. [NEEDS API]
+ - Reschedule/cancel with reason. [NEEDS API]
+ - Do not allow double-booking the same slot. [NEEDS API]
+ - Duplicate-enquiry guard ("You already enquired on 12 Oct").
+ - Affiliate listings keep external CTA only (per property guide).
+
+WHY: tour platforms send a self-schedule link right away, show live slots,
+confirm instantly and send reminders the day before, 24h/2h before, and
+30-60 min before; that sequence is what cuts no-shows.
+
+
+================================================================================
+PART 5 - CUSTOMER SUPPORT + ABOUT    Customer Support/Customersupport.jsx (554), About.jsx (468)
+                                      Agent Page/Customer Support/Customersupport.jsx   P1/P2
+================================================================================
+CURRENT
+ Support: hand-built fixed navbar with its own nav items, callback-request form
+ (name, phone, email, preferred time, issue) posting to the callback API; alert()
+ on failure. About: brand story with trust points (authentic, secure, private,
+ AI search, rewards, Gurgaon-first).
+
+UPGRADE (UI) - Support (rename "Help Centre")
+ 1. Use the shared site navbar; delete the custom one.
+ 2. Hero with a big search box ("Search help: refund, OTP, posting...") with
+    autocomplete suggestions - search is the main entry point.
+ 3. 5-7 icon category cards (Account & login, Buying, Renting, Posting a
+    property, Payments & refunds, Rewards, Safety). Organise by user problem,
+    not internal modules.
+ 4. "Popular questions" accordion above the fold.
+ 5. Contact options row: Request a callback (existing form), WhatsApp chat,
+    Email, Call - each with working hours and expected response time.
+ 6. Callback form as a card: time chips (Now / 1 hr / Tomorrow morning),
+    topic dropdown, auto-filled name/phone, success state with a ticket number.
+ 7. "My requests" panel for logged-in users with status (Open / In progress /
+    Resolved) and the admin reply.
+ 8. Footer prompt on every article: "Was this helpful? Yes / No".
+
+UPGRADE (UI) - About
+ 9. Structure: hero statement, 3 stat counters (verified listings, happy
+    families, sectors covered - only real numbers from the DB), "How it works"
+    in 3 steps, trust pillars with icons, team/story, CTA row (Search / Post).
+ 10. Lighthouse-friendly: lazy images, no heavy animation on mobile.
+
+FUNCTIONALITY
+ - FAQ content as data (JSON), searchable, shared with the chatbot.
+ - Ticket id returned to user and visible in admin callback list.
+   [API OK + small response change]
+ - Replace alert() with toast; disable submit while sending to prevent doubles.
+ - Same page reused for agents with agent-specific categories.
+
+WHY: help-centre guidance: prominent search with autocomplete, 5-7 categories,
+popular FAQs upfront, look and feel consistent with the main site.
+
+
+================================================================================
+PART 6 - MANAGED SERVICES          Managed Services/CreateServices.jsx (1229), ManageServices.jsx (1873)  P2
+================================================================================
+CURRENT
+ Create: "Professional Property Services at Your Fingertips" - choose role
+ (Property Owner / tenant), select property, service type, details, address
+ (auto-filled), contact number, preferred date, notes. Manage: list of service
+ requests with search, sort (newest/oldest), status, request timeline, filters.
+
+UPGRADE (UI) - Create
+ 1. Start with a service catalogue grid (Cleaning, Painting, Plumbing,
+    Electrical, Packers & movers, Legal paperwork, Pest control) with icon,
+    one line, "starts from Rs X" where known. Choose the service first, then
+    the property - customers think "I need a plumber", not "I need a form".
+ 2. 3-step flow: Service > Property & address > Date/time & notes, with a
+    sticky price/summary card.
+ 3. Date strip + time window chips; photo upload for the issue (up to 5).
+ 4. Auto-pick the user's only property; show saved properties as cards.
+ 5. Final summary and "Confirm request"; success screen with request id.
+
+UPGRADE (UI) - Manage
+ 6. Card list (not a wide table on mobile): service icon, title, property,
+    date, status chip, "Track" button.
+ 7. Detail drawer with vertical timeline (Requested > Assigned > Scheduled >
+    In progress > Completed), assigned vendor name/phone, chat/notes, cancel
+    and reschedule.
+ 8. Filter chips (All / Open / Completed / Cancelled), search, sort; empty
+    state with "Request a service" CTA.
+ 9. After completion: rating (1-5) and short feedback.
+
+FUNCTIONALITY
+ - Status push (SMS/WhatsApp) at each stage. [NEEDS API]
+ - Vendor assignment and quotes shown to user. [NEEDS API]
+ - Invoice/receipt download. [NEEDS API]
+ - Repeat-service shortcut ("Book again").
+ - Reuse the admin services dashboard (admin.servicesDashboard.jsx) statuses
+   so both sides stay in sync.
+
+
+================================================================================
+PART 7 - AI ASSISTANT              AI Assistant/ai.jsx (251), ChatBot.jsx (117), Desktop/ and Mobile/ RASA models  P2
+================================================================================
+CURRENT
+ Landing with "GgnHomes Property Search", badges (Expert guidance, Verified
+ listings), "Press To Start", choose Rental or Sale, then separate Desktop and
+ Mobile Rasa chat components (4 near-duplicate files).
+
+UPGRADE (UI)
+ 1. Merge Desktop/Mobile variants into one responsive chat component
+    (less duplicate code, one design).
+ 2. Chat layout: assistant avatar, typing indicator, timestamp groups, message
+    bubbles with max ~30 words per reply.
+ 3. Quick-reply chips under each question (budget bands, BHK, sector) so users
+    tap instead of typing. Keep a free-text box and mic for voice.
+ 4. Rich results in chat: listing cards with photo, price, BHK, sector, and
+    buttons "View", "Book a visit", "Request a call", "Save".
+ 5. Sticky summary bar of what the bot understood ("Rent, 2 BHK, Sector 56,
+    under 40k") with an X to remove each filter.
+ 6. "See all results" button that opens Search with those filters.
+ 7. Human handoff button always visible: "Talk to an expert" (callback or
+    WhatsApp) that passes the conversation context.
+ 8. Floating launcher on all pages with a short greeting and dismiss memory.
+
+FUNCTIONALITY
+ - Persist the conversation per user/session (resume where left).
+ - Fallback when the model does not understand: offer 3 suggested actions
+   instead of repeating the question.
+ - Log questions with no answer to a "bot gaps" list for the admin.
+   [NEEDS API]
+ - Reuse the Help Centre FAQ data for non-search questions.
+ - Guard against showing sold/inactive listings.
+
+WHY: chatbot guidance says short replies, buttons ("Schedule a visit", "See
+more photos"), listing cards in the chat, and a structured human handoff that
+passes context rather than just collecting an email.
+
+
+================================================================================
+PART 8 - PRICE PREDICTOR           Price Predictor Model/pricepredict.jsx (565)  P2
+================================================================================
+CURRENT
+ "Property Price Predictor": select city, enter features, POST to prediction
+ API, show a predicted price; has its own logout/me calls. (The file also keeps
+ a large commented-out older version at the top.)
+
+UPGRADE (UI)
+ 1. Hero: "What is your home worth?" with three tabs: Buy value / Rent value /
+    EMI calculator.
+ 2. Form in 2 columns with sensible controls: sector autocomplete, BHK
+    chips, area (sq ft) slider, floor, age, furnishing, parking, lift.
+ 3. Result card: big estimate, a RANGE ("Rs 1.15 - 1.30 Cr"), confidence
+    label, price per sq ft, and a small comparison bar against the sector
+    average.
+ 4. "How we got this" expandable: key factors that raised/lowered the price.
+ 5. Side-by-side nearby comparable listings (cards) from your own database.
+ 6. EMI/affordability widget under the result: loan amount, rate, tenure
+    sliders, monthly EMI, pie of principal vs interest, optional amortisation
+    table (Housing.com-style calculators work this way).
+ 7. CTAs: "See similar homes", "List my property", "Talk to an expert".
+ 8. Delete the dead commented block at the top of the file.
+
+FUNCTIONALITY
+ - Always show a disclaimer that it is an estimate, not a valuation.
+ - Save last estimates for the logged-in user, shareable result link.
+ - Input validation with units; handle API failure with a retry card.
+ - Standalone EMI calculator route /tools/emi reused on Property Detail.
+ - Price-trend sparkline per sector if data exists. [NEEDS API]
+
+
+================================================================================
+PART 9 - 3D / VIRTUAL TOUR         3D View Property/propview.jsx (634)  P3
+================================================================================
+CURRENT
+ Panorama viewer with scene search, auto-rotate, fullscreen, quality, zoom
+ in/out, voice commands, "No panoramas available" empty state.
+
+UPGRADE (UI)
+ 1. Full-bleed viewer, controls grouped in one bottom pill (Rotate, Zoom,
+    Fullscreen, Quality) with tooltips; hide after 3 s of inactivity.
+ 2. Scene list as a thumbnail rail (bottom on mobile, left on desktop) with
+    room labels (Living room, Bedroom 1...). Scene search stays.
+ 3. Mini floor-plan map with a dot for the current room and pins to jump
+    (Zillow 3D Home pins photos on the floor plan; Matterport adds dollhouse
+    view).
+ 4. Hotspot arrows between rooms; first-time hint overlay ("Drag to look
+    around").
+ 5. Top bar: property title, price, and persistent buttons "Schedule visit",
+    "Enquire", "Back to listing".
+ 6. Empty state: "No 3D tour yet - view photos" with a link to the gallery.
+
+FUNCTIONALITY
+ - Preload the next scene, low-quality first then sharpen.
+ - Gyroscope mode on phones. Keyboard arrows and Esc to exit.
+ - Share link opening the same room.
+ - "3D tour" badge on search cards and gallery for listings that have one
+   (3D badges raise views per the research cited below).
+
+
+================================================================================
+PART 10 - PROPERTY ANALYSIS (OWNER INSIGHTS)    User-Properties/PropertyAnalysis.jsx (450)  P2
+================================================================================
+CURRENT
+ Views analytics with "Weekly View" and "Repeat Viewers" for an owner's
+ property; two GETs; logout/me calls.
+
+UPGRADE (UI)
+ 1. Top KPI cards: Views, Unique viewers, Enquiries, Saves, Visits, each with
+    change vs previous period.
+ 2. Date-range switch (7 / 30 / 90 days) driving a line chart; bar chart for
+    weekly views; donut for traffic source if available.
+ 3. Funnel strip: Views > Saves > Enquiries > Visits with drop-off %.
+ 4. "Listing health" score with checklist: photos >= 6, description length,
+    verified, price vs sector average, video/3D tour - each with Fix button
+    opening the edit modal.
+ 5. Smart tips card ("Add a floor plan to get ~more enquiries", "Price is 12%
+    above similar homes").
+ 6. Compare against similar listings in the sector.
+ 7. Property switcher at the top for owners with several listings; reuse the
+    new Manage-listings layout.
+
+FUNCTIONALITY
+ - Export CSV; email weekly digest. [NEEDS API]
+ - Boost/renew/mark-as-rented actions inline. [API partly OK]
+ - Real chart library with tooltips; skeletons while loading.
+
+
+================================================================================
+PART 11 - SHARED COMPONENTS (BUILD ONCE, USED ABOVE)   P1
+================================================================================
+ - OtpInput (6 boxes, paste, one-time-code).
+ - Stepper / Wizard shell with progress, back, save-draft.
+ - Toast/snackbar service (replaces every alert()).
+ - SlotPicker (date strip + time chips).
+ - StatusTimeline (vertical) and StatusChip.
+ - FileDropzone with preview and progress.
+ - SearchableChipSelect (sectors, areas).
+ - RangeSlider with formatted lakh/crore labels.
+ - EmptyState, ErrorRetry, SkeletonCard.
+ - ConfirmDialog (already in Admin shell adminUi.jsx - promote to shared).
+ - EmiCalculator widget.
+ - Footer + MobileBottomNav: one footer with Company, Buy/Rent, Post,
+   Support, Legal and app badges; bottom nav (Home, Search, Saved, Post,
+   Profile) on mobile only. Currently the user and agent footers are
+   separate copies (84 and 92 lines).
+
+Analytics events (names)
+ login_otp_requested, login_otp_verified, login_failed, preference_step_N,
+ preference_submitted, visit_slot_selected, visit_booked, visit_cancelled,
+ enquiry_sent, support_search, support_callback_requested, service_requested,
+ chatbot_started, chatbot_handoff, price_estimate_run, tour_opened,
+ analysis_fix_clicked.
+
+
+================================================================================
+PART 12 - SUGGESTED ORDER OF WORK
+================================================================================
+ 1. Shared components (PART 11) + Login (PART 1)
+ 2. Visit scheduling + enquiry (PART 4)
+ 3. User preference form (PART 3)
+ 4. Help Centre + About (PART 5)
+ 5. Property analysis (PART 10), Managed Services (PART 6)
+ 6. AI Assistant (PART 7), Price Predictor (PART 8)
+ 7. Agent register (PART 2), 3D view (PART 9)
+ Backend items marked [NEEDS API] can be shipped after the UI, with the UI
+ hiding those controls until the endpoint exists.
+
+
+================================================================================
+PART 13 - SERVER / BACKEND ADDITIONS (FULL LIST)
+================================================================================
+Read from server/Route/route.js (442 lines), models/ and controllers/.
+Stack today: Express + Mongoose, JWT cookies (verifyToken, verifyTokenOptional,
+verifyTokenOrAgent, verifyAgentToken, checkAdminEmail), multer uploads, cron
+for NoBroker sync, SMS via Android gateway devices + Brevo email.
+
+13.0 GAPS FOUND IN THE CURRENT SERVER (fix first)
+ G1  No rate limiting anywhere (no express-rate-limit in package.json or
+     index.js). OTP request/verify, password login, callback and enquiry
+     endpoints can be hammered. Add per-IP and per-mobile limits.
+ G2  CustomerSupport model has no status, ticket id, user link, reply or
+     source field; all fields required (email required even for phone-only
+     users). /api/request-callback needs login (verifyToken), so guests on
+     the Support page cannot submit.
+ G3  No Visit/Booking model or endpoint. "Schedule visit" has nowhere to
+     store slots, owner response, reminders or cancellations.
+ G4  Service requests have only pending / in-progress / completed; no
+     cancelled, vendor, price, photos, rating, timeline or invoice.
+ G5  Enquiry has a 45-day TTL index and no status/reply; owners cannot mark
+     it contacted/closed from the app.
+ G6  UserPreferenceForm POST (/api/userpreferenceform) is public and
+     unthrottled: spam and fake leads. Needs rate limit + OTP-verified mobile
+     or login. Fields budgetRange, bhkSize, moveInDate are free strings, so
+     matching is fragile.
+ G7  Payment model has no link to a visit/booking, no gateway order id, no
+     refund state, and paymentMethod is a loose enum. status lacks "refunded".
+ G8  Admin usage endpoints (/api/admin/cloudinary|brevo|mongo|gnews|locationiq
+     /usage) have NO auth middleware in route.js; anyone can call them (they
+     expose account usage). /api/locationqapi hands out the LocationIQ key to
+     any caller. Add verifyToken + checkAdminEmail to the usage routes.
+     (/api/admin/delete-property/:id only has verifyToken in the route, but
+     the controller itself rejects non-admins, so that one is fine; moving the
+     check into route middleware would still be cleaner.)
+ G9  No central input validation (use zod/joi/express-validator) and no
+     consistent error shape {code, message, fields}.
+ G10 No pagination contract on list endpoints (services, enquiries, admin
+     lists); only search exposes X-Total-Count.
+ G11 No audit log (who approved/deleted/changed what) for admin actions.
+ G12 No notification layer: SMS/email sends are called inline. Need one
+     notify(user, template, data) service with queue + retries + logging.
+ G13 CORS in dev: fixed in index.js this session (localhost any port when
+     NODE_ENV != production). Keep ALLOWED_ORIGINS exact in production.
+
+13.1 NEW MODELS
+ Visit (visits)                                    -> Part 4
+   propertyId, propertyType(rental|sale), ownerUserId, agentUserId,
+   userId, name, mobile, slotStart, slotEnd, mode(in_person|video),
+   status(requested|confirmed|rescheduled|cancelled|completed|no_show),
+   cancelReason, rescheduledFrom, notes, reminders[{type,sentAt,status}],
+   createdAt. Index: (propertyId, slotStart), (userId, slotStart),
+   unique partial index on (propertyId, slotStart) where status in
+   requested/confirmed to prevent double booking.
+ Availability (availability)                       -> Part 4
+   ownerUserId or agentUserId, weekly[{day, from, to}], slotMinutes,
+   blackoutDates[], timezone "Asia/Kolkata".
+ SupportTicket (replaces/extends CustomerSupport)  -> Part 5
+   ticketId "GH-000123", userId?, name, phone, email?, topic, message,
+   preferredTime, channel(callback|whatsapp|email|chat), status(open|in_progress|
+   resolved|closed), assignedTo, replies[{by,text,at}], rating, createdAt,
+   resolvedAt. Keep old CustomerSupport read-only for history.
+ FaqArticle (faq)                                  -> Part 5, 7
+   category, question, answer, tags[], order, isPublished, helpfulYes,
+   helpfulNo, updatedAt. Text index on question/answer/tags.
+ ServiceCatalog (service_catalog)                  -> Part 6
+   key, title, icon, description, startsFrom, active.
+ Vendor (vendors)                                  -> Part 6
+   name, phone, services[], sectors[], rating, active.
+ ServiceRequest (extend existing serviceRequests)  -> Part 6
+   add: status += cancelled|scheduled|assigned, vendorId, quote, finalPrice,
+   photos[], timeline[{status,note,by,at}], rating, feedback, ticketNo,
+   cancelReason, invoiceUrl.
+ Notification (notifications)                      -> all
+   userId, type, title, body, link, readAt, channel(sms|email|push|in_app),
+   createdAt.
+ NotificationJob (queue)                           -> all
+   to, channel, template, payload, runAt, attempts, status, lastError.
+ UserRequirement (extends userpreferenceForm)      -> Part 3
+   normalise: budgetMin, budgetMax, bhk[], sectors[], propertyType,
+   furnishing, moveInFrom, pauseUntil, consentSms, consentWhatsApp,
+   userId (set when mobile matches a user).
+ PriceEstimateLog (price_estimates)                -> Part 8
+   userId?, inputs, low, mid, high, model, createdAt, shareId.
+ SectorStats (sector_stats)                        -> Part 8, 10
+   sector, type, avgPrice, avgRent, pricePerSqft, count, p25, p75,
+   updatedAt (computed nightly).
+ ChatSession / ChatMessage                         -> Part 7
+   sessionId, userId?, mode(rental|sale), filters, messages[], handoff
+   {requested, at, ticketId}, lastActive. Plus ChatGap {question, count}.
+ ListingHealth (computed, no collection needed)    -> Part 10
+ AuditLog (audit_logs)                             -> G11
+   actorId, role, action, entity, entityId, before, after, ip, at.
+ AgentVerification (embedded in Agent)             -> Part 2
+   add: verificationStatus(pending|approved|rejected), rejectReason,
+   documents[{type, url, status}], submittedAt, reviewedAt, reviewedBy.
+ Panorama/Scene (embedded in property)             -> Part 9
+   scenes[{id,label,imageUrl,thumbUrl,position{x,y},hotspots[],order}],
+   floorPlanUrl, hasTour (bool, indexed).
+
+13.2 NEW / CHANGED ENDPOINTS (by screen)
+ AUTH (Part 1, 2)
+   POST /auth/otp/resend            resend with cooldown, returns nextAllowedAt
+   POST /auth/otp/email             send OTP to recovery email as fallback
+   POST /auth/otp/voice             optional voice-call OTP fallback
+   GET  /auth/methods?mobile=       which methods exist (otp/password/google)
+   POST /auth/google                Google sign-in (optional)
+   POST /auth/refresh               rotate refresh token (cookie)
+   GET  /api/agent/status           registration verification timeline
+   POST /api/agent/documents        upload ID/profile with type + size check
+   POST /api/agent/check-duplicate  mobile/email availability on blur
+   Responses: 429 with {retryAfterSec}; masked mobile in messages.
+ USER REQUIREMENTS (Part 3)
+   POST   /api/requirements              create (validated, rate-limited)
+   GET    /api/requirements/mine         list my requirements
+   PATCH  /api/requirements/:id          edit / pause / resume
+   DELETE /api/requirements/:id
+   GET    /api/requirements/preview?...  match count + 6 thumbnails for the
+                                         live "homes matching" panel (reuse
+                                         search query builder + X-Total-Count)
+   Job: when a new listing is approved, match against active requirements and
+   notify (WhatsApp/SMS/email) once per match.
+ VISITS (Part 4)
+   GET    /api/properties/:type/:id/slots?from=&to=   available slots
+   POST   /api/visits                    book (locks slot, validates mobile)
+   GET    /api/visits/mine               tabs: upcoming/completed/cancelled
+   PATCH  /api/visits/:id                reschedule / cancel with reason
+   POST   /api/visits/:id/confirm        owner or agent confirms
+   POST   /api/visits/:id/complete       mark done / no-show
+   GET    /api/visits/:id/ics            calendar file
+   GET    /api/owner/visits              owner/agent inbox
+   PUT    /api/owner/availability        save weekly availability + blackouts
+   Cron: every 5 min send reminders at 24h, 2h, 30min; ask confirmation 3h
+   before; nudge if a requested visit has no answer after 24h.
+ ENQUIRY (Part 4)
+   PATCH  /api/enquiry/:id/status        new|contacted|visit_scheduled|closed
+   POST   /api/enquiry/:id/reply         owner/agent reply visible to user
+   GET    /api/enquiry/mine              user's sent enquiries
+   Guard: duplicate enquiry (same user + property within 7 days) returns 409
+   with the existing enquiry id. Remove or extend the 45-day TTL deliberately.
+ PAYMENTS (Part 4)
+   POST   /api/payment/order             create gateway order (Razorpay or
+                                         similar) tied to visit/booking id
+   POST   /api/payment/webhook           signature-verified; marks completed
+   POST   /api/payment/:id/refund        admin; sets refunded + reason
+   GET    /api/payment/:id/receipt       PDF
+   Add fields: orderId, gatewayPaymentId, visitId, refundAmount, refundedAt.
+ SUPPORT / HELP (Part 5)
+   GET    /api/faq?q=&category=          search + list (public)
+   GET    /api/faq/suggest?q=            autocomplete titles
+   POST   /api/faq/:id/feedback          helpful yes/no
+   POST   /api/support/tickets           public (guest ok) with captcha/limit
+   GET    /api/support/tickets/mine      user's tickets
+   POST   /api/support/tickets/:id/reply
+   PATCH  /api/admin/support/tickets/:id status, assign, reply (admin)
+   GET    /api/admin/support/tickets     list with filters + pagination
+   Change: /api/request-callback becomes optional-auth (verifyTokenOptional)
+   and returns { ticketId }.
+ MANAGED SERVICES (Part 6)
+   GET    /api/service-catalog           services + startsFrom
+   POST   /api/createservices            accept photos[], validate property
+                                         belongs to user, return ticketNo
+   GET    /api/services?status=&q=&page= pagination contract
+   GET    /api/services/:id              detail + timeline
+   PATCH  /api/services/:id/cancel       user cancel with reason
+   PATCH  /api/services/:id/reschedule
+   POST   /api/services/:id/rate         rating + feedback after completion
+   Admin: POST /api/admin/services/:id/assign-vendor, /quote, /invoice;
+   CRUD /api/admin/vendors, /api/admin/service-catalog.
+   Notify user on each status change.
+ CHATBOT (Part 7)
+   POST   /api/chatbot                   accept sessionId, return
+                                         {reply, quickReplies[], cards[],
+                                          filters, handoffSuggested}
+   GET    /api/chatbot/session/:id       resume conversation
+   POST   /api/chatbot/handoff           creates SupportTicket with transcript
+   POST   /api/chatbot/feedback          thumbs up/down per reply
+   GET    /api/admin/chatbot/gaps        unanswered questions list
+   Reuse FaqArticle search for non-property questions; filter out inactive and
+   scraped-removed listings from results.
+ PRICE (Part 8)
+   POST   /api/predict-price             (exists) return {low, mid, high,
+                                         pricePerSqft, factors[], comparables[
+                                         ids], confidence}; validate inputs
+   GET    /api/price-trends?sector=&type= SectorStats series
+   GET    /api/tools/emi?amount=&rate=&years=  (or compute client-side only)
+   GET    /api/price-estimates/:shareId  shareable result
+   Rate-limit guests; log to PriceEstimateLog.
+ 3D TOUR (Part 9)
+   GET    /api/properties/:type/:id/tour scenes, hotspots, floor plan
+   PUT    /api/properties/:type/:id/tour owner/agent saves scene order/labels
+   POST   /api/properties/:type/:id/tour/scenes   upload panorama (multer,
+                                         size/type limits, generate thumbs)
+   Search filter: hasTour=true and a "3D tour" flag on result cards.
+ OWNER ANALYTICS (Part 10)
+   GET    /api/property-analysis/:id?range=7|30|90   KPIs with previous-period
+                                         delta, daily series
+   GET    /api/property-analysis/:id/funnel          views>saves>enquiries>visits
+   GET    /api/property-analysis/:id/health          score + checklist items
+   GET    /api/property-analysis/:id/compare         vs sector averages
+   GET    /api/property-analysis/:id/export.csv
+   Cron weekly: email digest to owners with opt-in.
+   Fix: addEnquiry route is commented out in route.js; wire enquiries and
+   visits into PropertyAnalysis so the funnel is real.
+ NOTIFICATIONS (all)
+   GET    /api/notifications             in-app list + unread count
+   PATCH  /api/notifications/:id/read    and /read-all
+   PUT    /api/user/notification-prefs   sms/whatsapp/email toggles + quiet hours
+ ADMIN (cross-cutting)
+   GET    /api/admin/audit-logs
+   GET    /api/admin/visits, /api/admin/support/tickets, /api/admin/requirements
+   Add checkAdminEmail to the admin usage routes (G8).
+
+13.3 MIDDLEWARE / INFRA
+ - rateLimiter: express-rate-limit, memory first, Redis later. Suggested:
+   OTP request 3 per 10 min per mobile + 20 per hour per IP; verify 5 per 10
+   min; login 10 per 15 min; guest forms (support, requirements) 5 per hour
+   per IP; chatbot 30 per 10 min.
+ - validate(schema): zod/joi wrapper returning {code:"VALIDATION", fields:{}}.
+ - errorHandler: one final middleware, hides stack in production, adds
+   requestId.
+ - requestId + structured logging (pino); log userId, route, latency.
+ - helmet, compression, trust proxy for Render, body size limits.
+ - uploads: validate mime + size, virus-safe names, store on Cloudinary (as
+   today) and keep only URLs; clean orphan files.
+ - Notification service + queue worker (cron or BullMQ if Redis is added);
+   templates for: otp, visit_confirmed, visit_reminder_24h/2h/30m, visit_
+   cancelled, enquiry_received, enquiry_reply, ticket_created, ticket_reply,
+   service_status, requirement_match, agent_approved, weekly_digest.
+ - Idempotency key on payment and booking POSTs.
+ - Health route already exists (GET /); add /health/deep with DB ping.
+ - Config: .env.example listing every variable (ALLOWED_ORIGINS, DB, JWT,
+   SMS, BREVO, CLOUDINARY, PAYMENT_KEY, PAYMENT_SECRET, WEBHOOK_SECRET,
+   WHATSAPP_TOKEN, FRONTEND_URL, NODE_ENV).
+ - Tests: supertest for auth, visits (double booking), payment webhook
+   signature, rate limits, enquiry duplicate guard.
+
+13.4 DATABASE INDEXES TO ADD
+ visits (propertyId, slotStart) partial unique; (userId, slotStart);
+ supportTickets (userId, createdAt), (status, createdAt), ticketId unique;
+ faq text index; notifications (userId, readAt, createdAt);
+ notificationJobs (status, runAt); requirements (status, sectors, budgetMin);
+ propertyAnalysis views by date; properties hasTour; enquiries (propertyId,
+ userId, createdAt); sectorStats (sector, type).
+
+13.5 SECURITY
+ - Mask phone numbers in API responses to other users (agents see full only
+   after unlock, as the contactUnlockedBy field already implies).
+ - Keep PROTECTED_PROPERTY_FIELDS enforced on every create/update including
+   the tour and scenes routes.
+ - Verify ownership (owner/agent/admin) on every PATCH/PUT/DELETE by id.
+ - OTP: hash OTPs at rest, constant-time compare, lockout after N attempts
+   (otpAttempts field exists - make the limit server-enforced everywhere).
+ - Never return otp, otpExpiry, password, accessToken, refreshToken in user
+   payloads (select:false on the schema).
+ - Webhook signature checks; CSRF protection for cookie-auth POSTs (sameSite
+   + custom header) on non-GET routes.
+ - Consent records for SMS/WhatsApp marketing (timestamp + text version).
+
+13.6 DATA MIGRATION / BACKFILL
+ - Convert userpreferenceForm free text to normalised requirement fields.
+ - Backfill ticketId for existing CustomerSupport rows into SupportTicket.
+ - Compute SectorStats once, then nightly.
+ - Add status to existing enquiries (default "new").
+ - Seed FaqArticle (50 items) and ServiceCatalog (8 items).
+
+13.7 UI ADDITIONS THAT THE SERVER WORK ENABLES (checklist)
+ Login: resend timer, email/voice OTP fallback, 429 message, remembered method.
+ Requirements: live match panel, My requirements page, pause/resume, consent.
+ Visits: slot picker, My visits, calendar file, reminders, reschedule/cancel,
+         owner inbox + availability editor, double-booking error message.
+ Enquiry: duplicate message, My enquiries with owner replies, status chips.
+ Payments: order checkout, receipt download, refund status, failed retry.
+ Support: ticket number, My tickets, replies thread, FAQ helpful buttons.
+ Services: catalogue, photo upload, timeline, vendor card, rate service.
+ Chatbot: resume session, quick replies, cards, handoff, feedback.
+ Price: range + factors + comparables + share link + trends.
+ Tour: scene rail, floor-plan map, tour badge on cards, share link.
+ Analysis: KPI deltas, funnel, health score with fix buttons, CSV export.
+ Global: notification bell with unread count + preferences page.
+ Admin: tickets, visits, requirements, vendors, FAQ, audit log, chatbot gaps
+        (add to the admin nav in shell/adminNav.js).
+
+13.8 BUILD ORDER FOR THE SERVER
+ 1) Rate limiting, validation, error handler, helmet (G1, G9, 13.3)
+ 2) Notification service + queue (G12)
+ 3) Auth fallbacks and refresh (Part 1)
+ 4) Visits + availability + reminders (G3)
+ 5) Support tickets + FAQ (G2)
+ 6) Enquiry status/reply + duplicate guard (G5)
+ 7) Payments order/webhook/refund (G7)
+ 8) Requirements normalisation + match notifier (G6)
+ 9) Services upgrade + vendors (G4)
+ 10) Analytics funnel + health + export
+ 11) Chat sessions + handoff + gaps
+ 12) Price trends + SectorStats; Tour scenes
+ 13) Audit log and admin endpoints; fix auth gaps (G8) - do this early, it is
+     a small, high-value fix.
+
+================================================================================
+PART 14 - FULL TESTING WORKFLOW
+================================================================================
+Goal: prove every route and screen works for a NORMAL user, an AGENT and an
+ADMIN, find data leaks / auth holes / crashes, and leave a repeatable suite.
+
+14.0 SAFETY RULES (read first)
+ - server/.env MONGO_URI points at the Atlas cluster "ggnHome". Treat that as
+   LIVE. Never run the test suite against it. Tests use an isolated database
+   (in-memory MongoDB via mongodb-memory-server, or a separate Atlas db named
+   ggnHome_test). index.js must refuse to start tests if the DB name does not
+   end in "_test" (guard: process.env.NODE_ENV === "test").
+ - In test mode: SMS gateway, Brevo email, Cloudinary, LocationIQ, GNews and
+   the NoBroker cron are STUBBED (no real messages, uploads or scraping).
+   OTP values are read from the DB/stub, never sent.
+ - Test data uses obviously fake numbers (e.g. 90000 00001 - 90000 00099) and
+   emails @example.test. Everything is deleted after the run.
+ - Admin identity: checkAdminEmail reads an allow-list; the test admin email is
+   injected through a test env var, never a real admin account.
+ - Payments only against the gateway's TEST mode keys.
+
+14.1 TEST PYRAMID AND TOOLS
+ Layer              Tool                          What it covers
+ Unit               jest                          validators, EMI math, slot
+                                                  generation, price range, OTP
+                                                  hashing, protectedFields
+ API integration    jest + supertest              every route, 3 roles
+ Contract           zod/joi schemas shared        response shapes do not drift
+ UI components      react-testing-library         forms, OTP input, slot picker
+ End-to-end         Playwright (3 roles)          real browser flows
+ Security           script + manual checklist     authz matrix, injection, XSS
+ Performance        autocannon / k6               key endpoints under load
+ Leak checks        see 14.6                      memory, handles, data, secrets
+ Accessibility      axe-core in Playwright        every screen
+ Visual             Playwright screenshots        mobile 375, tablet 768,
+                                                  desktop 1440, light/dark
+
+14.2 ENVIRONMENT SETUP
+ 1. server: npm i -D jest supertest mongodb-memory-server
+    client: npm i -D @playwright/test @testing-library/react axe-core
+ 2. server/tests/setup.js starts the in-memory DB, sets env, stubs senders
+    (jest.mock utils/sendSms, utils/sendEmail, cloudinary, axios to external).
+ 3. server/tests/helpers: makeUser(role), loginAs(role) returning a cookie jar,
+    makeProperty(owner), makeVisit(), makeTicket(), clock control for cron.
+ 4. Seed script tests/seed.js creates: 3 normal users, 2 owners, 2 agents
+    (1 pending, 1 active), 1 admin, 10 properties (rental/sale/affiliate),
+    sectors, promos, FAQ, service catalogue.
+ 5. npm scripts: test, test:api, test:e2e, test:security, test:load.
+ 6. CI (GitHub Actions): lint, unit, api, e2e on every PR; block merge on fail.
+
+14.3 ROLE-BASED USER JOURNEYS (the "create new user" scenarios)
+ Every journey starts with a brand-new account created through the real flow
+ (OTP stubbed), not a pre-made fixture, then checks the data in the DB.
+
+ A. NORMAL USER (renter / buyer)
+  A1  Sign-up: mobile > OTP > set password > recovery email. Expect cookie,
+      role=renter, isVerified true, no otp fields in /auth/me response.
+  A2  Wrong OTP x5 > locked; resend cooldown; 429 shape; email OTP fallback.
+  A3  Logout, login by password, login by OTP; refresh token rotation.
+  A4  Fill user preference form; see match count; edit/pause requirement.
+  A5  Browse dashboard, search with every filter, sector suggestions, search
+      history saved, sort, pagination header X-Total-Count.
+  A6  Open a normal listing: save, share, enquire (duplicate guarded),
+      request callback, schedule a visit (slot taken by another user fails),
+      pay deposit in gateway test mode, webhook marks completed.
+  A7  Open an affiliate listing: no contact forms, only external CTA.
+  A8  My visits: reschedule, cancel; reminders created at 24h/2h/30m.
+  A9  Support: search FAQ, helpful vote, create ticket as logged-in and as
+      guest, see reply.
+  A10 Managed service request with photos, track timeline, rate.
+  A11 Chatbot: rental flow and sale flow, card actions, handoff ticket.
+  A12 Price predictor: valid, invalid, extreme inputs; EMI widget.
+  A13 3D tour opens, scene change, no-tour empty state.
+  A14 Rewards page, saved flatmate rooms, flatmate search + enquiry.
+  A15 Notifications bell: unread count, mark read, preference toggles.
+  A16 Negative: access other users' visits/tickets/payments (expect 403/404),
+      tamper with ids, send protected fields in bodies (ignored).
+
+ B. OWNER (user who posts) - created as a normal user, then posts
+  B1  Post rental and sale via the new post form; photos upload; server
+      forces isActive false and ignores protected fields.
+  B2  Listing appears only after admin approval; edit triggers re-review.
+  B3  Availability editor; owner visit inbox; confirm/complete visits.
+  B4  Enquiry inbox: status change, reply; contact unlock rules.
+  B5  Property analysis: KPIs, funnel, health score, CSV export.
+  B6  Delete own listing; cannot touch another owner's listing.
+  B7  Flatmate listing create/update/delete with 8 photo cap.
+
+ C. AGENT
+  C1  Register: all steps, document upload, duplicate mobile blocked, status
+      "pending"; cannot access agent dashboard until approved.
+  C2  Admin approves > agent logs in by OTP and by password; reset password.
+  C3  Agent dashboard: leads, enquiries (/api/agent/propertyEnquiries),
+      preference leads with visibility rules and mobile lock/unlock window.
+  C4  Agent posts property (own add-property page), listing marked ownerType
+      agent; manage listings; visit inbox.
+  C5  Suspended agent: all calls 401/403 immediately, tokens invalid.
+  C6  Negative: agent cannot call admin routes, cannot see other agents'
+      leads, cannot see unmasked numbers before unlock, cannot set rank.
+
+ D. ADMIN
+  D1  Admin login (allow-listed email) - non-allow-listed user with role
+      "admin" in a body/token is rejected.
+  D2  Overview numbers equal DB counts; user management list; update role.
+  D3  Property moderation: approve, toggle active, toggle review, set rank,
+      delete (+ Cloudinary cleanup stub), pending list.
+  D4  Agents: approve, suspend, visibility, assign preference to agent.
+  D5  Promos CRUD + JSON import; SMS devices, SMS log, test send.
+  D6  Support tickets: assign, reply, close; services: assign vendor, quote,
+      status; visits and requirements lists; audit log entries exist for each
+      action above.
+  D7  Payments: pending list, approve, refund.
+  D8  Usage endpoints require admin (currently open: G8 must fail the test
+      until fixed).
+  D9  Negative: normal user and agent get 403 on every /admin and /api/admin
+      route (auto-generated from route.js).
+
+14.4 ROUTE-BY-ROUTE API MATRIX (auto-generated)
+ A script reads server/Route/route.js (442 lines, ~150 routes) and builds a
+ table: method, path, middleware, expected status for each of
+ {anonymous, normal user, owner, agent(pending), agent(active), admin}.
+ Rules asserted for every route:
+  - 200/201 for allowed roles with valid body; 400 with {code,fields} for
+    invalid body; 401 anonymous where auth required; 403 wrong role; 404 on
+    unknown id; 409 on duplicates; 429 after rate limit.
+  - Response never contains: password, otp, otpExpiry, accessToken,
+    refreshToken, internal fields, other users' phone/email.
+  - Response time under 800 ms on seeded data for read routes.
+ Output: tests/reports/route-matrix.md (pass/fail per cell).
+
+14.5 FUNCTIONAL TEST CASES (by area, minimum set)
+ AUTH      new mobile, existing mobile, wrong/expired/reused OTP, attempts
+           lock, resend cooldown, password rules, set-password twice, recovery
+           email, logout invalidates token, refresh rotation, cookie flags
+           (httpOnly, secure in prod, sameSite).
+ SEARCH    each filter alone and combined, empty result, pagination edges,
+           sort, sector suggestions, inactive/affiliate removed excluded,
+           NoSQL injection strings in query ({"$gt":""}).
+ PROPERTY  create validates required fields; protected fields stripped; image
+           count/size/type limits; update re-review; delete cascades analysis.
+ VISITS    slot generation across timezone/IST, past slots hidden, blackout
+           dates, double booking race (two parallel requests - exactly one
+           wins), reschedule frees old slot, cancel rules, reminder jobs.
+ ENQUIRY   create, duplicate 409, TTL index behaviour, status changes, owner
+           only access, contact unlock.
+ PAYMENT   order create, webhook with valid/invalid signature, replay is
+           idempotent, failed payment retry, refund, amounts equal server
+           side price (client cannot change amount).
+ SUPPORT   guest and logged-in ticket, rate limit, reply thread, status flow.
+ SERVICES  create with owned/not-owned property, status transitions allowed
+           only forward, cancel, rate only when completed, one rating.
+ CHATBOT   sessions resume, filters extracted, no inactive listings, handoff
+           creates ticket, long/empty/emoji input, prompt-injection text.
+ PRICE     valid inputs, out-of-range, missing, unknown sector, concurrency.
+ ANALYSIS  addView dedupe, owner-only metrics, ranges, funnel math.
+ PROMOS    active window, ordering, JSON import validation.
+ UPLOADS   wrong mime, oversize, 0-byte, path traversal in filename.
+ NOTIFY    template rendering, retries, quiet hours, opt-out respected.
+
+14.6 LEAK AND ROBUSTNESS CHECKS ("any leak or not")
+ DATA LEAKS
+  - Grep every JSON response in the matrix for secrets and PII patterns.
+  - Verify select:false on password/otp/tokens; /auth/me and agent /me output.
+  - Phone/email of owners hidden from non-unlocked users and other agents.
+  - Error responses contain no stack traces, file paths or Mongo errors in
+    NODE_ENV=production.
+  - CORS: only allowed origins; credentials only for those; preflight tests.
+  - Unauthenticated routes list (G8): usage endpoints, /api/locationqapi.
+  - Static /uploads folder listing disabled; no private files exposed.
+  - Logs do not print tokens, OTPs or full phone numbers.
+  - .env and node_modules not served; .gitignore covers .env (check git
+    history for committed secrets with gitleaks/trufflehog).
+ MEMORY / RESOURCE LEAKS
+  - Run autocannon 60 s on search, property detail, login; sample
+    process.memoryUsage() every 5 s - heap must plateau, not climb.
+  - node --inspect heap snapshots before/after 10k requests; diff for
+    retained objects (listeners, timers, large arrays).
+  - Check unbounded arrays in documents (PropertyAnalysis.views[],
+    clientReviews[], mobileViewedByAgents[], leadsAssigned[]): cap or move to
+    separate collections; fail test if a doc exceeds 1 MB in load test.
+  - Open handles: jest --detectOpenHandles; cron jobs stopped on shutdown;
+    mongoose connection closed; no duplicate cron registration on hot reload.
+  - Client: React Profiler / Chrome heap for the long lists, chat and tour
+    viewer; remove listeners in cleanup (scroll, resize, voice recognition,
+    IntersectionObserver, timers). Playwright script navigates 50 routes and
+    checks JS heap and detached DOM nodes.
+ SECURITY
+  - OWASP list: broken access control (matrix), injection (NoSQL operators,
+    regex DoS in search), XSS (render script strings in names, messages,
+    titles - must be escaped), CSRF on cookie POSTs, SSRF in any URL fetch,
+    mass assignment (protectedFields), insecure upload, rate limit bypass via
+    X-Forwarded-For, JWT tampering/expiry/alg none, enumeration via
+    check-mobile (return same timing/shape), brute force.
+  - npm audit for server and client; fail on high/critical.
+
+14.7 FRONTEND TESTS
+ Component: OtpInput (paste, backspace, autofill), SlotPicker, Stepper,
+ RangeSlider formats, FileDropzone, Toast, EmiCalculator math.
+ E2E (Playwright, one spec per role, run on Chromium + WebKit + mobile
+ emulation): journeys A, B, C, D above, driven through the UI against the test
+ server. Each spec asserts: no console errors, no failed network calls (except
+ intended), screenshot saved, axe violations = 0 serious/critical.
+ Responsive: no horizontal scroll at 320/375/768/1440; tap targets >= 44 px.
+ Performance budgets: LCP < 2.5 s, CLS < 0.1, route chunk < 250 kB gzip.
+
+14.8 EXECUTION ORDER (the final run)
+  1. Lint + build both apps.
+  2. Start test server with in-memory DB and stubs; run seed.
+  3. Unit tests.
+  4. API integration for journeys A-D and the generated route matrix.
+  5. Security + leak checks (14.6), load run with memory sampling.
+  6. Start client, run Playwright journeys for all three roles.
+  7. Collect reports: tests/reports/{route-matrix.md, security.md, leaks.md,
+     e2e.html, a11y.md, perf.md}.
+  8. Triage: every failure becomes a fix (add test first), rerun until green.
+  9. Final sign-off checklist (14.9).
+
+14.9 EXIT CRITERIA
+  [ ] 100% of routes appear in the matrix with expected statuses passing
+  [ ] 0 secrets/PII in any response; 0 unauthenticated admin routes
+  [ ] No heap growth trend in 10-minute load run; no open handles
+  [ ] All three role journeys pass in Chromium and mobile emulation
+  [ ] 0 serious/critical accessibility issues; no horizontal scroll
+  [ ] npm audit: no high/critical
+  [ ] Race conditions (double booking, payment replay) proven safe
+  [ ] Test data fully cleaned; live database untouched (verify document
+      counts on live DB are unchanged before/after - read-only check)
+
+================================================================================
+PART 15 - READY-TO-USE TEST CODE + FINDINGS SO FAR
+================================================================================
+15.1 FINDINGS FROM THE FIRST (PARTIAL) TEST RUN
+ F1  LIVE BUG (found by probing, nothing was created): the live `users`
+     collection has a unique index email_1 that is NOT sparse/partial and the
+     schema no longer declares it. One user already has no email, so every NEW
+     mobile-only sign-up fails with E11000 "email: null" and /login/request-otp
+     returns a generic 500 "Server error". Fix: replace it with a partial
+     unique index:
+         db.users.dropIndex("email_1")
+         db.users.createIndex({email:1},{name:"email_1",unique:true,
+           partialFilterExpression:{email:{$type:"string"}}})
+     Status: NOT applied (owner declined to run it on the live DB). Also make
+     requestOtp's catch log the real error instead of hiding it.
+ F2  Correction to G1: login.controller.js already has an in-memory per-IP
+     throttle (tooManyFromIp), a 30 s resend gap, 5-attempt OTP lock and an
+     email fallback. What was missing is a shared limiter on the other
+     routes. Added in this session: middleware/rateLimit.js applied to OTP,
+     login, set-password, check-mobile, agent OTP/login/reset, preference form,
+     callback and chatbot routes.
+ F3  Done this session (server/): helmet, request id, JSON error handler,
+     JSON 404, 1 MB body limit, trust proxy, index.js exports `app` and only
+     connects/schedules cron/listens when run directly, DISABLE_CRON flag,
+     auth on the 5 /api/admin/*/usage routes (client already sends cookies).
+ F4  Freebuff desktop log (~/Library/Logs/Freebuff/orchestrator-stderr.log)
+     shows AI_APICallError 410 "session_expired" from codebuff.com: its
+     session ended server-side; it needs a new message/session, nothing in
+     this repo causes it. A log monitor is armed for new errors.
+
+15.2 SAFE TEST ENTRY POINT (never touches live data)
+ Use a throwaway database. Put in server/.env.test:
+     NODE_ENV=test
+     MONGO_URI=mongodb://127.0.0.1:27017/ggnHome_test     (local mongod) or an
+                                                           Atlas db ending _test
+     DISABLE_RATE_LIMIT=true
+     DISABLE_CRON=true
+ tests/setup.js must refuse to run when the DB name does not end in "_test":
+     const name = new URL(process.env.MONGO_URI).pathname.slice(1);
+     if (!name.endsWith("_test")) throw new Error("Refusing to run on "+name);
+ Install: cd server && npm i -D jest supertest
+ package.json: "test": "jest --runInBand --forceExit --setupFiles ./tests/env.js"
+
+15.3 tests/env.js
+     require("dotenv").config({ path: ".env.test", quiet: true });
+
+15.4 tests/helpers.js
+     jest.mock("../utils/sendSms", () => ({
+       sendOtpSms: jest.fn(async () => true), sendSms: jest.fn(async () => true),
+       isSmsConfigured: () => true }));
+     jest.mock("../utils/sendEmail", () => jest.fn(async () => true));
+     jest.mock("../config/FileHandling2", () => ({
+       uploadAgentFilesToCloud: jest.fn(async () => ({
+         profilePhoto: { secure_url: "https://example.test/p.jpg" },
+         idProofs: [{ secure_url: "https://example.test/id.jpg" }] })) }));
+     // (jest.mock calls must sit at the top of each test file, or in a
+     //  shared setupFilesAfterEach module.)
+
+ Fake data rules: mobiles 90RRRRRNNN, emails @example.test, names start "TEST".
+
+15.5 tests/roles.test.js (normal user, agent, admin)
+ const request = require("supertest"); const mongoose = require("mongoose");
+ const app = require("../index"); const User = require("../models/user.model");
+ const Agent = require("../models/Agent.model");
+ const RUN = String(Date.now()).slice(-5);
+ const mob = n => `90${RUN}${String(n).padStart(3,"0")}`;
+ const U = mob(1), AG = mob(2), AD = mob(3);
+ beforeAll(() => mongoose.connect(process.env.MONGO_URI));
+ afterAll(async () => { await User.deleteMany({mobileNumber:{$in:[U,AG,AD]}});
+   await Agent.deleteMany({mobileNumber:AG}); await mongoose.disconnect(); });
+
+ async function login(a, mobileNumber){
+   await a.post("/login/request-otp").send({ mobileNumber });
+   const u = await User.findOne({ mobileNumber });          // OTP read from DB
+   const r = await a.post("/login/verify-otp").send({ mobileNumber, otp: u.otp });
+   expect(r.status).toBe(200); return r.body; }
+
+ describe("hardening", () => {
+   test("health + headers", async () => { const r = await request(app).get("/");
+     expect(r.status).toBe(200); expect(r.headers["x-request-id"]).toBeTruthy();
+     expect(r.headers["x-content-type-options"]).toBe("nosniff"); });
+   test("json 404", async () => { const r = await request(app).get("/nope");
+     expect(r.status).toBe(404); expect(r.body.code).toBe("NOT_FOUND"); });
+   test("bad json -> 400", async () => { const r = await request(app)
+     .post("/login/request-otp").set("Content-Type","application/json").send("{bad");
+     expect(r.status).toBe(400); });
+   test("cors", async () => {
+     expect((await request(app).get("/").set("Origin","https://evil.example")).status).toBe(403);
+     expect((await request(app).get("/").set("Origin","http://localhost:3000")).status).toBe(200); });
+   test("usage routes need auth", async () => {
+     for (const p of ["cloudinary","brevo","mongo","gnews","locationiq"])
+       expect((await request(app).get(`/api/admin/${p}/usage`)).status).toBe(401); });
+ });
+
+ describe("normal user", () => {
+   const a = request.agent(app); let token;
+   test("signup by OTP -> renter, no secrets in /auth/me", async () => {
+     const b = await login(a, U); token = b.accessToken; expect(b.user.role).toBe("renter");
+     const me = await a.get("/auth/me"); expect(me.status).toBe(200);
+     expect(JSON.stringify(me.body)).not.toMatch(/"otp"|"password"|refreshToken/); });
+   test("wrong OTP rejected", async () => {
+     const r = await request(app).post("/login/verify-otp").send({ mobileNumber:U, otp:"ZZZZ" });
+     expect([400,429]).toContain(r.status); });
+   test("403 on every admin route", async () => {
+     for (const p of ["/api/users","/api/admin/overview","/admin/usermanagement",
+       "/api/admin/pending-payments","/api/admin/agents","/api/admin/promos",
+       "/api/admin/sms-devices","/api/admin/sms-log","/api/get-callback-requests",
+       "/api/enquiry","/api/properties","/api/admin/mongo/usage"]) {
+       const r = await a.get(p).set("Authorization",`Bearer ${token}`);
+       expect([401,403]).toContain(r.status); } });
+   test("cannot become admin through body", async () => {
+     await a.post("/api/user/save-details").set("Authorization",`Bearer ${token}`)
+       .send({ name:"TEST", role:"admin" });
+     expect((await User.findOne({mobileNumber:U})).role).not.toBe("admin"); });
+ });
+
+ describe("agent + admin", () => {
+   let agent, adminToken, agentToken; const adm = request.agent(app);
+   test("register -> pending", async () => {
+     await request(app).post("/api/agent/register").field("fullName","TEST Agent")
+       .field("email",`a${RUN}@example.test`).field("mobileNumber",AG)
+       .field("experienceYears","2").field("dob","1990-01-01")
+       .attach("profilePhoto",Buffer.from("x"),"p.jpg").attach("idProof",Buffer.from("x"),"i.jpg");
+     agent = await Agent.findOne({ mobileNumber: AG }); expect(agent.status).toBe("pending"); });
+   test("duplicate mobile blocked", async () => {
+     const r = await request(app).post("/api/agent/register").field("fullName","TEST")
+       .field("mobileNumber",AG).field("experienceYears","1").field("dob","1990-01-01")
+       .attach("profilePhoto",Buffer.from("x"),"p.jpg").attach("idProof",Buffer.from("x"),"i.jpg");
+     expect([409,422]).toContain(r.status); });
+   test("pending agent cannot log in", async () => {
+     await request(app).post("/api/agent/send-otp").send({ mobileNumber:AG, agentCode:agent.agentCode });
+     const f = await Agent.findById(agent._id);
+     const r = await request(app).post("/api/agent/login/otp")
+       .send({ mobileNumber:AG, agentCode:agent.agentCode, otp:f.otp });
+     expect(r.status).toBe(403); });
+   test("admin (role set in DB) approves agent", async () => {
+     await request(app).post("/login/request-otp").send({ mobileNumber: AD });
+     await User.updateOne({ mobileNumber: AD }, { $set: { role: "admin" } });
+     const u = await User.findOne({ mobileNumber: AD });
+     const r = await adm.post("/login/verify-otp").send({ mobileNumber:AD, otp:u.otp });
+     adminToken = r.body.accessToken;
+     const ap = await adm.post(`/api/admin/approveagent/${agent._id}`)
+       .set("Authorization",`Bearer ${adminToken}`);
+     expect(ap.status).toBe(200); });
+   test("approved agent logs in, blocked from admin, suspended = locked out", async () => {
+     await User.updateOne({mobileNumber:AG},{}); // (no-op, keeps linkage)
+     await Agent.updateOne({_id:agent._id},{$set:{otpExpiry:null}});
+     await request(app).post("/api/agent/send-otp").send({ mobileNumber:AG, agentCode:agent.agentCode });
+     const f = await Agent.findById(agent._id);
+     const r = await request(app).post("/api/agent/login/otp")
+       .send({ mobileNumber:AG, agentCode:agent.agentCode, otp:f.otp });
+     expect(r.status).toBe(200); agentToken = r.body.accessToken || r.body.token;
+     expect((await request(app).get("/api/agent/me").set("Authorization",`Bearer ${agentToken}`)).status).toBe(200);
+     expect([401,403]).toContain((await request(app).get("/api/admin/agents")
+       .set("Authorization",`Bearer ${agentToken}`)).status);
+     await adm.post(`/api/admin/suspendagent/${agent._id}`).set("Authorization",`Bearer ${adminToken}`);
+     expect([401,403]).toContain((await request(app).get("/api/agent/me")
+       .set("Authorization",`Bearer ${agentToken}`)).status); });
+ });
+
+15.6 tests/matrix.test.js (every route x every role) - skeleton
+ Parse Route/route.js with a regexp /router\.(get|post|put|patch|delete)\(\s*["'`]([^"'`]+)/
+ to list routes; for each build expectations from the middleware names found
+ in the same statement: verifyToken -> anonymous 401; checkAdminEmail -> normal
+ user 403; verifyAgentToken -> normal user 401/403. Replace :id params with a
+ random ObjectId. Assert no response body contains /"password"|"otp"|refresh/ .
+
+15.7 tests/leaks.test.js
+ - GET every public route; JSON.stringify(body) must not match
+   /(password|otp|otpExpiry|refreshToken|accessToken)"/ or other users' phones.
+ - NODE_ENV=production: force an error route; body must not contain "at "
+   stack frames or file paths.
+ - Heap: loop 5000 requests to /api/search-properties; compare
+   process.memoryUsage().heapUsed after global.gc() at start vs end; fail if
+   growth > 30 MB (run node --expose-gc).
+
+15.8 Frontend smoke (Playwright) - tests/e2e/roles.spec.ts
+ For each role: open /, login via OTP (read OTP from the test DB through a
+ test-only helper route enabled only when NODE_ENV=test), visit the role's key
+ pages, assert no console errors, no horizontal scroll at 375 px, axe has no
+ serious violations, and screenshot saved.
+
+15.9 RUN ORDER
+ 1) set .env.test  2) npm test (server)  3) npm run test:leaks  4) start
+ server+client against the test DB  5) npx playwright test  6) fix, repeat.
+
+================================================================================
+SOURCES (web searches run for this document)
+================================================================================
+ - Housing.com help, login/signup (phone + OTP, or Gmail):
+   https://support.housing.com/support/solutions/articles/4000172979-how-do-i-login-signup-
+ - UX Planet, 12 best practices for sign-up and login page design:
+   https://uxplanet.org/12-best-practies-for-sign-up-and-login-page-design-69d6cd045cf
+ - UX Planet, 5 signup UX patterns:
+   https://uxplanet.org/i-downloaded-12-apps-last-month-only-finished-3-signups-c717d57f734d
+ - Twilio, best practices for OTP input forms in HTML:
+   https://www.twilio.com/en-us/blog/developers/best-practices/otp-input-forms-html
+ - Zillow Instant Tour, live-slot booking:
+   https://learn.rentengine.io/en/articles/13590398-how-to-use-zillow-instant-tour
+ - Tour reminder timing / self-scheduling:
+   https://www.doorloop.com/features/showings
+   https://www.myaifrontdesk.com/multifamily/tour-reminder-automation-multifamily
+ - Housing.com home loan calculator:
+   https://housing.com/news/housing-com-home-loan-calculator/
+ - Real estate chatbot practices (quick replies, cards, handoff):
+   https://exotel.com/blog/ai-real-estate-chatbots-drive-leads-bookings-efficiency/
+ - Matterport vs Zillow 3D Home (dollhouse, floor plan, badge effect):
+   https://thinkrealty.com/article/matterport-vs-zillow-3d
+   https://www.open-homes.com/blog/are-matterport-and-zillow-3d-home-the-same-thing-which-should-i-use-for-my-listing/
+ - Help-centre UX (search first, 5-7 categories, popular FAQs):
+   https://blog.logrocket.com/ux-design/help-desk-ux-case-studies/
+   https://dev.to/freepixel11/best-practices-for-building-a-visually-appealing-zendesk-help-center-2c58
+ Statistics quoted in those sources (for example 3D-badge view lift) come from
+ vendor blogs and were not verified independently.

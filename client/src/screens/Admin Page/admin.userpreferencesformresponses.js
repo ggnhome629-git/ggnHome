@@ -1,14 +1,22 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from 'axios';
-import TopNavigationBar from "../Dashboard/TopNavigationBar";
 import { useNavigate } from "react-router-dom";
+import {
+  Box, Button, Card, CardContent, Grid, Typography, TextField,
+  InputAdornment, Avatar, Chip, IconButton, Dialog, DialogTitle,
+  DialogContent, DialogActions, CircularProgress, Stack, Tooltip,
+  Skeleton, Alert,
+} from "@mui/material";
+import { Search, RefreshCw, Filter, Phone, Mail, MessageSquare, Users, LogIn, LogOut, MapPin } from "lucide-react";
+import { PageHeader, StatCard, StatusChip, ConfirmDialog, EmptyState, CopyField, MaskedPhone } from "./shell/adminUi";
+import { AnimatedNumber } from "../../../components/motion";
+import "../admin.css";
 
 const AdminPreferencesDashboard = () => {
   const [preferences, setPreferences] = useState([]);
   const [loading, setLoading] = useState(true);
   const [matching, setMatching] = useState(false);
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
 
   const [stats, setStats] = useState({ total: 0, loggedIn: 0, notLoggedIn: 0 });
   const accessToken = localStorage.getItem("accessToken");
@@ -33,6 +41,10 @@ const AdminPreferencesDashboard = () => {
     bhkSize: "",
     preferredLocation: "",
   });
+
+  // Delete confirmation
+  const [deleteId, setDeleteId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchPreferences();
@@ -125,9 +137,13 @@ const AdminPreferencesDashboard = () => {
     }
   };
 
+  const [assignSuccess, setAssignSuccess] = useState("");
+  const [assignError, setAssignError] = useState("");
+
   const handleAssignAgent = async (leadId, agentId) => {
     try {
       setAssigning(true);
+      setAssignError("");
       await axios.post(
         `${process.env.REACT_APP_Base_API}/api/admin/preferences/${leadId}/assign`,
         { agentId },
@@ -143,53 +159,16 @@ const AdminPreferencesDashboard = () => {
       fetchPreferences();
       setSelectedAgent(null);
       setOpenDropdownFor(null);
-      alert('Agent assigned successfully');
+      setAssignSuccess('Agent assigned successfully');
     } catch (err) {
       console.error('Error assigning agent', err);
-      alert('Failed to assign agent');
+      setAssignError('Failed to assign agent');
     } finally {
       setAssigning(false);
     }
   };
 
-  const handleLogout = async () => {
-    await fetch(process.env.REACT_APP_LOGOUT_API, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      },
-    });
-    setUser(null);
-    navigate("/");
-  };
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          },
-        });
-        const data = await res.json();
-        if (res.ok) setUser(data);
-      } catch (err) {
-        console.error("Error fetching user:", err);
-      }
-    };
-    fetchUser();
-  }, []);
-
-  const navItems = [
-    "For Buyers",
-    "For Tenants",
-    "For Owners",
-    "For Dealers / Builders",
-    "Insights",
-  ];
 
   const calculateStats = (data) => {
     const total = data.length;
@@ -222,19 +201,44 @@ For assistance, please contact: 9654131789 | support@ggnhome.com`;
     try {
       const phone = formatPhoneForWhatsApp(mobileNumber);
       if (!phone) {
-        alert('Invalid phone number');
+        setAssignError('Invalid phone number');
         return;
       }
       const encoded = encodeURIComponent(message || '');
-      // Use wa.me which is WhatsApp's short link. It will open WhatsApp Web or app depending on platform.
       const url = `https://wa.me/${phone}?text=${encoded}`;
       window.open(url, '_blank');
     } catch (e) {
       console.error('Error opening WhatsApp', e);
-      alert('Could not open WhatsApp');
+      setAssignError('Could not open WhatsApp');
     }
   };
   // ---------- end WhatsApp helper ----------
+
+  // Helper component for preference label/value rows
+  const InfoLabel = ({ label, value, highlight, tone }) => (
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0', borderBottom: '1px solid #F4F7F9' }}>
+      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+        {label}
+      </Typography>
+      <Typography
+        variant="body2"
+        sx={{
+          fontWeight: highlight ? 700 : 500,
+          color: tone || (highlight ? '#003366' : '#1B2B3A'),
+          fontVariantNumeric: 'tabular-nums',
+        }}
+      >
+        {value}
+      </Typography>
+    </Box>
+  );
+
+  const DeleteIcon = (props) => (
+    <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M3 6h18" />
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+    </svg>
+  );
 
   // Helper to render agent info (show agentCode if available, otherwise name or id)
   const renderAgentAssigned = (pref) => {
@@ -281,12 +285,11 @@ For assistance, please contact: 9654131789 | support@ggnhome.com`;
 
       if (response.ok) {
         const result = await response.json();
-
         fetchPreferences(); // Refresh the list
       }
     } catch (error) {
       console.error("Error matching users:", error);
-      alert("Error matching users");
+      setAssignError("Error matching users");
     } finally {
       setMatching(false);
     }
@@ -308,42 +311,47 @@ For assistance, please contact: 9654131789 | support@ggnhome.com`;
   };
 
 
+  const [deleteMessage, setDeleteMessage] = useState("");
+  const [showDeletedToast, setShowDeletedToast] = useState(false);
+
   const handleDeletePreference = async (id) => {
-    if (window.confirm('Are you sure you want to delete this preference?')) {
-      try {
-        const response = await fetch(
-          `${process.env.REACT_APP_Base_API}/api/admin/preferences-form/${id}`,
-          {
-            method: 'DELETE',
-            credentials: 'include',
-            headers: {
-              'Content-Type': 'application/json',
-              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-            },
-          }
-        );
-
-        const text = await response.text();
-
-        if (response.ok) {
-          // server may return a message (e.g. 'marked INACTIVE' or 'permanently deleted')
-          try {
-            const json = JSON.parse(text || '{}');
-            if (json.message) alert(json.message);
-          } catch (e) {
-            // not JSON
-            if (text) alert(text);
-          }
-          fetchPreferences(); // Refresh the list
-          return;
+    setDeleting(true);
+    try {
+      const response = await fetch(
+        `${process.env.REACT_APP_Base_API}/api/admin/preferences-form/${id}`,
+        {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+          },
         }
+      );
 
-        console.error('Delete failed', response.status, text);
-        alert(`Delete failed: ${response.status} — ${text || 'No message'}`);
-      } catch (error) {
-        console.error('Error deleting preference:', error);
-        alert('Error deleting preference');
+      const text = await response.text();
+
+      if (response.ok) {
+        // server may return a message (e.g. 'marked INACTIVE' or 'permanently deleted')
+        try {
+          const json = JSON.parse(text || '{}');
+          if (json.message) setDeleteMessage(json.message);
+        } catch (e) {
+          if (text) setDeleteMessage(text);
+        }
+        fetchPreferences(); // Refresh the list
+        setTimeout(() => setDeleteMessage(""), 3000);
+        setDeleteId(null);
+        return;
       }
+
+      console.error('Delete failed', response.status, text);
+      setAssignError(`Delete failed: ${response.status} — ${text || 'No message'}`);
+    } catch (error) {
+      console.error('Error deleting preference:', error);
+      setAssignError('Error deleting preference');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -356,327 +364,177 @@ For assistance, please contact: 9654131789 | support@ggnhome.com`;
     setPagination((prev) => ({ ...prev, page: newPage }));
   };
 
-  // Inline Styles
-  const styles = {
-    container: {
-      minHeight: "100vh",
-      background: "linear-gradient(135deg, #F4F7F9 0%, #FFFFFF 100%)",
-      padding: "20px",
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    },
-    header: {
-      background: "#FFFFFF",
-      borderRadius: "16px",
-      padding: "30px",
-      marginBottom: "30px",
-      boxShadow: "0 8px 25px rgba(0, 51, 102, 0.1)",
-      border: "1px solid rgba(74, 106, 138, 0.1)",
-    },
-    title: {
-      background: "linear-gradient(135deg, #003366 0%, #00A79D 100%)",
-      WebkitBackgroundClip: "text",
-      WebkitTextFillColor: "transparent",
-      backgroundClip: "text",
-      color: "#003366",
-      fontSize: "2.5rem",
-      fontWeight: "700",
-      marginBottom: "10px",
-      textAlign: "center",
-    },
-    subtitle: {
-      color: "#4A6A8A",
-      fontSize: "1.1rem",
-      textAlign: "center",
-      marginBottom: "30px",
-    },
-    statsContainer: {
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-      gap: "20px",
-      marginBottom: "30px",
-    },
-    statCard: {
-      background: "linear-gradient(135deg, #FFFFFF 0%, #F4F7F9 100%)",
-      padding: "25px",
-      borderRadius: "12px",
-      textAlign: "center",
-      boxShadow: "0 4px 15px rgba(0, 51, 102, 0.1)",
-      border: "1px solid rgba(34, 211, 238, 0.2)",
-    },
-    statNumber: {
-      fontSize: "2.5rem",
-      fontWeight: "700",
-      marginBottom: "8px",
-    },
-    statLabel: {
-      color: "#4A6A8A",
-      fontSize: "1rem",
-      fontWeight: "600",
-    },
-    graphContainer: {
-      background: "#FFFFFF",
-      borderRadius: "12px",
-      padding: "25px",
-      marginBottom: "30px",
-      boxShadow: "0 4px 15px rgba(0, 51, 102, 0.1)",
-    },
-    graphTitle: {
-      color: "#003366",
-      fontSize: "1.3rem",
-      fontWeight: "600",
-      marginBottom: "20px",
-    },
-    graphBar: {
-      height: "40px",
-      background: "linear-gradient(90deg, #00A79D 0%, #22D3EE 100%)",
-      borderRadius: "8px",
-      marginBottom: "10px",
-      position: "relative",
-      overflow: "hidden",
-    },
-    graphBarFill: {
-      height: "100%",
-      background: "linear-gradient(90deg, #003366 0%, #4A6A8A 100%)",
-      borderRadius: "8px",
-      transition: "width 0.5s ease",
-    },
-    graphLabels: {
-      display: "flex",
-      justifyContent: "space-between",
-      color: "#333333",
-      fontSize: "0.9rem",
-      fontWeight: "600",
-    },
-    controlsContainer: {
-      display: "flex",
-      gap: "15px",
-      marginBottom: "25px",
-      flexWrap: "wrap",
-      alignItems: "center",
-    },
-    filterInput: {
-      padding: "12px 16px",
-      border: "2px solid #F4F7F9",
-      borderRadius: "8px",
-      fontSize: "0.95rem",
-      background: "#F4F7F9",
-      color: "#333333",
-      outline: "none",
-      transition: "all 0.3s ease",
-      minWidth: "200px",
-    },
-    filterSelect: {
-      padding: "12px 16px",
-      border: "2px solid #F4F7F9",
-      borderRadius: "8px",
-      fontSize: "0.95rem",
-      background: "#F4F7F9",
-      color: "#333333",
-      outline: "none",
-      transition: "all 0.3s ease",
-      minWidth: "150px",
-    },
-    matchButton: {
-      background: "linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)",
-      color: "#FFFFFF",
-      border: "none",
-      padding: "12px 24px",
-      borderRadius: "8px",
-      fontSize: "1rem",
-      fontWeight: "600",
-      cursor: "pointer",
-      transition: "all 0.3s ease",
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-    },
-    refreshButton: {
-      background: "transparent",
-      color: "#4A6A8A",
-      border: "2px solid #4A6A8A",
-      padding: "10px 20px",
-      borderRadius: "8px",
-      fontSize: "1rem",
-      fontWeight: "600",
-      cursor: "pointer",
-      transition: "all 0.3s ease",
-    },
-    cardsGrid: {
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))",
-      gap: "20px",
-      marginBottom: "30px",
-    },
-    card: {
-      background: "#FFFFFF",
-      borderRadius: "16px",
-      padding: "25px",
-      boxShadow: "0 8px 25px rgba(0, 51, 102, 0.1)",
-      border: "1px solid rgba(74, 106, 138, 0.1)",
-      position: "relative",
-      transition: "all 0.3s ease",
-    },
-    cardHeader: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "flex-start",
-      marginBottom: "15px",
-    },
-    userInfo: {
-      flex: 1,
-    },
-    userName: {
-      color: "#003366",
-      fontSize: "1.3rem",
-      fontWeight: "700",
-      marginBottom: "5px",
-    },
-    mobileNumber: {
-      color: "#4A6A8A",
-      fontSize: "1rem",
-      fontWeight: "600",
-    },
-    statusBadge: {
-      width: "32px",
-      height: "32px",
-      borderRadius: "50%",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      fontSize: "1.2rem",
-      fontWeight: "bold",
-    },
-    statusLoggedIn: {
-      background: "#00A79D",
-      color: "#FFFFFF",
-    },
-    statusNotLoggedIn: {
-      background: "#FF6B6B",
-      color: "#FFFFFF",
-    },
-    cardContent: {
-      marginBottom: "20px",
-    },
-    preferenceItem: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      padding: "8px 0",
-      borderBottom: "1px solid #F4F7F9",
-    },
-    preferenceLabel: {
-      color: "#4A6A8A",
-      fontSize: "0.9rem",
-      fontWeight: "600",
-    },
-    preferenceValue: {
-      color: "#333333",
-      fontSize: "0.95rem",
-      fontWeight: "500",
-    },
-    cardFooter: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingTop: "15px",
-      borderTop: "2px solid #F4F7F9",
-    },
-    dateText: {
-      color: "#4A6A8A",
-      fontSize: "0.85rem",
-    },
-    deleteButton: {
-      background: "#FF6B6B",
-      color: "#FFFFFF",
-      border: "none",
-      padding: "8px 16px",
-      borderRadius: "6px",
-      fontSize: "0.9rem",
-      fontWeight: "600",
-      cursor: "pointer",
-      transition: "all 0.3s ease",
-    },
-    pagination: {
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      gap: "15px",
-      marginTop: "30px",
-    },
-    paginationButton: {
-      background: "linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)",
-      color: "#FFFFFF",
-      border: "none",
-      padding: "10px 16px",
-      borderRadius: "8px",
-      fontSize: "0.95rem",
-      fontWeight: "600",
-      cursor: "pointer",
-      transition: "all 0.3s ease",
-    },
-    paginationButtonDisabled: {
-      background: "#4A6A8A",
-      opacity: 0.5,
-      cursor: "not-allowed",
-    },
-    pageInfo: {
-      color: "#333333",
-      fontSize: "1rem",
-      fontWeight: "600",
-    },
-    loadingSpinner: {
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      height: "200px",
-      fontSize: "1.2rem",
-      color: "#4A6A8A",
-    },
-    spinner: {
-      width: "40px",
-      height: "40px",
-      border: "4px solid #F4F7F9",
-      borderTop: "4px solid #22D3EE",
-      borderRadius: "50%",
-      animation: "spin 1s linear infinite",
-    },
-    keyframes: `
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-    `,
-  };
 
-  const loggedInPercentage =
-    stats.total > 0 ? (stats.loggedIn / stats.total) * 100 : 0;
+
+
 
   return (
     <>
-      <div
-        style={{
-          position: "fixed",
-          marginBottom: "20px",
-          top: 0,
-          left: 0,
-          width: "100%",
-          zIndex: 999,
-          backgroundColor: "#FFFFFF", // or match your navbar background
-        }}
-      >
-        <TopNavigationBar
-          user={user}
-          handleLogout={handleLogout}
-          navItems={navItems}
-        />
-      </div>
-      <style>{styles.keyframes}</style>
-      <div style={styles.container}>
-        <div style={styles.header}>
-          <h1 style={styles.title}>User Preferences Dashboard</h1>
-          <p style={styles.subtitle}>
-            Manage and analyze user property preferences
-          </p>
+      <PageHeader
+        title="User Preferences Dashboard"
+        description="Manage and analyze user property preferences"
+        actions={
+          <>
+            <Button
+              variant="outlined"
+              startIcon={<RefreshCw size={16} />}
+              onClick={fetchPreferences}
+            >
+              Refresh
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<Filter size={16} />}
+              onClick={handleMatchUsers}
+              disabled={matching}
+              sx={{ bgcolor: "#00A79D" }}
+            >
+              {matching ? "Matching..." : "Match Users"}
+            </Button>
+          </>
+        }
+      />
+      <Box sx={{ mb: 4 }}>
+        {/* Filters */}
+        <Card className="admin-card">
+          <CardContent sx={{ py: 2, "& .MuiTextField-root": { m: 1, width: 220 } }}>
+            <TextField
+              fullWidth
+              placeholder="Filter by Mobile"
+              value={filters.mobileNumber}
+              onChange={(e) => handleFilterChange("mobileNumber", e.target.value)}
+              InputProps={{ startAdornment: <InputAdornment position="start"><Phone size={18} color="#5B6B7B" /></InputAdornment> }}
+            />
+            <TextField
+              fullWidth
+              placeholder="Filter by Location"
+              value={filters.preferredLocation}
+              onChange={(e) => handleFilterChange("preferredLocation", e.target.value)}
+              InputProps={{ startAdornment: <InputAdornment position="start"><MapPin size={18} color="#5B6B7B" /></InputAdornment> }}
+            />
+            <FormControl fullWidth sx={{ minWidth: 150 }}>
+              <InputLabel>BHK Size</InputLabel>
+              <Select
+                value={filters.bhkSize}
+                label="BHK Size"
+                onChange={(e) => handleFilterChange("bhkSize", e.target.value)}
+              >
+                <MenuItem value="">All BHK Sizes</MenuItem>
+                <MenuItem value="1BHK">1 BHK</MenuItem>
+                <MenuItem value="2BHK">2 BHK</MenuItem>
+                <MenuItem value="3BHK">3 BHK</MenuItem>
+                <MenuItem value="4BHK">4 BHK</MenuItem>
+                <MenuItem value="4BHK+">4+ BHK</MenuItem>
+              </Select>
+            </FormControl>
+          </CardContent>
+        </Card>
+        <Box sx={{ mt: 2, textAlign: "right" }}>
+          <Button
+            variant="contained"
+            startIcon={<Filter size={16} />}
+            onClick={handleMatchUsers}
+            disabled={matching}
+            sx={{ bgcolor: "#00A79D", borderRadius: 2 }}
+          >
+            {matching ? "Matching..." : "Match Users"}
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshCw size={16} />}
+            onClick={fetchPreferences}
+            sx={{ ml: 1, borderColor: "#00A79D", color: "#00A79D", borderRadius: 2 }}
+          >
+            Refresh
+          </Button>
+        </Box>
+      </Box>
+      <Box sx={{ mb: 4 }}>
+        {/* Stats */}
+        <Grid container spacing={3}>
+          <Grid item xs={12} sm={4}>
+            <StatCard icon={Users} label="Total Preferences" value={stats.total} tone="#003366" />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <StatCard icon={LogIn} label="Users Logged In" value={stats.loggedIn} tone="#00A79D" />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            <StatCard icon={LogOut} label="Not Logged In" value={stats.notLoggedIn} tone="#FF6B6B" />
+          </Grid>
+        </Grid>
+      </Box>
+      <Card className="admin-card" sx={{ mb: 4 }}>
+        <CardContent>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+            <Box sx={{ width: 44, height: 44, borderRadius: 2, bgcolor: "#00A79D1A", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Filter size={22} color="#00A79D" />
+            </Box>
+            <Box>
+              <Typography variant="h3" sx={{ fontWeight: 700, fontSize: "1rem", color: "primary.main" }}>
+                User Login Status
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {stats.loggedIn} logged in · {stats.notLoggedIn} guests
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+            <Box sx={{ flex: 1, height: 10, bgcolor: "#E5E9EE", borderRadius: 5, overflow: "hidden" }}>
+              <Box
+                sx={{
+                  height: "100%",
+                  width: `${stats.total > 0 ? (stats.loggedIn / stats.total) * 100 : 0}%`,
+                  bgcolor: "#00A79D",
+                  borderRadius: 5,
+                  transition: "width 0.5s ease",
+                }}
+              />
+            </Box>
+            <Box sx={{ textAlign: "right", minWidth: 120 }}>
+              <Typography variant="body2" sx={{ fontWeight: 700, color: "#003366" }}>
+                {stats.total > 0 ? Math.round((stats.loggedIn / stats.total) * 100) : 0}%
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Logged in ({stats.loggedIn})
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Not logged in ({stats.notLoggedIn})
+              </Typography>
+            </Box>
+          </Box>
+        </CardContent>
+      </Card>
+      <Box sx={{ mb: 4 }}>
+        <Typography variant="h3" sx={{ fontWeight: 700, fontSize: "1.1rem", color: "primary.main", mb: 2, display: "flex", alignItems: "center", gap: 1 }}>
+          <Users size={20} color="#00A79D" /> Preferences ({pagination.total || preferences.length})
+        </Typography>
+        <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
+          <Typography variant="body2" color="text.secondary" sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            Page {pagination.page} of {pagination.totalPages || 1}
+          </Typography>
+          {pagination.totalPages > 1 && (
+            <Stack direction="row" spacing={1}>
+              <Button
+                size="small"
+                onClick={() => handlePageChange(pagination.page - 1)}
+                disabled={pagination.page === 1}
+                sx={{ borderRadius: 2 }}
+              >
+                Previous
+              </Button>
+              <Button
+                size="small"
+                onClick={() => handlePageChange(pagination.page + 1)}
+                disabled={pagination.page === pagination.totalPages}
+                sx={{ borderRadius: 2 }}
+              >
+                Next
+              </Button>
+            </Stack>
+          )}
+        </Box>
+      </Box>
+      <div>
 
           {/* Statistics Cards */}
           <div style={styles.statsContainer}>
@@ -772,296 +630,261 @@ For assistance, please contact: 9654131789 | support@ggnhome.com`;
           </div>
         ) : (
           <>
-            <div style={styles.cardsGrid}>
-              {preferences.map((pref) => (
-                <div key={pref._id} style={styles.card}>
-                  <div style={{ ...styles.cardHeader, position: 'relative' }}>
-                    <div style={styles.userInfo}>
-                      <div style={styles.userName}>{pref.userName}</div>
-                      <div style={styles.mobileNumber}>{pref.mobileNumber}</div>
-                    </div>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 3 }}>
+          {preferences.map((pref) => (
+            <Card key={pref._id} className="admin-card">
+              <CardContent sx={{ '&:last-child': { pb: 0 } }}>
+                {/* Header */}
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, position: 'relative' }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 700, color: 'primary.main', fontSize: '1rem', mb: 0.5 }}>
+                      {pref.userName}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'text.secondary', fontSize: '0.85rem' }}>
+                      <Phone size={12} />
+                      <CopyField value={pref.mobileNumber} label="Mobile" />
+                    </Box>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
+                    <Box
+                      sx={{
+                        width: 32, height: 32, borderRadius: '50%',
+                        bgcolor: pref.hasLoggedIn ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.75rem', fontWeight: 700,
+                        bgcolor: pref.hasLoggedIn ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)',
+                        color: pref.hasLoggedIn ? '#10B981' : '#F59E0B',
+                      }}
+                    >
+                      {pref.hasLoggedIn ? '✓' : '✕'}
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', marginRight: 2 }}>
+                      <Tooltip title={`Message ${pref.mobileNumber} on WhatsApp`}>
+                        <IconButton size="small" sx={{ bgcolor: '#25D366', '&:hover': { bgcolor: '#1EB55A' } }} onClick={() => handleOpenWhatsApp(pref.mobileNumber)}>
+                          <MessageSquare size={16} color="#fff" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </Box>
+                </Box>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div
-                        style={{
-                          ...styles.statusBadge,
-                          ...(pref.hasLoggedIn
-                            ? styles.statusLoggedIn
-                            : styles.statusNotLoggedIn),
-                        }}
-                        aria-hidden
-                      >
-                        {pref.hasLoggedIn ? '✓' : '✕'}
-                      </div>
+                {/* Preference items */}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                  <InfoLabel label="Location" value={pref.preferredLocation} />
+                  <InfoLabel label="Budget" value={`₹${pref.budgetRange}`} />
+                  <InfoLabel label="BHK Size" value={pref.bhkSize} />
+                  <InfoLabel label="Property Type" value={pref.propertyType} />
+                  <InfoLabel label="Furnishing" value={pref.furnishingLevel?.replace('-', ' ') || 'Not specified'} />
+                  <InfoLabel label="Move-in" value={pref.moveInDate} />
+                  <InfoLabel label="Actual Brokerage" value={`₹ ${pref.brokerageAmount}`} highlight />
+                  {typeof pref.brokerageAmount === 'number' && (
+                    <InfoLabel label="Agent Brokerage" value={`₹ ${Math.max(0, Math.floor((pref.brokerageAmount - 500) / 2))}`} tone="#00A79D" />
+                  )}
+                </Box>
 
-                      {/* Circular WhatsApp button (logo only) placed next to status */}
-                      <button
-                        onClick={() => handleOpenWhatsApp(pref.mobileNumber)}
-                        title={`Message ${pref.mobileNumber} on WhatsApp`}
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: '50%',
-                          border: 'none',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          background: '#25D366',
-                          padding: 0,
-                        }}
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <path d="M21 15a2 2 0 0 1-2 2h-1l-3 3v-3H8a5 5 0 0 1-5-5V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2z"></path>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div style={styles.cardContent}>
-                    <div style={styles.preferenceItem}>
-                      <span style={styles.preferenceLabel}>Location:</span>
-                      <span style={styles.preferenceValue}>
-                        {pref.preferredLocation}
-                      </span>
-                    </div>
-                    <div style={styles.preferenceItem}>
-                      <span style={styles.preferenceLabel}>Budget:</span>
-                      <span style={styles.preferenceValue}>
-                        ₹{pref.budgetRange}
-                      </span>
-                    </div>
-                    <div style={styles.preferenceItem}>
-                      <span style={styles.preferenceLabel}>BHK Size:</span>
-                      <span style={styles.preferenceValue}>{pref.bhkSize}</span>
-                    </div>
-                    <div style={styles.preferenceItem}>
-                      <span style={styles.preferenceLabel}>Property Type:</span>
-                      <span style={styles.preferenceValue}>
-                        {pref.propertyType}
-                      </span>
-                    </div>
-                    <div style={styles.preferenceItem}>
-                      <span style={styles.preferenceLabel}>Furnishing:</span>
-                      <span style={styles.preferenceValue}>
-                        {pref.furnishingLevel?.replace("-", " ") ||
-                          "Not specified"}
-                      </span>
-                    </div>
-                    <div style={styles.preferenceItem}>
-                      <span style={styles.preferenceLabel}>Move-in Date:</span>
-                      <span style={styles.preferenceValue}>
-                        {pref.moveInDate}
-                      </span>
-                    </div>
-                    {/* Actual Brokerage and Agent Brokerage */}
-                    <div style={styles.preferenceItem}>
-                      <span style={styles.preferenceLabel}>Actual Brokerage:</span>
-                      <span style={{ ...styles.preferenceValue, fontWeight: 700 }}>
-                        ₹ {pref.brokerageAmount}
-                      </span>
-                    </div>
-                    {typeof pref.brokerageAmount === 'number' && (
-                      <div style={styles.preferenceItem}>
-                        <span style={styles.preferenceLabel}>Agent Brokerage:</span>
-                        <span style={{ ...styles.preferenceValue, fontWeight: 700, color: '#00A79D' }}>
-                          ₹ {Math.max(0, Math.floor((pref.brokerageAmount - 500) / 2))}
-                        </span>
-                      </div>
+                {/* Footer */}
+                <Box sx={{ pt: 2, borderTop: '1px solid #E5E9EE', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                      Created: {new Date(pref.createdAt).toLocaleDateString()}
+                    </Typography>
+                    {Array.isArray(pref.agentAssigned) && pref.agentAssigned.length > 0 && (
+                      <Typography variant="caption" sx={{ fontWeight: 700, color: 'primary.main', display: 'block', mt: 0.5 }}>
+                        Agents Assigned: {pref.agentAssigned.length}
+                      </Typography>
                     )}
-                  </div>
+                    {pref.status === 'INACTIVE' && (
+                      <Typography variant="caption" color="#FF6B6B" sx={{ display: 'block', mt: 0.5 }}>
+                        {formatTimeLeft(pref.inactiveAt)}
+                      </Typography>
+                    )}
+                  </Box>
 
-                  <div style={styles.cardFooter}>
-                    <div>
-                      <div style={styles.dateText}>
-                        Created: {new Date(pref.createdAt).toLocaleDateString()}
-                      </div>
-                      {Array.isArray(pref.agentAssigned) && pref.agentAssigned.length > 0 && (
-                        <div
-                          style={{
-                            marginTop: '6px',
-                            fontSize: '0.85rem',
-                            fontWeight: 700,
-                            color: '#003366'
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexShrink: 0 }}>
+                    <div style={{ position: 'relative' }}>
+                      <Button
+                        size="small"
+                        onClick={() => pref.status !== 'INACTIVE' && (openDropdownFor === pref._id ? closeAgentsDropdown() : openAgentsDropdown(pref._id))}
+                        disabled={pref.status === 'INACTIVE'}
+                        sx={{ borderRadius: 2, px: 2 }}
+                      >
+                        {openDropdownFor === pref._id ? 'Close Agents' : 'Assign Agent'}
+                      </Button>
+
+                      {openDropdownFor === pref._id && (
+                        <Box
+                          sx={{
+                            position: 'absolute', right: 0, top: '100%', zIndex: 1200,
+                            width: 320, maxHeight: 300, overflowY: 'auto',
+                            bgcolor: '#fff', border: '1px solid #E5E9EE', borderRadius: 2,
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                            mt: 1, p: 0.5,
                           }}
                         >
-                          Agents Assigned: {pref.agentAssigned.length}
-                        </div>
-                      )}
-                      {pref.status === 'INACTIVE' && (
-                        <div style={{ fontSize: '0.9rem', color: '#FF6B6B', marginTop: '6px' }}>
-                          {formatTimeLeft(pref.inactiveAt)}
-                        </div>
+                          {agentsLoading ? (
+                            <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>Loading agents...</Box>
+                          ) : agents.length === 0 ? (
+                            <Box sx={{ p: 2, textAlign: 'center', color: 'text.secondary' }}>No agents found</Box>
+                          ) : (
+                            <ul style={{ listStyle: 'none', margin: 0, padding: '4px' }}>
+                              {agents.map((agent) => {
+                                const alreadyAssigned =
+                                  pref.agentAssigned &&
+                                  Array.isArray(pref.agentAssigned) &&
+                                  pref.agentAssigned.some(a =>
+                                    (typeof a === 'string' && a === agent._id) ||
+                                    (typeof a === 'object' && String(a._id || a) === String(agent._id))
+                                  );
+                                return (
+                                  <li
+                                    key={agent._id}
+                                    style={{
+                                      padding: '6px 8px',
+                                      borderBottom: '1px solid #F4F7F9',
+                                      cursor: alreadyAssigned ? 'not-allowed' : 'pointer',
+                                      opacity: alreadyAssigned ? 0.6 : 1,
+                                      bgcolor: alreadyAssigned ? '#E2E8F0' : 'transparent',
+                                    }}
+                                    onClick={() => { if (!alreadyAssigned) handleAgentClick(agent); }}
+                                  >
+                                    <Box sx={{ fontWeight: 700, fontSize: '0.85rem' }}>{agent.agentCode}</Box>
+                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', maxHeight: 40, overflow: 'hidden', textOverflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                      {(agent.preferredSectors || []).join(', ')}
+                                    </Typography>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 1, borderTop: '1px solid #F4F7F9' }}>
+                            <Button size="small" disabled={agentsPage === 1} onClick={() => fetchAgents(Math.max(1, agentsPage - 1))} sx={{ fontSize: '0.75rem', minWidth: 'auto', px: 1 }}>Prev</Button>
+                            <Typography variant="caption" color="text.secondary">Page {agentsPage} / {agentsTotalPages || 1}</Typography>
+                            <Button size="small" disabled={agentsPage === agentsTotalPages || agentsTotalPages === 0} onClick={() => fetchAgents(Math.min((agentsTotalPages || 1), agentsPage + 1))} sx={{ fontSize: '0.75rem', minWidth: 'auto', px: 1 }}>Next</Button>
+                          </Box>
+                        </Box>
                       )}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                      <div style={{ position: 'relative' }}>
-                        <button
-                          onClick={() => pref.status !== 'INACTIVE' && (openDropdownFor === pref._id ? closeAgentsDropdown() : openAgentsDropdown(pref._id))}
-                          disabled={pref.status === 'INACTIVE'}
-                          style={{ ...styles.matchButton, padding: '8px 12px', fontSize: '0.9rem', ...(pref.status === 'INACTIVE' && { opacity: 0.6, cursor: 'not-allowed' }) }}
-                        >
-                          {openDropdownFor === pref._id ? 'Close Agents' : 'Assign Agent'}
-                        </button>
+                    <IconButton
+                      size="small"
+                      onClick={() => { if (pref.status !== 'INACTIVE') setDeleteId(pref._id); }}
+                      disabled={pref.status === 'INACTIVE'}
+                      sx={{ color: 'error.main' }}
+                      aria-label="Delete preference"
+                    >
+                      <DeleteIcon size={16} />
+                    </IconButton>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          ))}
+        </Box>
 
-                        {openDropdownFor === pref._id && (
-                          <div style={{ position: 'absolute', right: 0, top: '42px', width: '320px', maxHeight: '300px', overflowY: 'auto', background: '#fff', border: '1px solid #E6EEF2', borderRadius: '8px', boxShadow: '0 8px 25px rgba(0,0,0,0.08)', zIndex: 999 }}>
-                            {agentsLoading ? (
-                              <div style={{ padding: '16px' }}>Loading agents...</div>
-                            ) : (
-                              <div>
-                                {agents.length === 0 ? (
-                                  <div style={{ padding: '12px' }}>No agents found</div>
-                                ) : (
-                                  <ul style={{ listStyle: 'none', margin: 0, padding: '8px' }}>
-                                    {agents.map((agent) => (
-                                      <li
-                                        key={agent._id}
-                                        style={{
-                                          padding: '8px',
-                                          borderBottom: '1px solid #F4F7F9',
-                                          cursor:
-                                            pref.agentAssigned &&
-                                            Array.isArray(pref.agentAssigned) &&
-                                            pref.agentAssigned.some(a =>
-                                              (typeof a === 'string' && a === agent._id) ||
-                                              (typeof a === 'object' && String(a._id || a) === String(agent._id))
-                                            )
-                                              ? 'not-allowed'
-                                              : 'pointer',
-                                          background:
-                                            pref.agentAssigned &&
-                                            Array.isArray(pref.agentAssigned) &&
-                                            pref.agentAssigned.some(a =>
-                                              (typeof a === 'string' && a === agent._id) ||
-                                              (typeof a === 'object' && String(a._id || a) === String(agent._id))
-                                            )
-                                              ? '#E2E8F0'
-                                              : 'transparent',
-                                          opacity:
-                                            pref.agentAssigned &&
-                                            Array.isArray(pref.agentAssigned) &&
-                                            pref.agentAssigned.some(a =>
-                                              (typeof a === 'string' && a === agent._id) ||
-                                              (typeof a === 'object' && String(a._id || a) === String(agent._id))
-                                            )
-                                              ? 0.6
-                                              : 1
-                                        }}
-                                        onClick={() => {
-                                          const alreadyAssigned =
-                                            pref.agentAssigned &&
-                                            Array.isArray(pref.agentAssigned) &&
-                                            pref.agentAssigned.some(a =>
-                                              (typeof a === 'string' && a === agent._id) ||
-                                              (typeof a === 'object' && String(a._id || a) === String(agent._id))
-                                            );
+        </Box>
 
-                                          if (!alreadyAssigned) handleAgentClick(agent);
-                                        }}
-                                      >
-                                        <div style={{ fontWeight: 700 }}>{agent.agentCode}</div>
-                                        <div
-                                          style={{
-                                            fontSize: '0.9rem',
-                                            color: '#4A6A8A',
-                                            maxHeight: '60px',
-                                            overflowY: 'auto'
-                                          }}
-                                        >
-                                          {(agent.preferredSectors || []).join(', ')}
-                                        </div>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
-
-                                {/* Pagination for agents dropdown */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px' }}>
-                                  <button disabled={agentsPage === 1} onClick={() => fetchAgents(Math.max(1, agentsPage - 1))} style={{ padding: '6px 10px', fontSize: '0.85rem' }}>Prev</button>
-                                  <div style={{ fontSize: '0.85rem', color: '#4A6A8A' }}>Page {agentsPage} / {agentsTotalPages || 1}</div>
-                                  <button disabled={agentsPage === agentsTotalPages || agentsTotalPages === 0} onClick={() => fetchAgents(Math.min((agentsTotalPages || 1), agentsPage + 1))} style={{ padding: '6px 10px', fontSize: '0.85rem' }}>Next</button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      <button
-                        onClick={() => { if (pref.status !== 'INACTIVE') handleDeletePreference(pref._id); }}
-                        style={{
-                          ...styles.deleteButton,
-                          ...(pref.status === 'INACTIVE' && { opacity: 0.5, cursor: 'not-allowed' })
-                        }}
-                        disabled={pref.status === 'INACTIVE'}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Pagination */}
-            {pagination.totalPages > 1 && (
-              <div style={styles.pagination}>
-                <button
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={pagination.page === 1}
-                  style={{
-                    ...styles.paginationButton,
-                    ...(pagination.page === 1 &&
-                      styles.paginationButtonDisabled),
-                  }}
-                >
-                  Previous
-                </button>
-
-                <span style={styles.pageInfo}>
-                  Page {pagination.page} of {pagination.totalPages}
-                </span>
-
-                <button
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page === pagination.totalPages}
-                  style={{
-                    ...styles.paginationButton,
-                    ...(pagination.page === pagination.totalPages &&
-                      styles.paginationButtonDisabled),
-                  }}
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </>
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 2, mt: 4 }}>
+            <Button
+              size="small"
+              onClick={() => handlePageChange(pagination.page - 1)}
+              disabled={pagination.page === 1}
+              sx={{ borderRadius: 2, minWidth: 80 }}
+            >
+              Previous
+            </Button>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.secondary', minWidth: 120, textAlign: 'center' }}>
+              Page {pagination.page} of {pagination.totalPages}
+            </Typography>
+            <Button
+              size="small"
+              onClick={() => handlePageChange(pagination.page + 1)}
+              disabled={pagination.page === pagination.totalPages}
+              sx={{ borderRadius: 2, minWidth: 80 }}
+            >
+              Next
+            </Button>
+          </Box>
         )}
-      </div>
-      {/* Agent Details Modal */}
-      {selectedAgent && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.4)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000 }} onClick={() => setSelectedAgent(null)}>
-          <div style={{ width: '720px', maxHeight: '80vh', overflowY: 'auto', background: '#fff', borderRadius: '12px', padding: '20px' }} onClick={(e) => e.stopPropagation()}>
-            <h2 style={{ marginTop: 0 }}>{selectedAgent.name} ({selectedAgent.agentCode})</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-              <div><strong>Email:</strong> {selectedAgent.email}</div>
-              <div><strong>Mobile:</strong> {selectedAgent.mobileNumber}</div>
-              <div><strong>Agency:</strong> {selectedAgent.agencyName || '—'}</div>
-              <div><strong>Experience (yrs):</strong> {selectedAgent.experienceYears || '—'}</div>
-              <div style={{ gridColumn: '1 / -1' }}><strong>Areas Covered:</strong> {(selectedAgent.areasCovered || []).join(', ')}</div>
-              <div style={{ gridColumn: '1 / -1' }}><strong>Preferred Sectors:</strong> {(selectedAgent.preferredSectors || []).join(', ')}</div>
-              <div style={{ gridColumn: '1 / -1' }}><strong>Property Types:</strong> {(selectedAgent.propertyTypes || []).join(', ')}</div>
-            </div>
+      </Box>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-              <button onClick={() => setSelectedAgent(null)} style={{ padding: '10px 16px', borderRadius: '8px', border: '1px solid #ccc', background: '#fff' }}>Close</button>
-              <button onClick={() => handleAssignAgent(assigningLeadId, selectedAgent._id)} disabled={assigning || isAssignDisabledForLead(assigningLeadId)} style={{ padding: '10px 16px', borderRadius: '8px', background: '#00A79D', color: '#fff', border: 'none', opacity: (assigning || isAssignDisabledForLead(assigningLeadId)) ? 0.6 : 1, cursor: (assigning || isAssignDisabledForLead(assigningLeadId)) ? 'not-allowed' : 'pointer' }}>{assigning ? 'Assigning...' : 'Assign'}</button>
-            </div>
-          </div>
-        </div>
+      {/* Alerts */}
+      {assignSuccess && (
+        <Alert severity="success" sx={{ mb: 2, position: 'fixed', bottom: 24, right: 24, zIndex: 2000 }}>
+          <CheckCircle size={18} />
+          {assignSuccess}
+        </Alert>
       )}
+      {assignError && (
+        <Alert severity="error" sx={{ mb: 2, position: 'fixed', bottom: 24, right: 24, zIndex: 2000 }}>
+          <AlertCircle size={18} />
+          {assignError}
+        </Alert>
+      )}
+
+      )}
+
+      {/* Agent Details Modal */}
+      <Dialog
+        open={selectedAgent != null}
+        onClose={() => setSelectedAgent(null)}
+        maxWidth="md"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
+          {selectedAgent.name} ({selectedAgent.agentCode})
+        </DialogTitle>
+        <DialogContent sx={{ pt: 0 }}>
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid item xs={12} sm={6}>
+              <Box sx={{ fontWeight: 600 }}><strong>Email:</strong> {selectedAgent.email}</Box>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Box sx={{ fontWeight: 600 }}><strong>Mobile:</strong> {selectedAgent.mobileNumber}</Box>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Box sx={{ fontWeight: 600 }}><strong>Agency:</strong> {selectedAgent.agencyName || '—'}</Box>
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Box sx={{ fontWeight: 600 }}><strong>Experience (yrs):</strong> {selectedAgent.experienceYears || '—'}</Box>
+            </Grid>
+            <Grid item xs={12}>
+              <Box sx={{ fontWeight: 600 }}><strong>Areas Covered:</strong> {(selectedAgent.areasCovered || []).join(', ')}</Box>
+            </Grid>
+            <Grid item xs={12}>
+              <Box sx={{ fontWeight: 600 }}><strong>Preferred Sectors:</strong> {(selectedAgent.preferredSectors || []).join(', ')}</Box>
+            </Grid>
+            <Grid item xs={12}>
+              <Box sx={{ fontWeight: 600 }}><strong>Property Types:</strong> {(selectedAgent.propertyTypes || []).join(', ')}</Box>
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={() => setSelectedAgent(null)} sx={{ borderRadius: 2 }}>Close</Button>
+          <Button
+            onClick={() => handleAssignAgent(assigningLeadId, selectedAgent._id)}
+            disabled={assigning || isAssignDisabledForLead(assigningLeadId)}
+            variant="contained"
+            sx={{ bgcolor: '#00A79D', borderRadius: 2 }}
+          >
+            {assigning ? 'Assigning...' : 'Assign'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <ConfirmDialog
+        open={deleteId != null}
+        title="Delete preference"
+        message="Are you sure you want to delete this preference? This action cannot be undone."
+        confirmLabel="Delete"
+        danger
+        loading={deleting}
+        onConfirm={() => handleDeletePreference(deleteId)}
+        onCancel={() => setDeleteId(null)}
+      />
     </>
   );
 };

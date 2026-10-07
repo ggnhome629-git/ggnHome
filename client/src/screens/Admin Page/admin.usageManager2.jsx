@@ -1,7 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { Activity, Database, Newspaper, RefreshCw, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  Box, Button, Card, CardContent, Grid, Typography, TextField,
+  Select, MenuItem, FormControl, InputLabel, InputAdornment,
+  Avatar, Chip, IconButton, Skeleton, Stack, Alert, Tooltip,
+} from "@mui/material";
+import {
+  RefreshCw, Users, Smartphone, Loader2, Clock, Database, Activity,
+} from "lucide-react";
+import { PageHeader, StatCard, StatusChip } from "../shell/adminUi";
+import "./admin.css";
 
-const AdminUsageDashboard = () => {
+export default function AdminUsageDashboard() {
   const [mongoUsage, setMongoUsage] = useState(null);
   const [gnewsUsage, setGNewsUsage] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,32 +21,24 @@ const AdminUsageDashboard = () => {
   const fetchUsageData = async () => {
     setLoading(true);
     setError(null);
-    
     try {
-      const [mongoResponse, gnewsResponse] = await Promise.all([
-        fetch(process.env.REACT_APP_Base_API + "/api/admin/mongo/usage", {
+      const [mongoRes, gnewsRes] = await Promise.all([
+        fetch(`${process.env.REACT_APP_Base_API}/api/admin/mongo/usage`, {
           credentials: "include",
           headers: {
             ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           },
         }),
-        fetch(process.env.REACT_APP_Base_API + "/api/admin/gnews/usage", {
+        fetch(`${process.env.REACT_APP_Base_API}/api/admin/gnews/usage`, {
           credentials: "include",
           headers: {
             ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           },
         }),
       ]);
-
-      if (!mongoResponse.ok || !gnewsResponse.ok) {
-        throw new Error('Failed to fetch usage data');
-      }
-
-      const mongoData = await mongoResponse.json();
-      const gnewsData = await gnewsResponse.json();
-
-      setMongoUsage(mongoData);
-      setGNewsUsage(gnewsData);
+      if (!mongoRes.ok || !gnewsRes.ok) throw new Error("Failed to fetch usage data");
+      setMongoUsage(await mongoRes.json());
+      setGNewsUsage(await gnewsRes.json());
     } catch (err) {
       setError(err.message);
     } finally {
@@ -50,282 +51,201 @@ const AdminUsageDashboard = () => {
   }, []);
 
   const formatBytes = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0) return "0 Bytes";
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes = ["Bytes", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+    return `${Math.round((bytes / Math.pow(k, i)) * 100) / 100} ${sizes[i]}`;
   };
 
-  const formatNumber = (num) => {
-    return new Intl.NumberFormat().format(num);
-  };
+  const formatNumber = (num) => new Intl.NumberFormat().format(num);
 
-  const containerStyle = {
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    padding: '40px 20px',
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
-  };
-
-  const headerStyle = {
-    textAlign: 'center',
-    marginBottom: '40px'
-  };
-
-  const titleStyle = {
-    color: '#ffffff',
-    fontSize: '36px',
-    fontWeight: '700',
-    marginBottom: '10px',
-    textShadow: '0 2px 4px rgba(0,0,0,0.1)'
-  };
-
-  const subtitleStyle = {
-    color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: '16px',
-    fontWeight: '400'
-  };
-
-  const dashboardStyle = {
-    maxWidth: '1200px',
-    margin: '0 auto'
-  };
-
-  const gridStyle = {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '24px',
-    marginBottom: '24px'
-  };
-
-  const cardStyle = {
-    background: '#ffffff',
-    borderRadius: '16px',
-    padding: '28px',
-    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
-    transition: 'transform 0.2s, box-shadow 0.2s'
-  };
-
-  const cardHoverStyle = {
-    transform: 'translateY(-4px)',
-    boxShadow: '0 15px 40px rgba(0, 0, 0, 0.2)'
-  };
-
-  const cardHeaderStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    marginBottom: '20px',
-    paddingBottom: '16px',
-    borderBottom: '2px solid #f0f0f0'
-  };
-
-  const iconWrapperStyle = {
-    width: '48px',
-    height: '48px',
-    borderRadius: '12px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: '16px'
-  };
-
-  const cardTitleStyle = {
-    fontSize: '20px',
-    fontWeight: '600',
-    color: '#1a202c',
-    margin: '0'
-  };
-
-  const statRowStyle = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '12px 0',
-    borderBottom: '1px solid #f7fafc'
-  };
-
-  const statLabelStyle = {
-    fontSize: '14px',
-    color: '#718096',
-    fontWeight: '500'
-  };
-
-  const statValueStyle = {
-    fontSize: '16px',
-    color: '#2d3748',
-    fontWeight: '600'
-  };
-
-  const buttonStyle = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    padding: '12px 24px',
-    background: '#ffffff',
-    color: '#667eea',
-    border: 'none',
-    borderRadius: '12px',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-    transition: 'all 0.2s',
-    margin: '0 auto'
-  };
-
-  const errorStyle = {
-    background: '#fff5f5',
-    border: '1px solid #feb2b2',
-    borderRadius: '12px',
-    padding: '16px',
-    color: '#c53030',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    maxWidth: '600px',
-    margin: '0 auto'
-  };
-
-  const loadingStyle = {
-    textAlign: 'center',
-    color: '#ffffff',
-    fontSize: '18px',
-    padding: '40px'
-  };
-
-  if (loading) {
-    return (
-      <div style={containerStyle}>
-        <div style={loadingStyle}>
-          <Activity size={48} style={{ margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
-          <p>Loading usage data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={containerStyle}>
-        <div style={errorStyle}>
-          <AlertCircle size={24} />
-          <span>Error: {error}</span>
-        </div>
-      </div>
-    );
-  }
+  const gnewsPct =
+    gnewsUsage?.dailyLimit
+      ? Math.min(100, ((gnewsUsage.requestsToday / gnewsUsage.dailyLimit) * 100).toFixed(1))
+      : 0;
 
   return (
-    <div style={containerStyle}>
-      <div style={headerStyle}>
-        <h1 style={titleStyle}>Admin Usage Dashboard</h1>
-        <p style={subtitleStyle}>Monitor your MongoDB and GNews API usage</p>
-      </div>
-
-      <div style={dashboardStyle}>
-        <div style={gridStyle}>
-          {/* MongoDB Usage Card */}
-          <div style={cardStyle}>
-            <div style={cardHeaderStyle}>
-              <div style={{ ...iconWrapperStyle, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-                <Database size={24} color="#ffffff" />
-              </div>
-              <h2 style={cardTitleStyle}>MongoDB Usage</h2>
-            </div>
-            
-            {mongoUsage && (
-              <div>
-                <div style={statRowStyle}>
-                  <span style={statLabelStyle}>Total Documents</span>
-                  <span style={statValueStyle}>{formatNumber(mongoUsage.totalDocuments || 0)}</span>
-                </div>
-                <div style={statRowStyle}>
-                  <span style={statLabelStyle}>Total Collections</span>
-                  <span style={statValueStyle}>{formatNumber(mongoUsage.totalCollections || 0)}</span>
-                </div>
-                <div style={statRowStyle}>
-                  <span style={statLabelStyle}>Database Size</span>
-                  <span style={statValueStyle}>{formatBytes(mongoUsage.dataSize || 0)}</span>
-                </div>
-                <div style={statRowStyle}>
-                  <span style={statLabelStyle}>Storage Size</span>
-                  <span style={statValueStyle}>{formatBytes(mongoUsage.storageSize || 0)}</span>
-                </div>
-                <div style={{ ...statRowStyle, borderBottom: 'none' }}>
-                  <span style={statLabelStyle}>Index Size</span>
-                  <span style={statValueStyle}>{formatBytes(mongoUsage.indexSize || 0)}</span>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* GNews Usage Card */}
-          <div style={cardStyle}>
-            <div style={cardHeaderStyle}>
-              <div style={{ ...iconWrapperStyle, background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)' }}>
-                <Newspaper size={24} color="#ffffff" />
-              </div>
-              <h2 style={cardTitleStyle}>GNews API Usage</h2>
-            </div>
-            
-            {gnewsUsage && (
-              <div>
-                <div style={statRowStyle}>
-                  <span style={statLabelStyle}>Requests Today</span>
-                  <span style={statValueStyle}>{formatNumber(gnewsUsage.requestsToday || 0)}</span>
-                </div>
-                <div style={statRowStyle}>
-                  <span style={statLabelStyle}>Daily Limit</span>
-                  <span style={statValueStyle}>{formatNumber(gnewsUsage.dailyLimit || 0)}</span>
-                </div>
-                <div style={statRowStyle}>
-                  <span style={statLabelStyle}>Remaining Requests</span>
-                  <span style={statValueStyle}>{formatNumber(gnewsUsage.remaining || 0)}</span>
-                </div>
-                <div style={statRowStyle}>
-                  <span style={statLabelStyle}>Usage Percentage</span>
-                  <span style={statValueStyle}>
-                    {((gnewsUsage.requestsToday / gnewsUsage.dailyLimit) * 100).toFixed(1)}%
-                  </span>
-                </div>
-                <div style={{ ...statRowStyle, borderBottom: 'none' }}>
-                  <span style={statLabelStyle}>Last Reset</span>
-                  <span style={statValueStyle}>
-                    {gnewsUsage.lastReset ? new Date(gnewsUsage.lastReset).toLocaleDateString() : 'N/A'}
-                  </span>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <button 
-          style={buttonStyle}
-          onClick={fetchUsageData}
-          onMouseEnter={(e) => {
-            e.target.style.transform = 'translateY(-2px)';
-            e.target.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.2)';
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.transform = 'translateY(0)';
-            e.target.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-          }}
-        >
-          <RefreshCw size={20} />
-          Refresh Data
-        </button>
-      </div>
-
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+    <>
+      <PageHeader
+        title="System & Usage"
+        description="Monitor MongoDB and GNews API usage"
+        actions={
+          <Button
+            variant="outlined"
+            startIcon={<RefreshCw size={16} />}
+            onClick={fetchUsageData}
+            disabled={loading}
+          >
+            {loading ? "Refreshing…" : "Refresh Data"}
+          </Button>
         }
-      `}</style>
-    </div>
-  );
-};
+      />
 
-export default AdminUsageDashboard;
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Activity size={18} color="#DC2626" />
+            <span>Error: {error}</span>
+          </Box>
+        </Alert>
+      )}
+
+      {/* MongoDB card */}
+      <Card className="admin-card">
+        <CardContent sx={{ pb: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+            <Box
+              sx={{
+                width: 44, height: 44, borderRadius: 2,
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <Database size={22} color="#fff" />
+            </Box>
+            <Typography variant="h2" sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
+              MongoDB Usage
+            </Typography>
+          </Box>
+
+          {loading ? (
+            <Stack spacing={1.5}>
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Box key={i} sx={{ display: "flex", justifyContent: "space-between", py: 1.5 }}>
+                  <Skeleton width={140} height={18} />
+                  <Skeleton width={80} height={18} />
+                </Box>
+              ))}
+            </Stack>
+          ) : mongoUsage ? (
+            <Box className="admin-usage-rows">
+              <Row label="Total Documents" value={formatNumber(mongoUsage.totalDocuments || 0)} />
+              <Row label="Total Collections" value={formatNumber(mongoUsage.totalCollections || 0)} />
+              <Row label="Database Size" value={formatBytes(mongoUsage.dataSize || 0)} />
+              <Row label="Storage Size" value={formatBytes(mongoUsage.storageSize || 0)} />
+              <Row label="Index Size" value={formatBytes(mongoUsage.indexSize || 0)} last />
+            </Box>
+          ) : (
+            <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+              No data available
+            </Typography>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* GNews card */}
+      <Card className="admin-card">
+        <CardContent sx={{ pb: 2 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+            <Box
+              sx={{
+                width: 44, height: 44, borderRadius: 2,
+                background: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <Newspaper size={22} color="#fff" />
+            </Box>
+            <Typography variant="h2" sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
+              GNews API Usage
+            </Typography>
+          </Box>
+
+          {loading ? (
+            <Stack spacing={1.5}>
+              {[0, 1, 2, 3, 4].map((i) => (
+                <Box key={i} sx={{ display: "flex", justifyContent: "space-between", py: 1.5 }}>
+                  <Skeleton width={140} height={18} />
+                  <Skeleton width={80} height={18} />
+                </Box>
+              ))}
+            </Stack>
+          ) : gnewsUsage ? (
+            <>
+              <Box className="admin-usage-rows">
+                <Row label="Requests Today" value={formatNumber(gnewsUsage.requestsToday || 0)} />
+                <Row label="Daily Limit" value={formatNumber(gnewsUsage.dailyLimit || 0)} />
+                <Row label="Remaining Requests" value={formatNumber(gnewsUsage.remaining || 0)} />
+                <Row label="Usage Percentage" value={`${gnewsPct}%`} />
+                <Row
+                  label="Last Reset"
+                  value={gnewsUsage.lastReset ? new Date(gnewsUsage.lastReset).toLocaleDateString() : "N/A"}
+                  last
+                />
+              </Box>
+              {gnewsUsage.dailyLimit > 0 && (
+                <Box sx={{ mt: 3 }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      Daily usage
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600 }}>
+                      {gnewsPct}%
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      height: 8, borderRadius: 4, bgcolor: "#E5E9EE", overflow: "hidden",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        height: "100%",
+                        width: `${Math.min(100, gnewsPct)}%`,
+                        bgcolor:
+                          gnewsPct > 90
+                            ? "#DC2626"
+                            : gnewsPct > 70
+                            ? "#F59E0B"
+                            : "#00A79D",
+                        transition: "width .4s ease, background-color .3s ease",
+                        borderRadius: 4,
+                      }}
+                    />
+                  </Box>
+                </Box>
+              )}
+            </>
+          ) : (
+            <Typography color="text.secondary" align="center" sx={{ py: 4 }}>
+              No data available
+            </Typography>
+          )}
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
+function Row({ label, value, last }) {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        py: 1.5,
+        borderBottom: last ? "none" : "1px solid #F4F7F9",
+      }}
+    >
+      <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+        {label}
+      </Typography>
+      <Typography
+        variant="body2"
+        sx={{ fontWeight: 600, color: "text.primary", fontVariantNumeric: "tabular-nums" }}
+      >
+        {value}
+      </Typography>
+    </Box>
+  );
+}
+
+function Newspaper({ size, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.5 1-3 2-3s2 1.5 2 3v9a2 2 0 0 1-2 2Zm10 0h-4v-5h4v5Z"/>
+    </svg>
+  );
+}

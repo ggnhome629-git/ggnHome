@@ -1,10 +1,54 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatedNumber } from '../../components/motion';
 import { useNavigate } from 'react-router-dom';
-import TopNavigationBar from '../Dashboard/TopNavigationBar';
-import { TrendingUp, Users, Home, DollarSign, Search, Award, Activity, Eye, Bookmark, Star, ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Box,
+  Card,
+  CardContent,
+  Grid,
+  Typography,
+  Stack,
+  Button,
+  Chip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  IconButton,
+  useMediaQuery,
+  useTheme,
+  LinearProgress,
+  Collapse,
+  Skeleton,
+  Alert,
+  Paper,
+} from "@mui/material";
+import {
+  TrendingUp,
+  Users,
+  Home,
+  DollarSign,
+  Search,
+  Award,
+  Activity,
+  Eye,
+  Bookmark,
+  Star,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  AlertCircle,
+} from 'lucide-react';
+
+import './admin.css';
 
 const AdminDashboard = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+  
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
   const [data, setData] = useState(null);
@@ -312,29 +356,58 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div style={styles.loadingContainer}>
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
-        <div style={styles.spinner}></div>
-      </div>
+      <Box className="admin-dashboard">
+        <Box className="admin-container">
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+            <Skeleton variant="rounded" width={200} height={48} sx={{ mb: 3 }} />
+            <Skeleton variant="rounded" width={120} height={32} />
+          </Box>
+          <Grid container spacing={3} sx={{ mt: 4 }}>
+            {[...Array(8)].map((_, i) => (
+              <Grid item xs={12} sm={6} md={3} key={i}>
+                <Card className="stat-card">
+                  <CardContent>
+                    <Box className="stat-card-header">
+                      <Skeleton variant="rounded" width={40} height={40} sx={{ borderRadius: '50%' }} />
+                      <Skeleton variant="rounded" width={50} height={22} sx={{ borderRadius: '999px' }} />
+                    </Box>
+                    <Skeleton variant="rounded" width="60%" height={34} />
+                    <Skeleton variant="rounded" width="40%" height={18} sx={{ mt: 1 }} />
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <div style={styles.errorContainer}>
-        <div style={styles.errorCard}>
-          <h2 style={{ color: '#003366', marginBottom: '16px' }}>Error Loading Dashboard</h2>
-          <p style={{ color: '#4A6A8A', marginBottom: '24px' }}>{error}</p>
-          <button style={styles.button} onClick={fetchDashboardData}>
-            Retry
-          </button>
-        </div>
-      </div>
+      <Box className="admin-dashboard">
+        <Box className="admin-container">
+          <Box className="error-state">
+            <Box className="error-state-icon">
+              <AlertCircle size={26} color="#DC2626" />
+            </Box>
+            <Typography className="error-state-title">
+              Error Loading Dashboard
+            </Typography>
+            <Typography className="error-state-description">
+              {error}
+            </Typography>
+            <Button
+              variant="contained"
+              onClick={fetchDashboardData}
+              startIcon={<RefreshCw size={16} />}
+              className="btn-teal"
+            >
+              Retry
+            </Button>
+          </Box>
+        </Box>
+      </Box>
     );
   }
 
@@ -368,232 +441,375 @@ const AdminDashboard = () => {
   const summary = Object.assign({}, summaryDefaults, (raw.summary && typeof raw.summary === 'object') ? raw.summary : {});
   const charts = Object.assign({}, chartsDefaults, (raw.charts && typeof raw.charts === 'object') ? raw.charts : {});
 
-  const StatCard = ({ title, value, numericValue, decimals = 0, suffix = "", subtitle, icon: Icon, color, gradient }) => {
-    const [isHovered, setIsHovered] = useState(false);
-
-    return (
-      <div
-        style={{
-          ...styles.statCard,
-          ...(isHovered ? styles.statCardHover : {})
-        }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <div style={styles.statHeader}>
-          <div style={styles.statTitle}>{title}</div>
-          <div style={{ ...styles.statIcon, background: gradient }}>
-            <Icon size={20} color="#FFFFFF" />
-          </div>
-        </div>
-        <div style={styles.statValue}>
-          {numericValue !== undefined ? (
-            <AnimatedNumber value={numericValue} decimals={decimals} suffix={suffix} />
-          ) : (
-            value
-          )}
-        </div>
-        <div style={styles.statLabel}>{subtitle}</div>
-      </div>
-    );
-  };
+  const StatCardMUI = ({ title, numericValue, subtitle, icon: Icon, iconColor = '#003366' }) => (
+    <Card className="stat-card">
+      <CardContent>
+        <Box className="stat-card-header">
+          <Typography className="stat-card-label text-secondary">{title}</Typography>
+          <Box className="stat-card-icon" style={{ color: iconColor }}>
+            {Icon && <Icon size={20} color={iconColor} />}
+          </Box>
+        </Box>
+        {numericValue !== undefined ? (
+          <Typography className="stat-card-value">
+            <AnimatedNumber value={numericValue} />
+          </Typography>
+        ) : null}
+        {subtitle && (
+          <Typography className="stat-card-label text-secondary">
+            {subtitle}
+          </Typography>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   return (
-    <div style={styles.container}>
-      {/* Top Navigation Bar */}
-      <div
-        style={{
-          position: 'fixed',
-          marginBottom: '20px',
-          top: 0,
-          left: 0,
-          width: '100%',
-          zIndex: 999,
-          backgroundColor: '#FFFFFF', // or match your navbar background
-        }}
-      >
-        <TopNavigationBar user={user} handleLogout={handleLogout} navItems={navItems} />
-      </div>
-      {/* Spacer to push content below fixed navbar */}
-      <div style={{ height: 72 }} />
-      <header style={styles.header}>
-        <h1 style={styles.headerTitle}>Admin Dashboard Overview</h1>
-        <p style={styles.headerSubtitle}>
-          Last updated: {new Date().toLocaleString('en-IN')}
-        </p>
-      </header>
+    <Box className="admin-dashboard">
+      <Box className="admin-container">
+        {/* Header */}
+        <Box className="flex items-center justify-between mb-5 flex-wrap gap-3">
+          <Box>
+            <Typography
+              variant="h1"
+              sx={{ fontSize: { xs: '24px', md: '28px' }, fontWeight: 700 }}
+            >
+              Admin Dashboard Overview
+            </Typography>
+            <Typography variant="body2" className="text-secondary mt-1">
+              Last updated: {new Date().toLocaleString('en-IN')}
+              {data?.lastUpdated && ` • ${data.lastUpdated}`}
+            </Typography>
+          </Box>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshCw size={16} />}
+            onClick={fetchDashboardData}
+            className="btn-outlined"
+            size="small"
+          >
+            Refresh
+          </Button>
+        </Box>
 
-      <main style={styles.main}>
         {/* Key Metrics */}
-        <div style={styles.statsGrid}>
-          <StatCard
-            title="Total Users"
-            numericValue={summary.totalUsers}
-            subtitle={`${summary.renters} Renters • ${summary.owners} Owners • ${summary.admins} Admins`}
-            icon={Users}
-            gradient="linear-gradient(135deg, #003366 0%, #4A6A8A 100%)"
-          />
-          <StatCard
-            title="Properties"
-            numericValue={summary.totalProperties}
-            subtitle={`${summary.rentalCount} Rental • ${summary.saleCount} Sale`}
-            icon={Home}
-            gradient="linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)"
-          />
-          <StatCard
-            title="Total Revenue"
-            value={formatCurrency(summary.totalRevenue)}
-            subtitle={`${summary.completedPayments + summary.approvedPayments} Transactions`}
-            icon={DollarSign}
-            gradient="linear-gradient(135deg, #22D3EE 0%, #00A79D 100%)"
-          />
-          <StatCard
-            title="Active Users"
-            numericValue={summary.activeUsersCount}
-            subtitle={`${summary.inactiveUsersCount} Inactive Users`}
-            icon={Activity}
-            gradient="linear-gradient(135deg, #4A6A8A 0%, #003366 100%)"
-          />
-          <StatCard
-            title="AI Users"
-            numericValue={summary.aiUsersCount}
-            subtitle={`${summary.totalSearches} Total Searches`}
-            icon={Search}
-            gradient="linear-gradient(135deg, #003366 0%, #00A79D 100%)"
-          />
-          <StatCard
-            title="Rewards"
-            numericValue={summary.totalRewardsDistributed}
-            subtitle={`${charts.rewards.unclaimedRewards} Unclaimed`}
-            icon={Award}
-            gradient="linear-gradient(135deg, #00A79D 0%, #4A6A8A 100%)"
-          />
-          <StatCard
-            title="Avg Property Rating"
-            numericValue={summary.averagePropertyRating}
-            decimals={1}
-            subtitle={`${charts.engagement.totalRatings} Total Ratings`}
-            icon={Star}
-            gradient="linear-gradient(135deg, #22D3EE 0%, #003366 100%)"
-          />
-          <StatCard
-            title="Property Views"
-            numericValue={charts.engagement.totalViews}
-            subtitle={`${charts.engagement.totalSaves} Saves`}
-            icon={Eye}
-            gradient="linear-gradient(135deg, #4A6A8A 0%, #22D3EE 100%)"
-          />
-        </div>
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <Card className="stat-card">
+              <CardContent>
+                <Box className="stat-card-header">
+                  <Typography className="stat-card-label text-secondary">Total Users</Typography>
+                  <Box className="stat-card-icon">
+                    <Users size={20} color="#003366" />
+                  </Box>
+                </Box>
+                <Typography className="stat-card-value">
+                  <AnimatedNumber value={summary.totalUsers} />
+                </Typography>
+                <Typography className="stat-card-label text-secondary text-center">
+                  {summary.renters} Renters • {summary.owners} Owners • {summary.admins} Admins
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <Card className="stat-card">
+              <CardContent>
+                <Box className="stat-card-header">
+                  <Typography className="stat-card-label text-secondary">Properties</Typography>
+                  <Box className="stat-card-icon teal">
+                    <Home size={20} color="#00A79D" />
+                  </Box>
+                </Box>
+                <Typography className="stat-card-value">
+                  <AnimatedNumber value={summary.totalProperties} />
+                </Typography>
+                <Typography className="stat-card-label text-secondary">
+                  {summary.rentalCount} Rental • {summary.saleCount} Sale
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <Card className="stat-card">
+              <CardContent>
+                <Box className="stat-card-header">
+                  <Typography className="stat-card-label text-secondary">Total Revenue</Typography>
+                  <Box className="stat-card-icon cyan">
+                    <DollarSign size={20} color="#22D3EE" />
+                  </Box>
+                </Box>
+                <Typography className="stat-card-value">
+                  {formatCurrency(summary.totalRevenue)}
+                </Typography>
+                <Typography className="stat-card-label text-secondary">
+                  {summary.completedPayments + summary.approvedPayments} Transactions
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <Card className="stat-card">
+              <CardContent>
+                <Box className="stat-card-header">
+                  <Typography className="stat-card-label text-secondary">Active Users</Typography>
+                  <Box className="stat-card-icon success">
+                    <Activity size={20} color="#10B981" />
+                  </Box>
+                </Box>
+                <Typography className="stat-card-value">
+                  <AnimatedNumber value={summary.activeUsersCount} />
+                </Typography>
+                <Typography className="stat-card-label text-secondary">
+                  {summary.inactiveUsersCount} Inactive
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <Card className="stat-card">
+              <CardContent>
+                <Box className="stat-card-header">
+                  <Typography className="stat-card-label text-secondary">AI Users</Typography>
+                  <Box className="stat-card-icon">
+                    <Search size={20} color="#003366" />
+                  </Box>
+                </Box>
+                <Typography className="stat-card-value">
+                  <AnimatedNumber value={summary.aiUsersCount} />
+                </Typography>
+                <Typography className="stat-card-label text-secondary">
+                  {summary.totalSearches} Total Searches
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <Card className="stat-card">
+              <CardContent>
+                <Box className="stat-card-header">
+                  <Typography className="stat-card-label text-secondary">Rewards</Typography>
+                  <Box className="stat-card-icon teal">
+                    <Award size={20} color="#00A79D" />
+                  </Box>
+                </Box>
+                <Typography className="stat-card-value">
+                  <AnimatedNumber value={summary.totalRewardsDistributed} />
+                </Typography>
+                <Typography className="stat-card-label text-secondary">
+                  {charts.rewards.unclaimedRewards} Unclaimed
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <Card className="stat-card">
+              <CardContent>
+                <Box className="stat-card-header">
+                  <Typography className="stat-card-label text-secondary">Avg Rating</Typography>
+                  <Box className="stat-card-icon cyan">
+                    <Star size={20} color="#22D3EE" />
+                  </Box>
+                </Box>
+                <Typography className="stat-card-value">
+                  <AnimatedNumber value={summary.averagePropertyRating} decimals={1} />
+                </Typography>
+                <Typography className="stat-card-label text-secondary">
+                  {charts.engagement.totalRatings} Total Ratings
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <Card className="stat-card">
+              <CardContent>
+                <Box className="stat-card-header">
+                  <Typography className="stat-card-label text-secondary">Views</Typography>
+                  <Box className="stat-card-icon">
+                    <Eye size={20} color="#003366" />
+                  </Box>
+                </Box>
+                <Typography className="stat-card-value">
+                  <AnimatedNumber value={charts.engagement.totalViews} />
+                </Typography>
+                <Typography className="stat-card-label text-secondary">
+                  {charts.engagement.totalSaves} Saves
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
 
         {/* Payment Status Overview */}
-        <div style={styles.card}>
-          <h2 style={styles.sectionTitle}>
-            <DollarSign size={24} color="#00A79D" />
-            Payment Overview
-          </h2>
-          <div style={styles.statsGrid}>
-            <div style={{ ...styles.propertyCard, backgroundColor: '#FFF9E6', border: '2px solid #FFD700' }}>
-              <div>
-                <div style={{ fontSize: '14px', color: '#4A6A8A', marginBottom: '4px' }}>Pending</div>
-                <div style={{ fontSize: '24px', fontWeight: '700', color: '#333333' }}>
-                  {summary.pendingPayments}
-                </div>
-              </div>
-              <div style={{ fontSize: '18px', fontWeight: '600', color: '#4A6A8A' }}>
-                {formatCurrency(summary.totalRevenuePending)}
-              </div>
-            </div>
-            <div style={{ ...styles.propertyCard, backgroundColor: '#E6F7FF', border: '2px solid #22D3EE' }}>
-              <div>
-                <div style={{ fontSize: '14px', color: '#4A6A8A', marginBottom: '4px' }}>Approved</div>
-                <div style={{ fontSize: '24px', fontWeight: '700', color: '#333333' }}>
-                  {summary.approvedPayments}
-                </div>
-              </div>
-              <div style={{ fontSize: '18px', fontWeight: '600', color: '#4A6A8A' }}>
-                {formatCurrency(summary.totalRevenueApproved)}
-              </div>
-            </div>
-            <div style={{ ...styles.propertyCard, backgroundColor: '#E6FFF9', border: '2px solid #00A79D' }}>
-              <div>
-                <div style={{ fontSize: '14px', color: '#4A6A8A', marginBottom: '4px' }}>Completed</div>
-                <div style={{ fontSize: '24px', fontWeight: '700', color: '#333333' }}>
-                  {summary.completedPayments}
-                </div>
-              </div>
-              <div style={{ fontSize: '18px', fontWeight: '600', color: '#4A6A8A' }}>
-                {formatCurrency(summary.totalRevenueCompleted)}
-              </div>
-            </div>
-          </div>
-        </div>
+        <Card className="mb-5">
+          <CardContent>
+            <Box className="flex items-center gap-3 mb-4">
+              <Box className="stat-card-icon teal" sx={{ width: 36, height: 36 }}>
+                <DollarSign size={18} color="#00A79D" />
+              </Box>
+              <Typography variant="h2" sx={{ fontSize: '18px', fontWeight: 700 }}>
+                Payment Overview
+              </Typography>
+            </Box>
+            
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={4}>
+                <Box
+                  className="card"
+                  sx={{
+                    p: 4,
+                    bgcolor: 'rgba(255, 245, 230, 0.5)',
+                    border: '2px solid #FFC107',
+                    borderRadius: 2,
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography className="text-secondary mb-1">Pending</Typography>
+                  <Typography variant="h3" className="font-bold" sx={{ color: 'warning.main', mb: 1 }}>
+                    {summary.pendingPayments}
+                  </Typography>
+                  <Typography className="font-semibold" sx={{ color: 'warning.dark' }}>
+                    {formatCurrency(summary.totalRevenuePending)}
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <Box
+                  className="card"
+                  sx={{
+                    p: 4,
+                    bgcolor: 'rgba(230, 247, 255, 0.5)',
+                    border: '2px solid #22D3EE',
+                    borderRadius: 2,
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography className="text-secondary mb-1">Approved</Typography>
+                  <Typography variant="h3" className="font-bold" sx={{ color: 'info.main', mb: 1 }}>
+                    {summary.approvedPayments}
+                  </Typography>
+                  <Typography className="font-semibold" sx={{ color: 'info.dark' }}>
+                    {formatCurrency(summary.totalRevenueApproved)}
+                  </Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <Box
+                  className="card"
+                  sx={{
+                    p: 4,
+                    bgcolor: 'rgba(230, 255, 249, 0.5)',
+                    border: '2px solid #00A79D',
+                    borderRadius: 2,
+                    textAlign: 'center',
+                  }}
+                >
+                  <Typography className="text-secondary mb-1">Completed</Typography>
+                  <Typography variant="h3" className="font-bold" sx={{ color: 'teal.main', mb: 1 }}>
+                    {summary.completedPayments}
+                  </Typography>
+                  <Typography className="font-semibold" sx={{ color: 'teal.dark' }}>
+                    {formatCurrency(summary.totalRevenueCompleted)}
+                  </Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
         {/* Charts Section */}
-        <div style={styles.chartGrid}>
-          {/* Revenue by Method */}
-          <div style={styles.card}>
-            <h3 style={{ ...styles.sectionTitle, fontSize: '18px' }}>Revenue by Payment Method</h3>
-            {Object.entries(charts.revenueByMethod).map(([method, data]) => {
-              const maxRevenue = Math.max(...Object.values(charts.revenueByMethod).map(d => d.totalAmount));
-              const percentage = (data.totalAmount / maxRevenue) * 100;
-              
-              return (
-                <div key={method} style={{ marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
-                    <span style={{ fontWeight: '600', color: '#333333' }}>{method}</span>
-                    <span style={{ color: '#00A79D', fontWeight: '600' }}>{formatCurrency(data.totalAmount)}</span>
-                  </div>
-                  <div style={{ backgroundColor: '#F4F7F9', borderRadius: '10px', height: '10px', overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        width: `${percentage}%`,
-                        height: '100%',
-                        background: 'linear-gradient(90deg, #00A79D 0%, #22D3EE 100%)',
-                        borderRadius: '10px',
-                        transition: 'width 0.5s ease'
-                      }}
-                    />
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#4A6A8A', marginTop: '4px' }}>
-                    {data.count} transactions • Avg: {formatCurrency(data.avgAmount)}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+        <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12} lg={6}>
+            <Card className="mb-5">
+              <CardContent>
+                <Typography variant="h3" sx={{ fontWeight: 700, mb: 3 }}>
+                  Revenue by Payment Method
+                </Typography>
+                <Stack spacing={3}>
+                  {Object.entries(charts.revenueByMethod).map(([method, data]) => {
+                    const maxRevenue = Math.max(...Object.values(charts.revenueByMethod).map(d => d.totalAmount || 0)) || 1;
+                    const percentage = (data.totalAmount / maxRevenue) * 100;
+                    
+                    return (
+                      <Box key={method}>
+                        <Box className="flex justify-between items-center mb-2">
+                          <Typography variant="body2" className="font-semibold">
+                            {method}
+                          </Typography>
+                          <Typography variant="body2" className="font-semibold" sx={{ color: 'teal.main' }}>
+                            {formatCurrency(data.totalAmount)}
+                          </Typography>
+                        </Box>
+                        <Box className="skeleton" sx={{ bgcolor: 'divider', height: 8, borderRadius: 1, overflow: 'hidden' }}>
+                          <Box
+                            sx={{
+                              width: `${percentage}%`,
+                              height: '100%',
+                              bgcolor: 'linear-gradient(90deg, #00A79D 0%, #22D3EE 100%)',
+                              borderRadius: 1,
+                              transition: 'width 0.5s ease',
+                            }}
+                          />
+                        </Box>
+                        <Typography variant="caption" className="text-secondary mt-1">
+                          {data.count} transactions • Avg: {formatCurrency(data.avgAmount)}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
 
-          {/* User Growth */}
-          <div style={styles.card}>
-            <h3 style={{ ...styles.sectionTitle, fontSize: '18px' }}>User Growth (Last 12 Months)</h3>
-            {charts.userGrowth.slice(-6).map((item, index) => {
-              const maxUsers = Math.max(...charts.userGrowth.map(d => d.count));
-              const percentage = (item.count / maxUsers) * 100;
-              const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-              
-              return (
-                <div key={index} style={{ marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
-                    <span style={{ fontWeight: '600', color: '#333333' }}>
-                      {monthNames[item.month - 1]} {item.year}
-                    </span>
-                    <span style={{ color: '#003366', fontWeight: '600' }}>{item.count} users</span>
-                  </div>
-                  <div style={{ backgroundColor: '#F4F7F9', borderRadius: '10px', height: '10px', overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        width: `${percentage}%`,
-                        height: '100%',
-                        background: 'linear-gradient(90deg, #003366 0%, #4A6A8A 100%)',
-                        borderRadius: '10px',
-                        transition: 'width 0.5s ease'
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+          <Grid item xs={12} lg={6}>
+            <Card className="mb-5">
+              <CardContent>
+                <Typography variant="h3" sx={{ fontWeight: 700, mb: 3 }}>
+                  User Growth (Last 12 Months)
+                </Typography>
+                <Stack spacing={2}>
+                  {charts.userGrowth.slice(-6).map((item, index) => {
+                    const maxUsers = Math.max(...charts.userGrowth.map(d => d.count || 0)) || 1;
+                    const percentage = (item.count / maxUsers) * 100;
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    
+                    return (
+                      <Box key={index}>
+                        <Box className="flex justify-between items-center mb-2">
+                          <Typography variant="body2" className="font-semibold">
+                            {monthNames[item.month - 1]} {item.year}
+                          </Typography>
+                          <Typography variant="body2" className="font-semibold" sx={{ color: 'primary.main' }}>
+                            {item.count} users
+                          </Typography>
+                        </Box>
+                        <Box className="skeleton" sx={{ bgcolor: 'divider', height: 8, borderRadius: 1, overflow: 'hidden' }}>
+                          <Box
+                            sx={{
+                              width: `${percentage}%`,
+                              height: '100%',
+                              bgcolor: 'linear-gradient(90deg, #003366 0%, #4A6A8A 100%)',
+                              borderRadius: 1,
+                              transition: 'width 0.5s ease',
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
 
         {/* Top Searches */}
         <div style={styles.card}>
@@ -675,75 +891,101 @@ const AdminDashboard = () => {
         </div>
 
         {/* Recent Activity */}
-        <div style={styles.card}>
-          <div 
-            style={styles.cardHeader}
+        <Card className="mb-5">
+          <Box
+            className="flex items-center justify-between p-4 cursor-pointer"
             onClick={() => toggleSection('recentActivity')}
+            sx={{ borderBottom: '1px solid divider', bgcolor: 'background.paper' }}
           >
-            <h2 style={{ ...styles.sectionTitle, margin: 0 }}>
-              <Activity size={24} color="#00A79D" />
-              Recent Activity
-            </h2>
-            {expandedSections.recentActivity ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
-          </div>
+            <Box className="flex items-center gap-3">
+              <Box className="stat-card-icon teal" sx={{ width: 36, height: 36 }}>
+                <Activity size={18} color="#00A79D" />
+              </Box>
+              <Typography variant="h2" sx={{ fontSize: '18px', fontWeight: 700 }}>
+                Recent Activity
+              </Typography>
+            </Box>
+            {expandedSections.recentActivity ? <ChevronUp size={20} color="#00A79D" /> : <ChevronDown size={20} color="#00A79D" />}
+          </Box>
           
-          {expandedSections.recentActivity && (
-            <>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <div style={{ fontSize: 14, color: '#64748b' }}>Showing page {recentPage}</div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
+          <Collapse in={expandedSections.recentActivity}>
+            <Box sx={{ px: 3, pb: 3 }}>
+              <Box className="flex justify-between items-center mb-3">
+                <Typography variant="body2" className="text-secondary">
+                  Showing page {recentPage}
+                </Typography>
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    size="small"
                     onClick={() => setRecentPage(p => Math.max(1, p - 1))}
                     disabled={recentPage <= 1}
-                    style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #E0E7EE', background: recentPage <= 1 ? '#F4F7F9' : '#003366', color: '#FFFFFF', cursor: recentPage <= 1 ? 'not-allowed' : 'pointer' }}
+                    variant={recentPage <= 1 ? 'outlined' : 'contained'}
+                    sx={{
+                      px: 2,
+                      minWidth: 80,
+                      bgcolor: recentPage <= 1 ? 'action.hover' : 'primary.main',
+                      color: recentPage <= 1 ? 'text.secondary' : 'white',
+                    }}
                   >
                     Previous
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    size="small"
                     onClick={() => setRecentPage(p => p + 1)}
                     disabled={!(data && data.recentActivity && data.recentActivity.length === pageSize)}
-                    style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid #E0E7EE', background: (data && data.recentActivity && data.recentActivity.length === pageSize) ? '#003366' : '#F4F7F9', color: '#FFFFFF', cursor: (data && data.recentActivity && data.recentActivity.length === pageSize) ? 'pointer' : 'not-allowed' }}
+                    variant={(data && data.recentActivity && data.recentActivity.length === pageSize) ? 'contained' : 'outlined'}
+                    sx={{
+                      px: 2,
+                      minWidth: 80,
+                      bgcolor: (data && data.recentActivity && data.recentActivity.length === pageSize) ? 'primary.main' : 'action.hover',
+                      color: (data && data.recentActivity && data.recentActivity.length === pageSize) ? 'white' : 'text.secondary',
+                    }}
                   >
                     Next
-                  </button>
-                </div>
-              </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      <th style={styles.th}>Type</th>
-                      <th style={styles.th}>User</th>
-                      <th style={styles.th}>Action</th>
-                      <th style={styles.th}>Details</th>
-                      <th style={styles.th}>Time</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                  </Button>
+                </Stack>
+              </Box>
+              
+              <TableContainer component={Paper} className="table-container">
+                <Table className="table">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell className="font-semibold">Type</TableCell>
+                      <TableCell className="font-semibold">User</TableCell>
+                      <TableCell className="font-semibold">Action</TableCell>
+                      <TableCell className="font-semibold">Details</TableCell>
+                      <TableCell className="font-semibold">Time</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
                     {recentActivity.slice(0, 15).map((activity, index) => (
-                      <tr key={index}>
-                        <td style={styles.td}>
-                          <span style={{
-                            ...styles.badge,
-                            backgroundColor: activity.type === 'user' ? '#003366' : 
-                                           activity.type === 'property' ? '#00A79D' : '#22D3EE',
-                            color: '#FFFFFF'
-                          }}>
-                            {activity.type}
-                          </span>
-                        </td>
-                        <td style={styles.td}>{activity.user}</td>
-                        <td style={styles.td}>{activity.action}</td>
-                        <td style={styles.td}>{activity.location}</td>
-                        <td style={styles.td}>{formatDate(activity.time)}</td>
-                      </tr>
+                      <TableRow key={index}>
+                        <TableCell>
+                          <Chip
+                            label={activity.type}
+                            size="small"
+                            sx={{
+                              bgcolor: activity.type === 'user' ? '#003366' : 
+                                       activity.type === 'property' ? '#00A79D' : '#22D3EE',
+                              color: 'white',
+                              fontWeight: 600,
+                              height: 24,
+                              fontSize: '0.7rem',
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell>{activity.user}</TableCell>
+                        <TableCell>{activity.action}</TableCell>
+                        <TableCell>{activity.location}</TableCell>
+                        <TableCell className="text-secondary">{formatDate(activity.time)}</TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-        </div>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          </Collapse>
+        </Card>
 
         {/* Approved Payments */}
         {approvedPayments && approvedPayments.length > 0 && (
@@ -1105,126 +1347,162 @@ const AdminDashboard = () => {
         </div>
 
         {/* Rewards Section */}
-        <div style={styles.card}>
-          <div 
-            style={styles.cardHeader}
+        <Card className="mb-5">
+          <Box
+            className="flex items-center justify-between p-4 cursor-pointer"
             onClick={() => toggleSection('rewards')}
+            sx={{ borderBottom: '1px solid divider', bgcolor: 'background.paper' }}
           >
-            <h2 style={{ ...styles.sectionTitle, margin: 0 }}>
-              <Award size={24} color="#00A79D" />
-              Rewards System
-            </h2>
-            {expandedSections.rewards ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
-          </div>
+            <Box className="flex items-center gap-3">
+              <Box className="stat-card-icon teal" sx={{ width: 36, height: 36 }}>
+                <Award size={18} color="#00A79D" />
+              </Box>
+              <Typography variant="h2" sx={{ fontSize: '18px', fontWeight: 700 }}>
+                Rewards System
+              </Typography>
+            </Box>
+            {expandedSections.rewards ? <ChevronUp size={20} color="#00A79D" /> : <ChevronDown size={20} color="#00A79D" />}
+          </Box>
           
-          {expandedSections.rewards && (
-            <>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-                <div style={styles.propertyCard}>
-                  <div>
-                    <div style={{ fontSize: '14px', color: '#4A6A8A', marginBottom: '4px' }}>
-                      Total Rewards
-                    </div>
-                    <div style={{ fontSize: '28px', fontWeight: '700', color: '#003366' }}>
-                      {charts.rewards.totalRewards}
-                    </div>
-                  </div>
-                </div>
-                <div style={styles.propertyCard}>
-                  <div>
-                    <div style={{ fontSize: '14px', color: '#4A6A8A', marginBottom: '4px' }}>
-                      Unclaimed Rewards
-                    </div>
-                    <div style={{ fontSize: '28px', fontWeight: '700', color: '#00A79D' }}>
-                      {charts.rewards.unclaimedRewards}
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <Collapse in={expandedSections.rewards}>
+            <Box sx={{ p: 3 }}>
+              <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} sm={6}>
+                  <Box className="stat-card" sx={{ textAlign: 'center' }}>
+                    <CardContent sx={{ p: 4 }}>
+                      <Typography className="text-secondary mb-2">Total Rewards</Typography>
+                      <Typography variant="h2" className="font-bold" sx={{ color: 'primary.main', mb: 1 }}>
+                        {charts.rewards.totalRewards}
+                      </Typography>
+                    </CardContent>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box className="stat-card" sx={{ textAlign: 'center' }}>
+                    <CardContent sx={{ p: 4 }}>
+                      <Typography className="text-secondary mb-2">Unclaimed Rewards</Typography>
+                      <Typography variant="h2" className="font-bold" sx={{ color: 'teal.main', mb: 1 }}>
+                        {charts.rewards.unclaimedRewards}
+                      </Typography>
+                    </CardContent>
+                  </Box>
+                </Grid>
+              </Grid>
 
-              <h3 style={{ fontSize: '16px', color: '#003366', marginBottom: '16px' }}>
+              <Typography variant="h3" sx={{ fontWeight: 700, mb: 3 }}>
                 Recent Rewards
-              </h3>
+              </Typography>
               {charts.rewards.recentRewards.map((reward, index) => (
-                <div key={index} style={{ ...styles.propertyCard, marginBottom: '8px' }}>
-                  <div>
-                    <div style={{ fontWeight: '600', color: '#333333', marginBottom: '4px' }}>
+                <Box
+                  key={index}
+                  className="card"
+                  sx={{
+                    p: 3,
+                    mb: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Box>
+                    <Typography className="font-semibold mb-1">
                       {reward.message}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#4A6A8A' }}>
+                    </Typography>
+                    <Typography variant="caption" className="text-secondary">
                       {formatDate(reward.createdAt)}
-                    </div>
-                  </div>
+                    </Typography>
+                  </Box>
                   <Award size={20} color="#00A79D" />
-                </div>
+                </Box>
               ))}
-            </>
-          )}
-        </div>
+            </Box>
+          </Collapse>
+        </Card>
 
         {/* AI Usage by Role */}
         {Object.keys(charts.aiUsageByRole).length > 0 && (
-          <div style={styles.card}>
-            <h2 style={styles.sectionTitle}>
-              <Users size={24} color="#00A79D" />
-              AI Assistant Usage by Role
-            </h2>
-            <div style={styles.chartGrid}>
-              {Object.entries(charts.aiUsageByRole).map(([role, count]) => {
-                const totalAIUsers = Object.values(charts.aiUsageByRole).reduce((a, b) => a + b, 0);
-                const percentage = (count / totalAIUsers) * 100;
-                
-                return (
-                  <div key={role} style={{ marginBottom: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
-                      <span style={{ fontWeight: '600', color: '#333333', textTransform: 'capitalize' }}>
-                        {role}
-                      </span>
-                      <span style={{ color: '#00A79D', fontWeight: '600' }}>
-                        {count} users ({percentage.toFixed(1)}%)
-                      </span>
-                    </div>
-                    <div style={{ backgroundColor: '#F4F7F9', borderRadius: '10px', height: '12px', overflow: 'hidden' }}>
-                      <div
-                        style={{
-                          width: `${percentage}%`,
-                          height: '100%',
-                          background: role === 'admin' ? 'linear-gradient(90deg, #003366 0%, #4A6A8A 100%)' :
-                                    role === 'owner' ? 'linear-gradient(90deg, #00A79D 0%, #22D3EE 100%)' :
-                                    'linear-gradient(90deg, #22D3EE 0%, #4A6A8A 100%)',
-                          borderRadius: '10px',
-                          transition: 'width 0.5s ease'
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <Card className="mb-5">
+            <CardContent>
+              <Box className="flex items-center gap-3 mb-4">
+                <Box className="stat-card-icon teal" sx={{ width: 36, height: 36 }}>
+                  <Users size={18} color="#00A79D" />
+                </Box>
+                <Typography variant="h2" sx={{ fontSize: '18px', fontWeight: 700 }}>
+                  AI Assistant Usage by Role
+                </Typography>
+              </Box>
+              
+              <Grid container spacing={3}>
+                {Object.entries(charts.aiUsageByRole).map(([role, count]) => {
+                  const totalAIUsers = Object.values(charts.aiUsageByRole).reduce((a, b) => a + b, 0);
+                  const percentage = (count / totalAIUsers) * 100;
+                  
+                  return (
+                    <Grid item xs={12} sm={6} md={4} key={role}>
+                      <Box className="card" sx={{ p: 4 }}>
+                        <Box className="flex justify-between items-center mb-3">
+                          <Typography variant="body2" className="font-semibold" sx={{ textTransform: 'capitalize' }}>
+                            {role}
+                          </Typography>
+                          <Typography variant="body2" className="font-semibold" sx={{ color: 'teal.main' }}>
+                            {count} users ({percentage.toFixed(1)}%)
+                          </Typography>
+                        </Box>
+                        <Box
+                          className="skeleton"
+                          sx={{
+                            bgcolor: 'divider',
+                            height: 10,
+                            borderRadius: 1,
+                            overflow: 'hidden',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: `${percentage}%`,
+                              height: '100%',
+                              background: role === 'admin' 
+                                ? 'linear-gradient(90deg, #003366 0%, #4A6A8A 100%)' 
+                                : role === 'owner' 
+                                  ? 'linear-gradient(90deg, #00A79D 0%, #22D3EE 100%)' 
+                                  : 'linear-gradient(90deg, #22D3EE 0%, #4A6A8A 100%)',
+                              borderRadius: 1,
+                              transition: 'width 0.5s ease',
+                            }}
+                          />
+                        </Box>
+                      </Box>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            </CardContent>
+          </Card>
         )}
 
         {/* Footer Stats */}
-        <div style={{ 
-          marginTop: '32px', 
-          padding: '24px', 
-          backgroundColor: '#003366', 
-          borderRadius: '12px',
-          color: '#FFFFFF',
-          textAlign: 'center'
-        }}>
-          <div style={{ fontSize: '14px', opacity: '0.9', marginBottom: '8px' }}>
+        <Box
+          sx={{
+            mt: 4,
+            p: { xs: 3, md: 5 },
+            bgcolor: 'primary.main',
+            borderRadius: 2,
+            color: 'white',
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="body2" sx={{ opacity: 0.9, mb: 1 }}>
             Platform Overview
-          </div>
-          <div style={{ fontSize: '20px', fontWeight: '600' }}>
+          </Typography>
+          <Typography variant="h3" sx={{ fontWeight: 600, mb: 1 }}>
             {summary.totalUsers.toLocaleString()} Users • {summary.totalProperties.toLocaleString()} Properties • {formatCurrency(summary.totalRevenue)} Revenue
-          </div>
-          <div style={{ fontSize: '12px', opacity: '0.8', marginTop: '8px' }}>
+          </Typography>
+          <Typography variant="caption" sx={{ opacity: 0.8 }}>
             Average Transaction: {formatCurrency(summary.avgTransactionAmount)}
-          </div>
-        </div>
-      </main>
-    </div>
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

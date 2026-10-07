@@ -1,27 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import { StaggerContainer, StaggerItem } from '../../components/motion';
-import { Search, Phone, Mail, User, Calendar, TrendingUp, Filter, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
-import TopNavigationBar from '../Dashboard/TopNavigationBar';
-import { useNavigate } from 'react-router-dom';
+import {
+  Box, Button, Card, CardContent, Grid, Typography, TextField,
+  InputAdornment, Avatar, Chip, Dialog, DialogTitle, DialogContent,
+  DialogActions, IconButton, Tooltip, Skeleton, Stack, Alert,
+} from "@mui/material";
+import {
+  Search, RefreshCw, TrendingUp, Users, LogIn, LogOut, Phone,
+  Filter, CheckCircle, XCircle, Calendar, Home, ArrowUpRight,
+} from "lucide-react";
+import { PageHeader, StatCard, StatusChip, ConfirmDialog, EmptyState } from "../shell/adminUi";
+import { useNavigate } from "react-router-dom";
+import "./admin.css";
 
+const STATUS_COLORS = {
+  pending: "#F59E0B",
+  "in-progress": "#2196F3",
+  resolved: "#10B981",
+};
 
-const CallbackRequestsDashboard = () => {
+export default function CallbackRequestsDashboard() {
+  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [metadata, setMetadata] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [expandedRequest, setExpandedRequest] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
-  // Filter states
-  const [status, setStatus] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [dateRange, setDateRange] = useState('');
-  const [sortBy, setSortBy] = useState('createdAt');
-  const [order, setOrder] = useState('desc');
+  const [status, setStatus] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateRange, setDateRange] = useState("");
+  const [sortBy, setSortBy] = useState("createdAt");
+  const [order, setOrder] = useState("desc");
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
-  const [user, setUser] = useState(null);
-  const navigate = useNavigate();
+  const limit = 10;
 
   useEffect(() => {
     fetchCallbackRequests();
@@ -30,22 +41,20 @@ const CallbackRequestsDashboard = () => {
   const fetchCallbackRequests = async () => {
     try {
       setLoading(true);
-      const queryParams = new URLSearchParams();
-      
-      if (status) queryParams.append('status', status);
-      if (searchTerm) queryParams.append('search', searchTerm);
-      if (dateRange) queryParams.append('dateRange', dateRange);
-      if (sortBy) queryParams.append('sortBy', sortBy);
-      if (order) queryParams.append('order', order);
-      queryParams.append('page', page);
-      queryParams.append('limit', limit);
+      setError(null);
+      const params = new URLSearchParams();
+      if (status) params.append("status", status);
+      if (searchTerm) params.append("search", searchTerm);
+      if (dateRange) params.append("dateRange", dateRange);
+      if (sortBy) params.append("sortBy", sortBy);
+      if (order) params.append("order", order);
+      params.append("page", String(page));
+      params.append("limit", String(limit));
 
       const token = localStorage.getItem("accessToken");
-
-      const response = await fetch(
-        process.env.REACT_APP_ADMIN_CALLBACK_REQUESTS_API + '?' + queryParams,
+      const res = await fetch(
+        `${process.env.REACT_APP_ADMIN_CALLBACK_REQUESTS_API}?${params}`,
         {
-          method: "GET",
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
@@ -53,726 +62,450 @@ const CallbackRequestsDashboard = () => {
           },
         }
       );
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch callback requests');
-      }
-
-      const data = await response.json();
+      if (!res.ok) throw new Error("Failed to fetch callback requests");
+      const data = await res.json();
       setRequests(data.data || []);
       setMetadata(data.metadata || null);
-      setError(null);
     } catch (err) {
       setError(err.message);
-      console.error('Error fetching callback requests:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = () => {
-    // Reset to first page and let the effect fetch results
-    setPage(1);
-  };
+  const toggleExpand = (id) => setExpandedId(expandedId === id ? null : id);
 
-  const toggleRequestExpansion = (id) => {
-    setExpandedRequest(expandedRequest === id ? null : id);
-  };
-  const handleLogout = async () => {
-    await fetch(process.env.REACT_APP_LOGOUT_API, {
-      method: "POST",
-      credentials: "include",
-    });
-    setUser(null);
-    navigate("/login");
-  };
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const token = localStorage.getItem("accessToken");
-        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-        });
-        const data = await res.json();
-        if (res.ok) setUser(data);
-      } catch (err) {
-        console.error("Error fetching user:", err);
-      }
-    };
-    fetchUser();
-  }, []);
-
-  const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
-
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-        return '#FF9800';
-      case 'resolved':
-        return '#4CAF50';
-      case 'in-progress':
-        return '#2196F3';
-      default:
-        return '#757575';
-    }
-  };
-
-  const formatDate = (date) => {
-    if (!date) return 'N/A';
-    return new Date(date).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+  const formatDateTime = (d) => {
+    if (!d) return "N/A";
+    return new Date(d).toLocaleString("en-US", {
+      year: "numeric", month: "short", day: "numeric",
+      hour: "2-digit", minute: "2-digit",
     });
   };
 
-  const styles = {
-    container: {
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #F4F7F9 0%, #FFFFFF 100%)',
-      padding: '30px 20px',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    },
-    header: {
-      maxWidth: '1600px',
-      margin: '0 auto 30px',
-      textAlign: 'center'
-    },
-    title: {
-      fontSize: '40px',
-      fontWeight: '700',
-      color: '#003366',
-      marginBottom: '10px',
-      textShadow: '2px 2px 4px rgba(0,0,0,0.1)'
-    },
-    subtitle: {
-      fontSize: '16px',
-      color: '#4A6A8A',
-      fontWeight: '400'
-    },
-    statsContainer: {
-      maxWidth: '1600px',
-      margin: '0 auto 30px',
-      marginBottom: '40px',
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-      gap: '20px'
-    },
-    statCard: {
-      background: '#FFFFFF',
-      borderRadius: '12px',
-      padding: '24px',
-      boxShadow: '0 4px 12px rgba(0, 51, 102, 0.1)',
-      textAlign: 'center',
-      border: '2px solid transparent',
-      transition: 'all 0.3s ease'
-    },
-    statCardHover: {
-      transform: 'translateY(-4px)',
-      boxShadow: '0 8px 20px rgba(0, 51, 102, 0.15)',
-      borderColor: '#22D3EE'
-    },
-    statValue: {
-      fontSize: '36px',
-      fontWeight: '700',
-      marginBottom: '8px'
-    },
-    statLabel: {
-      fontSize: '14px',
-      color: '#4A6A8A',
-      fontWeight: '500',
-      textTransform: 'uppercase',
-      letterSpacing: '0.5px'
-    },
-    filtersContainer: {
-      maxWidth: '1600px',
-      margin: '0 auto 30px',
-      background: '#FFFFFF',
-      borderRadius: '16px',
-      padding: '24px',
-      boxShadow: '0 4px 12px rgba(0, 51, 102, 0.1)'
-    },
-    filtersTitle: {
-      fontSize: '18px',
-      fontWeight: '700',
-      color: '#003366',
-      marginBottom: '20px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '10px'
-    },
-    filtersGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-      gap: '16px',
-      marginBottom: '16px'
-    },
-    inputGroup: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px'
-    },
-    label: {
-      fontSize: '13px',
-      fontWeight: '600',
-      color: '#4A6A8A',
-      textTransform: 'uppercase',
-      letterSpacing: '0.5px'
-    },
-    input: {
-      padding: '12px 16px',
-      borderRadius: '8px',
-      border: '2px solid #E0E7EE',
-      fontSize: '14px',
-      fontWeight: '500',
-      color: '#333333',
-      transition: 'all 0.3s ease',
-      outline: 'none',
-      background: '#F4F7F9'
-    },
-    select: {
-      padding: '12px 16px',
-      borderRadius: '8px',
-      border: '2px solid #E0E7EE',
-      fontSize: '14px',
-      fontWeight: '500',
-      color: '#333333',
-      transition: 'all 0.3s ease',
-      outline: 'none',
-      background: '#F4F7F9',
-      cursor: 'pointer'
-    },
-    searchContainer: {
-      display: 'flex',
-      gap: '12px',
-      alignItems: 'flex-end'
-    },
-    searchButton: {
-      padding: '12px 24px',
-      borderRadius: '8px',
-      border: 'none',
-      background: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
-      color: '#FFFFFF',
-      fontSize: '14px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      boxShadow: '0 4px 12px rgba(0, 167, 157, 0.3)'
-    },
-    refreshButton: {
-      padding: '12px 24px',
-      borderRadius: '8px',
-      border: '2px solid #003366',
-      background: 'transparent',
-      color: '#003366',
-      fontSize: '14px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px'
-    },
-    requestsContainer: {
-      maxWidth: '1600px',
-      margin: '0 auto'
-    },
-    requestCard: {
-      background: '#FFFFFF',
-      borderRadius: '12px',
-      marginBottom: '16px',
-      boxShadow: '0 4px 12px rgba(0, 51, 102, 0.1)',
-      overflow: 'hidden',
-      border: '2px solid transparent',
-      transition: 'all 0.3s ease'
-    },
-    requestCardActive: {
-      borderColor: '#22D3EE',
-      boxShadow: '0 6px 20px rgba(34, 211, 238, 0.2)'
-    },
-    requestHeader: {
-      padding: '20px',
-      cursor: 'pointer',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      background: 'linear-gradient(135deg, #F4F7F9 0%, #FFFFFF 100%)',
-      borderBottom: '1px solid #E0E7EE'
-    },
-    requestHeaderLeft: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '16px',
-      flex: 1
-    },
-    requestAvatar: {
-      width: '50px',
-      height: '50px',
-      borderRadius: '50%',
-      background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: '#FFFFFF',
-      fontSize: '20px',
-      fontWeight: '700'
-    },
-    requestInfo: {
-      flex: 1
-    },
-    requestName: {
-      fontSize: '18px',
-      fontWeight: '700',
-      color: '#003366',
-      marginBottom: '4px'
-    },
-    requestPhone: {
-      fontSize: '14px',
-      color: '#4A6A8A',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px'
-    },
-    statusBadge: {
-      padding: '6px 14px',
-      borderRadius: '20px',
-      fontSize: '12px',
-      fontWeight: '700',
-      color: '#FFFFFF',
-      textTransform: 'uppercase',
-      letterSpacing: '0.5px'
-    },
-    expandButton: {
-      background: 'transparent',
-      border: 'none',
-      color: '#003366',
-      cursor: 'pointer',
-      padding: '8px',
-      borderRadius: '6px',
-      transition: 'all 0.3s ease'
-    },
-    requestDetails: {
-      padding: '0',
-      maxHeight: '0',
-      overflow: 'hidden',
-      transition: 'all 0.4s ease'
-    },
-    requestDetailsExpanded: {
-      maxHeight: '1000px',
-      padding: '24px'
-    },
-    detailsGrid: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-      gap: '16px'
-    },
-    detailItem: {
-      background: '#F4F7F9',
-      padding: '16px',
-      borderRadius: '10px',
-      border: '1px solid #E0E7EE'
-    },
-    detailLabel: {
-      fontSize: '12px',
-      fontWeight: '600',
-      color: '#4A6A8A',
-      marginBottom: '8px',
-      textTransform: 'uppercase',
-      letterSpacing: '0.5px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '6px'
-    },
-    detailValue: {
-      fontSize: '15px',
-      fontWeight: '600',
-      color: '#333333',
-      wordBreak: 'break-word'
-    },
-    issueSection: {
-      marginTop: '16px',
-      padding: '16px',
-      background: '#FFF9E6',
-      borderRadius: '10px',
-      border: '2px solid #FFE082'
-    },
-    issueLabel: {
-      fontSize: '13px',
-      fontWeight: '700',
-      color: '#F57C00',
-      marginBottom: '8px',
-      textTransform: 'uppercase',
-      letterSpacing: '0.5px'
-    },
-    issueText: {
-      fontSize: '15px',
-      color: '#333333',
-      lineHeight: '1.6'
-    },
-    pagination: {
-      maxWidth: '1600px',
-      margin: '30px auto',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: '12px'
-    },
-    paginationButton: {
-      padding: '10px 20px',
-      borderRadius: '8px',
-      border: '2px solid #003366',
-      background: '#FFFFFF',
-      color: '#003366',
-      fontSize: '14px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease'
-    },
-    paginationButtonActive: {
-      background: 'linear-gradient(135deg, #003366 0%, #4A6A8A 100%)',
-      color: '#FFFFFF',
-      borderColor: '#003366'
-    },
-    paginationInfo: {
-      fontSize: '14px',
-      color: '#4A6A8A',
-      fontWeight: '500'
-    },
-    loading: {
-      textAlign: 'center',
-      fontSize: '18px',
-      color: '#4A6A8A',
-      padding: '100px 20px'
-    },
-    error: {
-      textAlign: 'center',
-      fontSize: '16px',
-      color: '#DC2626',
-      padding: '50px 20px',
-      background: '#FEE2E2',
-      borderRadius: '12px',
-      maxWidth: '600px',
-      margin: '50px auto'
-    },
-    emptyState: {
-      textAlign: 'center',
-      padding: '80px 20px',
-      color: '#4A6A8A',
-      fontSize: '16px'
-    },
-    trendChart: {
-      maxWidth: '1600px',
-      margin: '30px auto',
-      background: '#FFFFFF',
-      borderRadius: '16px',
-      padding: '24px',
-      boxShadow: '0 4px 12px rgba(0, 51, 102, 0.1)'
-    },
-    trendTitle: {
-      fontSize: '18px',
-      fontWeight: '700',
-      color: '#003366',
-      marginBottom: '20px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '10px'
-    }
-  };
+  const total = metadata?.totalRequests ?? 0;
+  const pending = metadata?.pendingCount ?? 0;
+  const inProgress = metadata?.inProgressCount ?? 0;
+  const resolved = metadata?.resolvedCount ?? 0;
 
-  if (loading) {
-    return (
-      <div style={styles.container}>
-        <div style={styles.loading}>
-          <div style={{ fontSize: '48px', marginBottom: '20px' }}>⏳</div>
-          Loading callback requests...
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={styles.container}>
-        <div style={styles.error}>
-          <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
-          <strong>Error:</strong> {error}
-        </div>
-      </div>
-    );
-  }
+  const tabs = [
+    { key: "", label: `All (${total})` },
+    { key: "pending", label: `Pending (${pending})` },
+    { key: "in-progress", label: `In Progress (${inProgress})` },
+    { key: "resolved", label: `Resolved (${resolved})` },
+  ];
 
   return (
-    <div style={styles.container}>
-      {/* Top Navigation Bar */}
-      <div
-        style={{
-          position: "fixed",
-          marginBottom: "20px",
-          top: 0,
-          left: 0,
-          width: "100%",
-          zIndex: 999,
-          backgroundColor: "#FFFFFF" // or match your navbar background
-        }}
-      >
-        <TopNavigationBar
-          user={user}
-          handleLogout={handleLogout}
-          navItems={navItems}
-        />
-      </div>
-      <div style={{ height: 72 }} />
+    <>
+      <PageHeader
+        title="Callback Requests"
+        description="Manage and track all customer callback requests"
+        actions={
+          <Button
+            variant="outlined"
+            startIcon={<RefreshCw size={16} />}
+            onClick={() => { setPage(1); fetchCallbackRequests(); }}
+          >
+            Refresh
+          </Button>
+        }
+        tabs={
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            {tabs.map((t) => (
+              <Button
+                key={t.key}
+                size="small"
+                variant={status === t.key ? "contained" : "outlined"}
+                color={status === t.key ? "primary" : "inherit"}
+                onClick={() => { setStatus(t.key); setPage(1); }}
+                sx={{ borderRadius: 2 }}
+              >
+                {t.label}
+              </Button>
+            ))}
+          </Box>
+        }
+      />
 
-      {/* Statistics */}
-      {metadata && (
-        <div style={styles.statsContainer}>
-          <div style={styles.statCard}>
-            <div style={{ ...styles.statValue, color: '#003366' }}>
-              {metadata.totalRequests || 0}
-            </div>
-            <div style={styles.statLabel}>Total Requests</div>
-          </div>
-          <div style={styles.statCard}>
-            <div style={{ ...styles.statValue, color: '#FF9800' }}>
-              {metadata.pendingCount || 0}
-            </div>
-            <div style={styles.statLabel}>Pending</div>
-          </div>
-          <div style={styles.statCard}>
-            <div style={{ ...styles.statValue, color: '#2196F3' }}>
-              {metadata.inProgressCount || 0}
-            </div>
-            <div style={styles.statLabel}>In Progress</div>
-          </div>
-          <div style={styles.statCard}>
-            <div style={{ ...styles.statValue, color: '#4CAF50' }}>
-              {metadata.resolvedCount || 0}
-            </div>
-            <div style={styles.statLabel}>Resolved</div>
-          </div>
-        </div>
-      )}
-
-      {/* Filters */}
-      <div style={styles.filtersContainer}>
-        <h3 style={styles.filtersTitle}>
-          <Filter size={20} />
-          Filters & Search
-        </h3>
-        <div style={styles.filtersGrid}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Status</label>
-            <select
-              style={styles.select}
+      {/* Filters card */}
+      <Card className="_admin-card" sx={{ mb: 4 }}>
+        <CardContent sx={{ py: 3 }}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ xs: "stretch", sm: "flex-end" }}>
+            <TextField
+              fullWidth
+              placeholder="Search by name, phone, email, or issue…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search size={18} color="#5B6B7B" />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{ minWidth: 260 }}
+            />
+            <TextField
+              select
+              label="Status"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
+              SelectProps={{ native: true }}
+              sx={{ minWidth: 150 }}
             >
               <option value="">All Statuses</option>
               <option value="pending">Pending</option>
               <option value="in-progress">In Progress</option>
               <option value="resolved">Resolved</option>
-            </select>
-          </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Sort By</label>
-            <select
-              style={styles.select}
+            </TextField>
+            <TextField
+              select
+              label="Sort by"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
+              SelectProps={{ native: true }}
+              sx={{ minWidth: 140 }}
             >
               <option value="createdAt">Date Created</option>
               <option value="name">Name</option>
               <option value="status">Status</option>
-            </select>
-          </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Order</label>
-            <select
-              style={styles.select}
+            </TextField>
+            <TextField
+              select
+              label="Order"
               value={order}
               onChange={(e) => setOrder(e.target.value)}
+              SelectProps={{ native: true }}
+              sx={{ minWidth: 130 }}
             >
               <option value="desc">Descending</option>
               <option value="asc">Ascending</option>
-            </select>
-          </div>
-        </div>
-        <div style={styles.searchContainer}>
-          <div style={{ ...styles.inputGroup, flex: 1 }}>
-            <label style={styles.label}>Search</label>
-            <input
-              type="text"
-              style={styles.input}
-              placeholder="Search by name, phone, email, or issue..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            />
-          </div>
-          <button style={styles.searchButton} onClick={handleSearch}>
-            <Search size={18} />
-            Search
-          </button>
-          <button style={styles.refreshButton} onClick={() => fetchCallbackRequests()}>
-            <RefreshCw size={18} />
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      {/* Requests List */}
-      <StaggerContainer style={styles.requestsContainer}>
-        {requests.length === 0 ? (
-          <div style={styles.emptyState}>
-            <div style={{ fontSize: '64px', marginBottom: '20px' }}>📞</div>
-            <p>No callback requests found</p>
-          </div>
-        ) : (
-          requests.map((request) => (
-            <StaggerItem
-              key={request._id}
-              style={{
-                ...styles.requestCard,
-                ...(expandedRequest === request._id ? styles.requestCardActive : {})
-              }}
+            </TextField>
+            <Button
+              variant="outlined"
+              onClick={() => { setPage(1); fetchCallbackRequests(); }}
+              startIcon={<RefreshCw size={16} />}
+              sx={{ minWidth: 120 }}
             >
-              <div
-                style={styles.requestHeader}
-                onClick={() => toggleRequestExpansion(request._id)}
-              >
-                <div style={styles.requestHeaderLeft}>
-                  <div style={styles.requestAvatar}>
-                    {request.name ? request.name.charAt(0).toUpperCase() : 'U'}
-                  </div>
-                  <div style={styles.requestInfo}>
-                    <div style={styles.requestName}>{request.name || 'Unknown'}</div>
-                     {/* Role badge */}
-    <div style={{
-      padding: '6px 10px',
-      borderRadius: 12,
-      background: '#E6F0FF',
-      color: '#003366',
-      fontWeight: 700,
-      fontSize: 12,
-      textTransform: 'capitalize'
-    }}>
-      {request.userRole ? request.userRole : 'Unknown'}
-    </div>
-                    <div style={styles.requestPhone}>
-                      <Phone size={14} />
-                      {request.phone || 'No phone'}
-                    </div>
-                  </div>
-                  <span
-                    style={{
-                      ...styles.statusBadge,
-                      background: getStatusColor(request.status)
-                    }}
-                  >
-                    {request.status || 'pending'}
-                  </span>
-                </div>
-                <button style={styles.expandButton}>
-                  {expandedRequest === request._id ? (
-                    <ChevronUp size={24} />
-                  ) : (
-                    <ChevronDown size={24} />
-                  )}
-                </button>
-              </div>
+              Apply Filters
+            </Button>
+          </Stack>
+        </CardContent>
+      </Card>
 
-              <div
-                style={{
-                  ...styles.requestDetails,
-                  ...(expandedRequest === request._id ? styles.requestDetailsExpanded : {})
+      {/* Stats */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        {[
+          { label: "Total Requests", value: total, color: "primary.main", icon: Phone },
+          { label: "Pending", value: pending, color: "#F59E0B", icon: ClockIcon },
+          { label: "In Progress", value: inProgress, color: "#2196F3", icon: RefreshCw },
+          { label: "Resolved", value: resolved, color: "#10B981", icon: CheckCircle },
+        ].map((s, i) => (
+          <Grid item xs={6} sm={3} key={i}>
+            <StatCard
+              icon={s.icon}
+              label={s.label}
+              value={s.value}
+              tone={s.color}
+            />
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* Loading */}
+      {loading && requests.length === 0 && (
+        <Box sx={{ textAlign: "center", py: 8 }}>
+          <Stack direction="row" justifyContent="center" spacing={2}>
+            <Skeleton variant="circular" width={24} height={24} />
+            <Typography variant="body1" color="text.secondary">
+              Loading callback requests…
+            </Typography>
+          </Stack>
+        </Box>
+      )}
+
+      {/* Error */}
+      {error && !loading && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Empty */}
+      {!loading && requests.length === 0 && (
+        <EmptyState
+          icon={ArrowUpRight}
+          title="No callback requests found"
+          description={
+            searchTerm
+              ? "Try a different search term or clear the filters."
+              : "Callback requests from customers will appear here."
+          }
+          action={
+            searchTerm ? (
+              <Button variant="outlined" onClick={() => { setSearchTerm(""); setStatus(""); }}>
+                Clear filters
+              </Button>
+            ) : null
+          }
+        />
+      )}
+
+      {/* Request list */}
+      {!loading && requests.length > 0 && (
+        <Box className="admin-scroll">
+          {requests.map((req) => {
+            const isExpanded = expandedId === req._id;
+            const statusColor = STATUS_COLORS[req.status] ?? "#64748B";
+            return (
+              <Card
+                key={req._id}
+                className="admin-card"
+                sx={{
+                  mb: 2,
+                  border: isExpanded ? "2px solid #22D3EE" : "1px solid #E5E9EE",
+                  boxShadow: isExpanded
+                    ? "0 8px 24px rgba(34,211,238,0.18)"
+                    : "0 2px 8px rgba(0,51,102,0.05)",
+                  transition: "box-shadow .15s ease, border-color .15s ease",
                 }}
               >
-                <div style={styles.detailsGrid}>
-                  <div style={styles.detailItem}>
-                    <div style={styles.detailLabel}>
-                      <User size={14} />
-                      Full Name
-                    </div>
-                    <div style={styles.detailValue}>{request.name || 'N/A'}</div>
-                  </div>
-                  <div style={styles.detailItem}>
-                    <div style={styles.detailLabel}>
-                      <Phone size={14} />
-                      Phone Number
-                    </div>
-                    <div style={styles.detailValue}>{request.phone || 'N/A'}</div>
-                  </div>
-                  <div style={styles.detailItem}>
-                    <div style={styles.detailLabel}>
-                      <Mail size={14} />
-                      Email Address
-                    </div>
-                    <div style={styles.detailValue}>{request.email || 'N/A'}</div>
-                  </div>
-                  <div style={styles.detailItem}>
-                    <div style={styles.detailLabel}>
-                      <Calendar size={14} />
-                      Created At
-                    </div>
-                    <div style={styles.detailValue}>{formatDate(request.createdAt)}</div>
-                  </div>
-                  {request.updatedAt && (
-                    <div style={styles.detailItem}>
-                      <div style={styles.detailLabel}>
-                        <Calendar size={14} />
-                        Last Updated
-                      </div>
-                      <div style={styles.detailValue}>{formatDate(request.updatedAt)}</div>
-                    </div>
-                  )}
-                </div>
+                {/* Collapsed row */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    p: 2.5,
+                    cursor: "pointer",
+                    bgcolor: "action.hover",
+                    transition: "background-color .15s ease",
+                    "&:hover": { bgcolor: "action.selected" },
+                  }}
+                  onClick={() => toggleExpand(req._id)}
+                >
+                  <Avatar
+                    sx={{
+                      width: 44, height: 44,
+                      bgcolor: "linear-gradient(135deg, #003366 0%, #00A79D 100%)",
+                      fontSize: "0.95rem", fontWeight: 700,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {req.name ? req.name.charAt(0).toUpperCase() : "U"}
+                  </Avatar>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+                      <Typography variant="h3" component="div" sx={{ fontWeight: 700, color: "primary.main", fontSize: "1rem" }}>
+                        {req.name || "Unknown"}
+                      </Typography>
+                      <Chip
+                        label={req.userRole || "Unknown"}
+                        size="small"
+                        sx={{
+                          height: 20, fontSize: "0.7rem", fontWeight: 700,
+                          bgcolor: "rgba(0,51,102,0.08)", color: "primary.main",
+                        }}
+                      />
+                      <Chip
+                        label={req.status || "pending"}
+                        size="small"
+                        sx={{
+                          height: 20, fontSize: "0.7rem", fontWeight: 700,
+                          bgcolor: `${statusColor}1A`,
+                          color: statusColor,
+                          "& .MuiChip-dot": { bgcolor: statusColor },
+                        }}
+                      />
+                    </Box>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
+                      <Phone size={13} color="#9AA7B4" />
+                      <Typography variant="body2" color="text.secondary" noWrap>
+                        {req.phone || "No phone"}
+                      </Typography>
+                    </Box>
+                  </Box>
+                  <Box sx={{ textAlign: "right", flexShrink: 0 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatDateTime(req.createdAt)}
+                    </Typography>
+                    <Typography variant="caption" color="text.disabled">
+                      {req.updatedAt ? `Updated ${formatDateTime(req.updatedAt)}` : ""}
+                    </Typography>
+                  </Box>
+                  <IconButton size="small" sx={{ color: "text.secondary" }}>
+                    {isExpanded ? <ExpandIconOpen size={18} /> : <ExpandIconClosed size={18} />}
+                  </IconButton>
+                </Box>
 
-                {request.issue && (
-                  <div style={styles.issueSection}>
-                    <div style={styles.issueLabel}>Issue / Message</div>
-                    <div style={styles.issueText}>{request.issue}</div>
-                  </div>
+                {/* Expanded details */}
+                {isExpanded && (
+                  <Box sx={{ px: 3, pb: 3, pt: 0, borderTop: "1px solid #E5E9EE" }}>
+                    <Grid container spacing={2} sx={{ mt: 3 }}>
+                      <Grid item xs={12} sm={6}>
+                        <Box className="admin-info-row">
+                          <Box className="admin-info-label">
+                            <User size={13} /> Full Name
+                          </Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {req.name || "N/A"}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Box className="admin-info-row">
+                          <Box className="admin-info-label">
+                            <Phone size={13} /> Phone Number
+                          </Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {req.phone || "N/A"}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Box className="admin-info-row">
+                          <Box className="admin-info-label">
+                            <MailIcon size={13} /> Email Address
+                          </Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {req.email || "N/A"}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <Box className="admin-info-row">
+                          <Box className="admin-info-label">
+                            <Calendar size={13} /> Created At
+                          </Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            {formatDateTime(req.createdAt)}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      {req.updatedAt && (
+                        <Grid item xs={12} sm={6}>
+                          <Box className="admin-info-row">
+                            <Box className="admin-info-label">
+                              <Calendar size={13} /> Last Updated
+                            </Box>
+                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                              {formatDateTime(req.updatedAt)}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      )}
+                    </Grid>
+
+                    {req.issue && (
+                      <Box
+                        sx={{
+                          mt: 3, p: 2.5,
+                          bgcolor: "rgba(245,158,11,0.08)",
+                          border: "1px solid #F59E0B",
+                          borderRadius: 2,
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "#B45309", fontWeight: 700,
+                            textTransform: "uppercase", letterSpacing: "0.05em",
+                            display: "flex", alignItems: "center", gap: 1, mb: 1,
+                          }}
+                        >
+                          <MessageSquare size={13} /> Issue / Message
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: "#1B2B3A", lineHeight: 1.6 }}>
+                          {req.issue}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
                 )}
-              </div>
-            </StaggerItem>
-          ))
-        )}
-      </StaggerContainer>
+              </Card>
+            );
+          })}
 
-      {/* Pagination */}
-      {metadata && metadata.totalPages > 1 && (
-        <div style={styles.pagination}>
-          <button
-            style={{ ...styles.paginationButton, ...(page === 1 ? {} : {}) }}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-          >
-            Previous
-          </button>
-          <span style={styles.paginationInfo}>
-            Page {metadata.page} of {metadata.totalPages}
-          </span>
-          <button
-            style={styles.paginationButton}
-            onClick={() => setPage((p) => Math.min(metadata.totalPages, p + 1))}
-            disabled={page === metadata.totalPages}
-          >
-            Next
-          </button>
-        </div>
+          {/* Pagination */}
+          {metadata && metadata.totalPages > 1 && (
+            <Box sx={{ mt: 4, display: "flex", justifyContent: "center", alignItems: "center", gap: 2 }}>
+              <Button
+                size="small"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                sx={{
+                  minWidth: 80,
+                  bgcolor: page === 1 ? "action.hover" : "primary.main",
+                  color: page === 1 ? "text.secondary" : "white",
+                  borderRadius: 2,
+                }}
+              >
+                Previous
+              </Button>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: "text.secondary", minWidth: 100, textAlign: "center" }}>
+                Page {metadata.page} of {metadata.totalPages}
+              </Typography>
+              <Button
+                size="small"
+                onClick={() => setPage((p) => Math.min(metadata.totalPages, p + 1))}
+                disabled={page === metadata.totalPages}
+                sx={{
+                  minWidth: 80,
+                  bgcolor: page === metadata.totalPages ? "action.hover" : "primary.main",
+                  color: page === metadata.totalPages ? "text.secondary" : "white",
+                  borderRadius: 2,
+                }}
+              >
+                Next
+              </Button>
+            </Box>
+          )}
+        </Box>
       )}
-    </div>
+    </>
   );
-};
+}
 
-export default CallbackRequestsDashboard;
+/* ---- 아이콘 헬퍼 (lucide 미수입 대체) ---- */
+function ClockIcon({ size, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+    </svg>
+  );
+}
+function ExpandIconOpen({ size }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#5B6B7B" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="18 15 12 9 6 15"/>
+    </svg>
+  );
+}
+function ExpandIconClosed({ size }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#5B6B7B" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 9 12 15 18 9"/>
+    </svg>
+  );
+}
+function MailIcon({ size, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+    </svg>
+  );
+}
+function MessageSquare({ size, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  );
+}
+function User({ size, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+  );
+}

@@ -1,0 +1,1026 @@
+================================================================================
+PROPERTY DETAILS PAGE - UI UPGRADE GUIDE
+================================================================================
+
+PART 1: AFFILIATE vs NORMAL PROPERTIES OVERVIEW
+================================================================================
+
+AFFILIATE PROPERTIES (Sourced from NoBroker/99acres):
+- Have sourcePortal field set to "nobroker" or "99acres"
+- Have sourceUrl pointing to external listing
+- Show badge: "Sourced from [portal]" with external link icon
+- NO contact forms, NO enquiry, NO scheduling
+- Primary CTA: "View on NoBroker/99acres" (external link)
+- Secondary CTAs: Share, Save
+- Hide: Contact card, callback dialog, schedule visit, enquiry form
+
+NORMAL PROPERTIES (Own database):
+- No sourcePortal or sourceUrl fields
+- Full contact capabilities: phone, WhatsApp, email, messaging
+- Can schedule site visits
+- Can send enquiries and receive callbacks
+- Commission can be set by owner/agent
+- Primary CTAs: Schedule visit, Enquire, Request callback
+- Show: Agent/owner contact card, verification badges, all interaction forms
+
+
+PART 2: SECTION-BY-SECTION UI DESIGN
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. HERO SECTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LAYOUT:
+- Navy gradient background: linear-gradient(120deg, #002244 0%, #003366 45%, #0B5C7A 100%)
+- Property image as backdrop with dark overlay (0.3 opacity)
+- Property type badge in top-left corner (animated pulse)
+- Title overlay in bottom-left with gradient text
+
+ELEMENTS:
+- Large property title (headline style)
+- Location line: "Sector 112, Gurgaon"
+- Price badge floating on image (right side, top)
+- Status badge: "Ready to move" or "Available on [date]"
+
+BADGES TO SHOW:
+  AFFILIATE PROPERTIES:
+  - "Sourced from NoBroker" (with external link icon, teal background)
+  - "Sourced from 99acres" (with external link icon, cyan background)
+
+  NORMAL PROPERTIES:
+  - "Listing active" (green checkmark)
+  - "Photos verified" (camera icon)
+  - "Location verified" (location pin icon)
+  - "Contact verified" (phone icon)
+  - "Agent verified" (blue badge with checkmark, if applicable)
+
+RESPONSIVE:
+- Desktop: Full hero with all elements
+- Tablet: Adjusted sizing, badges stack
+- Mobile: Simplified, badges below title
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. PRICE & PRIMARY ACTIONS CARD (Sticky on right, below hero)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CARD STYLING:
+- Border-radius: 16px (lg from theme)
+- Background: white/paper
+- Border: 1px solid divider color
+- Shadow: 0 6px 20px rgba(0,51,102,0.06)
+- Width: 340px on desktop, full-width on mobile
+- Position: sticky at top: 88px
+
+AFFILIATE PROPERTIES LAYOUT:
+
+┌─────────────────────────────────────┐
+│                                     │
+│  ₹45,000/month                      │ (price heading style)
+│  Price per sqft: ₹37                │ (text.secondary)
+│                                     │
+│  Security Deposit: ₹1,35,000        │ (if present)
+│  Lease Term: 12 months              │ (if present)
+│                                     │
+│  ─────────────────────────────────  │
+│                                     │
+│  Sourced from NoBroker  [↗]         │ (teal badge with link icon)
+│                                     │
+│  ─────────────────────────────────  │
+│                                     │
+│  [View on NoBroker      ] ← primary │ (solid gradient teal→cyan)
+│  [Share this property   ]           │ (outlined teal)
+│  [Save to favorites ♡   ]           │ (ghost, filled heart when saved)
+│                                     │
+└─────────────────────────────────────┘
+
+
+NORMAL PROPERTIES LAYOUT:
+
+┌─────────────────────────────────────┐
+│                                     │
+│  ₹45,000/month                      │ (price heading style)
+│  Price per sqft: ₹37                │ (text.secondary)
+│                                     │
+│  Security Deposit: ₹1,35,000        │ (if present)
+│  Lease Term: 12 months              │ (if present)
+│  Commission: ₹45,000 (1 month)      │ (if set by agent/owner)
+│                                     │
+│  ─────────────────────────────────  │
+│                                     │
+│  [Schedule site visit    ] ← primary│ (solid gradient teal→cyan)
+│  [Request callback       ]          │ (outlined teal)
+│  [Send message           ]          │ (ghost style)
+│                                     │
+│  [Share] [Save]                     │ (horizontal layout, icons)
+│                                     │
+└─────────────────────────────────────┘
+
+BUTTONS STYLING:
+- Primary CTA:
+  * Background: linear-gradient(90deg, #00A79D 0%, #22D3EE 100%)
+  * Text color: white
+  * Padding: 12px 16px
+  * Border-radius: 8px
+  * Font-weight: 600
+  * Icon on left
+  * Hover: shadow enhancement, slight scale (1.02x)
+
+- Secondary CTA:
+  * Border: 2px solid #00A79D
+  * Text color: #00A79D
+  * Background: transparent
+  * Padding: 10px 14px
+  * Hover: background rgba(0,167,157,0.08)
+
+- Tertiary/Ghost:
+  * Border: none
+  * Background: transparent
+  * Text color: #00A79D
+  * Hover: background rgba(0,167,157,0.04)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. PROPERTY OVERVIEW CARDS (Animated stat tiles)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LAYOUT:
+- 4 columns on desktop, 2 columns on tablet, 1 column on mobile
+- Grid spacing: 24px
+- Cards stack nicely on scroll
+
+INDIVIDUAL CARD DESIGN:
+
+┌─────────────────────────────┐
+│  [Icon] Built-up Area       │ (icon in teal circle, 40px)
+│                             │
+│  1,200 sq.ft.              │ (animated number, heading style)
+│  vs 1,150 avg in sector    │ (text.secondary, small badge)
+└─────────────────────────────┘
+
+CARDS TO DISPLAY:
+1. Built-up Area / Carpet Area
+   - Icon: Maximize2 (lucide-react)
+   - Value: 1,200 sq.ft.
+   - Comparison: "vs 1,150 avg in sector"
+   - Show only if data exists
+
+2. Price per sq.ft.
+   - Icon: TrendingUp (lucide-react)
+   - Value: ₹37/sq.ft.
+   - Comparison: "vs ₹35 avg in sector"
+
+3. Age / Condition
+   - Icon: Clock (lucide-react)
+   - Value: "5 years old" or "Under 1 year"
+   - Badge: New/Good/Old with color
+
+4. Floor Number
+   - Icon: Layers (lucide-react)
+   - Value: "5 of 12"
+   - Visual: floor badge with building icon
+
+CARD ANIMATION:
+- On mount: fade-in + slide-up (0.3s ease)
+- On view (IntersectionObserver): animated counter from 0 to value (0.8s)
+- Hover: translateY(-2px), shadow enhancement
+- Comparison badge: small green/orange/red indicator
+
+STYLING:
+- Border-radius: 12px
+- Background: white/paper
+- Border: 1px solid divider
+- Padding: 20px
+- Box-shadow: subtle (0 2px 8px rgba(0,51,102,0.04))
+- Icon background: rgba(0,167,157,0.1) circle
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. AMENITIES SECTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LAYOUT:
+- Section title: "Amenities & Features" (heading style)
+- Amenities as pill badges in rows
+
+PILL BADGE STYLE:
+- Background: rgba(0,167,157,0.08) (light teal)
+- Border: 1px solid rgba(0,167,157,0.2)
+- Text color: #00A79D
+- Padding: 8px 14px
+- Border-radius: 20px (fully rounded)
+- Font-size: 0.875rem
+- Icon on left (optional): 12px, teal color
+- Hover: background rgba(0,167,157,0.15), border color enhanced
+
+GROUPING:
+- Common Areas: WiFi, Gym, Garden, Parking
+- Utilities: Water Supply, Electricity, Backup Power
+- Safety & Security: Security Guard, CCTV, Intercom, Gate
+
+"Show more" mechanism:
+- Show 8 amenities by default
+- If more than 8: "Show 5 more" button (text style, teal color)
+- On click: expand to show all with smooth animation
+
+DISPLAY LOGIC:
+- For AFFILIATE: Show amenities if available
+- For NORMAL: Show amenities if available
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. HIGHLIGHTS SECTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+LAYOUT:
+- Section title: "Key Highlights"
+- 2x2 grid on desktop, 2x1 on tablet, 1x1 on mobile
+
+HIGHLIGHT CARD DESIGN:
+
+┌──────────────────────────────┐
+│  ⚡ Highlight title          │ (icon: 20px teal)
+│                              │
+│  Short description of the    │
+│  feature that makes this     │
+│  property special            │
+└──────────────────────────────┘
+
+STYLING:
+- Border-radius: 12px
+- Background: white
+- Border: 1px solid divider
+- Padding: 16px
+- Box-shadow: 0 2px 8px rgba(0,51,102,0.04)
+- Hover: scale(1.02), shadow enhancement, translateY(-2px)
+
+ICONS TO USE:
+- Premium features: Star (gold/yellow)
+- New/Modern: Zap (blue)
+- Unique/Special: Heart (red/pink)
+- Safe/Secure: CheckCircle (green)
+- Sustainable: Leaf (green)
+- Parking: Car (teal)
+- Outdoor: Trees (green)
+
+ANIMATION:
+- On view: fade-in + slide-up staggered (0.2s delay between cards)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. GALLERY & MEDIA SECTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MAIN IMAGE:
+- Full-width responsive container
+- Border-radius: 12px
+- Aspect ratio: 16:9
+- Lazy loading with fade-in animation
+
+MEDIA TYPE BADGES (Top-left):
+- "📸 15 photos" (white background, text.dark)
+- "🎥 2 videos" (if videos exist)
+- "360° tour" (if panoramas exist)
+- Layout: horizontal, spaced 8px
+
+THUMBNAIL CAROUSEL (Bottom):
+- Horizontal scrollable row
+- Height: 80px
+- Border-radius: 8px on thumbnails
+- Selected thumbnail: 2px border in teal
+- Smooth scroll with fade-in at edges
+- Navigation arrows: Previous | Next (chevrons)
+- Show scroll indicator dots at bottom
+
+VIDEO BADGE:
+- Play button overlay (white, semi-transparent circle)
+- On hover: background slightly darker
+- Size: 60px
+
+360° TOUR BUTTON:
+- Positioned: bottom-right of main image
+- Style: solid teal background, white text
+- Icon: Globe or 360 rotation icon
+- Text: "View 360° Tour"
+- Padding: 10px 14px
+- Border-radius: 8px
+- Hover: shadow enhancement
+
+LIGHTBOX (On thumbnail click):
+- Full-screen overlay with dark background
+- Image centered and scaled to fit
+- Close button: top-right (X icon)
+- Navigation: Previous/Next arrows
+- Thumbnail strip at bottom (scrollable)
+- Keyboard navigation: arrow keys, ESC to close
+- Swipe support on mobile
+
+DISPLAY LOGIC:
+- Show gallery for both AFFILIATE and NORMAL properties
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. LOCATION & NEARBY PLACES SECTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SECTION HEADER:
+- Title: "Location & Nearby"
+- Connectivity badge: "Excellent connectivity" (with checkmark, green background)
+- Font: heading style
+
+INTERACTIVE MAP:
+- Height: 400px on desktop, 300px on mobile
+- Border-radius: 12px
+- Google Maps embedded
+- Property pin: custom marker (teal colored)
+- Nearby places: color-coded pins:
+  * Hospital: Red
+  * School: Blue
+  * Market/Shop: Orange
+  * Transport: Green
+  * Park: Green
+
+NEARBY PLACES CARDS (Below map):
+- Layout: 2-3 columns on desktop, 1 column on mobile
+- Show categories: Healthcare, Education, Shopping, Transport
+
+Healthcare Category Card:
+
+┌─────────────────────────────────────┐
+│  🏥 Healthcare                      │ (icon + title)
+│  ─────────────────────────────────  │
+│                                     │
+│  • Apollo Hospital                  │ (name, with bullet)
+│    ⭐ 4.5 • 0.5 km                  │ (rating + distance)
+│    [Show on Map]                    │ (link style)
+│                                     │
+│  • Fortis Hospital                  │
+│    ⭐ 4.3 • 1.2 km                  │
+│    [Show on Map]                    │
+│                                     │
+│  • Max Healthcare                   │
+│    ⭐ 4.7 • 1.5 km                  │
+│    [Show on Map]                    │
+│                                     │
+└─────────────────────────────────────┘
+
+PLACE ITEM STYLING:
+- List item with icon + details
+- Icon: category icon (20px, teal)
+- Name: bold, primary color
+- Distance chip: light background, text.secondary
+- Rating: stars + number
+- "Show on Map" link: teal, underline on hover
+- Hover: slight background color change, cursor pointer
+
+Similar styling for Education, Shopping, Transport categories
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. CONTACT SECTION - AFFILIATE PROPERTIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+AFFILLIATE LISTING CARD:
+
+┌─────────────────────────────────────────┐
+│  ℹ️  External Listing                   │ (info icon, top-left)
+│  ─────────────────────────────────────  │
+│                                         │
+│  This property is listed on             │
+│  NoBroker. View it there for the        │
+│  latest information and to reach        │
+│  the owner directly.                    │
+│                                         │
+│  [View on NoBroker] ← primary button    │
+│  [Can't find it here? Search GgnHome]   │ (text link, secondary)
+│                                         │
+└─────────────────────────────────────────┘
+
+STYLING:
+- Border-radius: 12px
+- Background: rgba(0,167,157,0.05) (light teal)
+- Border: 1px solid rgba(0,167,157,0.2)
+- Padding: 20px
+- Icon: 24px, teal color
+- Text: text.secondary
+- Primary button: View on [portal] with external link icon
+- Secondary link: teal color, underline on hover
+
+ALTERNATIVE INFO TEXT:
+"This property is listed on 99acres. View it there to contact the owner directly and get the latest updates."
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. CONTACT SECTION - NORMAL PROPERTIES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CONTACT CARD (Sticky on right, top: 88px):
+
+┌──────────────────────────────────┐
+│  [Circular Photo]                │ (100px diameter, online indicator)
+│                                  │
+│  John Sharma                     │ (heading style)
+│  ✓ Verified Agent               │ (blue badge with checkmark)
+│                                  │
+│  ⭐ 4.8 (23 reviews)             │ (stars + clickable badge)
+│                                  │
+│  ─────────────────────────────── │
+│                                  │
+│  📞 +91 98765 54321             │ (masked by default with eye icon)
+│  WhatsApp: +91 98765 54321      │
+│                                  │
+│  ─────────────────────────────── │
+│                                  │
+│  [Call]        [WhatsApp]       │ (horizontal, with icons)
+│  [Send Message]                  │ (full width)
+│                                  │
+│  ─────────────────────────────── │
+│                                  │
+│  Experience: 5 years             │
+│  Verified Deals: 12              │
+│  Response Time: 1 hour           │
+│                                  │
+└──────────────────────────────────┘
+
+STYLING:
+- Border-radius: 12px
+- Background: white
+- Border: 1px solid divider
+- Padding: 20px
+- Box-shadow: 0 6px 20px rgba(0,51,102,0.06)
+- Width: 340px on desktop, full on mobile
+- Position: sticky top: 88px
+
+AGENT PHOTO:
+- Circular: 100px diameter
+- Border: 3px solid #00A79D
+- Online indicator: green dot (12px) bottom-right
+- Fallback: initials on colored background
+
+VERIFICATION BADGE:
+- Background: #003366
+- Text color: white
+- Icon: checkmark (lucide-react)
+- Padding: 4px 8px
+- Border-radius: 4px
+
+REVIEWS:
+- Stars: solid (lucide-react Star icon)
+- Color: #FFB800 (gold)
+- Text: "4.8 (23 reviews)"
+- Clickable: opens reviews modal/section
+
+PHONE MASKING:
+- Default: "+91 98765 ••••"
+- Eye icon on right
+- On click: reveals full number and shows WhatsApp link
+- Copy to clipboard on number click
+
+BUTTONS:
+- Call: Phone icon, teal border
+- WhatsApp: WhatsApp logo (or icon), teal border
+- Send Message: Chat icon, full-width outlined
+
+ACTION BUTTONS LAYOUT:
+- Desktop: Call | WhatsApp in one row
+- Mobile: Stack vertically
+- Send Message: always full-width
+
+STATS SECTION:
+- Three items in a row (or column on mobile)
+- Icon + label + value
+- Small, text.secondary style
+- Icons: Briefcase (experience), Trophy (deals), Clock (response)
+
+COMMISSION DISPLAY (If set):
+- Add line: "Commission: ₹45,000 (1 month rent)"
+- Style: text.secondary, smaller font
+- Position: below contact info
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. ENQUIRY SECTION - NORMAL PROPERTIES ONLY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SECTION TITLE:
+"Ready to move forward?" (heading style, teal colored)
+
+ENQUIRY FORM - 3-STEP FLOW:
+
+STEP 1: Interest Level
+┌────────────────────────────────────────┐
+│  How interested are you?                │ (label)
+│                                        │
+│  ☐ Just browsing                       │ (radio button)
+│  ☐ Seriously interested                │
+│  ☐ Ready to buy/rent                   │
+│                                        │
+└────────────────────────────────────────┘
+
+STEP 2: Preferred Contact Method
+┌────────────────────────────────────────┐
+│  How would you like to be contacted?    │
+│                                        │
+│  ☐ Call me                             │
+│  ☐ WhatsApp                            │
+│  ☐ Email                               │
+│  ☐ SMS                                 │
+│                                        │
+└────────────────────────────────────────┘
+
+STEP 3: Your Details
+┌────────────────────────────────────────┐
+│  Name                                  │
+│  [Text input field]                    │
+│                                        │
+│  Phone                                 │
+│  [Masked number if logged in]          │
+│  [Phone input if not logged in]        │
+│                                        │
+│  [✓] I agree to receive updates from   │ (checkbox)
+│      property owners and agents        │
+│                                        │
+│  [Submit Enquiry] ← primary button     │
+│                                        │
+└────────────────────────────────────────┘
+
+FORM STYLING:
+- Border-radius: 12px
+- Background: white
+- Padding: 24px
+- Border: 1px solid divider
+- Input fields: border 1px solid divider, border-radius 8px, padding 12px
+- Input focus: border-color teal, box-shadow subtle teal glow
+
+RADIO BUTTONS:
+- Lucide-react Circle/CircleCheck icons
+- Unchecked: grey circle outline
+- Checked: filled teal circle with checkmark
+- Hover: background color slight change
+
+SUCCESS STATE:
+- After submit: confirmation message with checkmark animation
+- Message: "Thank you! Your enquiry has been sent. The owner will contact you soon."
+- Animation: checkmark appears with confetti micro-animation (0.5s)
+- Toast notification: bottom-right, success color (green)
+- Auto-dismiss after 4 seconds
+
+ERROR STATE:
+- Toast notification: bottom-right, error color (red)
+- Message: "Failed to submit enquiry. Please try again."
+- Retry button visible
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. SCHEDULE VISIT DIALOG - NORMAL PROPERTIES ONLY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DIALOG STRUCTURE:
+
+┌──────────────────────────────────────────────────┐
+│  Schedule a Site Visit                           │ (title)
+│  ──────────────────────────────────────────────  │
+│                                                  │
+│  Select Your Preferred Date                      │ (label)
+│  [Calendar picker]                               │
+│                                                  │
+│  Select Time Slot                                │ (label)
+│  ┌──────────┬──────────┬──────────┐             │
+│  │ 10:00 AM │ 02:00 PM │ 04:00 PM │             │
+│  │   ☐      │    ☐     │    ☐     │             │
+│  └──────────┴──────────┴──────────┘             │
+│                                                  │
+│  Add a message (optional)                        │ (label)
+│  [Text area]                                     │
+│  "Let the owner know about preferred amenities" │ (placeholder)
+│                                                  │
+│  ──────────────────────────────────────────────  │
+│  [Cancel]              [Schedule Visit]          │ (buttons)
+│                                                  │
+└──────────────────────────────────────────────────┘
+
+STYLING:
+- Border-radius: 12px
+- Background: white
+- Padding: 24px
+- Max width: 500px
+
+CALENDAR PICKER:
+- Date selector with month/year navigation
+- Disabled dates: past dates, non-available dates
+- Selected date: teal background
+- Highlight: weekend dates slightly greyed
+
+TIME SLOTS:
+- Grid: 3-4 slots per row
+- Button style: outlined, teal border
+- Selected: solid teal background, white text
+- Disabled slots: greyed out with strikethrough
+
+TEXT AREA:
+- Border: 1px solid divider
+- Border-radius: 8px
+- Padding: 12px
+- Focus: border-color teal, subtle glow
+- Max height: 120px with scroll
+
+BUTTONS:
+- Cancel: outlined, grey
+- Schedule Visit: solid gradient (teal to cyan), white text
+- Both: 12px padding, 8px border-radius
+
+SUCCESS CONFIRMATION:
+After submit, show:
+"✓ Visit Scheduled!
+Your site visit has been scheduled for [date] at [time].
+The owner will confirm your visit shortly."
+
+With checkmark animation
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. DOCUMENTS SECTION (If documents exist)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SECTION TITLE:
+"Property Documents" (heading style)
+
+DOCUMENT CARD:
+
+┌──────────────────────────────────┐
+│  📄 Property Deed                 │ (icon + name)
+│                                  │
+│  ✓ Verified                      │ (green badge if verified)
+│  2.5 MB                          │ (file size, grey text)
+│                                  │
+│  [Download]                      │ (link, teal color)
+│                                  │
+└──────────────────────────────────┘
+
+STYLING:
+- Border-radius: 12px
+- Background: white
+- Border: 1px solid divider
+- Padding: 16px
+- Icon: 32px, teal color in circle background
+- Name: bold, heading style
+- Verified badge: green checkmark
+- File size: small, text.secondary
+- Download link: teal, underline on hover
+
+GROUPING:
+- Property Documents (Deed, NoC, Builder's Certificate)
+- Approvals (Occupancy Certificate, Completion Certificate)
+- Other Documents
+
+Show "More documents" if more than 3 total
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. SIMILAR PROPERTIES CAROUSEL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SECTION HEADER:
+"Properties you might like" (heading style with icon: heart or home)
+
+CAROUSEL CARD:
+
+┌──────────────────────────────────┐
+│  [Property Image]                 │ (16:9 aspect ratio)
+│  ₹45,000/month  [♡]              │ (price top-right, save icon)
+│  ──────────────────────────────  │
+│  [View similar: 5 more]           │ (overlay text on hover)
+│                                  │
+│  Sector 112, Gurgaon             │ (location)
+│  3 BHK Apartment | Furnished     │ (type + furnishing)
+│  ₹37/sq.ft.                      │ (price per sqft)
+│                                  │
+│  [Save] [Share]                  │ (action icons)
+│                                  │
+└──────────────────────────────────┘
+
+STYLING:
+- Card width: 280px
+- Border-radius: 12px
+- Horizontal scrollable container
+- Smooth scroll with fade-in/fade-out at edges
+- Navigation: Previous | Next chevron buttons
+- Scroll indicator dots at bottom
+
+CAROUSEL NAVIGATION:
+- Chevron buttons on left and right
+- Click to scroll by one card
+- Disabled state when at start/end
+- Mobile: hide buttons, allow swipe
+
+PRICE BADGE (Top-right):
+- Background: solid teal
+- Text color: white
+- Padding: 8px 12px
+- Border-radius: 6px
+- Position: absolute
+
+SAVE ICON:
+- Heart icon (lucide-react)
+- Unfilled by default, filled when saved
+- Hover: scale up slightly
+- Color: red/pink when filled
+
+OVERLAY ON HOVER:
+- Semi-transparent dark background
+- "View similar: 5 more" text centered
+- Appears smoothly with fade animation
+
+ACTION BUTTONS (Bottom):
+- Save: heart icon only
+- Share: link icon only
+- Horizontal layout, side by side
+- Small buttons (32px)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. STICKY ACTION BAR (Bottom on scroll)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+APPEARS WHEN:
+- User scrolls past the contact card
+- Sticky at bottom of page
+- Only on mobile/tablet (not desktop)
+
+AFFILIATE PROPERTIES:
+
+┌────────────────────────────────────────────────────┐
+│  [Property image] 3 BHK, ₹45,000  [View on NoBroker] │
+│                                  [Share] [Save]      │
+└────────────────────────────────────────────────────┘
+
+NORMAL PROPERTIES:
+
+┌────────────────────────────────────────────────────┐
+│  [Property image] ₹45,000/month  [Schedule visit]    │
+│                                  [Enquire] [Save]    │
+└────────────────────────────────────────────────────┘
+
+STYLING:
+- Background: white
+- Border-top: 1px solid divider
+- Box-shadow: 0 -4px 12px rgba(0,51,102,0.08)
+- Padding: 12px 16px
+- Display: flex, align-items center, space-between
+- Height: 72px
+
+LAYOUT:
+- Left: Property image (48x48px, border-radius 8px) + property title (small)
+- Center: Price display (₹45,000/month)
+- Right: Action buttons (primary + secondary)
+
+BUTTONS:
+- Primary (Schedule visit/View on NoBroker): 12px padding
+- Secondary (Share, Save): icon only
+- All: teal colored
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. DESCRIPTION & OTHER SECTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+DESCRIPTION SECTION:
+- Section title: "About this property"
+- Full description text in card
+- Line-height: 1.6 for readability
+- Text color: text.primary
+- Font-size: 1rem
+- Margin-bottom: 24px
+
+HIGHLIGHTS SECTION:
+- Already detailed above (Section 5)
+
+CONNECTIVITY SECTION:
+- Section title: "Connectivity"
+- Similar to amenities (pill badges)
+- Transportation: Metro, Bus, Road access
+
+MAINTENANCE SECTION (If available):
+- Maintenance charge display
+- Frequency: Monthly/Annually
+- Heading style
+
+LEASE TERMS (For rentals):
+- Lease duration: 12 months
+- Tenant requirements: description
+- Pet policy: Yes/No with details
+- Smoking policy: Yes/No
+- Move-in date: formatted date
+
+
+PART 3: RESPONSIVE BEHAVIOR
+================================================================================
+
+MOBILE (xs: < 600px):
+- Stack all sections vertically
+- Full-width cards with 16px padding
+- Contact card moves below hero
+- Single column layout
+- Sticky footer with action buttons
+- Carousel: hide navigation arrows, enable swipe
+- Tabs for sections: Overview | Media | Details | Enquiry
+
+TABLET (sm: 600-900px):
+- 2 columns for stat cards
+- Wider margins (20px)
+- Contact card: full-width below hero
+- Simple layout adjustments
+
+DESKTOP (md: > 900px):
+- 3-4 column grids
+- Contact card: sticky right sidebar
+- Full-width sections
+- Side-by-side layouts where appropriate
+
+
+PART 4: ANIMATIONS & TRANSITIONS
+================================================================================
+
+SECTION ANIMATIONS:
+- Fade-in: 0.3s ease-in-out
+- Slide-up: translateY(20px) → 0, 0.3s ease-out
+- Staggered: each child +0.1s delay
+
+HOVER EFFECTS:
+- Cards: translateY(-2px), shadow enhancement, 0.2s ease
+- Links: color change, underline appear, 0.15s ease
+- Buttons: scale(1.05), shadow enhancement, 0.2s ease
+
+LOADING STATES:
+- Skeleton placeholders for stat cards
+- Pulse animation on loading
+- Fade-in when data loads
+
+NUMBER ANIMATIONS:
+- Counter: animate from 0 to final value
+- Duration: 0.8s
+- Easing: easeInOutQuad
+- Only on first view (IntersectionObserver)
+
+SUCCESS ANIMATIONS:
+- Checkmark: scale(0) → scale(1), 0.4s spring
+- Confetti: subtle micro-animation (0.5s)
+- Toast: slide-up from bottom, 0.3s ease
+
+
+PART 5: CONDITIONAL RENDERING LOGIC
+================================================================================
+
+// Pseudocode for implementation
+
+const isAffiliate = property?.sourcePortal && property?.sourceUrl;
+
+// SECTIONS TO SHOW/HIDE BASED ON PROPERTY TYPE
+
+// Hero Section: Show for both
+{/* Hero sections shows for all */}
+
+// Price Card: Show for both, but different CTAs
+{isAffiliate ? (
+  // Show: View on [portal], Share, Save
+) : (
+  // Show: Schedule visit, Request callback, Share, Save
+)}
+
+// Contact Card
+{!isAffiliate && <ContactCard {...props} />}
+{isAffiliate && <AffiliateListingCard sourceUrl={property.sourceUrl} sourcePortal={property.sourcePortal} />}
+
+// Enquiry Form
+{!isAffiliate && <EnquiryCard property={property} />}
+
+// Schedule Visit Dialog
+{!isAffiliate && (
+  <ScheduleVisitDialog
+    open={visitOpen}
+    onClose={() => setVisitOpen(false)}
+    property={property}
+  />
+)}
+
+// Callback Dialog
+{!isAffiliate && <CallbackDialog {...props} />}
+
+// All other sections: Show for both if data exists
+{property?.images?.length > 0 && <GallerySection ... />}
+{property?.amenities?.length > 0 && <AmenitiesSection ... />}
+{property?.highlights?.length > 0 && <HighlightsSection ... />}
+etc.
+
+
+PART 6: COMMISSION FIELD FOR NORMAL PROPERTIES
+================================================================================
+
+Where to display commission:
+1. In Price Card (below lease term, security deposit)
+2. In Contact Card (below stats section)
+3. Optional: In admin/owner edit form
+
+DISPLAY FORMAT:
+"Commission: ₹45,000 (1 month rent equivalent)"
+or
+"Commission: ₹5,00,000 (negotiable)"
+
+STYLING:
+- Label: text.secondary, small font
+- Value: text.primary, normal font
+- Icon: optional (Briefcase or Percent)
+- Alignment: left-aligned in card
+
+If commission is not set:
+- Don't show the field
+- Show only if property.commission exists and > 0
+
+
+PART 7: COLOR PALETTE & TOKENS
+================================================================================
+
+Theme Colors (from your design system):
+- Primary (Prussian Blue): #003366
+- Secondary (Teal): #00A79D
+- Accent (Cyan): #22D3EE
+- Text Primary: #1F2937
+- Text Secondary: #6B7280
+- Background: #F9FAFB
+- Paper: #FFFFFF
+- Divider: #E5E7EB
+- Success (Green): #10B981
+- Warning (Orange): #F59E0B
+- Error (Red): #EF4444
+
+Border Radius:
+- sm: 6px
+- md: 8px
+- lg: 12px
+- xl: 16px
+
+Shadows:
+- sm: 0 2px 8px rgba(0,51,102,0.04)
+- md: 0 6px 20px rgba(0,51,102,0.06)
+- lg: 0 12px 32px rgba(0,51,102,0.08)
+
+Spacing Scale (in px):
+- 4, 8, 12, 16, 20, 24, 32, 40, 48, 56, 64
+
+Typography:
+- Heading 1: 32px, 600 weight
+- Heading 2: 24px, 600 weight
+- Heading 3: 20px, 600 weight
+- Body Large: 16px, 400 weight
+- Body: 14px, 400 weight
+- Body Small: 12px, 400 weight
+- Caption: 11px, 400 weight
+
+
+PART 8: ICONS TO USE (lucide-react)
+================================================================================
+
+Navigation & Actions:
+- ChevronLeft, ChevronRight (carousel)
+- Heart (save, favorite)
+- Share2 (share)
+- MessageCircle (send message)
+- Phone (call)
+- ExternalLink (affiliate portal link)
+- MapPin (location)
+- Calendar (schedule visit)
+- Clock (time)
+- CheckCircle (verified, success)
+- AlertCircle (warning)
+- Eye (show/masked phone)
+- EyeOff (masked)
+
+Property Features:
+- Maximize2 (area)
+- Layers (floor)
+- TrendingUp (price per sqft)
+- DollarSign (price)
+- Zap (premium features)
+- Star (highlights, rating)
+- Wifi (amenities)
+- Car (parking)
+- Trees (outdoor)
+- Leaf (sustainability)
+- Home, Building, Apartment (property type)
+
+Information:
+- Info (information)
+- HelpCircle (help)
+- Plus (expand, show more)
+- Minus (collapse)
+
+Social/External:
+- Globe (360 tour, external)
+- PlayCircle (video)
+
+
+================================================================================
+END OF DOCUMENT
+================================================================================
+

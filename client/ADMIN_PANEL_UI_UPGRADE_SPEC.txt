@@ -1,0 +1,845 @@
+================================================================================
+GGNHOME ADMIN PANEL - UI UPGRADE SPECIFICATION
+================================================================================
+Scope: every screen under client/src/screens/Admin Page/ and everything they do
+today, redesigned into one consistent, professional, lively admin console.
+No feature is removed. Gaps found in the audit are listed in PART 2 and
+specified as additions where the backend already supports them (marked [API OK])
+or would need new backend work (marked [NEEDS API]).
+
+Design references used (Google Material 3, Stripe Dashboard, generic admin-UX
+rules, real-estate moderation queues):
+- Material 3 navigation rail: collapsed + expanded rail, 3-7 primary
+  destinations, labels always shown with icons (icon-only rails are criticised
+  as vague), rail for medium+ windows, bottom bar / drawer on small.
+- Stripe dashboard: dense but calm tables, filter chips, summary metrics always
+  visible with detail one level deeper, list -> detail flows, tabbed full-page
+  views.
+- Admin UX rules: visible search, removable filter chips, filters in URL,
+  sortable tables, 10/25/50/100 page sizes with "Showing X-Y of Z", density
+  toggle, three-state select-all checkbox, bulk bar with count, confirm dialogs
+  naming the resource, soft delete + Undo toast, explicit empty/loading/error
+  states, never a bare 403.
+- Property moderation queues: card shows main image, code, price, title,
+  address, type, owner, requested date so a decision needs no extra click;
+  approve = one click with confirmation; status = Pending / Published / Expired.
+
+
+================================================================================
+PART 1 - CURRENT STATE (INVENTORY OF WHAT EXISTS TODAY)
+================================================================================
+
+ROUTES (App.js)
+ /admin/Landingpage            Hub card grid + "Manage Admin Access"        (NOT protected)
+ /admin/Dashboard              Overview analytics                           protected
+ /admin/UserManagement         Users list with rewards/prefs/properties     protected
+ /admin/enquiries              Property enquiries table                     protected
+ /admin/callback               Callback requests                            protected
+ /admin/rewardsproperties      "ALL Properties" browse (by sector)          protected
+ /admin/propertymanager        Activate / review / edit / delete listings   protected
+ /admin/add-property           Admin post-property form                     protected
+ /admin/services               Service requests tracking                    protected
+ /admin/usagetrack             Cloudinary / Brevo / LocationIQ usage        (NOT protected)
+ /admin/usagetrack2            MongoDB / GNews usage (not linked anywhere)  (NOT protected)
+ /admin/rewards                Distribute reward manually                   (NOT protected)
+ /admin/userpreferenceformresponses  Lead preference forms + assign agent   protected
+ /admin/agentsmanagement       Agents list, approve/suspend/visibility      protected
+ /admin/sms-devices            OTP SMS gateway phones                       protected
+ /admin/promos                 Promo cards CRUD + JSON import               protected
+ /admin/agent-registration     Register an agent (2-step wizard)            (NOT protected)
+ admin.properties.js           Approvals (pending payments) + Rewards tabs  NO ROUTE (dead)
+
+SHARED PATTERNS TODAY
+ - No sidebar, no shared layout. Hub-and-spoke from the landing card grid.
+ - 13 pages render ../Dashboard/TopNavigationBar (the public-site bar with
+   buyer/tenant nav items) - wrong context for an admin.
+ - ~15 pages: inline style objects + lucide icons; 4 pages: MUI + theme.
+ - Hand-rolled modals, CSS-width-div "charts", Previous/Next pagination.
+ - Same fetchUser/handleLogout boilerplate copied in ~12 files.
+ - Only role is "admin" - there is no super-admin.
+
+PER-SCREEN FEATURES TODAY (all must survive the redesign)
+ Landing: 15 cards; Manage Admin Access (email -> make admin via
+   POST /api/admin/update-role; Current Admins list GET /api/users?role=admin).
+ Dashboard: 8 KPI cards (Total Users, Properties, Total Revenue, Active Users,
+   AI Users, Rewards, Avg Property Rating, Property Views); Payment Overview
+   (Pending/Approved/Completed counts + revenue); charts: Revenue by Payment
+   Method, User Growth 12 months, AI usage by role, Top 5 Searches; collapsible:
+   Top Properties (rental/sale views/saves/engagement; top viewed/saved/rated),
+   Recent Activity table (Type|User|Action|Details|Time), Approved Payments
+   table (Resident|Property|Amount|Method|Date), Search Insights (top queries,
+   top locations, avg searches/user), Rewards (total/unclaimed/recent).
+ User Management: expandable user cards: role badge; mobile, registered, email,
+   last used; AI preferences (rental/sale); Rewards (total, latest, active,
+   inactive + table Message|Distributed At|Status); Properties (views, saves,
+   ratings, avg rating, rent/price, address, area, configuration, Cloudinary
+   account/folder, type, BHK, listing by, posted on; "show more"); Payments.
+ Agent Registration: wizard step 1 (name, email, mobile, WhatsApp, DOB,
+   experience, profile photo <1MB), step 2 (ID proofs jpg/pdf/doc <1MB each,
+   sectors as chips); set-password dialog; success dialog with agentCode.
+ Agents Management: search, status filter (All/Active/Inactive), sector filter;
+   agent card: avatar, name, agentCode, email, mobile, status badge, Visible
+   toggle; actions Approve, Suspend, Reset Password (confirm), View ID modal;
+   expanded: type, agency, experience, rating, total leads, joined, preferred
+   sectors, Viewed Client Leads; pagination.
+ Property Manager: 4 stat cards (Total/Active/Reviewed/Pending); filter All/
+   Active/Pending/Reviewed; rows with thumbnail, type, title, Rental/Sale +
+   Active + Reviewed badges, address, purpose, ownerType, date; actions
+   Activate/Deactivate, Mark Reviewed/Unmark, Edit modal, Delete (confirm);
+   pagination; toasts.
+ Edit Property modal: rental groups (Basics, Area, Financial & Lease, Location &
+   Amenities, Policies & Logistics, Images, 360 Panoramas with title/yaw/pitch/
+   notes) and sale groups (Basic Details, Images).
+ ALL Properties: stats (Total, Rent, Sale, Sectors); search by sector; sort
+   (Newest, Price low-high, Price high-low, Sector); type filter; price min/max;
+   Expand/Collapse All; Grid/List toggle; sector-grouped collapsible sections;
+   cards with images, address, ownerType, agent name/mobile/email, rent, move-in,
+   contact, View.
+ Add Property: shared PropertyPostForm in admin mode, owner mobile field,
+   4 trust points, draft autosave key.
+ Enquiries: stats (Total, This Month, Today); table Property|Owner|Customer|
+   Message|Date & Time|Actions; View, Delete (confirm); pagination.
+ Callback Requests: stats (Total, Pending, In Progress, Resolved); filters
+   status, sort by (date/name/status), order, search; expandable cards (name,
+   role, phone, email, created/updated, status badge, issue). READ-ONLY today.
+ Rewards: recipient email + message; Distribute; Reset; Recently Distributed
+   list (memory only).
+ Services: stats; search; status filter; card grid with progress bar; detail
+   modal with timeline + Edit Request (role, service type, status, contact,
+   property type/id, preferred date, address, notes). 10 service types:
+   cleaning, painting, termite, plumbing, AC service, carpenter, electrical,
+   moving, pest control, other. Statuses: pending / in-progress / completed.
+ Usage Tracker: Executive summary (accounts, avg credits %, storage, bandwidth,
+   transformations, credits); Cloudinary per-account cards; Brevo (plan, email
+   credits, sent, delivered, open rate); LocationIQ (daily requests, remaining,
+   bonus); Refresh All / per-service refresh; error cards.
+ Usage Tracker 2: MongoDB (documents, collections, DB/storage/index size);
+   GNews (requests today, daily limit, remaining, %, last reset).
+ User Preference Responses: stats (Total, Logged-in, Not logged-in + graph);
+   filters mobile/location/BHK; Match Users; preference cards (name, mobile,
+   login badge, location, budget, BHK, type, furnishing, move-in, actual and
+   agent brokerage, agents assigned count, INACTIVE countdown); WhatsApp button;
+   Assign Agent (dropdown, paged, agent detail modal); Delete.
+ SMS Phones: KPI (online, queue, daily limit); no-phone-online warning; devices
+   table (phone, status chip, sent today/limit, sent total, failed, last seen,
+   Enabled switch, delete); recent messages table (queued at, to, type, status,
+   sent by, sent at, delivered?); test SMS sender; 5s polling.
+ Promos: grid of live PromoCard previews; chips (placements, audience, weight,
+   dates); live/paused switch; Copy JSON; Edit; Delete; New promo dialog (all
+   fields, sticky preview); Add from JSON dialog (parse, preview valid/invalid,
+   import).
+
+
+================================================================================
+PART 2 - AUDIT: PROBLEMS TO FIX AS PART OF THE REDESIGN
+================================================================================
+SECURITY / ACCESS
+ S1  /admin/Landingpage, /admin/usagetrack, /admin/usagetrack2, /admin/rewards,
+     /admin/agent-registration are NOT wrapped in AdminProtectedRoute. The
+     rewards page can distribute rewards; the registration page creates agents.
+     -> Wrap all admin routes. (Backend must also enforce admin - frontend
+     gating is cosmetic.)
+ S2  Only role "admin". features checklist (Phase 2) requires Normal Admin vs
+     Super Admin with feature control. The UI must support role-aware nav (see
+     PART 6) even before the backend ships it.
+ S3  Mixed REACT_APP_Base_API / REACT_APP_BASE_API casing; usageManager has a
+     hardcoded localhost fallback. Use one API client module.
+UX / CONSISTENCY
+ U1  Public TopNavigationBar on admin pages -> replace with admin shell.
+ U2  No global search, no breadcrumbs, no back-to-hub except on 3 pages.
+ U3  Three different list idioms (cards, rows, tables). Standardise on one data
+     table component with a card fallback on mobile.
+ U4  alert()/confirm() used (preferences, agents, enquiries, sms). Replace with
+     MUI dialogs + toasts.
+ U5  Callback Requests is read-only: no way to mark In Progress / Resolved.
+     [NEEDS API: PATCH /api/admin/callback/:id/status]
+ U6  Enquiries: no search, filter, sort or export.
+ U7  User Management: no search/filter/role change/export.
+ U8  Property Manager filters only the current page (client-side) while stats
+     are global -> filter server-side [NEEDS API: status/search params].
+ U9  Property Manager has no affiliate/own-database distinction, no commission
+     field, no approval queue view (isPostedNew / isEdited flags exist in the
+     model but are not surfaced as "Awaiting approval" / "Edited - re-approve").
+ U10 Landing card "Rewards Management" has a copy-pasted description; "Admin
+     Registration" actually registers agents; "ALL Properties" lives at
+     /admin/rewardsproperties; page component PaymentsRewardsDashboard is the
+     enquiries page. Fix labels and (optionally) route names with redirects.
+ U11 admin.properties.js (pending payments approve/reject + distribute reward)
+     has no route; its features (payment approval) are therefore unreachable.
+     Re-home as "Payments" screen.
+ U12 /admin/usagetrack2 is unlinked; merge with usagetrack into one
+     "System & Usage" screen.
+ U13 Duplicate fetchUser/handleLogout in ~12 files; move into the shell.
+ U14 propertymanager.txt is a stale copy - delete.
+ U15 Charts are CSS divs with no tooltips/axes; rewards "recently distributed"
+     is memory-only (lost on refresh) [NEEDS API: GET distributed history].
+
+
+================================================================================
+PART 3 - DESIGN SYSTEM (TOKENS)
+================================================================================
+Reuse theme/theme tokens so admin matches dashboard and public pages.
+
+COLOURS
+ Primary navy      #003366  (headings, active nav text, primary buttons)
+ Navy deep         #002244  (sidebar background in dark-rail variant)
+ Teal              #00A79D  (secondary actions, positive accents, focus ring)
+ Cyan              #22D3EE  (highlights, gradient end, live indicators)
+ Page background   #F4F7F9
+ Surface           #FFFFFF, border #E5E9EE
+ Text primary      #1B2B3A, secondary #5B6B7B, disabled #9AA7B4
+ Status semantic   success #10B981, warning #F59E0B, info #2196F3,
+                   danger #DC2626, neutral #64748B
+ Chart categorical (8): #003366 #00A79D #22D3EE #8B5CF6 #F59E0B #EF4444
+                   #10B981 #6366F1 (colour-blind safe: never rely on colour
+                   alone - always add label/pattern/icon)
+ Brand gradient    linear-gradient(90deg,#00A79D,#22D3EE) for primary CTAs only
+ Header gradient   linear-gradient(120deg,#002244 0%,#003366 45%,#0B5C7A 100%)
+ Dark mode         surface #0F1B2A, card #162536, border #24364A, text #E6EEF5
+
+TYPOGRAPHY (existing app font)
+ Page title 24/32 700; section title 18/26 700; card title 16/24 600;
+ body 14/22; table body 13/20; caption/label 12/16 600 uppercase optional;
+ KPI number 28/32 800 tabular-nums; monospace for IDs/codes (agentCode,
+ deviceId, ObjectIds).
+
+SPACING / SHAPE
+ 4px base: 4 8 12 16 20 24 32 40 48. Card radius 12, input/button radius 8,
+ chips 999. Card shadow 0 2px 8px rgba(0,51,102,.05); hover/raised
+ 0 8px 24px rgba(0,51,102,.10). Content max width 1440, page gutter 24 desktop
+ / 16 mobile.
+
+MOTION (framer-motion already installed)
+ Page enter: fade + translateY(8px) 200ms. KPI numbers count up 700ms on first
+ view (existing AnimatedNumber). List rows stagger 30ms (max 10). Hover: card
+ lift 2px 150ms. Modals: scale .98->1 + fade 180ms. Toasts slide up 200ms.
+ Skeleton shimmer for loading. Respect prefers-reduced-motion (disable all
+ movement, keep fades).
+
+ICONS: lucide-react, 18px in nav/buttons, 20px in cards, 1.75 stroke.
+
+ACCESSIBILITY: WCAG AA contrast, visible 2px teal focus ring, full keyboard
+ operation of tables/menus/dialogs, aria-labels on icon buttons, aria-live
+ for toasts and polling updates, 44px min touch targets on mobile.
+
+
+================================================================================
+PART 4 - APP SHELL (NEW, SHARED BY ALL ADMIN PAGES)
+================================================================================
+Create one AdminLayout used by every /admin/* route (React Router layout route).
+It replaces TopNavigationBar, the duplicated user fetch and logout code, and
+the landing hub as the main navigation (landing remains as "Home" overview).
+
+LEFT NAVIGATION RAIL (Material 3 style)
+ - Desktop >= 1200px: expanded 264px with icons + labels + group headings.
+ - 900-1199px: collapsed 76px rail, icon + small label under icon, tooltip.
+ - < 900px: hidden; hamburger in top bar opens a temporary drawer.
+ - Toggle button at rail bottom (persist choice in localStorage, try/catch).
+ - Brand block at top: GgnHome logo + "Admin" pill. Active item: navy text,
+   teal 3px left indicator, light-teal background. Hover: #F0F6F9.
+ - Badges on items with live counts: Property Manager (awaiting approval),
+   Callbacks (pending), Enquiries (today), Agents (pending approval), SMS Phones
+   (red dot if none online), Services (pending).
+ - Groups (7 destinations max per group, per M3 guidance):
+     OVERVIEW      Dashboard
+     LISTINGS      Property Manager, All Properties, Add Property
+     PEOPLE        Users, Agents, Register Agent
+     LEADS         Enquiries, Callback Requests, Preference Forms, Services
+     MARKETING     Promo Cards, Rewards
+     MONEY         Payments (re-homed admin.properties.js)
+     SYSTEM        SMS Phones, Usage & Limits, Admin Access
+ - Super-admin only items (PART 6) show a small lock icon for normal admins
+   with a tooltip instead of disappearing, or are hidden - controlled by the
+   feature-flag config.
+
+TOP BAR (sticky, 64px, white, bottom border, blur on scroll)
+ - Left: hamburger (mobile), breadcrumbs "Admin / Listings / Property Manager".
+ - Centre: global search / command palette trigger "Search users, properties,
+   agents, enquiries...  Ctrl K". Opens a command palette dialog:
+     * grouped results (Pages, Users, Agents, Properties, Enquiries)
+     * arrow keys + Enter, recent searches, "Go to..." page shortcuts
+     * [NEEDS API: /api/admin/search?q= - first version can search pages only]
+ - Right: Quick actions "+" menu (Add property, Register agent, New promo,
+   Send reward), notifications bell (counts of pending items, list of latest 10
+   events), "View site" link, theme toggle (light/dark), user menu (avatar,
+   name, role chip Admin / Super Admin, Sign out).
+ - Sign out lives only here (single implementation).
+
+PAGE HEADER PATTERN (every page)
+ - Title (24/32), one-line description, right-aligned primary action,
+   optional tabs below (e.g. Property Manager: All | Awaiting approval |
+   Active | Inactive | Affiliate | Own).
+ - Last-updated timestamp + refresh icon on data pages.
+
+ACCESS STATES
+ - "Checking access..." becomes a full-page skeleton of the shell.
+ - Non-admin: friendly "You need admin access" page with Sign in / Go home.
+ - Mid-session permission loss: banner explaining what changed + who to contact.
+
+RESPONSIVE: shell content padding 24 -> 16; tables become cards < 768px;
+ filters collapse into a "Filters" bottom sheet with active-count badge;
+ primary action becomes a floating action button on mobile.
+
+
+================================================================================
+PART 5 - SHARED COMPONENTS (BUILD ONCE, USE EVERYWHERE)
+================================================================================
+5.1  PageHeader            title, description, actions, tabs, lastUpdated.
+5.2  StatCard              icon in 40px tinted circle, label, count-up value,
+                           delta chip (up green / down red / flat grey),
+                           optional sparkline, optional onClick (applies the
+                           matching filter), skeleton variant.
+5.3  DataTable (MUI based, one component)
+     - Sticky header, sticky first column on horizontal scroll.
+     - Sortable headers with arrow indicator; sort in URL.
+     - Density toggle: Compact 32 / Comfortable 40 (default) / Spacious 48;
+       persisted per user.
+     - Column visibility menu + reorder; persisted.
+     - Row selection: 3-state header checkbox, "Select all N results" link,
+       selection persists across pages; bulk action bar replaces header with
+       "3 selected | Approve | Deactivate | Delete | Clear".
+     - Row hover reveals quick actions; kebab menu for the rest.
+     - Expandable row for detail (replaces expandable cards).
+     - Click row -> opens right-side detail drawer (480px) with tabs, so the
+       user keeps list context (Stripe list-to-detail).
+     - Pagination footer: page size 10/25/50/100, "Showing 21-30 of 214",
+       first/prev/next/last, jump-to-page.
+     - Alignment: text left, numbers/currency right with tabular-nums.
+     - Loading: shimmering skeleton rows (same count as page size).
+     - Empty: icon + "No enquiries match these filters" + [Clear filters].
+     - Error: inline alert with Retry.
+     - Mobile: each row becomes a card with 3 key fields + status + actions.
+     - CSV export of current filter (all admin tables).
+5.4  FilterBar             always-visible search input (debounce 300ms, min 2
+                           chars, shows match count), filter dropdowns, date
+                           range with presets (Today, 7d, 30d, This month,
+                           Custom), active filters as removable chips, "Clear
+                           all", Saved views menu (name, save, delete),
+                           everything mirrored in the URL query string.
+5.5  StatusChip            one mapping for the whole product:
+                             pending=amber, in-progress=blue, resolved/
+                             completed/approved/active/online/sent=green,
+                             rejected/failed/suspended/error=red,
+                             inactive/disabled/offline/paused=grey,
+                             expired=slate, cooling-down=cyan.
+                           Dot + label, never colour alone.
+5.6  ConfirmDialog         names the resource ("Delete listing 'Sector 49, 3BHK'?"),
+                           impact line ("12 enquiries linked"), danger button,
+                           optional "type DELETE to confirm" for irreversible
+                           actions, Cancel default-focused.
+5.7  UndoToast             soft actions (deactivate, unmark, remove) show
+                           "Listing deactivated  [Undo]" for 8s.
+5.8  Toasts                react-toastify retained; bottom-right, success/
+                           error/info, aria-live, max 3 stacked.
+5.9  DetailDrawer          right drawer: header (avatar/thumb, title, status,
+                           kebab), tabs, footer action bar.
+5.10 EntityAvatar          image or initials on stable colour from id hash.
+5.11 CopyField             monospace value + copy icon + "Copied" tooltip
+                           (agentCode, deviceId, ObjectId, phone).
+5.12 MaskedPhone           shows +91 98•••• ••321 with eye icon to reveal; reveal
+                           is logged [NEEDS API: audit event].
+5.13 Charts                adopt one library (Recharts) replacing CSS bars:
+                           bar, line/area, donut; tooltips; legend; axis;
+                           empty state; downloadable PNG/CSV; same palette.
+5.14 EmptyState / ErrorState / Skeleton primitives.
+5.15 ApiClient             single axios/fetch wrapper: base URL, bearer token,
+                           credentials, 401 -> redirect, error normalisation,
+                           shared useAdminUser hook.
+5.16 SectionCard           collapsible card (replaces custom collapsibles on
+                           dashboard / user cards) remembering open state.
+5.17 Timeline              vertical timeline (services status history, audit).
+5.18 KeyValueGrid          2-col label/value grid for detail panels.
+5.19 FormKit               MUI TextField wrappers with inline validation,
+                           helper text, character counters, unsaved-changes
+                           guard ("Discard changes?"), Save disabled until
+                           dirty, sticky footer with Cancel/Save.
+
+
+================================================================================
+PART 6 - ROLES: NORMAL ADMIN vs SUPER ADMIN (CHECKLIST PHASE 2)
+================================================================================
+Backend today has one role. UI should be built role-aware now.
+ - useAdminUser() exposes { role: "admin" | "superadmin", permissions: [] }
+   with permission strings "resource:action" (e.g. properties:approve,
+   agents:suspend, system:usage, admins:manage, features:manage).
+ - Nav and buttons render from a single config:
+     { id, label, icon, route, permission, featureFlag }.
+ - Normal admin sees: Dashboard, Listings, People (no admin management),
+   Leads, Marketing, Money. Hidden/locked: Admin Access, Usage & Limits,
+   SMS Phones, Feature Control.
+ - Super admin extra screen "Feature Control" (matches checklist items 13 &
+   15): table of platform features with toggles - e.g. Affiliate listings
+   visible, Affiliate redirect, Rewards banner, Flatmates, Services, AI
+   assistant, Price predictor, Promo placements - each with description,
+   last changed by/at, and Save with confirmation. [NEEDS API]
+ - Disabled-by-permission controls show tooltip "Requires Super Admin".
+ - Mid-session loss of permission: contextual banner, never a bare 403.
+
+
+================================================================================
+PART 7 - SCREEN-BY-SCREEN DESIGN
+================================================================================
+
+--------------------------------------------------------------------------------
+7.1 DASHBOARD  (/admin/Dashboard)   keeps all current metrics
+--------------------------------------------------------------------------------
+HEADER: "Good morning, <name>" + date range picker (Today/7d/30d/12m/Custom,
+ default 30d) + Refresh + Export report (PDF/CSV) + "Last updated 2 min ago".
+ROW 1 - "Needs your attention" strip (actionable, each clickable, hidden when 0):
+ [N listings awaiting approval] [N edited listings to re-approve]
+ [N agents pending approval] [N pending callbacks] [N pending payments]
+ [SMS: no phone online - OTPs falling back to email]
+ROW 2 - KPI grid (8 cards, 4x2 desktop, 2x4 tablet, 1-col mobile):
+ Total Users (renters/owners/admins split mini-bar) | Properties (rental/sale) |
+ Total Revenue (transactions) | Active Users (inactive count) | AI Users (total
+ searches) | Rewards (unclaimed) | Avg Property Rating (total ratings) |
+ Property Views (saves). Each: icon tint, count-up number, delta vs previous
+ period, sparkline, click -> relevant page pre-filtered.
+ROW 3 - Revenue & Payments: left 2/3 area chart "Revenue over time" (toggle
+ Daily/Weekly/Monthly); right 1/3 donut "Revenue by Payment Method" with total,
+ count, avg in legend table. Under: Payment Overview strip: Pending / Approved /
+ Completed (count + amount) as three segmented tiles.
+ROW 4 - Growth & AI: User Growth (last 12 months) column chart with hover
+ tooltip; AI usage by role (admin/owner/renter) stacked bar; Top 5 Searches
+ horizontal bar list.
+ROW 5 - Properties: tabs Rentals | Sales: views, saves, avg engagement time;
+ three mini leaderboards Top viewed / Top saved / Top rated (thumbnail, title,
+ sector, value, link). Affiliate vs Own split donut [uses sourcePortal].
+ROW 6 - Search insights: Top Search Queries, Most Searched Locations (word-cloud
+ or ranked bars), avg searches per user. Locations heat-list links to
+ Property Manager filtered by sector.
+ROW 7 - Rewards: total / unclaimed / recent rewards list + "Send reward" button.
+ROW 8 - Tables (tabs): Recent Activity (Type chip | User | Action | Details |
+ Time relative with absolute tooltip) and Approved Payments (Resident | Property
+ | Amount right-aligned | Method chip | Date). Server pagination, "View all".
+STATES: skeleton for each card, per-card error with Retry (one failing widget
+ does not blank the page), empty chart text "No data for this period".
+Sections collapsible and reorderable (persist), replacing today's 5 toggles.
+
+--------------------------------------------------------------------------------
+7.2 PROPERTY MANAGER  (/admin/propertymanager)   most important admin screen
+--------------------------------------------------------------------------------
+HEADER: title, "Add property" primary, "Export CSV".
+STAT CARDS (click to filter): Total | Active | Reviewed | Pending review |
+ Awaiting approval (isPostedNew) | Edited - re-approve (isEdited) |
+ Affiliate (sourcePortal set) | Own database.
+TABS: All | Awaiting approval | Edited | Active | Inactive | Affiliate | Own.
+FILTER BAR: search (title, address, sector, owner number, id); Type Rental/
+ Sale; Sector multi-select; Property type; Owner type (Owner/Agent/Admin);
+ Source (Own / NoBroker / 99acres); Price range slider; Date posted range;
+ Reviewed yes/no; Sort (Newest, Rank score, Price, Views). Server-side [NEEDS
+ API filter params]; chips + saved views.
+TABLE (compact default) columns:
+ [checkbox] | Thumb 56x40 + title + id (copy) | Type chip (Rental/Sale) |
+ Sector + address | Price (right, "Rs 45,000 /mo" or "Rs 1.2 Cr") | Config
+ (3BHK, sqft) | Owner (name/ownerType chip, masked phone) | Source chip
+ (Own / NoBroker / 99acres with ext-link icon -> sourceUrl; sourceStatus dot
+ active/inactive/removed) | Status stack (Active toggle, Reviewed check,
+ "New"/"Edited" pill) | Rank score (editable inline number) | Views/Saves |
+ Posted | Actions.
+ROW ACTIONS: Approve (for new/edited, primary), Activate/Deactivate switch,
+ Mark reviewed, Edit (drawer), Preview (opens public page with state.preview),
+ Duplicate, Open source (affiliate), Delete (danger, in kebab).
+BULK ACTIONS: Approve, Activate, Deactivate, Mark reviewed, Set rank score,
+ Delete (progressive confirm, shows partial failures per item).
+APPROVAL QUEUE VIEW (tab "Awaiting approval"): card/list hybrid showing what a
+ decision needs without opening: main image, price, title, address, type,
+ owner/agent + ownerType, requested date, completeness meter (photos count,
+ description length, panoramas, owner number present), warning chips (no photo,
+ contact number in description, duplicate address), buttons Approve / Request
+ changes / Reject (with reason dropdown + note sent to owner [NEEDS API]).
+ Keyboard: J/K move, A approve, R reject.
+AFFILIATE LISTINGS (checklist Phase 1): Affiliate panel with toggle controls:
+ - Master switch "Show affiliate listings on site", per-portal switch
+   (NoBroker, 99acres), "Redirect to source" switch, "Allow enquiry on
+   affiliate listings" switch (default off). [NEEDS API/flags]
+ - Last sync info: last scrape run time, listings added/removed, next run
+   (Friday weekly), "Run sync now" (super admin), sync error list.
+ - Flagged-for-removal list (sourceRemovalFlaggedAt) with Confirm remove /
+   Keep.
+OWN LISTINGS: commission field shown in table (Commission: amount/% and
+ who pays) and editable in drawer; agent brokerage vs actual brokerage as used
+ in preference forms.
+DETAIL DRAWER (click row): header image carousel; tabs Overview | Specs |
+ Pricing & Commission | Owner & Agent | Media | Activity.
+ Activity tab = audit trail (who approved/edited/toggled and when) [NEEDS API].
+DELETE: ConfirmDialog with impact (enquiries, saved-by count) + soft delete
+ with Undo 8s where backend allows; otherwise type-to-confirm.
+EDIT PROPERTY (replaces modal with full-height drawer/page):
+ - Left sticky stepper: Basics | Area | Financial | Location & Amenities |
+   Policies | Media | Commission & Owner. Right: form sections.
+ - Fields exactly as today: rental (title, description, address, Sector,
+   owner/agent mobile, propertyType, purpose, bedrooms, bathrooms, layout
+   features, condition/age, renovations, parking, outdoor space, area sqft,
+   configuration, monthly rent, lease term, security deposit, other fees,
+   utilities[], tenant requirements, move-in date, neighbourhood vibe,
+   transportation, local amenities, community features[], appliances[], pet
+   policy, smoking policy, maintenance, insurance) and sale (title,
+   description, price, area, configuration, bedrooms, bathrooms, location,
+   Sector, owner mobile).
+ - Array fields become chip inputs (type + Enter) instead of comma strings.
+ - Media: drag-drop grid, reorder, set cover image, remove, per-file size/
+   progress, 360 panoramas card with title, yaw, pitch, notes + live preview.
+ - Footer: Save, Save & approve, Cancel; unsaved-changes guard; field errors
+   scroll into view; success toast + stay/return choice.
+ - Affiliate listings: scraped fields locked with "Managed by sync" badge;
+   only visibility/rank/notes editable.
+EMPTY STATE: "No properties match" + clear filters + "Add property".
+
+--------------------------------------------------------------------------------
+7.3 ALL PROPERTIES  (/admin/rewardsproperties -> redirect from /admin/all-properties)
+--------------------------------------------------------------------------------
+Purpose today: read-only sector-grouped browse. Keep as "Browse by sector".
+ - Stats: Total, For Rent, For Sale, Sectors (count-up).
+ - Toolbar: search by sector, sort (Newest, Price low-high, Price high-low,
+   Sector), type segmented control All/Rent/Sale, price min/max popover with
+   Clear, Expand all / Collapse all, Grid | List toggle, density.
+ - Sector sections: sticky sector header with count + avg price; cards show
+   image, address/sector, ownerType chip, agent name/mobile/email, rent/price,
+   move-in, contact, View button (public page) and new "Manage" (opens
+   Property Manager drawer for same id).
+ - Server-side pagination/virtualised list (today: client filtering of 50).
+ - Skeleton card grid, empty state, mobile single column.
+
+--------------------------------------------------------------------------------
+7.4 ADD PROPERTY  (/admin/add-property)
+--------------------------------------------------------------------------------
+Keep PropertyPostForm (admin mode) so behaviour is identical to agent/owner
+post form; wrap in admin shell. Add:
+ - Header "Add property" with Rent | Sale segmented switch.
+ - Right rail "Admin tips" card (the 4 trust points: verify with owner; owner
+   number stays private; manage from Property Manager; no contact details in
+   text) with icons.
+ - Admin-only block: Owner/agent mobile (required, masked after entry), Owner
+   type (Owner / Agent / Admin), Assign to agent (searchable), Commission
+   (type: fixed / % / months-of-rent; value; paid by owner/tenant/split),
+   Rank score, "Publish immediately (skip approval)" switch (audit-logged).
+ - Draft autosave indicator "Draft saved 10:42" + "Discard draft".
+ - After submit: success page with View listing, Manage in Property Manager,
+   Add another, Share link.
+
+--------------------------------------------------------------------------------
+7.5 USERS  (/admin/UserManagement)
+--------------------------------------------------------------------------------
+Replace giant expandable cards with DataTable + detail drawer.
+STATS: Total users, Renters, Owners, Admins, New this month, Active, Inactive.
+FILTER BAR: search (name, email, mobile); Role; Status active/inactive; Has
+ properties; Has rewards; Registered date range; Last used range; sort.
+ [NEEDS API search/filter params; today only page+limit]
+TABLE: [check] Avatar+name | Role chip | Email | Mobile (masked) | Registered |
+ Last used (relative) | Properties # | Rewards # | Status | Actions.
+ROW ACTIONS: View, Send reward (pre-fills Rewards form), WhatsApp, Change role
+ (super admin) [NEEDS API], Copy email. Bulk: Export CSV, Send reward.
+DETAIL DRAWER tabs:
+ - Profile: KeyValueGrid (mobile, registered, email, last used).
+ - AI Preferences: Rental and Sale preference cards, or "No saved preferences".
+ - Rewards: summary tiles (Total, Latest, Active, Inactive) + table Message |
+   Distributed At | Status chip. Lazy loaded on tab open (as today).
+ - Properties: list with all existing fields (views, saves, ratings count, avg
+   rating given, rent/price, address, area, configuration, Cloudinary
+   account/folder, type, BHK, listing by, posted on) in expandable rows, "Show
+   more" -> proper pagination.
+ - Payments: amount, date, status chip.
+ - Activity timeline.
+Mobile: cards.
+
+--------------------------------------------------------------------------------
+7.6 AGENTS  (/admin/agentsmanagement)
+--------------------------------------------------------------------------------
+STATS: Total agents, Active, Inactive/Suspended, Pending approval, Visible.
+FILTERS: search (name, email, phone, area); Status (All/Active/Inactive);
+ Sector (multi); Agent type; Visibility; Rating >=; Experience range.
+LAYOUT: toggle Table | Cards (cards = polished version of today's).
+TABLE: Avatar + name + agentCode (copy) | Contact (masked phone, email) |
+ Agency / Type | Sectors (first 2 chips + "+3") | Experience | Rating stars |
+ Leads assigned | Status chip | Visible switch | Joined | Actions.
+ACTIONS: Approve, Suspend, Reset password (confirm; result in dialog with
+ mobile + copy button instead of alert()), View ID proof (lightbox with
+ zoom, download, multi-file carousel, PDF viewer), Toggle visibility,
+ Message on WhatsApp, Open "Viewed client leads".
+DETAIL DRAWER tabs: Overview (Agent Information: type, agency, experience,
+ rating, total leads, joined), Sectors (chips), Documents (ID proofs),
+ Viewed Client Leads (lazy; table of leads with date), Assigned Leads,
+ Activity.
+Bulk: Approve, Suspend, Show/Hide, Export.
+"Register agent" primary button -> 7.7.
+
+--------------------------------------------------------------------------------
+7.7 REGISTER AGENT  (/admin/agent-registration, protect route)
+--------------------------------------------------------------------------------
+Rename label to "Register agent". Keep AuthLayout look but inside admin shell
+ or centred card. 2-step wizard keeps all fields:
+ Step 1 Personal: Full name, Email, Mobile, WhatsApp ("Same as mobile"
+   checkbox), DOB (date picker, 18+ check), Experience years, Profile photo
+   (drag-drop, crop to square, JPG/JPEG < 1MB, preview).
+ Step 2 Verification & coverage: ID proof upload (JPG/PDF/DOC/DOCX < 1MB each,
+   multiple, per-file progress, remove), Areas covered (sector chips with
+   autocomplete from REACT_APP_SEARCH_AREAS_API), optional availability days/
+   time and bio.
+ Progress bar + step labels, inline validation, field errors jump to correct
+ step (existing), Review summary before submit.
+ Set-password dialog (strength meter, show/hide). Success dialog: agentCode
+ big monospace + copy, mobile, warning "Agent needs this code every sign-in",
+ buttons Copy details, Register another, View in Agents.
+
+--------------------------------------------------------------------------------
+7.8 ENQUIRIES  (/admin/enquiries)
+--------------------------------------------------------------------------------
+STATS: Total, This month, Today (+ delta) + mini sparkline.
+FILTERS (new): search (address, customer email/mobile, message); Property type
+ Rental/Sale; Date range; Has owner yes/no. Sort. Export CSV.
+TABLE columns kept: Property (thumb, address, type chip, price) | Owner (or
+ "No owner found" warning chip) | Customer (email, masked mobile, WhatsApp/call
+ icons) | Message (2-line clamp, expand) | Date & Time | Actions.
+ACTIONS: View property, Open message (drawer), Reply via WhatsApp/email,
+ Delete (ConfirmDialog naming property + customer, Undo where possible).
+ Optional [NEEDS API]: status Open/Contacted/Closed, assign to agent.
+Replace "Loading property details..." text with row skeletons; fetch property
+ data in one batched call where possible.
+Pagination footer "Showing 1-10 of 214".
+
+--------------------------------------------------------------------------------
+7.9 CALLBACK REQUESTS  (/admin/callback)
+--------------------------------------------------------------------------------
+STATS: Total, Pending, In progress, Resolved (click = filter) + SLA metric
+ "Oldest pending: 3 days" [derived from createdAt].
+FILTERS (kept): status, sort by (date/name/status), order, search ("name,
+ phone, email, issue"); NEW visible date-range control (state already exists).
+VIEW: Table with expandable rows or Kanban board toggle (Pending | In progress
+ | Resolved) with drag between columns [NEEDS API: PATCH status].
+ROW: avatar initial, name, role chip, phone (call / WhatsApp buttons), email,
+ created (relative), updated, status chip, issue (2-line clamp -> expand).
+NEW ACTIONS [NEEDS API]: change status, assign to admin, add internal note,
+ "Mark resolved" with resolution note. Until API exists render read-only with
+ Call/WhatsApp/Copy actions.
+Overdue (>24h pending) rows get amber left border + "Overdue" chip.
+
+--------------------------------------------------------------------------------
+7.10 PREFERENCE FORM RESPONSES / LEADS  (/admin/userpreferenceformresponses)
+--------------------------------------------------------------------------------
+STATS: Total preferences, Users logged in, Not logged in + donut "User Login
+ Status".
+FILTERS: Mobile, Location, BHK (All/1/2/3/4/4+), + Budget range, Furnishing,
+ Property type, Status (Active/Inactive), Assigned/Unassigned, Date range.
+Primary buttons: "Match users" (existing handleMatchUsers) with result summary
+ dialog (N matched, N notified).
+LAYOUT: table + drawer (cards on mobile). Columns: Name | Mobile (masked) |
+ Login badge (Logged in / Guest) | Location | Budget | BHK | Property type |
+ Furnishing | Move-in | Actual brokerage | Agent brokerage | Agents assigned
+ (n) | Status (Active, or Inactive with countdown "expires in 2d 4h") | Created |
+ Actions.
+ACTIONS: WhatsApp (default message editable template), Assign agent (opens
+ AssignAgentDialog: searchable agent list w/ pagination, agent preview card with
+ email, mobile, agency, areas covered, preferred sectors, property types, then
+ Assign; shows already-assigned agents and prevents duplicates), Delete (confirm
+ naming user; disabled for INACTIVE with tooltip explaining why).
+Replace alert() with toasts. Success toast links to the assigned agent.
+
+--------------------------------------------------------------------------------
+7.11 SERVICES  (/admin/services)
+--------------------------------------------------------------------------------
+STATS: Pending, In progress, Completed (global, not just current page).
+FILTERS: search ("address, service type, or user"), status chips All/Pending/
+ In progress/Completed, service type multi (10 types with their icons/colours),
+ date range, role Owner/Renter.
+VIEW: Board (Kanban by status) | Grid cards | Table. Cards keep status badge,
+ service type icon, progress bar, createdBy, userRole, address, property title,
+ property type, created date.
+DETAIL DRAWER/MODAL: status-coloured header; timeline (Requested -> In
+ progress -> Completed with timestamps); Current status panel with description;
+ Edit mode with all current fields (User role*, Service type*, Status*, Contact
+ number*, Property type Rental/Sale, Property ID (read-only ObjectId, copyable),
+ Preferred date (date picker), Address*, Notes). Save/Cancel with unsaved guard,
+ success/error toasts.
+Quick action on card: status dropdown (one click Pending -> In progress).
+Call/WhatsApp contact buttons.
+
+--------------------------------------------------------------------------------
+7.12 REWARDS  (/admin/rewards, protect route)  + PAYMENTS (re-home admin.properties.js)
+--------------------------------------------------------------------------------
+REWARDS page tabs: Send reward | History | (rule: reward banner Rs 1000 per
+ checklist - settings card, super admin).
+ Send reward: recipient autocomplete (search users by email/mobile/name, shows
+ avatar + role) instead of raw email; message template picker + textarea with
+ counter; preview of how the reward appears to the user; Distribute button
+ (confirm: "Send reward to <name>?"); Reset. Success banner + toast.
+ History: persisted list (email, message, distributedAt, adminId, status
+ Active/Inactive) [NEEDS API - today memory only]; filters + export.
+PAYMENTS page (was admin.properties.js, unreachable): tabs Pending approvals |
+ Approved | (Completed). Pending: table/cards (Status chip PENDING, Property,
+ Amount, Method, Email, date) with Approve / Reject (reject asks reason).
+ Approved: Date, Tier, Email, Amount, "Eligible for rewards" chip, "Distribute
+ reward" button -> becomes "Reward distributed" disabled chip. Stats: total
+ pending / approved / eligible. Empty state "No pending payments".
+
+--------------------------------------------------------------------------------
+7.13 PROMO CARDS  (/admin/promos)   already MUI - polish and extend
+--------------------------------------------------------------------------------
+HEADER: New promo, Add from JSON, Filter chips (All, Live, Paused, Scheduled,
+ Expired) + placement filter (Dashboard, Search results, Top banner, Post forms)
+ + audience (All/Rent/Sale) + search by title.
+GRID: live PromoCard previews (kept), paused = 55% opacity + "Paused" ribbon;
+ chips kept (placements, audience, weight N, {start|now} -> {end|open}); status
+ computed (Scheduled if start in future, Expired if end passed).
+ Per-card: Live/Paused switch (tooltips kept), Copy JSON, Duplicate (new),
+ Edit, Delete (confirm: Delete "title"? This cannot be undone.).
+ Placement mini-map tab: preview where each placement appears on the site
+ (dashboard, search results between listings, top banner line, post forms).
+EDIT/NEW DIALOG (keep sticky live preview, md width): Small heading, Title*
+ (max 90, counter), Text, Button label (default "Know more"), Link (site path or
+ https URL, validated), Colour theme swatches (gold, navy, teal, indigo, cyan,
+ rose... visual swatches not a select), Icon picker grid (PROMO_ICONS), Background
+ image URL with preview + https check, Show on checkboxes (>=1 required), Audience,
+ Weight slider 1-10 with helper "higher = shown more often", Starts / Ends date
+ pickers (end >= start), Active switch. Save disabled until title + placement.
+ Preview toggles desktop/mobile width.
+JSON IMPORT DIALOG (keep): textarea, Load example, Clear, alias-mapping notes,
+ parse-error alert, valid/invalid previews, Import (disabled with 0 valid),
+ progress "3 of 8 imported", partial-failure list.
+Analytics [NEEDS API]: impressions/clicks per promo.
+
+--------------------------------------------------------------------------------
+7.14 SMS PHONES  (/admin/sms-devices)
+--------------------------------------------------------------------------------
+Keep MUI structure, 5s polling (add "Live" pulsing cyan dot + pause button,
+ aria-live polite updates, no layout jump).
+KPI: Phones online, Waiting in queue, Daily limit per phone, + Delivery rate
+ (24h) and Failed (24h) [derivable from sms-log].
+ALERT: red banner when no phone online/enabled: "OTPs will be emailed as a
+ backup" with link to troubleshooting steps.
+DEVICES TABLE: Phone (name, deviceId short + copy, appVersion) | Status chip
+ (Disabled, Offline, Online, Cooling down) | Sent today as progress bar
+ sentToday/dailyLimit (amber >80%, red 100%) | Sent total | Failed (tooltip
+ lastError) | Last seen (relative + absolute tooltip) | Enabled switch | Delete
+ (ConfirmDialog naming device).
+MESSAGES TABLE (last 100, kept 30 days): Queued at | To (masked) | Type chip
+ (Login OTP/Test) | Status chip (sent, failed, queued, sending, expired) | Sent
+ by | Sent at | Delivered to phone? chip (Delivered, Not delivered + tooltip
+ deliveryDetail, No report). Filters by status/type/phone, CSV export.
+TEST SEND card: mobile field (+91 prefix, validation), Send, result alert,
+ cooldown to prevent spam.
+
+--------------------------------------------------------------------------------
+7.15 USAGE & LIMITS  (merge /admin/usagetrack + /admin/usagetrack2, protect)
+--------------------------------------------------------------------------------
+Single page "System & Usage" with sections and a global "Refresh all" +
+ per-section refresh + last-refreshed time.
+ Executive summary: Total accounts, Avg credits usage %, Total storage, Total
+ bandwidth, Transformations, Total credits (count-up, colour thresholds
+ green <70%, amber 70-90%, red >90%).
+ Cloudinary: per-account cards (cloudName, credits used/limit bar, storage bar,
+ transforms) sortable by usage, "sticky account" indicator, warning chip when
+ >80%.
+ Brevo email: plan, company, email credits limit/remaining bar, sent, delivered,
+ open rate, status chip.
+ LocationIQ: daily requests used/limit bar, remaining, bonus.
+ MongoDB: documents, collections, database size, storage size, index size
+ (donut data vs index).
+ GNews: requests today, daily limit, remaining, usage %, last reset (countdown).
+ Alerts [NEEDS API]: email/in-app alert when any service >80%.
+ Error card per service with Retry; skeletons on load; remove hardcoded
+ localhost fallback.
+
+--------------------------------------------------------------------------------
+7.16 ADMIN ACCESS  (was "Manage Admin Access" panel on landing)
+--------------------------------------------------------------------------------
+Dedicated page under SYSTEM (super admin):
+ - Admins table: avatar, name, email, role (Admin/Super admin), added on, last
+   login, Remove admin (ConfirmDialog, cannot remove self/last super admin).
+ - "Add admin": user search/autocomplete (email) instead of free text, role
+   select, confirm dialog "Give <name> full admin access?".
+ - Uses POST /api/admin/update-role and GET /api/users?role=admin [API OK].
+ - Audit log table [NEEDS API]: who changed what/when.
+
+--------------------------------------------------------------------------------
+7.17 ADMIN HOME / LANDING  (/admin/Landingpage -> "Home")
+--------------------------------------------------------------------------------
+Keep as a visual launcher but inside the shell and reorganised by the 7 nav
+ groups; each card: icon, title, one-line description (fix copy-paste text:
+ Rewards = "Send and review reward distributions"; Registration = "Register a
+ new agent"), live count badge (pending items), shortcut keys. Search/filter
+ box on top. "Needs attention" strip same as dashboard.
+ Admin-access panel removed (moved to 7.16).
+
+--------------------------------------------------------------------------------
+7.18 FEATURE CONTROL (new, super admin; checklist items 13/15)
+--------------------------------------------------------------------------------
+ Table of toggles with name, description, status, last changed by/at:
+ Affiliate listings, Affiliate redirect, Affiliate enquiry, Non-affiliate
+ (no-redirect) mode, Rewards banner (Rs 1000), Flatmates module, Services,
+ AI assistant, Price predictor, Promo placements, Weekly scrape (Fri).
+ Save with ConfirmDialog summarising changes. [NEEDS API]
+
+
+================================================================================
+PART 8 - CROSS-CUTTING BEHAVIOUR
+================================================================================
+8.1 Loading: skeletons matching final layout; never a blank page; buttons show
+    spinner + disabled during requests; polling screens do not flicker.
+8.2 Empty: illustration/icon, explanation, primary next step.
+8.3 Errors: inline per widget, Retry, request id in details; 401 -> sign-in with
+    return URL; 403 -> contextual explanation.
+8.4 Confirmations: all destructive actions use ConfirmDialog; irreversible bulk
+    deletes require typing the count.
+8.5 Feedback: toasts for success; Undo for reversible; progress for >2s bulk.
+8.6 URL state: filters, sort, page, tab, open drawer id in query string; back
+    button works; links are shareable between admins.
+8.7 Persistence (try/catch): rail collapsed, density, column visibility, saved
+    views, theme, collapsed dashboard sections.
+8.8 Keyboard: Ctrl/Cmd+K palette, / focus search, G then D/P/U/A navigation,
+    Esc closes drawers/dialogs, J/K in queues.
+8.9 Privacy: phones masked by default across admin; reveal is explicit and
+    audit-logged; owner numbers never shown in text fields.
+8.10 Performance: lazy-load routes (kept), virtualised long lists, debounced
+    search, server pagination, cache dashboard 60s, cancel stale requests,
+    image thumbnails sized.
+8.11 i18n/format: Indian number grouping (en-IN), Rs symbol, Cr/L compact
+    for sale prices, dates "12 Oct 2026, 4:30 PM", relative times with absolute
+    tooltip.
+8.12 Print/export: CSV on every table; dashboard PDF export.
+8.13 Dark mode: all components themed; charts use dark palette.
+8.14 Mobile: bottom sheet filters, card lists, FAB for primary action, drawers
+    become full screen, sticky bulk bar at bottom.
+8.15 Audit logging [NEEDS API]: approvals, deletes, role changes, reveals,
+    reward sends - shown in drawer "Activity" tabs and an Audit Log page.
+
+
+================================================================================
+PART 9 - IMPLEMENTATION ORDER
+================================================================================
+PHASE A - Foundation (do first, unblocks everything)
+ 1. AdminLayout (rail + top bar + breadcrumbs), useAdminUser, ApiClient,
+    route protection for ALL /admin/* (fix S1), redirects for renamed routes.
+ 2. Shared components: PageHeader, StatCard, StatusChip, DataTable, FilterBar,
+    ConfirmDialog, DetailDrawer, Toast/Undo, Skeleton/Empty/Error, CopyField,
+    MaskedPhone, chart wrappers.
+PHASE B - High-traffic screens
+ 3. Property Manager (+ approval queue, affiliate/own, commission, drawer).
+ 4. Dashboard. 5. Agents. 6. Enquiries. 7. Callback requests.
+PHASE C - Remaining screens
+ 8. Users, Preference responses, Services, Promos polish, SMS Phones,
+    Rewards + Payments (re-home), Usage & Limits (merge), Add Property, Register
+    Agent, All Properties, Admin Access, Home.
+PHASE D - Role features and backend-dependent items
+ 9. Super Admin / Feature Control, callback status update, rewards history,
+    audit log, global search endpoint, server-side filters for properties and
+    users, reject-with-reason, usage alerts.
+PHASE E - Cleanup
+ 10. Delete admin.properties.js leftovers after Payments is built, delete
+     propertymanager.txt, remove duplicated fetchUser/logout, unify env var
+     casing, remove inline-style duplicates, add tests for DataTable/FilterBar.
+
+BACKEND ITEMS NEEDED (summary)
+ - Server-side search/filter/sort params: /api/properties, users, enquiries.
+ - PATCH callback status (+ assignee, notes).
+ - GET distributed rewards history.
+ - Reject/request-changes endpoint with reason; approve endpoint for new/
+   edited listings (if not already covered by toggle-active).
+ - Feature flags + role/permissions (super admin) and audit log.
+ - Affiliate sync status + run-now + per-portal toggles.
+ - /api/admin/search global search; notification counts endpoint.
+ - Agent-lead and enquiry status fields (optional).
+
+================================================================================
+END OF DOCUMENT
+================================================================================

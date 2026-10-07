@@ -1,40 +1,34 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
-import { Check, X, Home, Gift, Bell, CheckCircle, XCircle, Clock, User, DollarSign, Calendar, AlertCircle } from "lucide-react";
-import TopNavigationBar from "../Dashboard/TopNavigationBar";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import {
+  Box, Button, Card, CardContent, Grid, Typography, TextField,
+  Select, MenuItem, FormControl, InputAdornment, IconButton,
+  Skeleton, Stack, Chip, Tooltip, Alert,
+} from "@mui/material";
+import {
+  CheckCircle, XCircle, Clock, User, DollarSign, Calendar, Home,
+  Bell, Gift, RefreshCw, Eye, Copy, AlertCircle,
+} from "lucide-react";
+import { PageHeader, StatCard, StatusChip, CopyField, MaskedPhone } from "../shell/adminUi";
+import "./admin.css";
 
 export default function AdminProperties() {
   const [activeTab, setActiveTab] = useState("approvals");
   const [approvals, setApprovals] = useState([]);
   const [rewards, setRewards] = useState([]);
-  const [bulkFile, setBulkFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
+  const [successMsg, setSuccessMsg] = useState("");
 
-  // Always get access token from localStorage for protected admin APIs
   const accessToken = localStorage.getItem("accessToken");
 
-
-  // Fetch approved payments for rewards tab
   useEffect(() => {
-    if (activeTab === "rewards") {
-      fetchApprovedPayments();
-    }
+    if (activeTab === "rewards") fetchApprovedPayments();
+    else fetchPendingPayments();
   }, [activeTab]);
-
-  useEffect(() => {
-    if (activeTab === "approvals") {
-      fetchPendingPayments();
-    }
-  }, [activeTab]);
-
 
   const fetchApprovedPayments = async () => {
     try {
-      const response = await axios.get(
+      const res = await axios.get(
         `${process.env.REACT_APP_ADMIN_APPROVED_PAYMENTS_API}`,
         {
           withCredentials: true,
@@ -43,30 +37,32 @@ export default function AdminProperties() {
           },
         }
       );
-      const rewardsData = response.data.map((p, index) => ({
-        id: index + 1,
-        paymentId: p._id,
-        email: p.resident?.email || "N/A",
-        residentName: p.resident?.name || "N/A",
-        residentId: p.resident?._id,
-        propertyName: p.property?.title || "N/A",
-        amount: p.amount,
-        createdAt: p.createdAt,
-        points: 0,
-        tier: "New",
-        eligible: true,
-      }));
-      setRewards(rewardsData);
-      console.log("Approved payments fetched for rewards:", rewardsData);
-    } catch (error) {
-      console.error("Error fetching approved payments:", error);
+      setRewards(
+        res.data.map((p, index) => ({
+          id: index + 1,
+          paymentId: p._id,
+          email: p.resident?.email || "N/A",
+          residentName: p.resident?.name || "N/A",
+          residentId: p.resident?._id,
+          propertyName: p.property?.title || "N/A",
+          amount: p.amount,
+          createdAt: p.createdAt,
+          points: 0,
+          tier: "New",
+          eligible: true,
+        }))
+      );
+    } catch (err) {
+      console.error("Error fetching approved payments:", err);
       setError("Error fetching approved payments");
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchPendingPayments = async () => {
     try {
-      const response = await axios.get(
+      const res = await axios.get(
         `${process.env.REACT_APP_ADMIN_PENDING_PAYMENTS_API}`,
         {
           withCredentials: true,
@@ -75,10 +71,12 @@ export default function AdminProperties() {
           },
         }
       );
-      setApprovals(response.data);
-    } catch (error) {
-      console.error("Error fetching pending payments:", error);
+      setApprovals(res.data);
+    } catch (err) {
+      console.error("Error fetching pending payments:", err);
       setError("Error fetching pending payments");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,21 +93,21 @@ export default function AdminProperties() {
         }
       );
       fetchPendingPayments();
-      // No rewards update here; rewards are fetched dynamically when rewards tab is opened
-    } catch (error) {
-      console.error("Error updating payment status:", error);
+      setSuccessMsg(action === "approved" ? "Payment approved" : "Payment rejected");
+      setTimeout(() => setSuccessMsg(""), 3000);
+    } catch (err) {
+      console.error("Error updating payment status:", err);
       setError("Error updating payment status");
     }
   };
 
   const distributeReward = async (id) => {
     try {
-      const selectedReward = rewards.find((item) => item.id === id);
-      if (!selectedReward) return;
-
+      const selected = rewards.find((r) => r.id === id);
+      if (!selected) return;
       await axios.post(
         `${process.env.REACT_APP_ADMIN_DISTRIBUTE_REWARD_API}`,
-        { email: selectedReward.email },
+        { email: selected.email },
         {
           withCredentials: true,
           headers: {
@@ -117,529 +115,279 @@ export default function AdminProperties() {
           },
         }
       );
-
-      setRewards(
-        rewards.map((item) =>
-          item.id === id ? { ...item, eligible: false } : item
-        )
-      );
-
-      alert(`Reward distributed successfully to ${selectedReward.email}`);
-    } catch (error) {
-      console.error("Error distributing reward:", error);
-      alert("Failed to distribute reward.");
+      setRewards(rewards.map((r) => (r.id === id ? { ...r, eligible: false } : r)));
+      setSuccessMsg(`Reward distributed to ${selected.email}`);
+      setTimeout(() => setSuccessMsg(""), 4000);
+    } catch (err) {
+      console.error("Error distributing reward:", err);
+      setError("Failed to distribute reward");
     }
   };
 
-
-  const handleLogout = async () => {
-    await fetch(`${process.env.REACT_APP_LOGOUT_API}`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      },
+  const formatDate = (d) =>
+    new Date(d).toLocaleDateString("en-US", {
+      year: "numeric", month: "short", day: "numeric",
     });
-    setUser(null);
-    navigate("/login");
-  };
 
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const res = await fetch(`${process.env.REACT_APP_USER_ME_API}`, {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-          },
-        });
-        const data = await res.json();
-        if (res.ok) {
-        
-          setUser(data);
-        } else {
-          navigate("/login"); // redirect if not logged in
-        }
-      } catch (err) {
-        console.error("Error fetching user:", err);
-        navigate("/login"); // redirect on error
-      }
-    };
-    fetchUser();
-  }, [navigate]);
-
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
-
-  const styles = {
-    container: {
-      minHeight: "100vh",
-      backgroundColor: "#F4F7F9",
-    },
-    header: {
-      backgroundColor: "#003366",
-      color: "#FFFFFF",
-      padding: "30px 40px",
-      boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
-    },
-    headerTitle: {
-      fontSize: "32px",
-      fontWeight: "bold",
-      marginBottom: "8px",
-      margin: 0
-    },
-    headerSubtitle: {
-      fontSize: "16px",
-      opacity: 0.9,
-      margin: 0
-    },
-    navTabs: {
-      background: "#FFFFFF",
-      padding: "0 40px",
-      display: "flex",
-      gap: "10px",
-      boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-      borderBottom: "2px solid #E5E7EB"
-    },
-    tab: (active) => ({
-      background: "transparent",
-      color: active ? "#003366" : "#4A6A8A",
-      border: "none",
-      padding: "15px 25px",
-      cursor: "pointer",
-      fontSize: "16px",
-      fontWeight: "600",
-      borderBottom: active ? "3px solid #00A79D" : "3px solid transparent",
-      transition: "all 0.3s ease",
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-      marginBottom: "-2px"
-    }),
-    content: {
-      padding: "40px"
-    },
-    statsContainer: {
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-      gap: "20px",
-      marginBottom: "30px"
-    },
-    statCard: {
-      backgroundColor: "#FFFFFF",
-      padding: "24px",
-      borderRadius: "12px",
-      boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-      display: "flex",
-      alignItems: "center",
-      gap: "16px"
-    },
-    statIcon: (bgColor) => ({
-      width: "56px",
-      height: "56px",
-      borderRadius: "12px",
-      backgroundColor: bgColor,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      color: "#FFFFFF"
-    }),
-    statContent: {
-      flex: 1
-    },
-    statLabel: {
-      fontSize: "14px",
-      color: "#4A6A8A",
-      marginBottom: "4px"
-    },
-    statValue: {
-      fontSize: "28px",
-      fontWeight: "bold",
-      color: "#003366"
-    },
-    grid: {
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fill, minmax(380px, 1fr))",
-      gap: "20px"
-    },
-    card: {
-      backgroundColor: "#FFFFFF",
-      borderRadius: "12px",
-      padding: "24px",
-      boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-      transition: "transform 0.2s, box-shadow 0.2s"
-    },
-    cardHeader: {
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: "16px",
-      paddingBottom: "16px",
-      borderBottom: "2px solid #F4F7F9"
-    },
-    cardHeaderLeft: {
-      display: "flex",
-      alignItems: "center",
-      gap: "12px"
-    },
-    cardTitle: {
-      fontSize: "18px",
-      fontWeight: "600",
-      color: "#003366"
-    },
-    statusBadge: (status) => ({
-      display: "flex",
-      alignItems: "center",
-      gap: "6px",
-      padding: "6px 12px",
-      borderRadius: "6px",
-      fontSize: "12px",
-      fontWeight: "600",
-      backgroundColor: status === 'pending' ? '#FEF3C7' : '#D1FAE5',
-      color: status === 'pending' ? '#92400E' : '#065F46'
-    }),
-    cardBody: {
-      display: "flex",
-      flexDirection: "column",
-      gap: "12px"
-    },
-    infoRow: {
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-      fontSize: "14px"
-    },
-    infoLabel: {
-      color: "#4A6A8A",
-      fontWeight: "500"
-    },
-    infoValue: {
-      color: "#333333",
-      fontWeight: "600",
-      marginLeft: "auto"
-    },
-    cardActions: {
-      display: "flex",
-      gap: "12px",
-      marginTop: "20px",
-      paddingTop: "16px",
-      borderTop: "2px solid #F4F7F9"
-    },
-    approveButton: {
-      flex: 1,
-      backgroundColor: "#00A79D",
-      color: "#FFFFFF",
-      border: "none",
-      padding: "10px 16px",
-      borderRadius: "8px",
-      fontSize: "14px",
-      fontWeight: "600",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "6px",
-      transition: "background-color 0.3s"
-    },
-    rejectButton: {
-      flex: 1,
-      backgroundColor: "#EF4444",
-      color: "#FFFFFF",
-      border: "none",
-      padding: "10px 16px",
-      borderRadius: "8px",
-      fontSize: "14px",
-      fontWeight: "600",
-      cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "6px",
-      transition: "background-color 0.3s"
-    },
-    distributeButton: (eligible) => ({
-      width: "100%",
-      backgroundColor: eligible ? "#00A79D" : "#E5E7EB",
-      color: eligible ? "#FFFFFF" : "#9CA3AF",
-      border: "none",
-      padding: "10px 16px",
-      borderRadius: "8px",
-      fontSize: "14px",
-      fontWeight: "600",
-      cursor: eligible ? "pointer" : "not-allowed",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "6px",
-      transition: "background-color 0.3s"
-    }),
-    error: {
-      backgroundColor: "#FEE2E2",
-      color: "#991B1B",
-      padding: "16px",
-      borderRadius: "8px",
-      marginBottom: "20px",
-      display: "flex",
-      alignItems: "center",
-      gap: "12px"
-    },
-    emptyState: {
-      textAlign: "center",
-      padding: "60px 20px",
-      color: "#4A6A8A",
-      gridColumn: "1 / -1"
-    },
-    emptyIcon: {
-      marginBottom: "16px",
-      color: "#00A79D"
-    },
-    propertiesGrid: {
-      display: "grid",
-      gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-      gap: "20px"
-    },
-    propertyCard: {
-      background: "#FFFFFF",
-      padding: "20px",
-      borderRadius: "12px",
-      boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
-      transition: "all 0.3s ease"
-    },
-    propertyImage: {
-      width: "100%",
-      height: "180px",
-      objectFit: "cover",
-      borderRadius: "8px",
-      marginBottom: "12px"
-    },
-    uploadSection: {
-      backgroundColor: "#FFFFFF",
-      borderRadius: "12px",
-      padding: "24px",
-      marginBottom: "24px",
-      boxShadow: "0 2px 4px rgba(0,0,0,0.08)"
-    }
-  };
+  const tabs = [
+    { id: "approvals", label: "Pending Approvals", icon: Bell },
+    { id: "rewards", label: "Rewards", icon: Gift },
+  ];
 
   return (
-    <div style={styles.container}>
-      <TopNavigationBar navItems={navItems} user={user} handleLogout={handleLogout} />
+    <>
+      <PageHeader
+        title="Payments"
+        description="Review pending payments and distribute rewards"
+        actions={
+          <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={() => { if (activeTab === "approvals") fetchPendingPayments(); else fetchApprovedPayments(); }}>
+            Refresh
+          </Button>
+        }
+        tabs={
+          <Box sx={{ display: "flex", gap: 1 }}>
+            {tabs.map((t) => (
+              <Button
+                key={t.id}
+                onClick={() => setActiveTab(t.id)}
+                sx={{
+                  borderRadius: 2,
+                  borderBottom: activeTab === t.id ? "3px solid #00A79D" : "3px solid transparent",
+                  fontWeight: 600,
+                  color: activeTab === t.id ? "primary.main" : "text.secondary",
+                  borderColor: activeTab === t.id ? "primary.main" : "divider",
+                  borderStyle: "solid",
+                  borderWidth: 1,
+                  px: 2,
+                }}
+              >
+                <t.icon size={16} />
+                {t.label}
+              </Button>
+            ))}
+          </Box>
+        }
+      />
 
-      {/* Navigation Tabs */}
-      <div style={styles.navTabs}>
-        {[
-          { id: "approvals", label: "Approvals", icon: Bell },
-          { id: "rewards", label: "Rewards", icon: Gift },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={styles.tab(activeTab === tab.id)}
-          >
-            <tab.icon size={18} />
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          <AlertCircle size={18} />
+          {error}
+        </Alert>
+      )}
 
-      {/* Main Content */}
-      <div style={styles.content}>
-        {error && (
-          <div style={styles.error}>
-            <AlertCircle size={20} />
-            {error}
-          </div>
-        )}
+      {successMsg && (
+        <Alert severity="success" sx={{ mb: 3 }}>
+          <CheckCircle size={18} />
+          {successMsg}
+        </Alert>
+      )}
 
-        {/* Approvals Tab */}
-        {activeTab === "approvals" && (
-          <>
-            <div style={styles.statsContainer}>
-              <div style={styles.statCard}>
-                <div style={styles.statIcon('#FCD34D')}>
-                  <Clock size={28} />
-                </div>
-                <div style={styles.statContent}>
-                  <div style={styles.statLabel}>Pending Payments</div>
-                  <div style={styles.statValue}>{approvals.length}</div>
-                </div>
-              </div>
-            </div>
+      {loading && (
+        <Box sx={{ textAlign: "center", py: 8 }}>
+          <Skeleton variant="circular" width={40} height={40} sx={{ mx: "auto", mb: 2 }} />
+          <Typography color="text.secondary">Loading…</Typography>
+        </Box>
+      )}
 
-            <div style={styles.grid}>
-              {approvals.length > 0 ? (
-                approvals.map((approval) => (
-                  <div key={approval._id} style={styles.card}>
-                    <div style={styles.cardHeader}>
-                      <div style={styles.cardHeaderLeft}>
-                        <User size={20} style={{ color: '#00A79D' }} />
-                        <span style={styles.cardTitle}>{approval.resident?.name || approval.residentName || 'N/A'}</span>
-                      </div>
-                      <div style={styles.statusBadge('pending')}>
-                        <Clock size={14} />
-                        <span>PENDING</span>
-                      </div>
-                    </div>
+      {/* Approvals tab */}
+      {activeTab === "approvals" && (
+        <>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <StatCard
+                icon={Clock}
+                label="Pending Payments"
+                value={approvals.length}
+                tone="#F59E0B"
+                loading={loading}
+              />
+            </Grid>
+          </Grid>
 
-                    <div style={styles.cardBody}>
-                      <div style={styles.infoRow}>
-                        <Home size={16} style={{ color: '#4A6A8A' }} />
-                        <span style={styles.infoLabel}>Property:</span>
-                        <span style={styles.infoValue}>{approval.property?.title || approval.propertyName || 'N/A'}</span>
-                      </div>
+          {!loading && approvals.length > 0 ? (
+            <Grid container spacing={3}>
+              {approvals.map((a) => (
+                <Grid item xs={12} sm={6} md={4} key={a._id}>
+                  <Card className="admin-card">
+                    <CardContent sx={{ "&:last-child": { pb: 3 } }}>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2, pb: 2, borderBottom: "1px solid #E5E9EE" }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                          <User size={18} color="#00A79D" />
+                          <Typography sx={{ fontWeight: 700, color: "primary.main" }}>
+                            {a.resident?.name || a.residentName || "N/A"}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          label="PENDING"
+                          size="small"
+                          sx={{
+                            bgcolor: "rgba(245,158,11,0.12)",
+                            color: "#B45309",
+                            fontWeight: 700,
+                            "& .MuiChip-dot": { bgcolor: "#F59E0B" },
+                          }}
+                        />
+                      </Box>
 
-                      <div style={styles.infoRow}>
-                        <DollarSign size={16} style={{ color: '#00A79D' }} />
-                        <span style={styles.infoLabel}>Amount:</span>
-                        <span style={styles.infoValue}>₹{approval.amount?.toLocaleString() || 'N/A'}</span>
-                      </div>
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 2.5 }}>
+                        <InfoRow icon={Home} label="Property" value={a.property?.title || a.propertyName || "N/A"} />
+                        <InfoRow icon={DollarSign} label="Amount" value={`₹${a.amount?.toLocaleString() || "N/A"}`} highlight />
+                        <InfoRow icon={Calendar} label="Method" value={a.paymentMethod || "N/A"} />
+                        {a.resident?.email && (
+                          <InfoRow icon={User} label="Email" value={a.resident.email} />
+                        )}
+                      </Box>
 
-                      <div style={styles.infoRow}>
-                        <Calendar size={16} style={{ color: '#4A6A8A' }} />
-                        <span style={styles.infoLabel}>Method:</span>
-                        <span style={styles.infoValue}>{approval.paymentMethod || 'N/A'}</span>
-                      </div>
-
-                      {approval.resident?.email && (
-                        <div style={styles.infoRow}>
-                          <User size={16} style={{ color: '#4A6A8A' }} />
-                          <span style={styles.infoLabel}>Email:</span>
-                          <span style={styles.infoValue}>{approval.resident.email}</span>
-                        </div>
+                      {a.status === "pending" && (
+                        <Box sx={{ display: "flex", gap: 2, pt: 2, borderTop: "1px solid #E5E9EE" }}>
+                          <Button
+                            fullWidth
+                            variant="contained"
+                            color="success"
+                            onClick={() => handleApproval(a._id, "approved")}
+                            startIcon={<CheckCircle size={16} />}
+                            sx={{ borderRadius: 2 }}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            fullWidth
+                            variant="contained"
+                            color="error"
+                            onClick={() => handleApproval(a._id, "rejected")}
+                            startIcon={<XCircle size={16} />}
+                            sx={{ borderRadius: 2 }}
+                          >
+                            Reject
+                          </Button>
+                        </Box>
                       )}
-                    </div>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          ) : !loading ? (
+            <Box sx={{ textAlign: "center", py: 8 }}>
+              <Box sx={{ width: 56, height: 56, borderRadius: "50%", bgcolor: "rgba(0,167,157,0.10)", display: "flex", alignItems: "center", justifyContent: "center", mx: "auto", mb: 2 }}>
+                <Clock size={26} color="#00A79D" />
+              </Box>
+              <Typography sx={{ color: "primary.main", fontWeight: 700 }}>No pending payments</Typography>
+              <Typography color="text.secondary" sx={{ mt: 1 }}>All payments have been reviewed.</Typography>
+            </Box>
+          ) : null}
+        </>
+      )}
 
-                    {approval.status === "pending" && (
-                      <div style={styles.cardActions}>
-                        <button
-                          style={styles.approveButton}
-                          onClick={() => handleApproval(approval._id, "approved")}
+      {/* Rewards tab */}
+      {activeTab === "rewards" && (
+        <>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} sm={6}>
+              <StatCard icon={Gift} label="Approved Payments" value={rewards.length} tone="#22D3EE" loading={loading} />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <StatCard
+                icon={CheckCircle}
+                label="Eligible for Rewards"
+                value={rewards.filter((r) => r.eligible).length}
+                tone="#00A79D"
+                loading={loading}
+              />
+            </Grid>
+          </Grid>
+
+          {!loading && rewards.length > 0 ? (
+            <Grid container spacing={3}>
+              {rewards.map((r) => (
+                <Grid item xs={12} sm={6} md={4} key={r.id}>
+                  <Card className="admin-card">
+                    <CardContent sx={{ "&:last-child": { pb: 3 } }}>
+                      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2, pb: 2, borderBottom: "1px solid #E5E9EE" }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                          <User size={18} color="#00A79D" />
+                          <Typography sx={{ fontWeight: 700, color: "primary.main" }}>
+                            {r.residentName}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          label="APPROVED"
+                          size="small"
+                          sx={{
+                            bgcolor: "rgba(16,185,129,0.12)",
+                            color: "#047857",
+                            fontWeight: 700,
+                            "& .MuiChip-dot": { bgcolor: "#10B981" },
+                          }}
+                        />
+                      </Box>
+
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 2.5 }}>
+                        <InfoRow icon={Home} label="Property" value={r.propertyName} />
+                        <InfoRow icon={DollarSign} label="Amount" value={`₹${r.amount?.toLocaleString() || "N/A"}`} highlight />
+                        <InfoRow icon={Calendar} label="Date" value={formatDate(r.createdAt)} />
+                        <InfoRow icon={User} label="Email" value={r.email} />
+                        <InfoRow icon={Gift} label="Tier" value={r.tier} />
+                      </Box>
+
+                      <Box sx={{ pt: 2, borderTop: "1px solid #E5E9EE" }}>
+                        <Button
+                          fullWidth
+                          variant={r.eligible ? "contained" : "outlined"}
+                          disabled={!r.eligible}
+                          onClick={() => distributeReward(r.id)}
+                          startIcon={<Gift size={16} />}
+                          sx={{
+                            borderRadius: 2,
+                            bgcolor: r.eligible ? "#00A79D" : "transparent",
+                            color: r.eligible ? "#fff" : "text.secondary",
+                            borderColor: r.eligible ? "#00A79D" : "divider",
+                          }}
                         >
-                          <CheckCircle size={16} />
-                          Approve
-                        </button>
-                        <button
-                          style={styles.rejectButton}
-                          onClick={() => handleApproval(approval._id, "rejected")}
-                        >
-                          <XCircle size={16} />
-                          Reject
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div style={styles.emptyState}>
-                  <Clock size={48} style={styles.emptyIcon} />
-                  <p>No pending payments</p>
-                </div>
-              )}
-            </div>
-          </>
-        )}
+                          {r.eligible ? "Distribute Reward" : "Reward Distributed"}
+                        </Button>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          ) : !loading ? (
+            <Box sx={{ textAlign: "center", py: 8 }}>
+              <Box sx={{ width: 56, height: 56, borderRadius: "50%", bgcolor: "rgba(0,167,157,0.10)", display: "flex", alignItems: "center", justifyContent: "center", mx: "auto", mb: 2 }}>
+                <Gift size={26} color="#00A79D" />
+              </Box>
+              <Typography sx={{ color: "primary.main", fontWeight: 700 }}>No approved payments</Typography>
+              <Typography color="text.secondary" sx={{ mt: 1 }}>
+                Approved payments will appear here for reward distribution.
+              </Typography>
+            </Box>
+          ) : null}
+        </>
+      )}
+    </>
+  );
+}
 
-        {/* Rewards Tab */}
-        {activeTab === "rewards" && (
-          <>
-            <div style={styles.statsContainer}>
-              <div style={styles.statCard}>
-                <div style={styles.statIcon('#22D3EE')}>
-                  <Gift size={28} />
-                </div>
-                <div style={styles.statContent}>
-                  <div style={styles.statLabel}>Approved Payments</div>
-                  <div style={styles.statValue}>{rewards.length}</div>
-                </div>
-              </div>
-              <div style={styles.statCard}>
-                <div style={styles.statIcon('#00A79D')}>
-                  <CheckCircle size={28} />
-                </div>
-                <div style={styles.statContent}>
-                  <div style={styles.statLabel}>Eligible for Rewards</div>
-                  <div style={styles.statValue}>{rewards.filter(r => r.eligible).length}</div>
-                </div>
-              </div>
-            </div>
-
-            <div style={styles.grid}>
-              {rewards.length > 0 ? (
-                rewards.map((reward) => (
-                  <div key={reward.id} style={styles.card}>
-                    <div style={styles.cardHeader}>
-                      <div style={styles.cardHeaderLeft}>
-                        <User size={20} style={{ color: '#00A79D' }} />
-                        <span style={styles.cardTitle}>{reward.residentName}</span>
-                      </div>
-                      <div style={styles.statusBadge('approved')}>
-                        <CheckCircle size={14} />
-                        <span>APPROVED</span>
-                      </div>
-                    </div>
-
-                    <div style={styles.cardBody}>
-                      <div style={styles.infoRow}>
-                        <Home size={16} style={{ color: '#4A6A8A' }} />
-                        <span style={styles.infoLabel}>Property:</span>
-                        <span style={styles.infoValue}>{reward.propertyName}</span>
-                      </div>
-
-                      <div style={styles.infoRow}>
-                        <DollarSign size={16} style={{ color: '#00A79D' }} />
-                        <span style={styles.infoLabel}>Amount:</span>
-                        <span style={styles.infoValue}>₹{reward.amount?.toLocaleString() || 'N/A'}</span>
-                      </div>
-
-                      <div style={styles.infoRow}>
-                        <Calendar size={16} style={{ color: '#4A6A8A' }} />
-                        <span style={styles.infoLabel}>Date:</span>
-                        <span style={styles.infoValue}>{formatDate(reward.createdAt)}</span>
-                      </div>
-
-                      <div style={styles.infoRow}>
-                        <User size={16} style={{ color: '#4A6A8A' }} />
-                        <span style={styles.infoLabel}>Email:</span>
-                        <span style={styles.infoValue}>{reward.email}</span>
-                      </div>
-
-                      <div style={styles.infoRow}>
-                        <Gift size={16} style={{ color: '#4A6A8A' }} />
-                        <span style={styles.infoLabel}>Tier:</span>
-                        <span style={styles.infoValue}>{reward.tier}</span>
-                      </div>
-                    </div>
-
-                    <div style={{ marginTop: "20px", paddingTop: "16px", borderTop: "2px solid #F4F7F9" }}>
-                      <button
-                        onClick={() => distributeReward(reward.id)}
-                        disabled={!reward.eligible}
-                        style={styles.distributeButton(reward.eligible)}
-                      >
-                        <Gift size={16} />
-                        {reward.eligible ? "Distribute Reward" : "Reward Distributed"}
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div style={styles.emptyState}>
-                  <Gift size={48} style={styles.emptyIcon} />
-                  <p>No approved payments</p>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-    </div>
+function InfoRow({ icon: Icon, label, value, highlight }) {
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+      {Icon && <Icon size={14} color={highlight ? "#00A79D" : "#5B6B7B"} />}
+      <Typography
+        variant="body2"
+        sx={{
+          color: "#5B6B7B",
+          fontWeight: 500,
+          flex: highlight ? 1 : "none",
+          [highlight ? "& > span" : ""]: { fontWeight: 600, marginLeft: "auto" },
+        }}
+      >
+        {label}
+        <span style={{ marginLeft: "auto", fontWeight: highlight ? 700 : 600, color: highlight ? "#003366" : "#1B2B3A" }}>
+          {value}
+        </span>
+      </Typography>
+    </Box>
   );
 }

@@ -49,7 +49,7 @@ const AdminScraperControl = () => {
   const [stats, setStats] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  const API_BASE = process.env.REACT_APP_Base_API || "http://localhost:5000";
+  const API_BASE = process.env.REACT_APP_Base_API || "http://localhost:2000";
 
   // Fetch scraper status
   const fetchStatus = async () => {

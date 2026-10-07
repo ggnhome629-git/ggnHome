@@ -16,6 +16,7 @@ import {
   Paper,
   CircularProgress,
   Alert,
+  IconButton,
 } from "@mui/material";
 import { ExternalLink, TrendingUp, AlertCircle } from "lucide-react";
 import { radii } from "../../theme/theme";
@@ -72,7 +73,7 @@ export default function AffiliateTracker() {
   }
 
   return (
-    <Box sx={{ p: { xs: 3, md: 4 } }}>
+    <Box sx={{ p: { xs: 3, md: 4 }, bgcolor: "background.default" }}>
       <Stack spacing={4}>
         {/* Header */}
         <Box>
@@ -131,23 +132,23 @@ export default function AffiliateTracker() {
 
         {/* No Data State */}
         {filteredData.length === 0 && (
-          <Alert severity="info">
+          <Alert severity="info" sx={{ borderRadius: `${radii.lg}px` }}>
             No affiliate properties found. Start syncing from portals to populate this tracker.
           </Alert>
         )}
 
         {/* Table */}
         {filteredData.length > 0 && (
-          <TableContainer component={Paper} sx={{ borderRadius: `${radii.lg}px` }}>
+          <TableContainer component={Paper} sx={{ borderRadius: `${radii.lg}px`, bgcolor: "background.paper" }}>
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ backgroundColor: "rgba(0,51,102,0.04)" }}>
-                  <TableCell sx={{ fontWeight: 700, color: "primary.main" }}>Title</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "primary.main" }}>Portal</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "primary.main" }}>Listing ID</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "primary.main" }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "primary.main" }}>Last Checked</TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: "primary.main" }}>Action</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "primary.main", px: 2 }}>Title</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "primary.main", px: 2 }}>Portal</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "primary.main", px: 2 }}>Listing ID</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "primary.main", px: 2 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "primary.main", px: 2 }}>Last Checked</TableCell>
+                  <TableCell sx={{ fontWeight: 700, color: "primary.main", px: 2 }}>Action</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
