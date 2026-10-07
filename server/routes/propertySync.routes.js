@@ -18,7 +18,6 @@ const syncLimiter = require("express-rate-limit")({
   windowMs: 60 * 1000, // 1 minute
   max: 30, // 30 requests per minute (allows monitoring)
   message: "Too many property sync requests",
-  keyGenerator: (req) => req.user?.id || req.ip,
   skip: () => process.env.DISABLE_RATE_LIMIT === "true",
 });
 

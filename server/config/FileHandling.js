@@ -67,11 +67,14 @@ const loadAccountsFromEnv = () => {
 const cloudAccounts = loadAccountsFromEnv();
 
 if (cloudAccounts.length === 0) {
-  throw new Error('No Cloudinary credentials found.');
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('No Cloudinary credentials found.');
+  }
+  console.warn('⚠️ Cloudinary credentials not configured — file uploads disabled in development');
+} else {
+  console.log(`🔧 Cloudinary: loaded ${cloudAccounts.length} account(s)`);
+  cloudinary.config(cloudAccounts[0]);
 }
-
-console.log(`🔧 Cloudinary: loaded ${cloudAccounts.length} account(s)`);
-cloudinary.config(cloudAccounts[0]);
 
 // Round-robin pointer for balancing uploads
 let rrIndex = 0;

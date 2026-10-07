@@ -156,3 +156,21 @@ exports.adminGaps = async (req, res) => {
     jsonError(res, 500, "Failed to load gaps");
   }
 };
+
+// GET /api/chatbot/initial-questions
+exports.getInitialQuestions = async (req, res) => {
+  try {
+    const questions = [
+      "Looking for a rental?",
+      "Looking to buy/sell?",
+      "Need a roommate?",
+      "Commercial property?"
+    ];
+    return res.json({ success: true, questions });
+  } catch (err) {
+    jsonError(res, 500, "Failed to load initial questions");
+  }
+};
+
+// POST /api/chatbot (alias for sendMessage)
+exports.getChatResponse = exports.sendMessage;

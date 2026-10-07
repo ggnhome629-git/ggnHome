@@ -18,7 +18,6 @@ const scraperLimiter = require("express-rate-limit")({
   windowMs: 60 * 1000, // 1 minute
   max: 50,
   message: "Too many scraper requests",
-  keyGenerator: (req) => req.user?.id || req.ip,
   skip: () => process.env.DISABLE_RATE_LIMIT === "true",
 });
 

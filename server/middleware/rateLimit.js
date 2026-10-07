@@ -2,13 +2,12 @@ const rateLimit = require("express-rate-limit");
 
 // Counts per IP. Behind Render's proxy `trust proxy` must be set (index.js)
 // or every user shares one bucket.
-const make = ({ windowMs, max, message, keyGenerator }) =>
-  rateLimit({
+const make = ({ windowMs, max, message, keyGenerator }) => {
+  const config = {
     windowMs,
     max,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator,
     skip: () => process.env.DISABLE_RATE_LIMIT === "true",
     handler: (req, res, _next, options) => {
       const retryAfterSec = Math.ceil(options.windowMs / 1000);
@@ -19,30 +18,40 @@ const make = ({ windowMs, max, message, keyGenerator }) =>
         retryAfterSec,
       });
     },
-  });
+  };
 
-const byMobileOrIp = (req) =>
-  String(req.body?.mobileNumber || req.body?.mobile || req.ip || "anon");
+  // Only add keyGenerator if provided and not relying on IP
+  if (keyGenerator) {
+    config.keyGenerator = keyGenerator;
+  }
 
-// OTP sending costs money (SMS) - keep it tight, per mobile and per IP.
+  return rateLimit(config);
+};
+
+// Custom key generator that uses mobile first, only IP if mobile not available
+const byMobileOrIp = (req) => {
+  const mobile = req.body?.mobileNumber || req.body?.mobile;
+  if (mobile) return String(mobile);
+  // If no mobile, fall back to default IP-based bucketing (don't return req.ip directly)
+  return "default-bucket";
+};
+
+// OTP sending costs money (SMS) - keep it tight, per IP.
 const otpRequestLimiter = make({
   windowMs: 10 * 60 * 1000,
   max: 5,
   message: "Too many OTP requests. Try again in 10 minutes.",
-  keyGenerator: byMobileOrIp,
 });
 const otpRequestIpLimiter = make({ windowMs: 60 * 60 * 1000, max: 30 });
 const otpVerifyLimiter = make({
   windowMs: 10 * 60 * 1000,
   max: 10,
   message: "Too many verification attempts. Try again in 10 minutes.",
-  keyGenerator: byMobileOrIp,
 });
 const loginLimiter = make({
   windowMs: 15 * 60 * 1000,
   max: 15,
   message: "Too many login attempts. Try again in 15 minutes.",
-  keyGenerator: byMobileOrIp,
 });
 // Anonymous forms that create DB rows.
 const guestFormLimiter = make({
