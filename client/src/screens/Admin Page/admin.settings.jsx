@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Box, Tab, Tabs, Typography, Stack } from "@mui/material";
-import { Settings, Gift, Smartphone, Power, LinkIcon, TrendingUp, Link2 } from "lucide-react";
+import { Settings, Gift, Smartphone, Power, LinkIcon, TrendingUp, Link2, Server, Home } from "lucide-react";
 
 // Lazy load the sub-pages
 const PromoCards = React.lazy(() => import("./admin.promos"));
@@ -9,8 +9,12 @@ const FeatureToggles = React.lazy(() => import("./admin.featureToggles"));
 const AffiliateTracker = React.lazy(() => import("./admin.affiliateTracker"));
 const AffiliateConfig = React.lazy(() => import("./admin.affiliateConfig"));
 const LinkManager = React.lazy(() => import("./admin.linkManager"));
+const ScraperControl = React.lazy(() => import("./admin.scraperControl"));
+const PropertyManager = React.lazy(() => import("./admin.propertyManager"));
 
 const SETTINGS_TABS = [
+  { id: "scraper", label: "Scraper Control", icon: Server, component: ScraperControl },
+  { id: "properties", label: "Property Manager", icon: Home, component: PropertyManager },
   { id: "toggles", label: "Feature Toggles", icon: Power, component: FeatureToggles },
   { id: "promos", label: "Promo Cards", icon: Gift, component: PromoCards },
   { id: "sms", label: "SMS Devices", icon: Smartphone, component: SmsDevices },
@@ -24,7 +28,7 @@ const SETTINGS_TABS = [
  * Central hub for configuring platform features, promotions, and communication channels.
  */
 export default function AdminSettings() {
-  const [activeTab, setActiveTab] = useState("toggles");
+  const [activeTab, setActiveTab] = useState("scraper");
 
   const activeConfig = SETTINGS_TABS.find((tab) => tab.id === activeTab);
   const ActiveComponent = activeConfig?.component;
@@ -47,18 +51,22 @@ export default function AdminSettings() {
       </Box>
 
       {/* Tab Navigation */}
-      <Box sx={{ backgroundColor: "background.paper", borderBottom: "1px solid", borderColor: "divider" }}>
+      <Box sx={{ backgroundColor: "background.paper", borderBottom: "1px solid", borderColor: "divider", overflowX: "auto" }}>
         <Tabs
           value={activeTab}
           onChange={(_, value) => setActiveTab(value)}
+          variant="scrollable"
+          scrollButtons="auto"
           sx={{
-            px: { xs: 2, md: 4 },
+            px: { xs: 1, md: 4 },
             "& .MuiTab-root": {
               textTransform: "none",
-              fontSize: "0.95rem",
+              fontSize: { xs: "0.8rem", md: "0.95rem" },
               fontWeight: 600,
               color: "text.secondary",
               borderBottom: "3px solid transparent",
+              minWidth: { xs: "auto", md: "auto" },
+              px: { xs: 1, md: 2 },
               "&.Mui-selected": {
                 color: "primary.main",
                 borderBottomColor: "primary.main",
