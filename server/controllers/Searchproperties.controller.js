@@ -291,7 +291,8 @@ exports.searchProperties = async (req, res) => {
       if (sortBy === 'price-low') return { [priceField]: 1, _id: 1 };
       if (sortBy === 'price-high') return { [priceField]: -1, _id: 1 };
       if (sortBy === 'newest') return { createdAt: -1, _id: 1 };
-      return { rankScore: -1, createdAt: -1, _id: 1 };
+      // Default: sort by ranking score (relevance)
+      return { 'ranking.score': -1, createdAt: -1, _id: 1 };
     };
     const fetchKind = async (kind, skipN, limitN) => {
       const Model = kind === 'rent' ? RentalProperty : SaleProperty;

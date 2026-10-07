@@ -473,5 +473,33 @@ router.patch("/api/partner/leads/:enquiryId/status", verifyAgentToken, updateLea
 router.get("/api/partner/profile", verifyAgentToken, getAgentProfile);
 router.patch("/api/partner/profile", verifyAgentToken, updateAgentProfile);
 
+// ================== PROPERTY RANKING ROUTES ==================
+const {
+  calculatePropertyRanking,
+  getPropertyRanking,
+  batchRecalculateRankings,
+  getPropertiesByRankingTier,
+  getRankingStats,
+  getSuspiciousProperties
+} = require("../controllers/ranking.controller");
+
+// Public: Get property ranking
+router.get("/api/ranking/:propertyType/:propertyId", getPropertyRanking);
+
+// Admin only: Calculate/recalculate ranking for a property
+router.post("/api/admin/ranking/:propertyType/:propertyId", verifyToken, checkAdminEmail, calculatePropertyRanking);
+
+// Admin only: Batch recalculate all rankings
+router.post("/api/admin/ranking/batch/recalculate", verifyToken, checkAdminEmail, batchRecalculateRankings);
+
+// Admin: Get properties by ranking tier
+router.get("/api/admin/ranking/tier/:tier", verifyToken, checkAdminEmail, getPropertiesByRankingTier);
+
+// Admin: Get ranking statistics
+router.get("/api/admin/ranking/stats", verifyToken, checkAdminEmail, getRankingStats);
+
+// Admin: Get suspicious properties
+router.get("/api/admin/ranking/suspicious", verifyToken, checkAdminEmail, getSuspiciousProperties);
+
 module.exports = router;
 

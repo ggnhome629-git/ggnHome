@@ -86,6 +86,32 @@ totalArea: {
   },
   index: true
 },
+  ranking: {
+    score: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    },
+    status: {
+      type: String,
+      enum: ['ACTIVE', 'QUARANTINED', 'REJECTED'],
+      default: 'ACTIVE'
+    },
+    source: {
+      type: String,
+      enum: ['Own', 'Partner', 'Agent', 'Owner', 'Scraped'],
+      default: 'Own'
+    },
+    isSuspicious: {
+      type: Boolean,
+      default: false
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now
+    }
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -98,7 +124,7 @@ totalArea: {
 
 // Indexes — mirrors RentalProperty; see that model for the rationale.
 SalePropertySchema.index({ isActive: 1, createdAt: -1 });
-SalePropertySchema.index({ isActive: 1, rankScore: -1, createdAt: -1 });
+SalePropertySchema.index({ isActive: 1, 'ranking.score': -1, createdAt: -1 });
 SalePropertySchema.index({ isActive: 1, Sector: 1 });
 SalePropertySchema.index({ isPostedNew: 1, isEdited: 1 });
 SalePropertySchema.index({ sourcePortal: 1, sourceListingId: 1 });
