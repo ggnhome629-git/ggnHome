@@ -77,7 +77,12 @@ const SalePropertyPageAgentDesktop = lazy(() => import("./screens/Agent Page/Pro
 const RentalPropertyPageAgentMobile = lazy(() => import("./screens/Agent Page/Property View Agent/Mobile view/RentalPropertyPageView"));
 const SalePropertyPageAgentMobile = lazy(() => import("./screens/Agent Page/Property View Agent/Mobile view/SalePropertyPageView"));
 
-
+// AgentHub (Portal for agents to manage properties and leads)
+const AgentHubDashboard = lazy(() => import("./screens/AgentHub/Dashboard/AgentHubDashboard"));
+const AgentHubProperties = lazy(() => import("./screens/AgentHub/Properties/AgentHubProperties"));
+const AgentHubLeads = lazy(() => import("./screens/AgentHub/Leads/AgentHubLeads"));
+const AgentHubProfile = lazy(() => import("./screens/AgentHub/Profile/AgentHubProfile"));
+const HubProtectedRoute = lazy(() => import("./screens/AgentHub/HubProtectedRoute"));
 
 // Single responsive property detail views (MUI breakpoints handle
 // desktop/mobile — no separate component trees per viewport).
@@ -181,7 +186,14 @@ function App() {
       {/* <Route path="/flatmatesearchpropertymodal/:id" element={<FlatmateSearchPropertyModal />} /> */}
       <Route path="/agent/register" element={<AgentRegistration />} />
       <Route path="/agent/login" element={<AgentLogin />} />
-      {/* <Route element={<AgentProtectedRoute />}> 
+
+      {/* AgentHub Portal Routes (Professional agent portal) */}
+      <Route path="/hub/dashboard" element={<HubProtectedRoute element={<AgentHubDashboard />} />} />
+      <Route path="/hub/properties" element={<HubProtectedRoute element={<AgentHubProperties />} />} />
+      <Route path="/hub/leads" element={<HubProtectedRoute element={<AgentHubLeads />} />} />
+      <Route path="/hub/profile" element={<HubProtectedRoute element={<AgentHubProfile />} />} />
+
+      {/* <Route element={<AgentProtectedRoute />}>
         //         <Route path="/agent/dashboard" element={<AgentDashboard />} />
         //         <Route path="/agent/rentaldetails/:id" element={<RentalPropertyPageAgent />} />
         //         <Route path="/agent/saledetails/:id" element={<SalePropertyPageAgent />} />

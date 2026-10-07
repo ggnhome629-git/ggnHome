@@ -72,6 +72,15 @@ const {
   updateAgentPreferredSectors
 } = require("../controllers/agentDashboard.controller.js");
 
+const {
+  getAgentHubDashboard,
+  getAgentProperties,
+  getAgentLeads,
+  updateLeadStatus,
+  getAgentProfile,
+  updateAgentProfile
+} = require("../controllers/agentHub.controller.js");
+
 // Helper middleware to restrict access to admins only
 const checkAdminEmail = async (req, res, next) => {
   try {
@@ -455,6 +464,14 @@ router.use("/api/admin/scraper", scraperRoutes);
 const propertySyncRoutes = require("../routes/propertySync.routes");
 router.use("/api/admin/property-sync", propertySyncRoutes);
 
+// ================== AGENT HUB ROUTES (AgentHub Portal) ==================
+// All routes protected by verifyAgentToken
+router.get("/api/hub/dashboard", verifyAgentToken, getAgentHubDashboard);
+router.get("/api/hub/properties", verifyAgentToken, getAgentProperties);
+router.get("/api/hub/leads", verifyAgentToken, getAgentLeads);
+router.patch("/api/hub/leads/:enquiryId/status", verifyAgentToken, updateLeadStatus);
+router.get("/api/hub/profile", verifyAgentToken, getAgentProfile);
+router.patch("/api/hub/profile", verifyAgentToken, updateAgentProfile);
 
 module.exports = router;
 
