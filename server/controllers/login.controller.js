@@ -5,6 +5,7 @@ const { sendOtpSms, isSmsConfigured } = require("../utils/sendSms");
 const { hasOnlineDevice } = require("./smsGateway.controller");
 const crypto = require("crypto");
 const { generateCode, normalizeCode } = require("../utils/otpCode");
+const { issueAgentSession } = require("../utils/agentSession");
 
 // Generate a random 4-letter login code
 function generateOtp() {
@@ -300,7 +301,13 @@ exports.loginWithPassword = async (req, res) => {
  */
 exports.setPassword = async (req, res) => {
   try {
-    const { mobileNumber, password } = req.body;
+    // Only for the signed-in account: anyone could otherwise set a password
+    // on someone else's OTP-only number and log in with it.
+    if (!req.user || !req.user.mobileNumber) {
+      return res.status(401).json({ message: "Please log in with an OTP first" });
+    }
+    const mobileNumber = req.user.mobileNumber;
+    const { password } = req.body;
 
     if (!mobileNumber || !password) {
       return res.status(400).json({
@@ -425,11 +432,21 @@ exports.verifyOtp = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
+    // One login for both sites: approved agents also get their agent session.
+    let agentSession = { agent: null };
+    try {
+      agentSession = await issueAgentSession(req, res, user);
+    } catch (e) {
+      console.error("issueAgentSession failed:", e && e.message);
+    }
+
     return res.json({
       message: "Login successful",
       accessToken,
-  refreshToken,
+      refreshToken,
       user: { email: user.email, role: user.role, name: user.name, mobileNumber: user.mobileNumber },
+      agent: agentSession.agent,
+      ...(agentSession.agentAccessToken ? { agentAccessToken: agentSession.agentAccessToken } : {}),
     });
   } catch (error) {
     res.status(500).json({ message: "Server error" });

@@ -167,7 +167,26 @@ exports.registerAgent = async (req, res) => {
       return res.status(422).json({ errors: errors.array() });
     }
 
-    // 🔐 Generate agentCode atomically BEFORE file upload
+    // The mobile number must be one the person proved with an OTP (they log
+    // in first); only an admin may register an agent on someone's behalf.
+    const cleanupFiles = () => { if (req.files) Object.values(req.files).flat().forEach(f => { try { fs.unlinkSync(f.path); } catch (e) {} }); };
+    if (!isAdminRequest(req)) {
+      if (!req.user || !req.user.mobileNumber) {
+        cleanupFiles();
+        return res.status(401).json({ code: "VERIFY_MOBILE", message: "Please verify your mobile number with an OTP first." });
+      }
+      req.body.mobileNumber = req.user.mobileNumber;
+    }
+    if (!/^[6-9]\d{9}$/.test(String(req.body.mobileNumber || '').replace(/\D/g, '').slice(-10))) {
+      cleanupFiles();
+      return res.status(400).json({ message: "Enter a valid 10-digit mobile number" });
+    }
+    if (await Agent.exists({ mobileNumber: String(req.body.mobileNumber).trim() })) {
+      cleanupFiles();
+      return res.status(409).json({ message: "An agent is already registered with this mobile number" });
+    }
+
+    // Agent code is internal (for our records) — assigned here, never typed by the agent.
     let agentCode;
     try {
       agentCode = (await generateAgentCodeAtomic()).toLowerCase();
@@ -303,7 +322,8 @@ exports.registerAgent = async (req, res) => {
         userRecord = new User({
           mobileNumber: mobileNorm,
           email: emailNorm || undefined,
-          role: 'Agent',
+          // Becomes 'Agent' when the admin approves the registration.
+          role: isAdmin ? 'Agent' : 'renter',
           isVerified: isAdmin ? true : false
         });
         await userRecord.save();
@@ -319,14 +339,7 @@ exports.registerAgent = async (req, res) => {
     } catch (userErr) {
       console.warn('User sync/link failed during agent registration:', userErr?.message || userErr);
     }
-    // 🔐 Enforce password ONLY if email is NOT provided
-    if (!isAdmin && userRecord && !userRecord.passwordSet && !agent.email) {
-      return res.status(428).json({
-        code: "SET_PASSWORD_REQUIRED",
-        message: "Please set password to complete agent registration",
-        agentCode: agent.agentCode
-      });
-    }
+    // Login is mobile + OTP only, so no password is needed to finish.
     // console.log(`Agent registered: ${agent._id} (${agent.email})`);
 
     // 📧 Send Agent Registration Email

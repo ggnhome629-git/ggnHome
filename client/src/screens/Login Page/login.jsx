@@ -171,10 +171,16 @@ export default function LoginModal() {
         body: JSON.stringify({ mobileNumber, otp }),
         credentials: 'include',
       });
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json();
+
       if (res.ok) {
-        if (data.accessToken) localStorage.setItem('accessToken', data.accessToken);
-        setMessage({ text: 'Code verified — signing you in…', type: 'success' });
+        if (data.accessToken) localStorage.setItem("accessToken", data.accessToken);
+        // Approved agents get their agent session from the same login.
+        if (data.agentAccessToken) {
+          localStorage.setItem("agentAccessToken", data.agentAccessToken);
+          window.dispatchEvent(new Event("agent:login"));
+        }
+        setMessage({ text: "OTP verified — signing you in…", type: "success" });
         await completeLogin();
       } else {
         setOtpError(data.message || 'OTP verification failed');

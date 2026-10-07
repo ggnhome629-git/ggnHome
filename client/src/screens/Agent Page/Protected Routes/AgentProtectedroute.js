@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { openAgentSessionFromUser } from "../../../utils/agentSso";
 import { useAgentAuth } from "../../../Context/AgentAuthContext";
 
 
 export default function AgentProtectedRoute({ redirectTo = "/agent/login" }) {
-  const { agent, loading: contextLoading } = useAgentAuth();
+  const { agent, loading: contextLoading, fetchAgent } = useAgentAuth();
+  const location = useLocation();
 
   const [checking, setChecking] = useState(true);
   const [authorized, setAuthorized] = useState(false);
@@ -41,11 +43,14 @@ export default function AgentProtectedRoute({ redirectTo = "/agent/login" }) {
           },
         });
 
-        if (!cancelled && res.ok) {
-          setAuthorized(true);
-        } else if (!cancelled) {
-          setAuthorized(false);
+        if (res.ok) {
+          if (!cancelled) setAuthorized(true);
+          return;
         }
+        // Signed in on the main site? One login covers the agent area too.
+        const sso = localStorage.getItem("accessToken") ? await openAgentSessionFromUser() : { ok: false };
+        if (sso.ok) await fetchAgent?.({ force: true });
+        if (!cancelled) setAuthorized(sso.ok);
       } catch (e) {
         if (!cancelled) setAuthorized(false);
       } finally {
@@ -61,15 +66,13 @@ export default function AgentProtectedRoute({ redirectTo = "/agent/login" }) {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agent, contextLoading, AGENT_ME_API]);
 
   // ⏳ Still checking authentication
   if (checking || contextLoading) {
     return (
-      <div style={{ padding: "40px", textAlign: "center" }}>
-        <h3>Checking agent session…</h3>
-        <p>Please wait</p>
-      </div>
+      <div style={{ padding: "80px 16px", textAlign: "center", color: "#4A6A8A", fontFamily: "Inter, sans-serif" }}>Checking your agent session…</div>
     );
   }
 
@@ -79,7 +82,7 @@ export default function AgentProtectedRoute({ redirectTo = "/agent/login" }) {
       <Navigate
         to={redirectTo}
         replace
-        state={{ message: "Please login to access this page" }}
+        state={{ message: "Please log in to continue", from: location.pathname }}
       />
     );
   }

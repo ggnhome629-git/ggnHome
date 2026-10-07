@@ -14,45 +14,6 @@ const { verifyToken, verifyTokenOptional , verifyAgentToken , verifyAgentTokenOp
 
 // Controllers
 const { requestOtp, verifyOtp, loginWithPassword, setPassword, checkMobile , setRecoveryEmail , changePasswordDirect } = require("../controllers/login.controller");
-const {
-  getSlots,
-  bookVisit,
-  getMyVisits,
-  updateVisit,
-  confirmVisit,
-  completeVisit,
-  getIcs,
-  getOwnerVisits,
-  saveAvailability,
-  getAvailability,
-} = require("../controllers/visits.controller");
-const {
-  createRequirement,
-  getMyRequirements,
-  updateRequirement,
-  deleteRequirement,
-  previewRequirements,
-} = require("../controllers/requirements.controller");
-const {
-  createOrder,
-  webhook,
-  refund,
-  getReceipt,
-} = require("../controllers/payments.controller");
-const {
-  list,
-  markRead,
-  markAllRead,
-  savePrefs,
-  enqueue,
-} = require("../controllers/notification.controller");
-const {
-  sendMessage,
-  getSession,
-  handoff,
-  feedback,
-  adminGaps,
-} = require("../controllers/chatbot.controller");
 const { userDetails, saveUserDetails, getUserDetails, getMyProperties, updateProperty, deleteProperty } = require("../controllers/userdetails.controller");
 const { logoutUser } = require("../controllers/logout.controller");
 const { saveUserPreferencesARIA } = require("../controllers/userPreferencesARIA.controller.js");
@@ -83,7 +44,6 @@ const { createSaleProperty, getSaleProperties } = require("../controllers/Salepr
 const {getRentalPropertyById , getSalePropertyById , getPropertyById , getAllActiveProperties} = require("../controllers/Viewproperties.controller");
 const { saveAiResponses, getAiResponses } = require("../controllers/AiAssistant.controller.js");
 const { addView, addSave, addEngagementTime, addRating, getMetrics, getLeadConversion, getSavedProperties , getUserPropertyMetrics } = require("../controllers/PropertyAnalysis.controller.js");
-const { getFunnel, getHealth, exportCsv } = require("../controllers/analytics.controller");
 const { getLocationIQApiKey } = require("../controllers/mapintegration.js");
 const {getAccountsUsage , getBrevoUsage , getLocationIQUsage , getMongoUsage , getGNewsUsage} = require("../controllers/admin.Accountsusage.js");
 const { getNews } = require("../controllers/news.controller");
@@ -149,12 +109,11 @@ router.get("/api/users", verifyToken, checkAdminEmail, async (req, res) => {
 });
 
 // ================== AUTH ROUTES ==================
-const rl = require("../middleware/rateLimit");
-router.post("/login/request-otp", rl.otpRequestLimiter, rl.otpRequestIpLimiter, requestOtp);
-router.post("/login/password", rl.loginLimiter, loginWithPassword);
-router.post("/login/verify-otp", rl.otpVerifyLimiter, verifyOtp);
-router.post("/auth/set-password", rl.loginLimiter, setPassword);
-router.post("/auth/check-mobile", rl.loginLimiter, checkMobile);
+router.post("/login/request-otp", requestOtp);
+router.post("/login/password", loginWithPassword);
+router.post("/login/verify-otp", verifyOtp);
+router.post("/auth/set-password", verifyToken, setPassword);
+router.post("/auth/check-mobile", checkMobile);
 
 // ================== SMS GATEWAY (Android app polls these) ==================
 const { verifyGatewayDevice, claimNext, reportResult, reportDelivery, adminListDevices, adminUpdateDevice, adminDeleteDevice, adminTestSend, adminSmsLog } = require("../controllers/smsGateway.controller");
@@ -175,7 +134,8 @@ router.post(
 );
 
 router.get("/auth/me", verifyToken, userDetails);
-router.post("/auth/logout", verifyToken, verifyAgentTokenOptional, logoutUser);
+// Logout must work even when the access cookie has already expired.
+router.post("/auth/logout", verifyTokenOptional, verifyAgentTokenOptional, logoutUser);
 
 // ================== USER ROUTES ==================
 router.post("/api/user/save-details", verifyToken, saveUserDetails);
@@ -223,11 +183,11 @@ router.get("/api/admin/rewards/:userId", verifyToken, checkAdminEmail, getUserRe
 
 router.patch("/api/admin/update-role", verifyToken, checkAdminEmail, updateUserRole);
 router.get("/api/properties", verifyToken, checkAdminEmail, getAllProperties);
-router.get('/api/admin/cloudinary/usage',  verifyToken, checkAdminEmail, getAccountsUsage);
-router.get('/api/admin/brevo/usage', verifyToken, checkAdminEmail, getBrevoUsage);
-router.get('/api/admin/mongo/usage', verifyToken, checkAdminEmail, getMongoUsage);
-router.get('/api/admin/gnews/usage', verifyToken, checkAdminEmail, getGNewsUsage);
-router.get('/api/admin/locationiq/usage', verifyToken, checkAdminEmail, getLocationIQUsage);
+router.get('/api/admin/cloudinary/usage',  getAccountsUsage);
+router.get('/api/admin/brevo/usage', getBrevoUsage);
+router.get('/api/admin/mongo/usage', getMongoUsage);
+router.get('/api/admin/gnews/usage', getGNewsUsage);
+router.get('/api/admin/locationiq/usage', getLocationIQUsage);
 // Admin updates status of any request
 router.patch("/api/admin/services/:id/status", verifyToken, checkAdminEmail, updateServiceRequestDetails)
 router.put(
@@ -298,7 +258,7 @@ router.post(
 
 
 // ================== User Preference form ==================
-router.post("/api/userpreferenceform", rl.guestFormLimiter, savePreferenceForm);
+router.post("/api/userpreferenceform", savePreferenceForm);
 // ================== AI ROUTES ==================
 router.post("/api/predict-price", verifyToken, predictPrice);
 
@@ -307,7 +267,7 @@ router.post("/api/distribute-reward", verifyToken, checkAdminEmail, distributeRe
 router.get("/api/check-eligibility", verifyToken, checkEligibility);
 
 // ================== CUSTOMER SUPPORT ROUTES ==================
-router.post("/api/request-callback", rl.guestFormLimiter, verifyToken, requestCallback);
+router.post("/api/request-callback", verifyToken, requestCallback);
 
 // ================== ENQUIRY ROUTES ==================
 const {
@@ -323,34 +283,7 @@ router.get("/api/enquiry", verifyToken, checkAdminEmail, getEnquiries);
 router.delete("/admin/api/deleteenquiry/:id", verifyToken, checkAdminEmail, deleteEnquiry);
 
 // ================== CHATBOT ROUTES ==================
-router.post("/api/visits", rl.apiLimiter, bookVisit);
-router.get("/api/visits/mine", verifyToken, getMyVisits);
-router.patch("/api/visits/:id", verifyToken, updateVisit);
-router.post("/api/visits/:id/confirm", verifyToken, confirmVisit);
-router.post("/api/visits/:id/complete", verifyToken, completeVisit);
-router.get("/api/visits/:id/ics", verifyToken, getIcs);
-router.get("/api/owner/visits", verifyToken, getOwnerVisits);
-router.put("/api/owner/availability", verifyToken, saveAvailability);
-router.get("/api/owner/availability", verifyToken, getAvailability);
-router.post("/api/requirements", rl.guestFormLimiter, createRequirement);
-router.get("/api/requirements/mine", verifyToken, getMyRequirements);
-router.patch("/api/requirements/:id", verifyToken, updateRequirement);
-router.delete("/api/requirements/:id", verifyToken, deleteRequirement);
-router.get("/api/requirements/preview", verifyTokenOptional, previewRequirements);
-router.post("/api/payment/order", verifyToken, createOrder);
-router.post("/api/payment/webhook", webhook);
-router.post("/api/payment/:id/refund", verifyToken, checkAdminEmail, refund);
-router.get("/api/payment/:id/receipt", verifyToken, getReceipt);
-router.get("/api/notifications", verifyToken, list);
-router.patch("/api/notifications/:id/read", verifyToken, markRead);
-router.patch("/api/notifications/read-all", verifyToken, markAllRead);
-router.put("/api/user/notification-prefs", verifyToken, savePrefs);
-router.post("/api/notify/queue", rl.apiLimiter, enqueue);
-router.post("/api/chatbot", rl.chatLimiter, sendMessage);
-router.get("/api/chatbot/session/:id", verifyToken, getSession);
-router.post("/api/chatbot/handoff", rl.chatLimiter, handoff);
-router.post("/api/chatbot/feedback", rl.chatLimiter, feedback);
-router.get("/api/admin/chatbot/gaps", verifyToken, checkAdminEmail, adminGaps);
+router.post("/api/chatbot", getChatResponse);
 router.get("/api/chatbot/initial-questions", getInitialQuestions);
 
 // ================== SALE & RENTAL PROPERTY ROUTES ==================
@@ -384,9 +317,7 @@ router.post("/api/property-analysis/addSave", verifyToken, addSave);
 router.post("/api/property-analysis/addEngagementTime", verifyToken, addEngagementTime);
 router.post("/api/property-analysis/addRating", verifyToken, addRating);
 router.get("/api/property-analysis/:id", verifyToken, getMetrics);
-router.get("/api/property-analysis/:id/funnel", verifyToken, getFunnel);
-router.get("/api/property-analysis/:id/health", verifyToken, getHealth);
-router.get("/api/property-analysis/:id/export.csv", verifyToken, exportCsv);
+router.get("/api/property-analysis/:id/conversion", verifyToken, getLeadConversion);
 router.get("/api/propertyAanalysis/savedProperties", verifyToken, getSavedProperties);
 router.get("/api/property-analytics/user-metrics", verifyToken, getUserPropertyMetrics);
 
@@ -438,7 +369,7 @@ router.post('/flatmateenquiry',verifyToken,flatmateEnquiry);
 
 
 //Agents
-router.get("/api/agent/unique-code",verifyTokenOptional, getUniqueAgentCode);
+router.get("/api/agent/unique-code", verifyToken, checkAdminEmail, getUniqueAgentCode);
 router.post(
   "/api/agent/register",
   verifyTokenOptional,
@@ -449,16 +380,28 @@ router.post(
   ]),
   registerAgent
 );
-router.post("/api/agentcheck", checkAgentExists);
-router.post("/api/agent/send-otp", rl.otpRequestLimiter, rl.otpRequestIpLimiter, requestOtpAgent);
-router.post("/api/agent/login/otp", rl.otpVerifyLimiter, verifyTokenOptional, loginAgentOtp);
-router.post("/api/agent/login/password", rl.loginLimiter, verifyTokenOptional, loginAgentPassword);
-router.post("/api/agent/reset-password", rl.loginLimiter, verifyTokenOptional, resetAgentPassword);
-// 🔐 Session-based Agent Login (when USER cookies already exist)
-router.post(
-  "/api/agent/login/session",
-  loginAgentSession
-);
+// Agents now sign in with the normal mobile + OTP login (/login/request-otp,
+// /login/verify-otp), which also opens their agent session. The old
+// code-based endpoints (agent code + OTP / password / DOB reset) are retired:
+// codes were guessable and the DOB reset allowed account takeover.
+const retired = (req, res) => res.status(410).json({ message: "Please log in with your mobile number and OTP." });
+router.post("/api/agentcheck", retired);
+router.post("/api/agent/send-otp", retired);
+router.post("/api/agent/login/otp", retired);
+router.post("/api/agent/login/password", retired);
+router.post("/api/agent/reset-password", retired);
+// Already logged in on the main site → open the agent session too.
+router.post("/api/agent/login/session", verifyToken, async (req, res) => {
+  try {
+    const { issueAgentSession } = require("../utils/agentSession");
+    const result = await issueAgentSession(req, res, req.user);
+    if (!result.agent) return res.status(404).json({ message: "No agent account on this mobile number", agent: null });
+    if (!result.agentAccessToken) return res.status(403).json({ message: "Agent account is not active yet", agent: result.agent });
+    return res.json({ agent: result.agent, agentAccessToken: result.agentAccessToken });
+  } catch (e) {
+    return res.status(500).json({ message: "Server error" });
+  }
+});
 router.post("/agent/set-recovery-email", verifyAgentToken, setAgentRecoveryEmail);
 router.get("/agent/me", verifyAgentToken, agentDetails);
 router.get("/api/agent/me", verifyAgentToken, agentDetails);

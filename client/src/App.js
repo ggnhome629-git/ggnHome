@@ -186,8 +186,8 @@ function App() {
         <Route path="/agent/support" element={<CustomerSupportPageAgent />} />
       </Route>
 
-      
-      
+
+
       {/*
         Every admin screen renders inside the shared shell (navigation rail +
         top bar) and behind AdminProtectedRoute — including the five routes

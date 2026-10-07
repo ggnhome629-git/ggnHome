@@ -46,11 +46,14 @@ const verifyToken = async (req, res, next) => {
 
 const verifyTokenOptional = async (req, res, next) => {
   try {
-    const accessToken = req.cookies.accessToken;
+    const header = req.headers && req.headers.authorization;
+    const bearer = header && header.startsWith('Bearer ') ? header.slice(7) : null;
+    const accessToken = req.cookies.accessToken || bearer;
     if (!accessToken) return next(); // allow guest access
 
     const decodedAccessToken = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
-    const user = await User.findById(decodedAccessToken.id).select('-password');
+    if (!decodedAccessToken || !(decodedAccessToken.id || decodedAccessToken.sub)) return next(); // e.g. an agent token
+    const user = await User.findById(decodedAccessToken.id || decodedAccessToken.sub).select('-password');
     if (user) req.user = user;
   } catch (error) {
     console.warn("⚠️ Optional token verification failed or invalid. Proceeding as guest.");
