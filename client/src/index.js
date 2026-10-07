@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { register as registerServiceWorker } from './serviceWorkerRegistration';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import theme from './theme/theme';
@@ -24,6 +25,12 @@ root.render(
     </ThemeProvider>
   </React.StrictMode>
 );
+
+// Register service worker for PWA functionality
+registerServiceWorker({
+  onSuccess: () => console.log('App is ready for offline use'),
+  onUpdate: () => console.log('App update available'),
+});
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

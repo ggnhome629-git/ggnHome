@@ -52,10 +52,20 @@
     <!-- Preload logo for faster LCP -->
     <link rel="preload" href="%PUBLIC_URL%/Logo2.jpg" as="image" />
 
-    <!-- PWA manifest (already present) -->
+    <!-- PWA Configuration -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/Logo2.jpg" />
     <link rel="icon" type="image/jpeg" href="%PUBLIC_URL%/Logo2.jpg" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="GgnHome" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="theme-color" content="#00A79D" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#003366" media="(prefers-color-scheme: dark)" />
+
+    <!-- Microsoft Specific -->
+    <meta name="msapplication-TileColor" content="#00A79D" />
+    <meta name="msapplication-TileImage" content="%PUBLIC_URL%/Logo2.jpg" />
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
