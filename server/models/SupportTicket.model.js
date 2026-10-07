@@ -36,7 +36,6 @@ const supportTicketSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-supportTicketSchema.index({ ticketId: 1 });
 // Admin inbox: recent by status then createdAt.
 supportTicketSchema.index({ status: 1, createdAt: -1 });
 supportTicketSchema.index({ userId: 1, createdAt: -1 });

@@ -35,7 +35,6 @@ const chatSessionSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-chatSessionSchema.index({ sessionId: 1 });
 chatSessionSchema.index({ lastActive: -1 });
 chatSessionSchema.index({ userId: 1, createdAt: -1 });
 
