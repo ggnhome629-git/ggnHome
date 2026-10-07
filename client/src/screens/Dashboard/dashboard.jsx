@@ -8,7 +8,7 @@ import SectionSkeleton from "../../components/ui/SectionSkeleton";
 import DashboardSeo from "./DashboardSeo";
 import HeroSearch from "./HeroSearch";
 import GiftBanner from "./GiftBanner";
-import StickySearchBar from "./StickySearchBar";
+// import StickySearchBar from "./StickySearchBar";
 import MobileBottomNav from "./MobileBottomNav";
 import QuickLinks from "./QuickLinks";
 import RecentlyViewed from "../Property View/sections/RecentlyViewed";
@@ -346,6 +346,7 @@ export default function RealEstateDashboard() {
         onOpenPreferences={goToPreferences}
       />
 
+      {/* Sticky search bar on scroll - disabled
       <StickySearchBar
         query={searchQuery}
         onQueryChange={setSearchQuery}
@@ -356,6 +357,7 @@ export default function RealEstateDashboard() {
         suggestions={areaSuggestions}
         searching={isSearching}
       />
+      */}
 
       <QuickLinks />
 

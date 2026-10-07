@@ -1,5 +1,37 @@
 {
-  "dependencies": {
-    "pannellum": "^2.5.6"
+  "name": "ggnhome",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ggnHome real-estate platform — client + server",
+  "scripts": {
+    "install:all": "npm --prefix client install && npm --prefix server install",
+    "client:start": "npm --prefix client start",
+    "client:build": "npm --prefix client build",
+    "client:test": "npm --prefix client test",
+    "server:dev": "npm --prefix server run dev",
+    "server:prod": "npm --prefix server start",
+    "test": "jest --runInBand",
+    "test:api": "jest --runInBand --config server/jest.config.js",
+    "test:e2e": "playwright test",
+    "test:security": "node server/scripts/security-check.js",
+    "test:load": "autocannon -c 50 -d 30 http://localhost:5000/api/activeproperties"
+  },
+  "keywords": ["real-estate", "ggnHome", "property"],
+  "author": "",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^13.5.0",
+    "autocannon": "^8.0.0",
+    "axios": "^1.13.1",
+    "jest": "^30.5.2",
+    "jest-environment-jsdom": "^30.5.2",
+    "mongodb-memory-server": "^10.4.3",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "supertest": "^7.3.1"
   }
 }

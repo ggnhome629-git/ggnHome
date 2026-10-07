@@ -64,13 +64,13 @@ const [forgotLoading, setForgotLoading] = useState(false);
   // Login button should be enabled only after agent is verified
   const isLoginDisabled =
     isLoading ||
-    (
+    (prefilledFromSession ? !agentVerified : (
       (
         !agentVerified || // must pass "Check Agent"
         (formData.loginType === "otp" && !showOtp) || // OTP must be sent
         (formData.loginType === "otp" && !formData.otp) || // OTP must be entered
         (formData.loginType === "password" && !formData.password) // password required
-      ));
+      )));
   const isSetPasswordFlow =
     formData.loginType === "password" && passwordState === "SET_PASSWORD";
   const handleForgotChange = (e) => {
@@ -763,14 +763,17 @@ const handleForgotSubmit = async () => {
             icon={Key}
             name="agentCode"
             value={formData.agentCode}
-            onChange={handleInputChange}
+            onChange={(e) => {
+              handleInputChange(e);
+              if (agentVerified) setAgentVerified(false);
+            }}
             error={errors.agentCode}
             helperText="The code issued when your application was approved"
           />
 
           {/* Identify the agent before offering a sign-in method — which
               methods are available depends on what the backend reports. */}
-          {!prefilledFromSession && !agentVerified && (
+          {!agentVerified && (
             <AuthButton
               type="button"
               variant="outlined"

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Box, Chip, Dialog, IconButton, Stack, Typography } from "@mui/material";
+import { Box, Button, Chip, Dialog, IconButton, Stack, Typography } from "@mui/material";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Expand, Video, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Expand, Globe, X } from "lucide-react";
 import { radii } from "../../../theme/theme";
 
 const FALLBACK = "/default-property.jpg";
@@ -125,26 +125,43 @@ export default function PropertyGalleryPro({
       >
         <Box sx={{ position: "relative", height: { xs: 260, sm: 360, md: 460 }, overflow: "hidden" }}>
           <GalleryImage src={gallery[0]} alt="Property main view" priority onClick={() => open(0)} />
-          {panoramas.length > 0 && (
+
+          {/* Media type badges (top-left) */}
+          <Stack direction="row" spacing={1} sx={{ position: "absolute", top: 16, left: 16, flexWrap: "wrap" }}>
             <Chip
-              icon={<Video size={14} />}
-              label="360° tour"
+              label={`📸 ${gallery.length} photos`}
+              size="small"
+              onClick={() => open(0)}
+              sx={{ backgroundColor: "#FFFFFF", color: "text.primary", fontWeight: 700, fontSize: "0.75rem" }}
+            />
+            {videos.length > 0 && (
+              <Chip label={`🎥 ${videos.length} videos`} size="small" sx={{ backgroundColor: "#FFFFFF", color: "text.primary", fontWeight: 700, fontSize: "0.75rem" }} />
+            )}
+          </Stack>
+
+          {panoramas.length > 0 && (
+            <Button
+              startIcon={<Globe size={16} />}
               onClick={() => {
                 onOpenVirtualTour?.();
                 onEvent?.("virtual_tour_open");
               }}
               sx={{
                 position: "absolute",
-                top: 16,
-                left: 16,
-                fontWeight: 700,
-                backgroundColor: "rgba(0,20,45,0.82)",
+                right: 16,
+                bottom: 16,
+                padding: "10px 14px",
+                borderRadius: "8px",
+                backgroundColor: "#00A79D",
                 color: "common.white",
-                backdropFilter: "blur(6px)",
-                "& .MuiChip-icon": { color: "inherit" },
-                "&:hover": { backgroundColor: "primary.main" },
+                fontWeight: 700,
+                fontSize: "0.8rem",
+                boxShadow: "0 6px 18px rgba(0,10,25,0.35)",
+                "&:hover": { backgroundColor: "#00857D", boxShadow: "0 10px 24px rgba(0,10,25,0.45)" },
               }}
-            />
+            >
+              View 360° Tour
+            </Button>
           )}
         </Box>
 

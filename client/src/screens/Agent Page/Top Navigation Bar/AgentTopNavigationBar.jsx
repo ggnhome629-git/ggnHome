@@ -20,7 +20,7 @@ import {
 import SideMenuBar from "./SideMenu";
 import Location from "./Location";
 
-const TopNavigationBar = ({ navItems = [] }) => {
+const TopNavigationBar = ({ navItems = [], search = "", onSearchChange, searchPlaceholder = "" }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   const navigate = useNavigate();
@@ -772,6 +772,38 @@ const TopNavigationBar = ({ navItems = [] }) => {
               >
                 <Lock size={14} color="#22D3EE" />
               </button>
+
+              {/* Search Input - shown when onSearchChange is provided */}
+              {onSearchChange && searchPlaceholder && !isSmallScreen && (
+                <input
+                  type="text"
+                  placeholder={searchPlaceholder}
+                  value={search}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  style={{
+                    flex: "0 1 280px",
+                    maxWidth: "280px",
+                    padding: "8px 14px",
+                    borderRadius: "999px",
+                    border: "1px solid rgba(255,255,255,0.2)",
+                    background: "rgba(255,255,255,0.08)",
+                    color: "#FFFFFF",
+                    fontSize: "0.875rem",
+                    fontWeight: 500,
+                    outline: "none",
+                    transition: "all 0.2s ease",
+                    backdropFilter: "blur(10px)",
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.background = "rgba(255,255,255,0.12)";
+                    e.target.style.borderColor = "rgba(34,211,238,0.6)";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.background = "rgba(255,255,255,0.08)";
+                    e.target.style.borderColor = "rgba(255,255,255,0.2)";
+                  }}
+                />
+              )}
 
               {/* User Menu */}
               <div

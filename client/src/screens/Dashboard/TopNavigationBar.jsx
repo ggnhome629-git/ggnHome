@@ -405,6 +405,10 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
       : "0 2px 8px rgba(0,0,0,0.1)",
   };
 
+  // The admin console renders its own shell (navigation rail + top bar), so
+  // the public-site bar stays out of /admin/* instead of appearing twice.
+  if (location.pathname.toLowerCase().startsWith("/admin")) return null;
+
   return (
     <>
       <motion.nav

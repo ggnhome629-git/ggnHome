@@ -1,12 +1,22 @@
 import React from "react";
 import { Box, Button, Stack, Tooltip, Typography } from "@mui/material";
-import { Heart, MapPin, MessageCircle, Phone, Share2 } from "lucide-react";
+import { ExternalLink, Heart, MapPin, MessageCircle, Phone, Share2 } from "lucide-react";
 import { radii } from "../../../theme/theme";
-import { directionsUrl, whatsappUrl } from "../../../utils/propertyModel";
+import { directionsUrl, sourcePortalLabel, whatsappUrl } from "../../../utils/propertyModel";
+
+const FALLBACK = "/default-property.jpg";
 
 /** Desktop/tablet quick-action row that sits directly under the gallery. */
 export function QuickActionsBar({ property, saved, onSave, onShare, onEvent }) {
   const actions = [
+    property.isAffiliate && {
+      key: "source",
+      label: `View on ${sourcePortalLabel(property.sourcePortal)}`,
+      icon: <ExternalLink size={16} color="#00A79D" />,
+      href: property.sourceUrl,
+      external: true,
+      onClick: () => onEvent?.("source_cta_clicked", { portal: property.sourcePortal }),
+    },
     {
       key: "save",
       label: saved ? "Saved" : "Save",
@@ -14,21 +24,24 @@ export function QuickActionsBar({ property, saved, onSave, onShare, onEvent }) {
       onClick: onSave,
     },
     { key: "share", label: "Share", icon: <Share2 size={16} color="#4A6A8A" />, onClick: onShare },
-    property.contactNumber && {
-      key: "call",
-      label: "Call",
-      icon: <Phone size={16} color="#4A6A8A" />,
-      href: `tel:${property.contactNumber}`,
-      onClick: () => onEvent?.("call_clicked"),
-    },
-    property.contactNumber && {
-      key: "whatsapp",
-      label: "WhatsApp",
-      icon: <MessageCircle size={16} color="#128C4A" />,
-      href: whatsappUrl(property, property.contactNumber),
-      external: true,
-      onClick: () => onEvent?.("whatsapp_clicked"),
-    },
+    // Affiliate listings have no owner to call — every contact action is hidden.
+    !property.isAffiliate &&
+      property.contactNumber && {
+        key: "call",
+        label: "Call",
+        icon: <Phone size={16} color="#4A6A8A" />,
+        href: `tel:${property.contactNumber}`,
+        onClick: () => onEvent?.("call_clicked"),
+      },
+    !property.isAffiliate &&
+      property.contactNumber && {
+        key: "whatsapp",
+        label: "WhatsApp",
+        icon: <MessageCircle size={16} color="#128C4A" />,
+        href: whatsappUrl(property, property.contactNumber),
+        external: true,
+        onClick: () => onEvent?.("whatsapp_clicked"),
+      },
     {
       key: "directions",
       label: "Directions",
@@ -76,10 +89,14 @@ export function QuickActionsBar({ property, saved, onSave, onShare, onEvent }) {
 }
 
 /**
- * Mobile bottom bar — always reachable, and the page reserves padding for it
- * so it never covers the last section.
+ * Mobile bottom bar (section 14) — always reachable, and the page reserves
+ * padding for it so it never covers the last section. Affiliate listings get
+ * the portal CTA instead of the conversion buttons, and no contact actions.
  */
-export function StickyActionBar({ property, saved, onSave, onScheduleVisit, onEvent }) {
+export function StickyActionBar({ property, saved, onSave, onShare, onScheduleVisit, onEnquire, onEvent }) {
+  const isAffiliate = property.isAffiliate;
+  const thumb = property.images[0];
+
   return (
     <Stack
       direction="row"
@@ -94,58 +111,90 @@ export function StickyActionBar({ property, saved, onSave, onScheduleVisit, onEv
         zIndex: 1150,
         px: 3,
         py: 3,
+        minHeight: 72,
         backgroundColor: "background.paper",
         borderTop: "1px solid",
         borderColor: "divider",
-        boxShadow: "0 -8px 24px rgba(0,20,45,0.10)",
+        boxShadow: "0 -4px 12px rgba(0,51,102,0.08)",
       }}
     >
+      <Box
+        component="img"
+        src={thumb || FALLBACK}
+        alt=""
+        aria-hidden
+        onError={(e) => {
+          e.currentTarget.style.visibility = "hidden";
+        }}
+        sx={{ width: 48, height: 48, borderRadius: "8px", objectFit: "cover", flexShrink: 0 }}
+      />
+
       <Box sx={{ minWidth: 0, mr: 1 }}>
-        <Typography variant="body2" sx={{ fontWeight: 800, color: "secondary.main", lineHeight: 1.2 }} noWrap>
+        <Typography variant="body2" sx={{ fontWeight: 800, color: "primary.main", lineHeight: 1.2 }} noWrap>
           {property.priceDisplay || "On request"}
         </Typography>
         <Typography variant="caption" sx={{ color: "text.secondary" }} noWrap>
-          {property.priceLabel}
+          {property.isRental ? "per month" : property.title}
         </Typography>
       </Box>
+
+      <Box sx={{ flex: 1 }} />
 
       <Tooltip title={saved ? "Saved" : "Save"}>
         <Button
           onClick={onSave}
           aria-label={saved ? "Unsave property" : "Save property"}
-          sx={{ minWidth: 44, px: 0, border: "1px solid", borderColor: "divider", color: "text.secondary" }}
+          sx={{ minWidth: 44, px: 0, border: "1px solid", borderColor: "divider", color: saved ? "#00A79D" : "text.secondary" }}
         >
           <Heart size={17} fill={saved ? "#00A79D" : "none"} color={saved ? "#00A79D" : "#4A6A8A"} />
         </Button>
       </Tooltip>
 
-      {property.contactNumber && (
-        <Button
-          href={`tel:${property.contactNumber}`}
-          onClick={() => onEvent?.("call_clicked")}
-          aria-label="Call"
-          sx={{ minWidth: 44, px: 0, border: "1px solid", borderColor: "divider", color: "primary.main" }}
-        >
-          <Phone size={17} />
-        </Button>
+      {isAffiliate ? (
+        <>
+          <Tooltip title="Share">
+            <Button onClick={onShare} aria-label="Share property" sx={{ minWidth: 44, px: 0, border: "1px solid", borderColor: "divider", color: "text.secondary" }}>
+              <Share2 size={17} />
+            </Button>
+          </Tooltip>
+          <Button
+            variant="contained"
+            href={property.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => onEvent?.("source_cta_clicked", { portal: property.sourcePortal })}
+            endIcon={<ExternalLink size={15} />}
+            sx={{
+              flex: 1,
+              whiteSpace: "nowrap",
+              backgroundImage: "linear-gradient(90deg, #00A79D 0%, #22D3EE 100%)",
+              color: "#FFFFFF",
+              "&:hover": { backgroundImage: "linear-gradient(90deg, #00A79D 0%, #22D3EE 100%)" },
+            }}
+          >
+            View on {sourcePortalLabel(property.sourcePortal)}
+          </Button>
+        </>
+      ) : (
+        <>
+          <Button variant="outlined" onClick={onEnquire} sx={{ whiteSpace: "nowrap", borderColor: "#00A79D", color: "#00A79D", "&:hover": { borderColor: "#00A79D", backgroundColor: "rgba(0,167,157,0.08)" } }}>
+            Enquire
+          </Button>
+          <Button
+            variant="contained"
+            onClick={onScheduleVisit}
+            sx={{
+              flex: 1,
+              whiteSpace: "nowrap",
+              backgroundImage: "linear-gradient(90deg, #00A79D 0%, #22D3EE 100%)",
+              color: "#FFFFFF",
+              "&:hover": { backgroundImage: "linear-gradient(90deg, #00A79D 0%, #22D3EE 100%)" },
+            }}
+          >
+            Schedule visit
+          </Button>
+        </>
       )}
-
-      {property.contactNumber && (
-        <Button
-          href={whatsappUrl(property, property.contactNumber)}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => onEvent?.("whatsapp_clicked")}
-          aria-label="WhatsApp"
-          sx={{ minWidth: 44, px: 0, backgroundColor: "#25D366", color: "common.white", "&:hover": { backgroundColor: "#1fb959" } }}
-        >
-          <MessageCircle size={17} />
-        </Button>
-      )}
-
-      <Button variant="contained" onClick={onScheduleVisit} sx={{ flex: 1, whiteSpace: "nowrap" }}>
-        Book visit
-      </Button>
     </Stack>
   );
 }

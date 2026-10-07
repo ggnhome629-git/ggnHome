@@ -46,6 +46,10 @@ const RentalpropertySchema = new mongoose.Schema(
     leaseTerm: { type: String },
     securityDeposit: { type: String },
     otherFees: { type: String },
+    // Brokerage the owner/agent wants to advertise on the listing (UI shows
+    // it only when > 0; see PART 6 of client/UI_UPGRADE_GUIDE.txt).
+    commission: { type: Number, min: 0 },
+    commissionNote: { type: String, maxlength: 80 },
     utilities: [{ type: String }],
     tenantRequirements: { type: String },
     moveInDate: { type: Date },

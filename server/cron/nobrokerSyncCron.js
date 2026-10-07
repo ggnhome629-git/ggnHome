@@ -1,6 +1,21 @@
 const cron = require("node-cron");
 const { syncNoBrokerListings } = require("../scripts/nobrokerSync");
 
+// Reminders, confirmations and nudges run on their own schedule (see
+// utils/reminderJobs). Kept disabled by default in test mode.
+async function startReminderCron() {
+  if (process.env.REMINDERS_DISABLED === "true") return;
+  try {
+    const { scheduleReminders } = require("../utils/reminderJobs");
+    scheduleReminders();
+    console.log("[reminders] scheduled");
+  } catch (err) {
+    console.error("[reminders] start failed:", err);
+  }
+}
+
+module.exports = { startNoBrokerSyncCron, startReminderCron };
+
 // Runs once a day at 3:30 AM IST — off-peak, and gives every listing a
 // same-day chance to recover from a transient block before the 12h
 // removal-confirmation window in nobrokerSync.js would act on it.

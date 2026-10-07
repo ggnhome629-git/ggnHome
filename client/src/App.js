@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useEffect } from "react";
 
-import { BrowserRouter as Router, Route, Routes, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Navigate, Route, Routes, useNavigate, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { setupInterceptors } from "./utils/axiosInterceptor";
 import { pageTransitionVariants } from "./theme/motion";
@@ -66,6 +66,8 @@ const AgentProtectedRoute = lazy(() => import("./screens/Agent Page/Protected Ro
 const CustomerSupportPageAgent = lazy(() => import("./screens/Agent Page/Customer Support/Customersupport"));
 const ProtectedRoutes = lazy(() => import("./screens/Protected Routes/protectedroutes"));
 const AgentRegistrationAdmin = lazy(() => import("./screens/Admin Page/Admin.AgentRegister"));
+const AdminLayout = lazy(() => import("./screens/Admin Page/shell/AdminLayout"));
+const AdminPayments = lazy(() => import("./screens/Admin Page/admin.properties"));
 // Static imports for agent property detail views
 const RentalPropertyPageAgentDesktop = lazy(() => import("./screens/Agent Page/Property View Agent/Desktop view/RentalPropertyPageView"));
 const SalePropertyPageAgentDesktop = lazy(() => import("./screens/Agent Page/Property View Agent/Desktop view/SalePropertyPageView"));
@@ -186,23 +188,35 @@ function App() {
 
       
       
-      <Route path="/admin/Landingpage" element={<AdminLandingPage />} />
-      <Route path="/admin/Dashboard" element={<AdminProtectedRoute element={<AdminDashboard />} />} />
-      <Route path="/admin/UserManagement" element={<AdminProtectedRoute element={<UserManagementSystem />} />} />
-      <Route path="/admin/enquiries" element={<AdminProtectedRoute element={<PaymentsRewardsDashboard />} />} />
-      <Route path="/admin/callback" element={<AdminProtectedRoute element={<CallbackRequestsDashboard />} />} />
-      <Route path="/admin/rewardsproperties" element={<AdminProtectedRoute element={<PropertyListingPage />} />} />
-      <Route path="/admin/propertymanager" element={<AdminProtectedRoute element={<AdminPropertyManager />} />} />
-      <Route path="/admin/add-property" element={<AdminProtectedRoute element={<AdminPropertyListingForm />} />} />
-      <Route path="/admin/services" element={<AdminProtectedRoute element={<AdminServiceTracking />} />} />
-      <Route path="/admin/usagetrack" element={<CloudinaryDashboard />} />
-      <Route path="/admin/usagetrack2" element={<AdminUsageDashboard />} />
-      <Route path="/admin/rewards" element={<AdminRewardsSection />} />
-      <Route path="/admin/userpreferenceformresponses" element={<AdminProtectedRoute element={<AdminUserPreferencesResponses />} />} />
-      <Route path="/admin/agentsmanagement" element={<AdminProtectedRoute element={<AgentManagement />} />} />
-      <Route path="/admin/sms-devices" element={<AdminProtectedRoute element={<AdminSmsDevices />} />} />
-      <Route path="/admin/promos" element={<AdminProtectedRoute element={<AdminPromos />} />} />
-      <Route path="/admin/agent-registration" element={<AgentRegistrationAdmin />} />
+      {/*
+        Every admin screen renders inside the shared shell (navigation rail +
+        top bar) and behind AdminProtectedRoute — including the five routes
+        that previously had no guard at all (spec S1).
+      */}
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route path="/admin/Landingpage" element={<AdminProtectedRoute element={<AdminLandingPage />} />} />
+        <Route path="/admin/Dashboard" element={<AdminProtectedRoute element={<AdminDashboard />} />} />
+        <Route path="/admin/UserManagement" element={<AdminProtectedRoute element={<UserManagementSystem />} />} />
+        <Route path="/admin/enquiries" element={<AdminProtectedRoute element={<PaymentsRewardsDashboard />} />} />
+        <Route path="/admin/callback" element={<AdminProtectedRoute element={<CallbackRequestsDashboard />} />} />
+        <Route path="/admin/rewardsproperties" element={<AdminProtectedRoute element={<PropertyListingPage />} />} />
+        <Route path="/admin/propertymanager" element={<AdminProtectedRoute element={<AdminPropertyManager />} />} />
+        <Route path="/admin/add-property" element={<AdminProtectedRoute element={<AdminPropertyListingForm />} />} />
+        <Route path="/admin/services" element={<AdminProtectedRoute element={<AdminServiceTracking />} />} />
+        <Route path="/admin/usagetrack" element={<AdminProtectedRoute element={<CloudinaryDashboard />} />} />
+        <Route path="/admin/usagetrack2" element={<AdminProtectedRoute element={<AdminUsageDashboard />} />} />
+        <Route path="/admin/rewards" element={<AdminProtectedRoute element={<AdminRewardsSection />} />} />
+        <Route path="/admin/payments" element={<AdminProtectedRoute element={<AdminPayments />} />} />
+        <Route path="/admin/userpreferenceformresponses" element={<AdminProtectedRoute element={<AdminUserPreferencesResponses />} />} />
+        <Route path="/admin/agentsmanagement" element={<AdminProtectedRoute element={<AgentManagement />} />} />
+        <Route path="/admin/sms-devices" element={<AdminProtectedRoute element={<AdminSmsDevices />} />} />
+        <Route path="/admin/promos" element={<AdminProtectedRoute element={<AdminPromos />} />} />
+        <Route path="/admin/agent-registration" element={<AdminProtectedRoute element={<AgentRegistrationAdmin />} />} />
+        {/* Renamed/legacy paths keep working (spec U10/U11) */}
+        <Route path="/admin/all-properties" element={<Navigate replace to="/admin/rewardsproperties" />} />
+        <Route path="/admin/propertymanager-old" element={<Navigate replace to="/admin/propertymanager" />} />
+        <Route path="*" element={<Navigate replace to="/admin/Landingpage" />} />
+      </Route>
 
 
 

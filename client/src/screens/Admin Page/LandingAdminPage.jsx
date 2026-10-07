@@ -153,8 +153,8 @@ const AdminLandingPage = () => {
     },
     {
       id: 'properties',
-      title: 'ALL Properties',
-      description: 'Manage all property listings',
+      title: 'All Properties',
+      description: 'Browse every listing grouped by sector',
       icon: Home,
       route: '/admin/rewardsproperties',
       color: '#ef4444',
@@ -208,7 +208,7 @@ const AdminLandingPage = () => {
     {
     id: 'Rewards Management',
     title: 'Rewards Management',
-    description: 'Track usage and performance metrics',
+    description: 'Send and review reward distributions',
     icon: Home,
     route: '/admin/rewards',
     color: '#f97316', // orange color similar to other cards
@@ -235,12 +235,21 @@ const AdminLandingPage = () => {
 
     {
     id: 'Agent Registration',
-    title: 'Admin Registration',
-    description: 'Register new administrators',
+    title: 'Register Agent',
+    description: 'Register a new agent with ID proofs and sectors',
     icon: Home,
     route: '/admin/agent-registration',
     color: '#f97316', // orange color similar to other cards
     gradient: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+    },
+    {
+      id: 'payments',
+      title: 'Payments',
+      description: 'Approve pending payments and distribute rewards',
+      icon: Home,
+      route: '/admin/payments',
+      color: '#0d9488',
+      gradient: 'linear-gradient(135deg, #14b8a6 0%, #0f766e 100%)',
     },
     
 

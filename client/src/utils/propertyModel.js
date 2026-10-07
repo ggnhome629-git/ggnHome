@@ -12,6 +12,15 @@
 
 export const PROPERTY_TYPE = { RENTAL: "rental", SALE: "sale" };
 
+/** Human labels for the affiliate portals we source listings from. */
+const SOURCE_PORTAL_LABELS = { nobroker: "NoBroker", "99acres": "99acres" };
+
+export function sourcePortalLabel(portal) {
+  if (!portal) return null;
+  const key = String(portal).toLowerCase();
+  return SOURCE_PORTAL_LABELS[key] || String(portal).replace(/^./, (c) => c.toUpperCase());
+}
+
 const asArray = (value) =>
   Array.isArray(value) ? value.filter((v) => typeof v === "string" && v.trim()) : [];
 
@@ -67,6 +76,21 @@ export function formatArea(sqft) {
   return `${Math.round(value).toLocaleString("en-IN")} sq.ft.`;
 }
 
+/**
+ * Some money fields are schema strings that may hold a raw number ("135000"),
+ * an already-formatted value ("₹1,35,000") or free text ("2 months' rent").
+ * Numbers get Indian-grouped formatting; text is passed through untouched.
+ */
+export function displayAmount(value) {
+  if (value === null || value === undefined) return null;
+  const str = String(value).trim();
+  if (!str) return null;
+  if (str.startsWith("₹")) return str;
+  const numeric = str.replace(/,/g, "");
+  if (/^\d+(\.\d+)?$/.test(numeric)) return formatCurrency(Number(numeric));
+  return str;
+}
+
 export function formatDate(value) {
   if (!value) return null;
   const date = new Date(value);
@@ -101,7 +125,6 @@ function deriveVerification(raw) {
   if (Array.isArray(raw.images) && raw.images.length > 0) badges.push("Photos verified");
   if (clean(raw.Sector)) badges.push("Location verified");
   if (clean(raw.ownernumber)) badges.push("Contact verified");
-  if (clean(raw.sourcePortal)) badges.push(`Sourced from ${raw.sourcePortal}`);
   return badges;
 }
 
@@ -135,6 +158,8 @@ export function normaliseProperty(raw, type) {
   const isRental = type === PROPERTY_TYPE.RENTAL;
   const price = isRental ? clean(raw.monthlyRent) : clean(raw.price);
   const sqft = clean(raw.totalArea?.sqft);
+  const sourcePortal = clean(raw.sourcePortal) ? String(raw.sourcePortal).toLowerCase() : null;
+  const sourceUrl = clean(raw.sourceUrl);
 
   return {
     id: raw._id,
@@ -194,7 +219,25 @@ export function normaliseProperty(raw, type) {
 
     // Trust
     verification: deriveVerification(raw),
-    sourceUrl: clean(raw.sourceUrl),
+
+    // Affiliate (sourced) listings: no contact forms, no enquiry, no visits —
+    // the listing lives on the source portal, so every CTA points there.
+    sourcePortal,
+    sourceUrl,
+    isAffiliate: Boolean(sourcePortal && sourceUrl),
+
+    // Commission, when an owner/agent has actually set one. Never rendered
+    // otherwise (see PART 6 of the upgrade guide).
+    commission: (() => {
+      const value = Number(raw.commission);
+      return Number.isFinite(value) && value > 0 ? value : null;
+    })(),
+    commissionNote: clean(raw.commissionNote),
+
+    // Listed-by identity (the detail endpoints populate owner/ownerId with
+    // name + email only).
+    listedByName: clean(raw.owner?.name) || clean(raw.ownerId?.name) || null,
+    listedByEmail: clean(raw.owner?.email) || clean(raw.ownerId?.email) || null,
 
     // Not in the schema yet — sections consuming these stay hidden until the
     // API starts returning them.

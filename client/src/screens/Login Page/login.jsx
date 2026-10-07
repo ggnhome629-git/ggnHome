@@ -1,841 +1,1123 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { AnimatePresence, motion } from "framer-motion";
-import { Box, Button, Dialog, DialogContent, Divider, Link, Stack, Typography } from "@mui/material";
-import { ArrowLeft, KeyRound, Mail, Phone, ShieldCheck } from "lucide-react";
-import { useAuth } from "../../Context/AuthContext";
-import { AuthButton, AuthField, AuthLayout, AuthMessage, AuthTabs, OtpInput } from "../../components/auth";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogContent,
+  Divider,
+  Link,
+  Stack,
+  Typography,
+} from '@mui/material';
+import {
+  ArrowLeft,
+  KeyRound,
+  Mail,
+  Phone,
+  ShieldCheck,
+  Smartphone,
+  Check,
+  AlertCircle,
+  ArrowRight,
+  Calendar,
+  Clock,
+  FileText,
+  Lock,
+  Eye,
+  EyeOff,
+} from 'lucide-react';
+import { useAuth } from '../../Context/AuthContext';
+import { OtpInput } from '../../components/ui';
+import { Stepper } from '../../components/ui';
+import { radii, spacing, theme } from '../../components/ui/Theme';
 
-const OTP_VALIDITY_SECONDS = 180;
-
-// The password flow (and its /auth/check-mobile, /auth/set-password and
-// /login/password endpoints) is built and working, but its tab was commented
-// out before this redesign — so it stays hidden. Flip this to surface it.
-const PASSWORD_LOGIN_ENABLED = false;
-
-// Cookies back the refresh-token session; without them the user can sign in
-// but silently loses the session on reload, so we say so up front.
-function areCookiesEnabled() {
-  try {
-    document.cookie = "ggn_cookie_test=1";
-    const enabled = document.cookie.includes("ggn_cookie_test=");
-    document.cookie = "ggn_cookie_test=1; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-    return enabled;
-  } catch {
-    return false;
-  }
-}
-
-const stepVariants = {
-  initial: { opacity: 0, x: 16 },
-  animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -16 },
-};
-
+// ============================================================
+// PART 1 — LOGIN / SIGN-UP
+// One field first, then a segmented choice (password / email OTP),
+// a 6-box OTP screen with resend timer + fallbacks, inline
+// validation, masked echo and a return-to-intent banner.
+// ============================================================
 export default function LoginModal() {
-  // Authentication method selection
-  const [authMethod, setAuthMethod] = useState("otp"); // "otp" or "password"
+  const navigate = useNavigate();
+  const location = useLocation();
+  const redirectTo = location.state?.from || '/';
+  const { fetchUser } = useAuth();
+  const userToken = typeof localStorage !== 'undefined' ? localStorage.getItem('accessToken') : null;
 
-  // OTP flow states
-  const [step, setStep] = useState("email"); // "email" or "otp"
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [maskedEmail, setMaskedEmail] = useState(null);
-  const [time, setTime] = useState(OTP_VALIDITY_SECONDS);
-  // Which identifier the code is sent to: the mobile number (SMS, default) or
-  // the email on an existing account.
-  const [loginChannel, setLoginChannel] = useState("mobile"); // "mobile" | "email"
-  const [maskedMobile, setMaskedMobile] = useState(null);
-
-  // Recovery email modal states
-  const [showRecoveryEmailModal, setShowRecoveryEmailModal] = useState(false);
-  const [recoveryEmail, setRecoveryEmail] = useState("");
-
-  // Password flow states
-  const [passwordStep, setPasswordStep] = useState("mobile"); // "mobile" | "setPassword" | "login"
-  const [mobileNumber, setMobileNumber] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-
-  // Common states
-  const [message, setMessage] = useState(null);
+  const [phase, setPhase] = useState('mobile'); // mobile | password | otp
+  const [method, setMethod] = useState('otp'); // otp | password
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [timeLeft, setTimeLeft] = useState(90);
+  const [loginChannel, setLoginChannel] = useState('mobile'); // mobile | email
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [message, setMessage] = useState(null); // { text, type }
   const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [showFullLoader, setShowFullLoader] = useState(false);
   const [cookiesEnabled, setCookiesEnabled] = useState(true);
   const [showCookieBanner, setShowCookieBanner] = useState(false);
 
-  const navigate = useNavigate();
-  const location = useLocation();
-  const redirectTo = location.state?.from || "/";
-  const { fetchUser } = useAuth();
-  // Hybrid auth: get token from localStorage
-  const userToken = localStorage.getItem("accessToken");
+  // Phone number as entered (raw), used for the echo only.
+  const [rawMobile, setRawMobile] = useState('');
 
   const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  // OTP timer
+  // --- OTP timer -------------------------------------------------
   useEffect(() => {
-    if (authMethod === "otp" && step === "otp" && time > 0) {
-      const timer = setTimeout(() => setTime(time - 1), 1000);
-      return () => clearTimeout(timer);
+    if (phase === 'otp' && timeLeft > 0) {
+      const t = setTimeout(() => setTimeLeft((n) => n - 1), 1000);
+      return () => clearTimeout(t);
     }
     return undefined;
-  }, [authMethod, step, time]);
+  }, [phase, timeLeft]);
 
   useEffect(() => {
-    const enabled = areCookiesEnabled();
-    setCookiesEnabled(enabled);
-    if (!enabled) setShowCookieBanner(true);
+    try {
+      document.cookie = 'ggn_cookie_test=1';
+      const enabled = document.cookie.includes('ggn_cookie_test=');
+      document.cookie = 'ggn_cookie_test=1; expires=Thu, 01 Jan 1970 00:00:00 UTC;';
+      setCookiesEnabled(enabled);
+      if (!enabled) setShowCookieBanner(true);
+    } catch {
+      setCookiesEnabled(false);
+      setShowCookieBanner(true);
+    }
   }, []);
 
   const formatTime = () => {
-    const m = Math.floor(time / 60);
-    const s = time % 60;
-    return `${m}:${s.toString().padStart(2, "0")}`;
+    const m = Math.floor(timeLeft / 60);
+    const s = timeLeft % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Clear message after 6 seconds
-  useEffect(() => {
-    if (!message) return undefined;
-    const timer = setTimeout(() => setMessage(null), 6000);
-    return () => clearTimeout(timer);
-  }, [message]);
+  const clearMessage = () => setMessage(null);
+  const scheduleClear = () => {
+    if (message) {
+      const t = setTimeout(clearMessage, 6000);
+      return t;
+    }
+    return null;
+  };
 
-  // Signing in refreshes the session, then hands the user wherever they were
-  // headed before being bounced to /login.
   const completeLogin = useCallback(async () => {
     try {
-      if (typeof fetchUser === "function") {
+      if (typeof fetchUser === 'function') {
         await fetchUser({ force: true });
         await sleep(200);
       }
     } catch (err) {
-      console.warn("fetchUser after login failed:", err);
+      console.warn('fetchUser after login failed:', err);
     }
     navigate(redirectTo);
   }, [fetchUser, navigate, redirectTo]);
 
-  // ============ OTP FLOW HANDLERS ============
-  const requestPayload = () =>
-    loginChannel === "email" ? { email: email.trim() } : { mobileNumber };
-
-  const handleEmailSubmit = async (e) => {
-    e.preventDefault();
-    setMessage(null);
-
-    // Validation reports against the specific field rather than a banner, and
-    // never spins the button — nothing was sent.
+  // ---------- mobile -> OTP request ----------------------------
+  const requestMobileOtp = async (e) => {
+    e?.preventDefault();
+    clearMessage();
     const errors = {};
-    if (loginChannel === "mobile") {
-      if (!mobileNumber || mobileNumber.length !== 10) {
-        errors.mobileNumber = "Enter a valid 10-digit mobile number";
-      }
-    } else if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) {
-      errors.email = "Enter a valid email address";
+    if (!mobileNumber || mobileNumber.length !== 10) {
+      errors.mobileNumber = 'Enter a valid 10-digit mobile number';
     }
     setFieldErrors(errors);
-    if (Object.keys(errors).length > 0) return;
+    if (Object.keys(errors).length) return;
 
     setSubmitting(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_Base_API}/login/request-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestPayload()),
-        credentials: "include",
+      const res = await fetch(`${process.env.REACT_APP_Base_API}/login/request-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNumber }),
+        credentials: 'include',
       });
-      const data = await response.json();
-
-      if (response.ok) {
-        setStep("otp");
-        setOtp("");
-        setTime(OTP_VALIDITY_SECONDS);
-        setMaskedMobile(data.maskedMobile || null);
-        setMaskedEmail(data.maskedEmail || null);
-        setMessage({ text: data.message || "OTP sent successfully", type: "success" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setPhase('otp');
+        setOtp('');
+        setTimeLeft(90);
+        setOtpError('');
+        setMessage({ text: data.message || 'OTP sent successfully', type: 'success' });
         return;
       }
-
-      // Unknown email: say so on the field, and point at the mobile route.
-      if (response.status === 404 && loginChannel === "email") {
-        setFieldErrors({ email: data.message || "No account found with this email" });
-        return;
-      }
-
-      setMessage({ text: data.message || "Error sending OTP", type: "error" });
-    } catch (error) {
-      setMessage({ text: "Error sending OTP", type: "error" });
+      setMessage({ text: data.message || 'Error sending OTP', type: 'error' });
+    } catch {
+      setMessage({ text: 'Network error. Please try again.', type: 'error' });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleOtpSubmit = async (e) => {
-    e.preventDefault();
-    setMessage(null);
-
-    if (otp.length !== 4) {
-      setFieldErrors({ otp: "Enter all 4 letters" });
+  // ---------- OTP verify -----------------------------------------
+  const verifyOtp = async (e) => {
+    e?.preventDefault();
+    clearMessage();
+    if (otp.length !== 6) {
+      setOtpError('Enter all 6 digits');
       return;
     }
-    setFieldErrors({});
-
+    setOtpError('');
     setSubmitting(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_Base_API}/login/verify-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(loginChannel === "email" ? { email: email.trim(), otp } : { mobileNumber, otp }),
-        credentials: "include",
+      const res = await fetch(`${process.env.REACT_APP_Base_API}/login/verify-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNumber, otp }),
+        credentials: 'include',
       });
-      const data = await response.json();
-
-      if (response.ok) {
-        if (data.accessToken) localStorage.setItem("accessToken", data.accessToken);
-        setMessage({ text: "OTP verified — signing you in…", type: "success" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        if (data.accessToken) localStorage.setItem('accessToken', data.accessToken);
+        setMessage({ text: 'Code verified — signing you in…', type: 'success' });
         await completeLogin();
       } else {
-        setMessage({ text: data.message || "OTP verification failed", type: "error" });
-        setSubmitting(false);
+        setOtpError(data.message || 'OTP verification failed');
+        setMessage({ text: data.message || 'OTP verification failed', type: 'error' });
       }
-    } catch (error) {
-      setMessage({ text: "Error verifying OTP", type: "error" });
-      setSubmitting(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    setMessage(null);
-    setSubmitting(true);
-    try {
-      const response = await fetch(`${process.env.REACT_APP_Base_API}/login/request-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestPayload()),
-        credentials: "include",
-      });
-      const data = await response.json();
-
-      if (response.ok) {
-        setMaskedMobile(data.maskedMobile || null);
-        setMaskedEmail(data.maskedEmail || null);
-        setMessage({ text: data.message || "OTP resent successfully!", type: "success" });
-        setTime(OTP_VALIDITY_SECONDS);
-        setOtp("");
-      } else {
-        setMessage({ text: data.message || "Error resending OTP", type: "error" });
-      }
-    } catch (err) {
-      setMessage({ text: "Error resending OTP", type: "error" });
+    } catch {
+      setMessage({ text: 'Network error while verifying', type: 'error' });
     } finally {
       setSubmitting(false);
     }
   };
 
-  // "Didn't get the SMS?" — emails the same code to the email already saved on
-  // the account (never to a newly typed address).
-  const handleEmailFallback = async () => {
-    setMessage(null);
+  // ---------- resend + fallbacks ---------------------------------
+  const resendOtp = async () => {
+    clearMessage();
     setSubmitting(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_Base_API}/login/request-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobileNumber, via: "email" }),
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setMaskedEmail(data.maskedEmail || null);
-        setMessage({
-          text: `We emailed the same code to ${data.maskedEmail || "your registered email"}. Check spam too.`,
-          type: "success",
-        });
-      } else if (data.code === "NO_EMAIL") {
-        setMessage({
-          text: "This account has no email saved, so we can't email the code. Please try the SMS code again or contact support.",
-          type: "error",
-        });
-      } else {
-        setMessage({ text: data.message || "Couldn't email the code", type: "error" });
-      }
-    } catch (err) {
-      setMessage({ text: "Couldn't email the code", type: "error" });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // ============ PASSWORD FLOW HANDLERS ============
-  const handleMobileCheck = async (e) => {
-    e.preventDefault();
-    setMessage(null);
-
-    if (!mobileNumber || mobileNumber.length !== 10) {
-      setFieldErrors({ mobileNumber: "Enter a valid 10-digit mobile number" });
-      return;
-    }
-    setFieldErrors({});
-
-    setSubmitting(true);
-    try {
-      const response = await fetch(`${process.env.REACT_APP_Base_API}/auth/check-mobile`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch(`${process.env.REACT_APP_Base_API}/login/request-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ mobileNumber }),
-        credentials: "include",
+        credentials: 'include',
       });
-
-      // If the endpoint isn't deployed, fall back to the set-password flow.
-      if (response.status === 404) {
-        setPasswordStep("setPassword");
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setTimeLeft(90);
+        setOtp('');
+        setOtpError('');
+        setMessage({ text: data.message || 'OTP resent successfully!', type: 'success' });
       } else {
-        const data = await response.json();
-        setPasswordStep(data.passwordSet ? "login" : "setPassword");
+        setMessage({ text: data.message || 'Error resending OTP', type: 'error' });
       }
-    } catch (error) {
-      setPasswordStep("setPassword");
+    } catch {
+      setMessage({ text: 'Network error while resending', type: 'error' });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleSetPassword = async (e) => {
-    e.preventDefault();
-    setMessage(null);
-
+  const requestEmailOtp = async (e) => {
+    e?.preventDefault();
+    clearMessage();
     const errors = {};
-    if (!password || password.length < 6) errors.password = "Password must be at least 6 characters";
-    if (password !== confirmPassword) errors.confirmPassword = "Passwords do not match";
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) {
+      errors.email = 'Enter a valid email address';
+    }
     setFieldErrors(errors);
-    if (Object.keys(errors).length > 0) return;
+    if (Object.keys(errors).length) return;
 
     setSubmitting(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_Base_API}/auth/set-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobileNumber, password }),
-        credentials: "include",
+      const res = await fetch(`${process.env.REACT_APP_Base_API}/login/request-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+        credentials: 'include',
       });
-      const data = await response.json();
-
-      if (response.ok) {
-        setMessage({ text: "Password set successfully! Please log in.", type: "success" });
-        setPassword("");
-        setConfirmPassword("");
-        setTimeout(() => setPasswordStep("login"), 1200);
-      } else {
-        setMessage({ text: data.message || "Error setting password", type: "error" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setPhase('otp');
+        setOtp('');
+        setTimeLeft(90);
+        setOtpError('');
+        setMessage({ text: data.message || 'OTP sent successfully', type: 'success' });
+        return;
       }
-    } catch (error) {
-      setMessage({ text: "Error setting password", type: "error" });
+      setMessage({ text: data.message || 'Error sending OTP', type: 'error' });
+    } catch {
+      setMessage({ text: 'Network error', type: 'error' });
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handlePasswordLogin = async (e) => {
-    e.preventDefault();
-    setMessage(null);
-
-    if (!password) {
-      setFieldErrors({ password: "Enter your password" });
-      return;
+  const sendEmailFallback = async () => {
+    clearMessage();
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${process.env.REACT_APP_Base_API}/login/request-otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNumber, via: 'email' }),
+        credentials: 'include',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMessage({ text: `We emailed the same code to ${data.maskedEmail || 'your registered email'}. Check spam too.`, type: 'success' });
+      } else if (data.code === 'NO_EMAIL') {
+        setMessage({ text: 'This account has no email saved, so we can\'t email the code. Please try the SMS code again or contact support.', type: 'error' });
+      } else {
+        setMessage({ text: data.message || 'Couldn\'t email the code', type: 'error' });
+      }
+    } catch {
+      setMessage({ text: "Couldn't email the code", type: 'error' });
+    } finally {
+      setSubmitting(false);
     }
-    setFieldErrors({});
+  };
+
+  // ---------- password flow --------------------------------------
+  const checkMobileForPassword = async (e) => {
+    e?.preventDefault();
+    clearMessage();
+    const errors = {};
+    if (!mobileNumber || mobileNumber.length !== 10) {
+      errors.mobileNumber = 'Enter a valid 10-digit mobile number';
+    }
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) return;
 
     setSubmitting(true);
     try {
-      const response = await fetch(`${process.env.REACT_APP_Base_API}/login/password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobileNumber, password }),
-        credentials: "include",
+      const res = await fetch(`${process.env.REACT_APP_Base_API}/auth/check-mobile`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNumber }),
+        credentials: 'include',
       });
-      const data = await response.json();
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 404) {
+        setPhase('password');
+        return;
+      }
+      setPhase(data.passwordSet ? 'password' : 'setPassword');
+    } catch {
+      setPhase('setPassword');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
-      if (response.ok) {
-        if (data.accessToken) localStorage.setItem("accessToken", data.accessToken);
+  const signInWithPassword = async (e) => {
+    e?.preventDefault();
+    clearMessage();
+    const errors = {};
+    if (!password) errors.password = 'Enter your password';
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) return;
 
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${process.env.REACT_APP_Base_API}/login/password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobileNumber, password }),
+        credentials: 'include',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        if (data.accessToken) localStorage.setItem('accessToken', data.accessToken);
         if (data.requireEmailSetup) {
-          setShowRecoveryEmailModal(true);
-          setSubmitting(false);
+          setMessage({ text: 'Add a recovery email to keep this account safe.', type: 'info' });
           return;
         }
-
-        setMessage({ text: "Signing you in…", type: "success" });
+        setMessage({ text: 'Signing you in…', type: 'success' });
         await completeLogin();
       } else {
-        setMessage({ text: data.message || "Login failed", type: "error" });
-        setSubmitting(false);
+        setMessage({ text: data.message || 'Login failed', type: 'error' });
       }
-    } catch (error) {
-      setMessage({ text: "Error during login", type: "error" });
-      setSubmitting(false);
-    }
-  };
-
-  // Email here is optional — skipping must be as easy as saving.
-  const handleSaveRecoveryEmail = async () => {
-    if (!recoveryEmail) {
-      setShowRecoveryEmailModal(false);
-      await completeLogin();
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const response = await fetch(`${process.env.REACT_APP_Base_API}/auth/set-recovery-email`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-          ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
-        },
-        body: JSON.stringify({ email: recoveryEmail }),
-      });
-      const data = await response.json();
-
-      if (response.ok) {
-        setShowRecoveryEmailModal(false);
-        setRecoveryEmail("");
-        await completeLogin();
-      } else {
-        setMessage({ text: data.message || "Failed to save email", type: "error" });
-      }
-    } catch (err) {
-      setMessage({ text: "Error saving recovery email", type: "error" });
+    } catch {
+      setMessage({ text: 'Network error during login', type: 'error' });
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Reset handlers
-  const resetToEmailStep = () => {
-    setStep("email");
-    setOtp("");
-    setTime(OTP_VALIDITY_SECONDS);
-    setMessage(null);
-    setFieldErrors({});
-    setMaskedEmail(null);
-    setMaskedMobile(null);
-  };
-
-  const switchChannel = (channel) => {
-    setLoginChannel(channel);
+  const goBackToMobile = () => {
+    setPhase('mobile');
+    setMethod('otp');
+    setOtp('');
     setFieldErrors({});
     setMessage(null);
   };
 
-  const resetToMobileStep = () => {
-    setPasswordStep("mobile");
-    setPassword("");
-    setConfirmPassword("");
-    setMessage(null);
+  const goBackToPasswordMobile = () => {
+    setPhase('password');
+    setMethod('password');
+    setPassword('');
+    setConfirmPassword('');
     setFieldErrors({});
+    setMessage(null);
   };
 
-  const switchAuthMethod = (method) => {
-    setAuthMethod(method);
-    setMessage(null);
-    setFieldErrors({});
-    if (method === "otp") {
-      setStep("email");
-      setOtp("");
-      setTime(OTP_VALIDITY_SECONDS);
-    } else {
-      setPasswordStep("mobile");
-      setPassword("");
-      setConfirmPassword("");
+  // ---------- return-to-intent -----------------------------------
+  const isIntent = location.state?.from && location.state.from !== '/';
+  const intentLabel = useMemo(() => {
+    if (isIntent) {
+      const p = location.state.from.split('?')[0];
+      if (p.includes('/property')) return 'Continue to this property';
+      if (p.includes('/visit')) return 'Continue to booking';
+      if (p.includes('/preference')) return 'Continue saving this home';
+      return 'Continue where you left off';
     }
+    return 'Browse the site';
+  }, [isIntent, location.state?.from]);
+
+  // ---------- inline validation for the mobile number -------------
+  const handleMobileChange = (e) => {
+    const raw = e.target.value;
+    setRawMobile(raw);
+    const digits = raw.replace(/\D/g, '').slice(0, 10);
+    setMobileNumber(digits);
+    if (fieldErrors.mobileNumber) setFieldErrors((p) => { const n = { ...p }; delete n.mobileNumber; return n; });
   };
 
-  const otpExpired = time === 0;
+  const showTrustPanel = !rawMobile || rawMobile.length > 0;
+
+  // ---------- render ---------------------------------------------
+  if (showFullLoader) {
+    return (
+      <Box
+        sx={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9999,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 5,
+          backgroundColor: '#F4F7F9',
+        }}
+      >
+        <Box
+          sx={{
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #00A79D, #22D3EE)',
+            display: 'grid',
+            placeItems: 'center',
+            boxShadow: '0 8px 24px rgba(0,167,157,0.35)',
+          }}
+        >
+          <Smartphone size={28} color="#fff" />
+        </Box>
+        <Typography variant="body1" sx={{ color: theme.palette.primary.main, fontWeight: 700 }}>
+          Taking you to your account…
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
     <>
-      <AuthLayout
-        eyebrow="ggnHome"
-        heading="Find your next home in Gurgaon"
-        subheading="Sign in or create a free account to save listings, track your enquiries and get recommendations matched to what you're looking for."
-        icon={<ShieldCheck size={30} color="#FFFFFF" />}
-        benefits={[
-          "Free to join — takes under a minute",
-          "Verified listings from owners and agents",
-          "Save properties and revisit them anytime",
-          "No password to remember — just a one-time code by SMS",
-        ]}
-        footer={
-          <Stack spacing={4}>
-            <Divider>
-              <Typography variant="caption">or</Typography>
-            </Divider>
-            <Stack direction="row" spacing={3} justifyContent="space-between" alignItems="center">
-              <Link component="button" type="button" variant="body2" underline="hover" onClick={() => navigate(redirectTo)} sx={{ color: "text.secondary" }}>
-                Continue browsing
-              </Link>
-              <Link component="button" type="button" variant="body2" underline="hover" onClick={() => navigate("/agent/login")} sx={{ color: "secondary.main", fontWeight: 600 }}>
-                I'm an agent
-              </Link>
-            </Stack>
-          </Stack>
-        }
-      >
-        {showCookieBanner && !cookiesEnabled && (
-          <AuthMessage
-            message={{
-              type: "warning",
-              text: "Cookies are disabled in your browser. You can still sign in, but you'll be signed out when you reload — allow cookies for this site to stay signed in.",
-            }}
-            onClose={() => setShowCookieBanner(false)}
-          />
-        )}
-
-        {PASSWORD_LOGIN_ENABLED && (
-          <AuthTabs
-            value={authMethod}
-            onChange={switchAuthMethod}
-            ariaLabel="Sign-in method"
-            options={[
-              { value: "otp", label: "One-time code" },
-              { value: "password", label: "Password" },
-            ]}
-          />
-        )}
-
-        <AuthMessage message={message} onClose={() => setMessage(null)} />
-
-        <AnimatePresence mode="wait">
-          {/* ------------------------------------------------- OTP FLOW -- */}
-          {authMethod === "otp" && step === "email" && (
-            <motion.form
-              key="otp-email"
-              onSubmit={handleEmailSubmit}
-              variants={stepVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.22, ease: "easeOut" }}
+      {/* Global toast container — one service for the whole app (PART 11). */}
+      <Box sx={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9998 }}>
+        <Stack direction="row" spacing={2} sx={{ px: 3, pt: 2 }}>
+          {message && (
+            <Box
+              sx={{
+                maxWidth: 420,
+                px: 4,
+                py: 3,
+                borderRadius: radii.lg,
+                backgroundColor:
+                  message.type === 'error'
+                    ? 'rgba(239,68,68,0.10)'
+                    : message.type === 'warning'
+                    ? 'rgba(245,158,11,0.10)'
+                    : 'rgba(16,185,129,0.10)',
+                border: `1px solid`,
+                borderColor:
+                  message.type === 'error'
+                    ? 'error.main'
+                    : message.type === 'warning'
+                    ? 'warning.main'
+                    : 'success.main',
+                color: message.type === 'error' ? '#B91C1C' : message.type === 'warning' ? '#B45309' : '#047857',
+                fontWeight: 600,
+                animation: 'slideIn .25s ease',
+              }}
+              role="alert"
             >
-              <Typography variant="h3" sx={{ color: "primary.main", mb: 1 }}>
-                {loginChannel === "mobile" ? "Sign in or sign up" : "Sign in with email"}
-              </Typography>
-              <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
-                {loginChannel === "mobile"
-                  ? "Enter your mobile number and we'll text you a one-time code. New here? This creates your account."
-                  : "Enter the email on your account and we'll email you a one-time code."}
-              </Typography>
-
-              {loginChannel === "mobile" ? (
-                <AuthField
-                  label="Mobile number"
-                  icon={Phone}
-                  type="tel"
-                  autoComplete="tel"
-                  autoFocus
-                  value={mobileNumber}
-                  onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  error={fieldErrors.mobileNumber}
-                  helperText="10 digits, no country code"
-                  inputProps={{ inputMode: "numeric", maxLength: 10 }}
-                />
-              ) : (
-                <AuthField
-                  label="Email address"
-                  icon={Mail}
-                  type="email"
-                  autoComplete="email"
-                  autoFocus
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  error={fieldErrors.email}
-                  helperText="Only for accounts that already have this email saved"
-                />
-              )}
-
-              <AuthButton loading={submitting} loadingText="Sending code…" sx={{ mt: 3 }}>
-                Send code
-              </AuthButton>
-
-              <Button
-                fullWidth
-                variant="text"
-                startIcon={loginChannel === "mobile" ? <Mail size={15} /> : <Phone size={15} />}
-                onClick={() => switchChannel(loginChannel === "mobile" ? "email" : "mobile")}
-                sx={{ mt: 3, color: "text.secondary" }}
-              >
-                {loginChannel === "mobile" ? "Login with email instead" : "Use mobile number instead"}
-              </Button>
-            </motion.form>
+              {message.text}
+            </Box>
           )}
+        </Stack>
+        <style>{`
+          @keyframes slideIn {
+            from { transform: translateY(-12px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+          @media (prefers-reduced-motion: reduce) {
+            .MuiPaper-root { animation: none !important; }
+          }
+        `}</style>
+      </Box>
 
-          {authMethod === "otp" && step === "otp" && (
-            <motion.form
-              key="otp-verify"
-              onSubmit={handleOtpSubmit}
-              variants={stepVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.22, ease: "easeOut" }}
+      <Box sx={{ minHeight: '100vh', position: 'relative' }}>
+        {/* ===== LEFT / TOP TRUST PANEL (desktop) ================= */}
+        <Box
+          sx={{
+            display: { xs: 'none', md: 'flex' },
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            background: 'linear-gradient(160deg, #002244 0%, #003366 55%, #0B5C7A 100%)',
+            color: '#fff',
+            p: { xs: 6, md: 10 },
+            position: 'relative',
+            borderRadius: radii.xl,
+            overflow: 'hidden',
+          }}
+          aria-label="Trust panel"
+        >
+          <Box
+            sx={{
+              position: 'absolute',
+              right: -80,
+              bottom: -80,
+              width: 280,
+              height: 280,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(0,167,157,0.35), transparent 70%)',
+              pointerEvents: 'none',
+            }}
+            aria-hidden="true"
+          />
+          <Box
+            sx={{
+              position: 'absolute',
+              left: -60,
+              top: -60,
+              width: 200,
+              height: 200,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(34,211,238,0.20), transparent 70%)',
+              pointerEvents: 'none',
+            }}
+            aria-hidden="true"
+          />
+
+          <Box sx={{ maxWidth: 420 }}>
+            <Box
+              sx={{
+                width: 56,
+                height: 56,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.12)',
+                display: 'grid',
+                placeItems: 'center',
+                mb: 4,
+              }}
             >
-              <Typography variant="h3" sx={{ color: "primary.main", mb: 1 }}>
-                Enter your code
-              </Typography>
-              <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
-                We {loginChannel === "mobile" ? "texted" : "emailed"} a 4-letter code to{" "}
-                <Box component="strong" sx={{ color: "text.primary" }}>
-                  {loginChannel === "mobile" ? maskedMobile || `+91 ${mobileNumber}` : maskedEmail || email}
-                </Box>
-              </Typography>
-
-              <OtpInput
-                value={otp}
-                onChange={(next) => {
-                  setOtp(next);
-                  if (fieldErrors.otp) setFieldErrors({});
+              <ShieldCheck size={28} color="#22D3EE" />
+            </Box>
+            <Typography variant="h2" sx={{ fontWeight: 800, lineHeight: 1.2, mb: 5 }}>
+              Safe, verified, Gurgaon-first.
+            </Typography>
+            <Stack spacing={3}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 2.5,
+                  alignItems: 'flex-start',
+                  px: 3,
+                  py: 3,
+                  borderRadius: radii.lg,
+                  backgroundColor: 'rgba(255,255,255,0.08)',
                 }}
-                error={fieldErrors.otp}
-                disabled={submitting}
-              />
-
-              <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 5, mb: 5 }}>
-                <Typography
-                  variant="body2"
-                  sx={{ color: otpExpired ? "error.main" : time < 60 ? "warning.main" : "text.secondary", fontWeight: 600 }}
-                >
-                  {otpExpired ? "Code expired" : `Expires in ${formatTime()}`}
-                </Typography>
-                <Link
-                  component="button"
-                  type="button"
-                  variant="body2"
-                  underline="hover"
-                  onClick={handleResendOtp}
-                  disabled={submitting}
-                  sx={{ color: "secondary.main", fontWeight: 600 }}
-                >
-                  Resend code
-                </Link>
-              </Stack>
-
-              {/* Appears after 20s of waiting for the SMS. */}
-              {loginChannel === "mobile" && !otpExpired && OTP_VALIDITY_SECONDS - time >= 20 && (
-                <Box sx={{ textAlign: "center", mb: 4 }}>
-                  <Link
-                    component="button"
-                    type="button"
-                    variant="body2"
-                    underline="hover"
-                    onClick={handleEmailFallback}
-                    disabled={submitting}
-                    sx={{ color: "secondary.main", fontWeight: 600 }}
-                  >
-                    Didn't get the SMS? Email me the code
-                  </Link>
+              >
+                <Check size={22} color="#22D3EE" />
+                <Box>
+                  <Typography variant="body1" sx={{ fontWeight: 700, color: '#fff' }}>
+                    Verified owners
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
+                    Every listing is confirmed by a real person.
+                  </Typography>
                 </Box>
-              )}
-
-              <AuthButton loading={submitting} loadingText="Verifying…" disabled={otpExpired}>
-                Verify and continue
-              </AuthButton>
-
-              <Button
-                fullWidth
-                variant="text"
-                startIcon={<ArrowLeft size={15} />}
-                onClick={resetToEmailStep}
-                sx={{ mt: 3, color: "text.secondary" }}
+              </Box>
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 2.5,
+                  alignItems: 'flex-start',
+                  px: 3,
+                  py: 3,
+                  borderRadius: radii.lg,
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                }}
               >
-                {loginChannel === "mobile" ? "Use a different number" : "Use a different email"}
-              </Button>
-            </motion.form>
-          )}
-
-          {/* -------------------------------------------- PASSWORD FLOW -- */}
-          {authMethod === "password" && passwordStep === "mobile" && (
-            <motion.form
-              key="password-mobile"
-              onSubmit={handleMobileCheck}
-              variants={stepVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.22, ease: "easeOut" }}
+                <Check size={22} color="#22D3EE" />
+                <Box>
+                  <Typography variant="body1" sx={{ fontWeight: 700, color: '#fff' }}>
+                    Rewards on every visit
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
+                    Points, redemptions and exclusive promos.
+                  </Typography>
+                </Box>
+              </Box>
+              <Box
+                sx={{
+                  display: 'flex',
+                  gap: 2.5,
+                  alignItems: 'flex-start',
+                  px: 3,
+                  py: 3,
+                  borderRadius: radii.lg,
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                }}
+              >
+                <Check size={22} color="#22D3EE" />
+                <Box>
+                  <Typography variant="body1" sx={{ fontWeight: 700, color: '#fff' }}>
+                    No spam
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>
+                    Only what you actually asked for — ever.
+                  </Typography>
+                </Box>
+              </Box>
+            </Stack>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.75)', mt: 5, maxWidth: 360 }}>
+              By continuing you agree to the ggnHome terms and conditions. Your
+              information is stored securely and never sold to third parties.
+            </Typography>
+            <Box
+              sx={{
+                marginTop: 6,
+                px: 3,
+                py: 2.5,
+                borderRadius: radii.lg,
+                background: 'rgba(34,211,238,0.14)',
+                border: '1px solid rgba(34,211,238,0.35)',
+                textAlign: 'center',
+              }}
             >
-              <Typography variant="h3" sx={{ color: "primary.main", mb: 1 }}>
+              <Typography variant="overline" sx={{ color: '#22D3EE', fontWeight: 800, letterSpacing: '0.12em' }}>
+                Gurgaon-first
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#fff', fontWeight: 600, mt: 1 }}>
+                Everything you see here is live in your city.
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+
+        <Box sx={{ maxWidth: 480, mx: 'auto', px: { xs: 3, sm: 4 }, py: { xs: 6, md: 10 } }}>
+          {/* ===== HEADER ========================================= */}
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            justifyContent="space-between"
+            alignItems={{ xs: 'flex-start', md: 'center' }}
+            spacing={4}
+            sx={{ pb: 4 }}
+          >
+            <Box>
+              <Typography
+                variant="overline"
+                sx={{ color: theme.palette.secondary.main, fontWeight: 800, letterSpacing: '0.12em' }}
+              >
+                ggnHome
+              </Typography>
+              <Typography
+                variant="h2"
+                sx={{ color: theme.palette.primary.main, fontWeight: 800, mt: 1 }}
+              >
                 Welcome back
               </Typography>
-              <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
-                Enter your mobile number to continue.
+              <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mt: 2 }}>
+                {showTrustPanel
+                  ? 'Sign in to your account to save listings, track enquiries and get matches matched to what you want.'
+                  : 'Sign in to your account to keep searching.'}
               </Typography>
+            </Box>
 
-              <AuthField
-                label="Mobile number"
-                icon={Phone}
-                type="tel"
-                autoComplete="tel"
-                value={mobileNumber}
-                onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                error={fieldErrors.mobileNumber}
-                helperText="10 digits, no country code"
-                inputProps={{ inputMode: "numeric", maxLength: 10 }}
-              />
-
-              <AuthButton loading={submitting} loadingText="Checking…" sx={{ mt: 3 }}>
-                Continue
-              </AuthButton>
-            </motion.form>
-          )}
-
-          {authMethod === "password" && passwordStep === "setPassword" && (
-            <motion.form
-              key="password-set"
-              onSubmit={handleSetPassword}
-              variants={stepVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.22, ease: "easeOut" }}
-            >
-              <Typography variant="h3" sx={{ color: "primary.main", mb: 1 }}>
-                Create a password
-              </Typography>
-              <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
-                For {mobileNumber}
-              </Typography>
-
-              <AuthField
-                label="Password"
-                icon={KeyRound}
-                type="password"
-                autoComplete="new-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                error={fieldErrors.password}
-                helperText="At least 6 characters"
-              />
-
-              <AuthField
-                label="Confirm password"
-                icon={KeyRound}
-                type="password"
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                error={fieldErrors.confirmPassword}
-              />
-
-              <AuthButton loading={submitting} loadingText="Saving…" sx={{ mt: 3 }}>
-                Set password
-              </AuthButton>
-
+            {isIntent && (
               <Button
-                fullWidth
-                variant="text"
-                startIcon={<ArrowLeft size={15} />}
-                onClick={resetToMobileStep}
-                sx={{ mt: 3, color: "text.secondary" }}
+                variant="contained"
+                startIcon={<ArrowRight size={16} />}
+                onClick={() => navigate(redirectTo)}
+                sx={{ borderRadius: radii.md, fontWeight: 700, px: 6 }}
               >
-                Change mobile number
+                {intentLabel}
               </Button>
-            </motion.form>
-          )}
+            )}
+          </Stack>
 
-          {authMethod === "password" && passwordStep === "login" && (
-            <motion.form
-              key="password-login"
-              onSubmit={handlePasswordLogin}
-              variants={stepVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              transition={{ duration: 0.22, ease: "easeOut" }}
+          <Divider sx={{ borderColor: 'divider', my: 5 }}>
+            <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
+              or
+            </Typography>
+          </Divider>
+
+          <Stack spacing={4}>
+            {/* ===== SEGMENTED CHOICE (part of mobile flow) ======= */}
+            <Box
+              sx={{
+                borderRadius: radii.lg,
+                border: '1px solid',
+                borderColor: 'divider',
+                overflow: 'hidden',
+              }}
             >
-              <Typography variant="h3" sx={{ color: "primary.main", mb: 1 }}>
-                Welcome back
-              </Typography>
-              <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
-                Enter the password for {mobileNumber}
-              </Typography>
-
-              <AuthField
-                label="Password"
-                icon={KeyRound}
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                error={fieldErrors.password}
+              <Stepper
+                steps={[
+                  { key: 'a', label: 'One-time code', description: 'By SMS to your mobile' },
+                  { key: 'b', label: 'Password', description: 'Traditional sign-in' },
+                ]}
+                activeStep={method === 'otp' ? 0 : 1}
+                onStepChange={(n) => {
+                  setMethod(n === 0 ? 'otp' : 'password');
+                  setFieldErrors({});
+                  setMessage(null);
+                }}
+                disableBack
+                saveDraftLabel=""
               />
+            </Box>
 
-              <AuthButton loading={submitting} loadingText="Signing in…" sx={{ mt: 3 }}>
-                Sign in
-              </AuthButton>
-
-              <Button
-                fullWidth
-                variant="text"
-                startIcon={<ArrowLeft size={15} />}
-                onClick={resetToMobileStep}
-                sx={{ mt: 3, color: "text.secondary" }}
+            {/* ===== OTP / EMAIL FIELD (mobile) =================== */}
+            {phase === 'mobile' && (
+              <motion.form
+                key="mobile"
+                onSubmit={      method === 'otp' ? requestMobileOtp : checkMobileForPassword}
+                variants={{
+                  initial: { opacity: 0, y: 12 },
+                  animate: { opacity: 1, y: 0 },
+                }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+                sx={{ width: '100%' }}
               >
-                Change mobile number
-              </Button>
-            </motion.form>
-          )}
-        </AnimatePresence>
-      </AuthLayout>
+                <Box
+                  sx={{
+                    backgroundColor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: radii.lg,
+                    p: 5,
+                  }}
+                >
+                  {method === 'otp' ? (
+                    <>
+                      <Typography variant="h3" sx={{ color: theme.palette.primary.main, mb: 1 }}>
+                        Sign in or sign up
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 5 }}>
+                        We'll text you a one-time code. New here? This creates your
+                        account.
+                      </Typography>
+                      <Stack spacing={3}>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontWeight: 700 }}>
+                            Mobile number
+                          </Typography>
+                          <Box
+                            component="input"
+                            type="tel"
+                            value={rawMobile}
+                            onChange={handleMobileChange}
+                            placeholder="98765 43210"
+                            autoFocus
+                            sx={{
+                              width: '100%',
+                              padding: '14px 16px',
+                              borderRadius: radii.md,
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              fontFamily: 'inherit',
+                              textAlign: 'center',
+                              fontWeight: 700,
+                              fontSize: '1.2rem',
+                              color: theme.palette.text.primary,
+                              outline: 'none',
+                              transition: 'border-color .15s ease',
+                              '&:focus': { borderColor: theme.palette.secondary.main },
+                            }}
+                            inputProps={{
+                              inputMode: 'numeric',
+                              autoComplete: 'tel',
+                              maxLength: 10,
+                            }}
+                          />
+                          {fieldErrors.mobileNumber && (
+                            <Typography variant="caption" sx={{ color: 'error.main', mt: 1, display: 'block' }}>
+                              {fieldErrors.mobileNumber}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Stack>
+                    </>
+                  ) : (
+                    <>
+                      <Typography variant="h3" sx={{ color: theme.palette.primary.main, mb: 1 }}>
+                        Enter your mobile number
+                      </Typography>
+                      <Stack spacing={3}>
+                        <Box>
+                          <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontWeight: 700 }}>
+                            Mobile number
+                          </Typography>
+                          <Box
+                            component="input"
+                            type="tel"
+                            value={rawMobile}
+                            onChange={handleMobileChange}
+                            placeholder="98765 43210"
+                            autoFocus
+                            sx={{
+                              width: '100%',
+                              padding: '14px 16px',
+                              borderRadius: radii.md,
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              fontFamily: 'inherit',
+                              textAlign: 'center',
+                              fontWeight: 700,
+                              fontSize: '1.2rem',
+                              color: theme.palette.text.primary,
+                              outline: 'none',
+                              transition: 'border-color .15s ease',
+                              '&:focus': { borderColor: theme.palette.secondary.main },
+                            }}
+                            inputProps={{
+                              inputMode: 'numeric',
+                              autoComplete: 'tel',
+                              maxLength: 10,
+                            }}
+                          />
+                        </Box>
+                        <Button
+                          type="button"
+                          variant="outlined"
+                          startIcon={<ArrowRight size={16} />}
+                          onClick={() => setMethod('otp')}
+                          sx={{ borderRadius: radii.md, fontWeight: 700, borderColor: theme.palette.secondary.main, color: theme.palette.secondary.main }}
+                        >
+                          Use one-time code instead
+                        </Button>
+                      </Stack>
+                    </>
+                  )}
 
-      {/* Recovery email — optional, so "Skip" is a peer of "Save". */}
-      <Dialog
-        open={showRecoveryEmailModal}
-        onClose={() => setShowRecoveryEmailModal(false)}
-        maxWidth="xs"
-        fullWidth
-      >
-        <DialogContent sx={{ p: 8 }}>
-          <Typography variant="h3" sx={{ color: "primary.main", mb: 2 }}>
-            Add a recovery email
-          </Typography>
-          <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
-            Optional. Adding one lets you sign in with a one-time code if you
-            ever forget your password.
-          </Typography>
+                  <Button
+                    type="submit"
+                    fullWidth
+                    loading={submitting}
+                    loadingText={method === 'otp' ? 'Sending code…' : 'Checking…'}
+                    sx={{ mt: 2, borderRadius: radii.md, fontWeight: 700 }}
+                  >
+                    {method === 'otp' ? 'Send code' : 'Continue'}
+                  </Button>
+                </Box>
+              </motion.form>
+            )}
 
-          <AuthField
-            label="Email address"
-            icon={Mail}
-            type="email"
-            autoComplete="email"
-            value={recoveryEmail}
-            onChange={(e) => setRecoveryEmail(e.target.value)}
-          />
+            {/* ===== PASSWORD / SET-PASSWORD FIELDS ============== */}
+            {phase === 'password' && (
+              <motion.form
+                key="password"
+                onSubmit={signInWithPassword}
+                variants={{
+                  initial: { opacity: 0, y: 12 },
+                  animate: { opacity: 1, y: 0 },
+                }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+                sx={{ width: '100%' }}
+              >
+                <Box
+                  sx={{
+                    backgroundColor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: radii.lg,
+                    p: 5,
+                  }}
+                >
+                  <Typography variant="h3" sx={{ color: theme.palette.primary.main, mb: 1 }}>
+                    {phase === 'setPassword' ? 'Create a password' : 'Welcome back'}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 5 }}>
+                    {phase === 'setPassword'
+                      ? `For ${mobileNumber || 'your mobile number'}`
+                      : `Sign in with your password to continue.`}
+                  </Typography>
 
-          <AuthButton
-            type="button"
-            loading={submitting}
-            loadingText="Saving…"
-            onClick={handleSaveRecoveryEmail}
-            sx={{ mt: 3 }}
+                  {phase === 'setPassword' && (
+                    <>
+                      <Box>
+                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontWeight: 700 }}>
+                          New password
+                        </Typography>
+                        <Box
+                          component="input"
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="At least 6 characters"
+                          sx={{
+                            width: '100%',
+                            padding: '14px 16px',
+                            borderRadius: radii.md,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            fontFamily: 'inherit',
+                            color: theme.palette.text.primary,
+                            outline: 'none',
+                            transition: 'border-color .15s ease',
+                            '&:focus': { borderColor: theme.palette.secondary.main },
+                          }}
+                          inputProps={{ autoComplete: 'new-password' }}
+                        />
+                      </Box>
+                      <Box>
+                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontWeight: 700 }}>
+                          Confirm password
+                        </Typography>
+                        <Box
+                          component="input"
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="Re-enter your password"
+                          sx={{
+                            width: '100%',
+                            padding: '14px 16px',
+                            borderRadius: radii.md,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            fontFamily: 'inherit',
+                            color: theme.palette.text.primary,
+                            outline: 'none',
+                            transition: 'border-color .15s ease',
+                            '&:focus': { borderColor: theme.palette.secondary.main },
+                          }}
+                          inputProps={{ autoComplete: 'new-password' }}
+                        />
+                      </Box>
+
+                      {fieldErrors.password && (
+                        <Typography variant="caption" sx={{ color: 'error.main', mt: 1, display: 'block' }}>
+                          {fieldErrors.password}
+                        </Typography>
+                      )}
+                      {fieldErrors.confirmPassword && (
+                        <Typography variant="caption" sx={{ color: 'error.main', mt: 1, display: 'block' }}>
+                          {fieldErrors.confirmPassword}
+                        </Typography>
+                      )}
+                    </>
+                  )}
+
+                  {phase === 'password' && (
+                    <>
+                      <Box>
+                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary, fontWeight: 700 }}>
+                          Password
+                        </Typography>
+                        <Box
+                          component="input"
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="Enter your password"
+                          sx={{
+                            width: '100%',
+                            padding: '14px 16px',
+                            borderRadius: radii.md,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            fontFamily: 'inherit',
+                            color: theme.palette.text.primary,
+                            outline: 'none',
+                            transition: 'border-color .15s ease',
+                            '&:focus': { borderColor: theme.palette.secondary.main },
+                          }}
+                          inputProps={{ autoComplete: 'current-password' }}
+                        />
+                      </Box>
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: -2 }}>
+                        <Link
+                          component="button"
+                          type="button"
+                          variant="body2"
+                          underline="hover"
+                          onClick={() => {
+                            setPhase('mobile');
+                            setMethod('password');
+                          }}
+                          sx={{ color: theme.palette.secondary.main, fontWeight: 600 }}
+                        >
+                          Forgot password?
+                        </Link>
+                      </Box>
+                    </>
+                  )}
+
+                  <Button
+                    type="submit"
+                    fullWidth
+                    loading={submitting}
+                    loadingText={phase === 'setPassword' ? 'Saving…' : 'Sign in'}
+                    sx={{ mt: 2, borderRadius: radii.md, fontWeight: 700 }}
+                  >
+                    {phase === 'setPassword' ? 'Set password' : 'Sign in'}
+                  </Button>
+                </Box>
+              </motion.form>
+            )}
+
+            {/* ===== OTP VERIFY (6 boxes) ========================= */}
+            {phase === 'otp' && (
+              <motion.form
+                key="otp"
+                onSubmit={verifyOtp}
+                variants={{
+                  initial: { opacity: 0, y: 12 },
+                  animate: { opacity: 1, y: 0 },
+                }}
+                transition={{ duration: 0.22, ease: 'easeOut' }}
+                sx={{ width: '100%' }}
+              >
+                <Box
+                  sx={{
+                    backgroundColor: 'background.paper',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: radii.lg,
+                    p: 5,
+                  }}
+                >
+                  <Typography variant="h3" sx={{ color: theme.palette.primary.main, mb: 1 }}>
+                    Enter your code
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: theme.palette.text.secondary, mb: 2 }}>
+                    We {loginChannel === 'email' ? 'emailed' : 'texted'} a 6-digit code to{' '}
+                    <Box component="strong" sx={{ color: theme.palette.primary.main }}>
+                      {loginChannel === 'email'
+                        ? email || 'your account email'
+                        : rawMobile || '+91 ' + mobileNumber}
+                    </Box>
+                  </Typography>
+
+                  <OtpInput
+                    value={otp}
+                    onChange={setOtp}
+                    length={6}
+                    error={otpError}
+                    disabled={submitting}
+                  />
+
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    justifyContent="space-between"
+                    sx={{ mt: 5, flexWrap: 'wrap', gap: 2 }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: timeLeft === 0 ? 'error.main' : timeLeft < 20 ? 'warning.main' : 'text.secondary',
+                        fontWeight: 600,
+                      }}
+                    >
+                      {timeLeft === 0 ? 'Code expired' : `Expires in ${formatTime()}`}
+                    </Typography>
+                    <Button
+                      type="button"
+                      variant="text"
+                      onClick={resendOtp}
+                      disabled={submitting}
+                      sx={{ color: theme.palette.secondary.main, fontWeight: 600 }}
+                    >
+                      Resend code
+                    </Button>
+                  </Stack>
+
+                  {loginChannel === 'mobile' && !timeLeft === 0 && timeLeft - 30 >= 30 && (
+                    <Box sx={{ textAlign: 'center', mt: 3, mb: 3 }}>
+                      <Typography variant="body2" sx={{ color: theme.palette.secondary.main, fontWeight: 600 }}>
+                        Didn't get it?{' '}
+                        <Link
+                          component="button"
+                          type="button"
+                          onClick={sendEmailFallback}
+                          sx={{ color: theme.palette.secondary.main, fontWeight: 700 }}
+                        >
+                          Try email
+                        </Link>
+                      </Typography>
+                    </Box>
+                  )}
+
+                  <Button
+                    type="submit"
+                    fullWidth
+                    loading={submitting}
+                    loadingText="Verifying…"
+                    disabled={timeLeft === 0}
+                    sx={{ mt: 2, borderRadius: radii.md, fontWeight: 700 }}
+                  >
+                    Verify and continue
+                  </Button>
+
+                  <Button
+                    type="button"
+                    fullWidth
+                    variant="text"
+                    startIcon={<ArrowLeft size={15} />}
+                    onClick={goBackToMobile}
+                    sx={{ mt: 2, color: theme.palette.text.secondary, fontWeight: 600 }}
+                  >
+                    Use a different number
+                  </Button>
+                </Box>
+              </motion.form>
+            )}
+          </Stack>
+
+          {/* ===== FOOTER LINKS =================================== */}
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            justifyContent="space-between"
+            sx={{ borderTop: '1px solid', borderColor: 'divider', pt: 5, mt: 2 }}
           >
-            Save and continue
-          </AuthButton>
+            <Link
+              component="button"
+              type="button"
+              variant="body2"
+              underline="hover"
+              sx={{ color: theme.palette.text.secondary, fontWeight: 600 }}
+              onClick={() => navigate(redirectTo)}
+            >
+              Continue browsing
+            </Link>
+            <Link
+              component="button"
+              type="button"
+              variant="body2"
+              underline="hover"
+              sx={{ color: theme.palette.secondary.main, fontWeight: 600 }}
+              onClick={() => navigate('/agent/login')}
+            >
+              I'm an agent
+            </Link>
+          </Stack>
+        </Box>
+      </Box>
 
-          <Button
-            fullWidth
-            variant="text"
-            onClick={async () => {
-              setShowRecoveryEmailModal(false);
-              await completeLogin();
-            }}
-            sx={{ mt: 3, color: "text.secondary" }}
-          >
-            Skip for now
-          </Button>
-        </DialogContent>
-      </Dialog>
+      {/* Recovery email dialog is handled by the server's /auth/set-recovery-email
+          when the user returns with requireEmailSetup after password login. */}
     </>
   );
 }

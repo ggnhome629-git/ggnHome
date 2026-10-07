@@ -14,6 +14,45 @@ const { verifyToken, verifyTokenOptional , verifyAgentToken , verifyAgentTokenOp
 
 // Controllers
 const { requestOtp, verifyOtp, loginWithPassword, setPassword, checkMobile , setRecoveryEmail , changePasswordDirect } = require("../controllers/login.controller");
+const {
+  getSlots,
+  bookVisit,
+  getMyVisits,
+  updateVisit,
+  confirmVisit,
+  completeVisit,
+  getIcs,
+  getOwnerVisits,
+  saveAvailability,
+  getAvailability,
+} = require("../controllers/visits.controller");
+const {
+  createRequirement,
+  getMyRequirements,
+  updateRequirement,
+  deleteRequirement,
+  previewRequirements,
+} = require("../controllers/requirements.controller");
+const {
+  createOrder,
+  webhook,
+  refund,
+  getReceipt,
+} = require("../controllers/payments.controller");
+const {
+  list,
+  markRead,
+  markAllRead,
+  savePrefs,
+  enqueue,
+} = require("../controllers/notification.controller");
+const {
+  sendMessage,
+  getSession,
+  handoff,
+  feedback,
+  adminGaps,
+} = require("../controllers/chatbot.controller");
 const { userDetails, saveUserDetails, getUserDetails, getMyProperties, updateProperty, deleteProperty } = require("../controllers/userdetails.controller");
 const { logoutUser } = require("../controllers/logout.controller");
 const { saveUserPreferencesARIA } = require("../controllers/userPreferencesARIA.controller.js");
@@ -44,6 +83,7 @@ const { createSaleProperty, getSaleProperties } = require("../controllers/Salepr
 const {getRentalPropertyById , getSalePropertyById , getPropertyById , getAllActiveProperties} = require("../controllers/Viewproperties.controller");
 const { saveAiResponses, getAiResponses } = require("../controllers/AiAssistant.controller.js");
 const { addView, addSave, addEngagementTime, addRating, getMetrics, getLeadConversion, getSavedProperties , getUserPropertyMetrics } = require("../controllers/PropertyAnalysis.controller.js");
+const { getFunnel, getHealth, exportCsv } = require("../controllers/analytics.controller");
 const { getLocationIQApiKey } = require("../controllers/mapintegration.js");
 const {getAccountsUsage , getBrevoUsage , getLocationIQUsage , getMongoUsage , getGNewsUsage} = require("../controllers/admin.Accountsusage.js");
 const { getNews } = require("../controllers/news.controller");
@@ -109,11 +149,12 @@ router.get("/api/users", verifyToken, checkAdminEmail, async (req, res) => {
 });
 
 // ================== AUTH ROUTES ==================
-router.post("/login/request-otp", requestOtp);
-router.post("/login/password", loginWithPassword);
-router.post("/login/verify-otp", verifyOtp);
-router.post("/auth/set-password", setPassword);
-router.post("/auth/check-mobile", checkMobile);
+const rl = require("../middleware/rateLimit");
+router.post("/login/request-otp", rl.otpRequestLimiter, rl.otpRequestIpLimiter, requestOtp);
+router.post("/login/password", rl.loginLimiter, loginWithPassword);
+router.post("/login/verify-otp", rl.otpVerifyLimiter, verifyOtp);
+router.post("/auth/set-password", rl.loginLimiter, setPassword);
+router.post("/auth/check-mobile", rl.loginLimiter, checkMobile);
 
 // ================== SMS GATEWAY (Android app polls these) ==================
 const { verifyGatewayDevice, claimNext, reportResult, reportDelivery, adminListDevices, adminUpdateDevice, adminDeleteDevice, adminTestSend, adminSmsLog } = require("../controllers/smsGateway.controller");
@@ -182,11 +223,11 @@ router.get("/api/admin/rewards/:userId", verifyToken, checkAdminEmail, getUserRe
 
 router.patch("/api/admin/update-role", verifyToken, checkAdminEmail, updateUserRole);
 router.get("/api/properties", verifyToken, checkAdminEmail, getAllProperties);
-router.get('/api/admin/cloudinary/usage',  getAccountsUsage);
-router.get('/api/admin/brevo/usage', getBrevoUsage);
-router.get('/api/admin/mongo/usage', getMongoUsage);
-router.get('/api/admin/gnews/usage', getGNewsUsage);
-router.get('/api/admin/locationiq/usage', getLocationIQUsage);
+router.get('/api/admin/cloudinary/usage',  verifyToken, checkAdminEmail, getAccountsUsage);
+router.get('/api/admin/brevo/usage', verifyToken, checkAdminEmail, getBrevoUsage);
+router.get('/api/admin/mongo/usage', verifyToken, checkAdminEmail, getMongoUsage);
+router.get('/api/admin/gnews/usage', verifyToken, checkAdminEmail, getGNewsUsage);
+router.get('/api/admin/locationiq/usage', verifyToken, checkAdminEmail, getLocationIQUsage);
 // Admin updates status of any request
 router.patch("/api/admin/services/:id/status", verifyToken, checkAdminEmail, updateServiceRequestDetails)
 router.put(
@@ -257,7 +298,7 @@ router.post(
 
 
 // ================== User Preference form ==================
-router.post("/api/userpreferenceform", savePreferenceForm);
+router.post("/api/userpreferenceform", rl.guestFormLimiter, savePreferenceForm);
 // ================== AI ROUTES ==================
 router.post("/api/predict-price", verifyToken, predictPrice);
 
@@ -266,7 +307,7 @@ router.post("/api/distribute-reward", verifyToken, checkAdminEmail, distributeRe
 router.get("/api/check-eligibility", verifyToken, checkEligibility);
 
 // ================== CUSTOMER SUPPORT ROUTES ==================
-router.post("/api/request-callback", verifyToken, requestCallback);
+router.post("/api/request-callback", rl.guestFormLimiter, verifyToken, requestCallback);
 
 // ================== ENQUIRY ROUTES ==================
 const {
@@ -282,7 +323,34 @@ router.get("/api/enquiry", verifyToken, checkAdminEmail, getEnquiries);
 router.delete("/admin/api/deleteenquiry/:id", verifyToken, checkAdminEmail, deleteEnquiry);
 
 // ================== CHATBOT ROUTES ==================
-router.post("/api/chatbot", getChatResponse);
+router.post("/api/visits", rl.apiLimiter, bookVisit);
+router.get("/api/visits/mine", verifyToken, getMyVisits);
+router.patch("/api/visits/:id", verifyToken, updateVisit);
+router.post("/api/visits/:id/confirm", verifyToken, confirmVisit);
+router.post("/api/visits/:id/complete", verifyToken, completeVisit);
+router.get("/api/visits/:id/ics", verifyToken, getIcs);
+router.get("/api/owner/visits", verifyToken, getOwnerVisits);
+router.put("/api/owner/availability", verifyToken, saveAvailability);
+router.get("/api/owner/availability", verifyToken, getAvailability);
+router.post("/api/requirements", rl.guestFormLimiter, createRequirement);
+router.get("/api/requirements/mine", verifyToken, getMyRequirements);
+router.patch("/api/requirements/:id", verifyToken, updateRequirement);
+router.delete("/api/requirements/:id", verifyToken, deleteRequirement);
+router.get("/api/requirements/preview", verifyTokenOptional, previewRequirements);
+router.post("/api/payment/order", verifyToken, createOrder);
+router.post("/api/payment/webhook", webhook);
+router.post("/api/payment/:id/refund", verifyToken, checkAdminEmail, refund);
+router.get("/api/payment/:id/receipt", verifyToken, getReceipt);
+router.get("/api/notifications", verifyToken, list);
+router.patch("/api/notifications/:id/read", verifyToken, markRead);
+router.patch("/api/notifications/read-all", verifyToken, markAllRead);
+router.put("/api/user/notification-prefs", verifyToken, savePrefs);
+router.post("/api/notify/queue", rl.apiLimiter, enqueue);
+router.post("/api/chatbot", rl.chatLimiter, sendMessage);
+router.get("/api/chatbot/session/:id", verifyToken, getSession);
+router.post("/api/chatbot/handoff", rl.chatLimiter, handoff);
+router.post("/api/chatbot/feedback", rl.chatLimiter, feedback);
+router.get("/api/admin/chatbot/gaps", verifyToken, checkAdminEmail, adminGaps);
 router.get("/api/chatbot/initial-questions", getInitialQuestions);
 
 // ================== SALE & RENTAL PROPERTY ROUTES ==================
@@ -316,7 +384,9 @@ router.post("/api/property-analysis/addSave", verifyToken, addSave);
 router.post("/api/property-analysis/addEngagementTime", verifyToken, addEngagementTime);
 router.post("/api/property-analysis/addRating", verifyToken, addRating);
 router.get("/api/property-analysis/:id", verifyToken, getMetrics);
-router.get("/api/property-analysis/:id/conversion", verifyToken, getLeadConversion);
+router.get("/api/property-analysis/:id/funnel", verifyToken, getFunnel);
+router.get("/api/property-analysis/:id/health", verifyToken, getHealth);
+router.get("/api/property-analysis/:id/export.csv", verifyToken, exportCsv);
 router.get("/api/propertyAanalysis/savedProperties", verifyToken, getSavedProperties);
 router.get("/api/property-analytics/user-metrics", verifyToken, getUserPropertyMetrics);
 
@@ -380,10 +450,10 @@ router.post(
   registerAgent
 );
 router.post("/api/agentcheck", checkAgentExists);
-router.post("/api/agent/send-otp", requestOtpAgent);
-router.post("/api/agent/login/otp", verifyTokenOptional, loginAgentOtp);
-router.post("/api/agent/login/password", verifyTokenOptional, loginAgentPassword);
-router.post("/api/agent/reset-password", verifyTokenOptional, resetAgentPassword);
+router.post("/api/agent/send-otp", rl.otpRequestLimiter, rl.otpRequestIpLimiter, requestOtpAgent);
+router.post("/api/agent/login/otp", rl.otpVerifyLimiter, verifyTokenOptional, loginAgentOtp);
+router.post("/api/agent/login/password", rl.loginLimiter, verifyTokenOptional, loginAgentPassword);
+router.post("/api/agent/reset-password", rl.loginLimiter, verifyTokenOptional, resetAgentPassword);
 // 🔐 Session-based Agent Login (when USER cookies already exist)
 router.post(
   "/api/agent/login/session",

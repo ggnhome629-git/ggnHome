@@ -13,6 +13,10 @@ const SalePropertySchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  // Brokerage the owner/agent wants to advertise on the listing (UI shows
+  // it only when > 0; see PART 6 of client/UI_UPGRADE_GUIDE.txt).
+  commission: { type: Number, min: 0 },
+  commissionNote: { type: String, maxlength: 80 },
 totalArea: {
       sqft: { type: Number }, // Numeric area, e.g., 1200
       configuration: { type: String }, // e.g., "3 BHK"
