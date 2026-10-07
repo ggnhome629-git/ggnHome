@@ -1,7 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
-const mongoose = require('mongoose');
 const logger = require('../utils/logger');
+const RentalProperty = require('../models/RentalProperty');
 const {
   sleep,
   retry,
@@ -252,7 +252,6 @@ class NinetyNineAcresScraper {
    * Import properties to database
    */
   async importProperties(properties) {
-    const RentalProperty = mongoose.model('RentalProperty');
     const result = {
       imported: 0,
       updated: 0,
