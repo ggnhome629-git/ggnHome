@@ -69,20 +69,55 @@ const ROUTE_BASE = {
 
 function LoadingSkeleton() {
   return (
-    <Container maxWidth="lg" sx={{ px: { xs: 4, md: 6 }, py: 8 }}>
-      <Skeleton variant="text" width={260} height={22} sx={{ mb: 4 }} />
-      <Skeleton variant="text" width="60%" height={48} />
-      <Skeleton variant="text" width="35%" height={26} sx={{ mb: 5 }} />
-      <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ mb: 6 }}>
-        <Skeleton variant="rounded" sx={{ flex: 2, height: { xs: 240, md: 460 } }} />
-        <Skeleton variant="rounded" sx={{ flex: 1, height: { xs: 160, md: 460 }, display: { xs: "none", md: "block" } }} />
+    <Container maxWidth="lg" sx={{ px: { xs: 4, md: 6 }, py: { xs: 5, md: 7 } }}>
+      {/* Breadcrumbs */}
+      <Stack direction="row" spacing={2} sx={{ mb: 6 }}>
+        {[1, 2, 3].map((i) => (
+          <Box key={i}>
+            <Skeleton variant="text" width={80} height={20} />
+          </Box>
+        ))}
       </Stack>
-      <Stack direction={{ xs: "column", lg: "row" }} spacing={6}>
-        <Stack spacing={5} sx={{ flex: 1 }}>
-          <Skeleton variant="rounded" height={220} />
-          <Skeleton variant="rounded" height={180} />
+
+      {/* Hero & Contact Card */}
+      <Stack direction={{ xs: "column", lg: "row" }} spacing={6} alignItems="flex-start" sx={{ mb: 6 }}>
+        <Box sx={{ flex: 1, minWidth: 0, p: { xs: 5, md: 7 }, borderRadius: 2, backgroundColor: "background.paper" }}>
+          <Stack spacing={4}>
+            <Skeleton variant="text" width="70%" height={32} />
+            <Skeleton variant="text" width="60%" height={28} />
+            <Skeleton variant="text" width="40%" height={24} />
+            <Stack spacing={2}>
+              {[1, 2].map((i) => (
+                <Skeleton key={i} variant="rounded" height={40} />
+              ))}
+            </Stack>
+          </Stack>
+        </Box>
+        <Box sx={{ width: { xs: "100%", lg: 340 }, flexShrink: 0 }}>
+          <Skeleton variant="rounded" height={340} />
+        </Box>
+      </Stack>
+
+      {/* Gallery & Actions */}
+      <Stack direction={{ xs: "column", lg: "row" }} spacing={6} sx={{ mb: 6 }}>
+        <Stack spacing={6} sx={{ flex: 1, minWidth: 0 }}>
+          <Skeleton variant="rounded" height={400} />
+          <Skeleton variant="rounded" height={60} />
         </Stack>
-        <Skeleton variant="rounded" sx={{ width: { xs: "100%", lg: 360 }, height: 420 }} />
+      </Stack>
+
+      {/* Content Sections */}
+      <Stack spacing={6}>
+        {[1, 2, 3, 4, 5].map((i) => (
+          <Box key={i} sx={{ p: { xs: 5, md: 7 }, borderRadius: 2, backgroundColor: "background.paper" }}>
+            <Skeleton variant="text" width="25%" height={28} sx={{ mb: 4 }} />
+            <Stack spacing={3}>
+              {[1, 2, 3].map((j) => (
+                <Skeleton key={j} variant="rounded" height={80} />
+              ))}
+            </Stack>
+          </Box>
+        ))}
       </Stack>
     </Container>
   );

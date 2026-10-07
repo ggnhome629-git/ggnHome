@@ -1,9 +1,10 @@
 import React from "react";
 import { Box, Button, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { motion } from "framer-motion";
-import { Heart, ImageIcon, MapPin, Phone, Share2 } from "lucide-react";
+import { Heart, ImageIcon, MapPin, Phone, Share2, ExternalLink } from "lucide-react";
 import CardPhotos from "./CardPhotos";
 import { radii, elevationShadows } from "../../theme/theme";
+import { sourcePortalLabel } from "../../utils/propertyModel";
 
 /**
  * True shape of the data: RentalProperty carries `monthlyRent`, SaleProperty
@@ -247,7 +248,27 @@ export default function PropertyCard({
             />
             <span>{rental ? "For rent" : "For sale"}</span>
           </Stack>
-          {isNew && (
+          {property?.isAffiliate && (
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{
+                px: 2.5,
+                py: 1,
+                borderRadius: 999,
+                backgroundColor: "#22D3EE",
+                color: "#003366",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.02em",
+              }}
+            >
+              <ExternalLink size={10} />
+              <span>{sourcePortalLabel(property.sourcePortal)}</span>
+            </Stack>
+          )}
+          {isNew && !property?.isAffiliate && (
             <Box
               sx={{
                 px: 2.5,
@@ -262,7 +283,7 @@ export default function PropertyCard({
               New
             </Box>
           )}
-          {badge && !isNew && (
+          {badge && !isNew && !property?.isAffiliate && (
             <Box
               sx={{
                 px: 2.5,

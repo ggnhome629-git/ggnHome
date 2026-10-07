@@ -17,9 +17,9 @@ const AVAILABLE_TOOLS = [
     gradient: 'linear-gradient(135deg, #00A79D 0%, #22D3EE 100%)',
     features: ['Real-time price analysis', 'Historical data insights', 'AI-powered predictions'],
     stats: [
-      { label: 'Accuracy', value: '94%' },
-      { label: 'Predictions', value: '10K+' },
-      { label: 'Users', value: '2.5K+' },
+      { label: 'Active Properties', value: '15K+' },
+      { label: 'Price Range', value: '₹20L - ₹50Cr' },
+      { label: 'Avg. Accuracy', value: '92%' },
     ],
     badge: 'Most popular',
   },

@@ -1,16 +1,22 @@
 import React, { useState } from "react";
 import { Box, Tab, Tabs, Typography, Stack } from "@mui/material";
-import { Settings, Gift, Smartphone, Power } from "lucide-react";
+import { Settings, Gift, Smartphone, Power, LinkIcon, TrendingUp, Link2 } from "lucide-react";
 
 // Lazy load the sub-pages
 const PromoCards = React.lazy(() => import("./admin.promos"));
 const SmsDevices = React.lazy(() => import("./admin.smsDevices"));
 const FeatureToggles = React.lazy(() => import("./admin.featureToggles"));
+const AffiliateTracker = React.lazy(() => import("./admin.affiliateTracker"));
+const AffiliateConfig = React.lazy(() => import("./admin.affiliateConfig"));
+const LinkManager = React.lazy(() => import("./admin.linkManager"));
 
 const SETTINGS_TABS = [
   { id: "toggles", label: "Feature Toggles", icon: Power, component: FeatureToggles },
   { id: "promos", label: "Promo Cards", icon: Gift, component: PromoCards },
   { id: "sms", label: "SMS Devices", icon: Smartphone, component: SmsDevices },
+  { id: "affiliates", label: "Affiliate Tracker", icon: TrendingUp, component: AffiliateTracker },
+  { id: "affiliateConfig", label: "Affiliate Config", icon: LinkIcon, component: AffiliateConfig },
+  { id: "linkManager", label: "Link Manager", icon: Link2, component: LinkManager },
 ];
 
 /**
