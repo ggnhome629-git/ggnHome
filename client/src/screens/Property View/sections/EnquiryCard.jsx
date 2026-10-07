@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { Alert, Box, Button, Checkbox, FormControlLabel, Radio, RadioGroup, Stack, TextField, Typography } from "@mui/material";
-import { CheckCircle2, ChevronLeft, ChevronRight, Circle, CircleCheck, MessageCircle, Phone } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, Circle, CircleCheck, MessageCircle, Phone, ExternalLink } from "lucide-react";
 import { radii, elevationShadows } from "../../../theme/theme";
-import { whatsappUrl } from "../../../utils/propertyModel";
+import { whatsappUrl, sourcePortalLabel } from "../../../utils/propertyModel";
 
 const INTEREST_LEVELS = ["Just browsing", "Seriously interested", "Ready to buy/rent"];
 const CONTACT_METHODS = [
@@ -161,6 +161,93 @@ export default function EnquiryCard({ property, onEvent, onToast }) {
     backgroundColor: selected ? "rgba(0,167,157,0.08)" : "background.paper",
     "&:hover": { backgroundColor: selected ? "rgba(0,167,157,0.10)" : "background.default" },
   });
+
+  // For affiliate properties, show redirect to original listing instead of enquiry form
+  if (property?.isAffiliate) {
+    return (
+      <Box
+        id="enquiry"
+        component="section"
+        sx={{
+          borderRadius: `${radii.lg}px`,
+          overflow: "hidden",
+          border: "1px solid",
+          borderColor: "divider",
+          boxShadow: elevationShadows[1],
+          backgroundColor: "background.paper",
+        }}
+      >
+        <Stack direction={{ xs: "column", md: "row" }}>
+          {/* Context panel */}
+          <Stack
+            spacing={5}
+            justifyContent="center"
+            sx={{
+              width: { xs: "100%", md: 320 },
+              flexShrink: 0,
+              p: { xs: 6, md: 7 },
+              backgroundColor: "primary.main",
+              color: "common.white",
+            }}
+          >
+            <Box>
+              <Typography variant="h2" sx={{ fontSize: { xs: "1.25rem", md: "1.5rem" }, color: "#7FE9E1", mb: 2 }}>
+                View on {sourcePortalLabel(property.sourcePortal)}
+              </Typography>
+              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.75)" }}>
+                This listing is sourced from an external portal. Click below to view full details and contact the owner directly.
+              </Typography>
+            </Box>
+          </Stack>
+
+          {/* Redirect section */}
+          <Box sx={{ flex: 1, p: { xs: 6, md: 7 }, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", textAlign: "center" }}>
+            <Stack spacing={4} alignItems="center" sx={{ maxWidth: 400 }}>
+              <Box sx={{ p: 3, backgroundColor: "rgba(0,167,157,0.08)", borderRadius: `${radii.md}px`, width: "100%" }}>
+                <ExternalLink size={32} color="#00A79D" style={{ marginBottom: 16, margin: "0 auto 16px" }} />
+                <Typography variant="h4" sx={{ fontSize: "1.1rem", fontWeight: 700, color: "primary.main", mb: 2 }}>
+                  View on {sourcePortalLabel(property.sourcePortal)}
+                </Typography>
+                <Typography variant="body2" sx={{ color: "text.secondary", mb: 3 }}>
+                  This property listing is managed on {sourcePortalLabel(property.sourcePortal)}. Click the button below to view the full listing and connect with the owner.
+                </Typography>
+              </Box>
+
+              <Button
+                variant="contained"
+                color="secondary"
+                size="large"
+                fullWidth
+                endIcon={<ExternalLink size={16} />}
+                onClick={() => {
+                  window.open(property.sourceUrl, "_blank");
+                  onEvent?.("affiliate_redirect_clicked");
+                }}
+                sx={{ fontWeight: 700 }}
+              >
+                Visit Original Listing
+              </Button>
+
+              <Box sx={{ p: 3, backgroundColor: "background.default", borderRadius: `${radii.sm}px`, width: "100%", border: "1px solid", borderColor: "divider" }}>
+                <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 2, fontWeight: 600 }}>
+                  Listing Details
+                </Typography>
+                {property.priceDisplay && (
+                  <Typography variant="body2" sx={{ color: "primary.main", mb: 1 }}>
+                    <strong>Price:</strong> {property.priceDisplay}
+                    {property.isRental && " per month"}
+                  </Typography>
+                )}
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  <strong>Source:</strong> {sourcePortalLabel(property.sourcePortal)}
+                </Typography>
+              </Box>
+            </Stack>
+          </Box>
+        </Stack>
+      </Box>
+    );
+  }
 
   return (
     <Box
