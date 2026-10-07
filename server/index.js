@@ -96,6 +96,31 @@ app.post("/api/cron/scraper-trigger", (req, res) => {
     });
 });
 
+// Property sync cron trigger endpoint
+app.get("/api/cron/property-sync-trigger", (req, res) => {
+  const secret = req.query.secret || req.headers['x-cron-secret'];
+
+  if (secret !== process.env.CRON_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  // Import here to avoid circular dependency
+  const propertySyncService = require('./services/propertySync.service');
+
+  propertySyncService.startVerificationJob('nobroker')
+    .then(() => {
+      res.status(202).json({
+        status: 'Property verification job started'
+      });
+    })
+    .catch((error) => {
+      res.status(500).json({
+        error: 'Failed to start verification',
+        message: error.message
+      });
+    });
+});
+
 // Routes
 app.use(apiLimiter);
 app.use("/", routes);

@@ -451,6 +451,10 @@ router.post(
 const scraperRoutes = require("../routes/scraper.routes");
 router.use("/api/admin/scraper", scraperRoutes);
 
+// ================== PROPERTY SYNC ROUTES ==================
+const propertySyncRoutes = require("../routes/propertySync.routes");
+router.use("/api/admin/property-sync", propertySyncRoutes);
+
 
 module.exports = router;
 
