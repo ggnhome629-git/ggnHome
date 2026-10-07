@@ -1390,11 +1390,16 @@ const updatePropertyAdmin = async (req, res) => {
 
     // Update in correct collection
     let updatedProperty = await RentalProperty.findByIdAndUpdate(id, updatePayload, { new: true });
+    const propertyType = updatedProperty ? "rental" : "sale";
     if (!updatedProperty) {
       updatedProperty = await SaleProperty.findByIdAndUpdate(id, updatePayload, { new: true });
     }
 
     if (!updatedProperty) return res.status(404).json({ message: "Property not found" });
+
+    // Auto-recalculate ranking asynchronously with debounce (don't block response)
+    const { debouncedRankingCalculation } = require('../hooks/propertyRankingHook');
+    debouncedRankingCalculation(updatedProperty._id, propertyType, "Own", 5000);
 
     return res.status(200).json({ message: "Property updated successfully", property: updatedProperty });
 

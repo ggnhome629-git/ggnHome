@@ -7,6 +7,7 @@ const Enquiry = require("../models/EnquirySchema.model.js");
 const RentalProperty = require("../models/Rentalproperty.model.js");
 const SaleProperty = require("../models/SaleProperty.model.js");
 const User = require("../models/user.model.js");
+const { debouncedRankingCalculation } = require("../hooks/propertyRankingHook");
 
 
 // ------------------------------
@@ -104,6 +105,10 @@ const createEnquiry = async (req, res) => {
 
     const enquiry = new Enquiry(enquiryData);
     await enquiry.save();
+
+    // Auto-recalculate ranking asynchronously with debounce (engagement metric changed)
+    const rankingSource = property.ownerType === "Agent" ? "Agent" : "Own";
+    debouncedRankingCalculation(propertyId, propertyType, rankingSource, 5000);
 
     return res.status(201).json({
       success: true,
