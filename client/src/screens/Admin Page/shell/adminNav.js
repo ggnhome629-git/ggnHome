@@ -76,6 +76,7 @@ export const ADMIN_NAV = [
     items: [
       { id: "sms", label: "SMS Phones", route: "/admin/sms-devices", icon: Smartphone },
       { id: "usage", label: "Usage & Limits", route: "/admin/usagetrack", icon: Gauge },
+      { id: "settings", label: "Settings", route: "/admin/settings", icon: Settings },
     ],
   },
 ];
