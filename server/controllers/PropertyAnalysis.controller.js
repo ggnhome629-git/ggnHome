@@ -14,6 +14,7 @@ const Enquiry = require('../models/EnquirySchema.model');
 const Payment = require('../models/Payment.model');
 const RentalProperty = require("../models/Rentalproperty.model");
 const SaleProperty = require("../models/SaleProperty.model");
+const { debouncedRankingCalculation } = require("../hooks/propertyRankingHook");
 
 
 /* ================================
@@ -53,6 +54,15 @@ const addSave = async (req, res) => {
       return res.status(400).json({ error: 'Valid propertyId is required' });
     }
 
+    // Determine property type and get property details for ranking
+    let property = await RentalProperty.findById(propertyId);
+    let propertyType = "rental";
+
+    if (!property) {
+      property = await SaleProperty.findById(propertyId);
+      propertyType = "sale";
+    }
+
     // Toggle: a second save by the same user removes it (the heart is a toggle).
     const alreadySaved = await PropertyAnalysis.exists({ property: propertyId, 'saves.user': userId });
     const metrics = alreadySaved
@@ -66,6 +76,12 @@ const addSave = async (req, res) => {
           { $push: { saves: { user: userId } } },
           { upsert: true, new: true }
         );
+
+    // Auto-recalculate ranking asynchronously with debounce (engagement metric changed)
+    if (property) {
+      const rankingSource = property.ownerType === "Agent" ? "Agent" : "Own";
+      debouncedRankingCalculation(propertyId, propertyType, rankingSource, 5000);
+    }
 
     const savedDocs = await PropertyAnalysis.find({ 'saves.user': userId }).select('property').lean();
     res.status(200).json({
