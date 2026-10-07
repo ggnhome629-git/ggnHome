@@ -34,5 +34,3 @@ function startNoBrokerSyncCron() {
     { timezone: "Asia/Kolkata" }
   );
 }
-
-module.exports = { startNoBrokerSyncCron };
