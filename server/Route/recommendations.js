@@ -6,7 +6,8 @@
 const express = require("express");
 const router = express.Router();
 const recommendationEngine = require("../services/recommendations/engine");
-const { verifyTokenOptional, verifyToken, checkAdminEmail } = require("../middleware/verifyToken");
+const { verifyTokenOptional, verifyToken } = require("../middleware/auth");
+const { checkAdminEmail } = require("../middleware/adminOnly");
 
 /**
  * GET /api/recommendations/user/:userId?limit=10

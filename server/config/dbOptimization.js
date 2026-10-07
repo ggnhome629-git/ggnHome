@@ -3,7 +3,7 @@
  * Implements connection pooling and query optimization
  */
 
-const logger = require("../utils/logger");
+const { logger } = require("../config/logger");
 
 /**
  * Configure Mongoose for optimal performance

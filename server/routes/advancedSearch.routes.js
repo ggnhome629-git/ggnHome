@@ -13,7 +13,8 @@ const {
   clearSearchCache,
 } = require("../controllers/advancedSearch.controller");
 const { processBatchRequests } = require("../controllers/batchRequest.controller");
-const { verifyTokenOptional, verifyToken, checkAdminEmail } = require("../middleware/verifyToken");
+const { verifyTokenOptional, verifyToken } = require("../middleware/auth");
+const { checkAdminEmail } = require("../middleware/adminOnly");
 
 /**
  * Advanced Search with Filters

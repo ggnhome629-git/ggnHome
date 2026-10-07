@@ -7,8 +7,8 @@
 const NodeCache = require("node-cache");
 const Rentalproperty = require("../../models/Rentalproperty.model");
 const SaleProperty = require("../../models/SaleProperty.model");
-const User = require("../../models/User.model");
-const Enquiry = require("../../models/Enquiry.model");
+const User = require("../../models/user.model");
+const Enquiry = require("../../models/EnquirySchema.model");
 
 class RecommendationEngine {
   constructor() {
@@ -107,35 +107,39 @@ class RecommendationEngine {
         .select("email preferences savedSearches")
         .lean();
 
-      // Get enquiry stats via aggregation (server-side only)
-      const enquiryStats = await Enquiry.aggregate([
-        { $match: { userId: require("mongoose").Types.ObjectId(userId) } },
-        {
-          $group: {
-            _id: null,
-            totalEnquiries: { $sum: 1 },
-            sectors: { $push: "$Sector" },
-            propertyTypes: { $push: "$propertyType" }
-          }
-        }
+      // Enquiries carry no sector; resolve it from the enquired properties
+      const enquiries = await Enquiry.find({ userId })
+        .select("propertyId propertyType")
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .lean();
+
+      const idsByType = { rental: [], sale: [] };
+      enquiries.forEach(e => idsByType[e.propertyType]?.push(e.propertyId));
+
+      const [rentals, sales] = await Promise.all([
+        idsByType.rental.length
+          ? Rentalproperty.find({ _id: { $in: idsByType.rental } }).select("Sector").lean()
+          : [],
+        idsByType.sale.length
+          ? SaleProperty.find({ _id: { $in: idsByType.sale } }).select("Sector").lean()
+          : []
       ]);
 
-      const stats = enquiryStats[0] || {
-        totalEnquiries: 0,
-        sectors: [],
-        propertyTypes: []
-      };
-
-      // Get top sectors
       const sectorCounts = {};
-      stats.sectors.forEach(s => {
-        sectorCounts[s] = (sectorCounts[s] || 0) + 1;
+      [...rentals, ...sales].forEach(p => {
+        if (p.Sector) sectorCounts[p.Sector] = (sectorCounts[p.Sector] || 0) + 1;
       });
 
       const topSectors = Object.entries(sectorCounts)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
         .map(([sector]) => sector);
+
+      const stats = {
+        totalEnquiries: enquiries.length,
+        propertyTypes: enquiries.map(e => e.propertyType)
+      };
 
       return {
         userId,

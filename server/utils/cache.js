@@ -7,7 +7,7 @@
 
 const NodeCache = require('node-cache');
 const redis = require('./redisCache');
-const logger = require('./logger');
+const { logger } = require('../config/logger');
 
 // L1 Cache: In-memory with 5-minute default TTL
 const localCache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
