@@ -167,6 +167,21 @@ const addRating = async (req, res) => {
       { upsert: true, new: true }
     );
 
+    // Auto-recalculate ranking asynchronously with debounce (engagement metric changed)
+    // Determine property type to trigger ranking update
+    let property = await RentalProperty.findById(propertyId);
+    let propertyType = "rental";
+
+    if (!property) {
+      property = await SaleProperty.findById(propertyId);
+      propertyType = "sale";
+    }
+
+    if (property) {
+      const rankingSource = property.ownerType === "Agent" ? "Agent" : "Own";
+      debouncedRankingCalculation(propertyId, propertyType, rankingSource, 5000);
+    }
+
     // Respond with updated metrics
     res.status(200).json(metrics);
   } catch (err) {
