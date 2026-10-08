@@ -650,6 +650,9 @@ const VoiceAssistantRent = () => {
             >
               AI Real Estate Intelligence Assistant
             </p>
+            <p style={{ color: "#99F6E4", fontSize: isMobile ? "12px" : "14px", fontWeight: 700, margin: "8px 0 0", textAlign: "center" }}>
+              Currently learning — will be live soon
+            </p>
             <div
               style={{
                 width: isMobile ? "40px" : "60px",

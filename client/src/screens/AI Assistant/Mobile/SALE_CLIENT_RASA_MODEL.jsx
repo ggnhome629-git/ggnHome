@@ -593,6 +593,9 @@ const VoiceAssistantSale = () => {
             }}>
               AI Sale Property Assistant
             </p>
+            <p style={{ color: "#99F6E4", fontSize: "12px", fontWeight: 700, margin: "4px 0 0" }}>
+              Currently learning — will be live soon
+            </p>
           </div>
 
           {!sessionId ? (
