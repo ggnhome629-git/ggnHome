@@ -521,5 +521,8 @@ router.use("/api", advancedSearchRoutes);
 const recommendationsRoutes = require("./recommendations");
 router.use("/api/recommendations", recommendationsRoutes);
 
+// Android-app-only endpoints (push registration, "For You" feed)
+router.use("/api/app", require("./appRoutes"));
+
 module.exports = router;
 

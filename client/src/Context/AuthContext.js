@@ -1,4 +1,5 @@
 // src/context/AuthContext.js
+import { clearUserCache } from "../utils/nativeApp";
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 
 const AuthContext = createContext();
@@ -111,6 +112,7 @@ const logout = useCallback(async () => {
   }
 
   setUser(null);
+  clearUserCache();
 
   try {
     sessionStorage.removeItem("user");

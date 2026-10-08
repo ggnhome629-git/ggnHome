@@ -23,6 +23,7 @@ import ShareDialog from "../../components/ui/ShareDialog";
 import MobileBottomNav from "./MobileBottomNav";
 import SavedFlatmates from "../Flatmates page/SavedFlatmates";
 import { radii } from "../../theme/theme";
+import { isNativeApp, snapshot } from "../../utils/nativeApp";
 
 const TopNavigationBar = React.lazy(() => import("./TopNavigationBar"));
 const Footer = React.lazy(() => import("./Footer"));
@@ -71,6 +72,7 @@ export default function SavedProperties() {
   const [roomCount, setRoomCount] = useState(null);
   const [shareLink, setShareLink] = useState("");
   const [removed, setRemoved] = useState(null);
+  const [offline, setOffline] = useState(false);
 
   useEffect(() => {
     document.title = "Saved homes | GgnHome";
@@ -90,9 +92,30 @@ export default function SavedProperties() {
         if (!res.ok) throw new Error(String(res.status));
         return res.json();
       })
-      .then((data) => setProperties(Array.isArray(data?.properties) ? data.properties : []))
+      .then((data) => {
+        const list = Array.isArray(data?.properties) ? data.properties : [];
+        setProperties(list);
+        setOffline(false);
+        // Keep a copy for when there's no network, and (in the app) warm the
+        // detail pages of the first few so they open offline too.
+        snapshot.write(`ggn:saved:${user._id || user.id || "me"}`, list.slice(0, 60));
+        if (isNativeApp()) {
+          list.slice(0, 12).forEach((p) => {
+            const rental = /rent/i.test(p.defaultpropertytype || "") || p.monthlyRent != null;
+            const base = rental ? process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API : process.env.REACT_APP_SALE_PROPERTY_DETAIL_API;
+            fetch(`${base}/${p._id}`, { credentials: "include" }).catch(() => {});
+          });
+        }
+      })
       .catch((err) => {
-        if (err.name !== "AbortError") setError(true);
+        if (err.name === "AbortError") return;
+        const cached = snapshot.read(`ggn:saved:${user._id || user.id || "me"}`, null);
+        if (cached && cached.length) {
+          setProperties(cached);
+          setOffline(true);
+        } else {
+          setError(true);
+        }
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoading(false);
@@ -210,6 +233,11 @@ export default function SavedProperties() {
       </Box>
 
       <Container maxWidth="xl" sx={{ px: { xs: 4, sm: 6, md: 8 }, py: { xs: 6, md: 8 } }}>
+        {offline && (
+          <Box sx={{ mb: 4, px: 3, py: 1.5, borderRadius: "10px", backgroundColor: "#FFF7E6", color: "#92400E", fontSize: "0.82rem", fontWeight: 700 }}>
+            You're offline — showing your saved homes from the last time you were connected.
+          </Box>
+        )}
         <Tabs
           value={section}
           onChange={(e, v) => setSection(v)}

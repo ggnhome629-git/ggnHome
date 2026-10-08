@@ -2,5 +2,28 @@
   "appId": "com.tanush.ggnhome",
   "appName": "GgnHome",
   "webDir": "www",
-  "server": { "url": "https://www.ggnhome.com", "cleartext": false, "androidScheme": "https" }
+  "appendUserAgent": "GgnHomeApp/1.1.0",
+  "backgroundColor": "#FFFFFF",
+  "server": {
+    "url": "https://www.ggnhome.com",
+    "cleartext": false,
+    "androidScheme": "https",
+    "errorPath": "offline.html",
+    "allowNavigation": ["www.ggnhome.com", "ggnhome.com", "ggnhome.onrender.com"]
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#FFFFFF"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
+      "backgroundColor": "#FFFFFF",
+      "androidScaleType": "CENTER_INSIDE",
+      "showSpinner": false
+    },
+    "StatusBar": { "style": "DARK", "backgroundColor": "#003366", "overlaysWebView": false },
+    "PushNotifications": { "presentationOptions": ["badge", "sound", "alert"] }
+  }
 }

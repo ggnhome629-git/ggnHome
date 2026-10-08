@@ -109,9 +109,10 @@ export function StickyActionBar({ property, saved, onSave, onShare, onScheduleVi
         left: 0,
         right: 0,
         zIndex: 1150,
-        px: 3,
-        py: 3,
-        minHeight: 72,
+        px: 2.5,
+        pt: 2.5,
+        pb: "calc(10px + env(safe-area-inset-bottom, 0px))",
+        minHeight: 68,
         backgroundColor: "background.paper",
         borderTop: "1px solid",
         borderColor: "divider",
@@ -126,25 +127,25 @@ export function StickyActionBar({ property, saved, onSave, onShare, onScheduleVi
         onError={(e) => {
           e.currentTarget.style.visibility = "hidden";
         }}
-        sx={{ width: 48, height: 48, borderRadius: "8px", objectFit: "cover", flexShrink: 0 }}
+        sx={{ width: 44, height: 44, borderRadius: "8px", objectFit: "cover", flexShrink: 0, display: { xs: "none", sm: "block" } }}
       />
 
-      <Box sx={{ minWidth: 0, mr: 1 }}>
+      <Box sx={{ minWidth: 0, maxWidth: { xs: 96, sm: 200 }, mr: 0.5, flexShrink: 1 }}>
         <Typography variant="body2" sx={{ fontWeight: 800, color: "primary.main", lineHeight: 1.2 }} noWrap>
           {property.priceDisplay || "On request"}
         </Typography>
-        <Typography variant="caption" sx={{ color: "text.secondary" }} noWrap>
+        <Typography variant="caption" sx={{ color: "text.secondary", display: { xs: property.isRental ? "block" : "none", sm: "block" } }} noWrap>
           {property.isRental ? "per month" : property.title}
         </Typography>
       </Box>
 
-      <Box sx={{ flex: 1 }} />
+      <Box sx={{ flex: 1, minWidth: 0 }} />
 
       <Tooltip title={saved ? "Saved" : "Save"}>
         <Button
           onClick={onSave}
           aria-label={saved ? "Unsave property" : "Save property"}
-          sx={{ minWidth: 44, px: 0, border: "1px solid", borderColor: "divider", color: saved ? "#00A79D" : "text.secondary" }}
+          sx={{ minWidth: 40, width: 40, height: 40, px: 0, flexShrink: 0, border: "1px solid", borderColor: "divider", color: saved ? "#00A79D" : "text.secondary" }}
         >
           <Heart size={17} fill={saved ? "#00A79D" : "none"} color={saved ? "#00A79D" : "#4A6A8A"} />
         </Button>
@@ -177,21 +178,23 @@ export function StickyActionBar({ property, saved, onSave, onShare, onScheduleVi
         </>
       ) : (
         <>
-          <Button variant="outlined" onClick={onEnquire} sx={{ whiteSpace: "nowrap", borderColor: "#00A79D", color: "#00A79D", "&:hover": { borderColor: "#00A79D", backgroundColor: "rgba(0,167,157,0.08)" } }}>
+          <Button variant="outlined" onClick={onEnquire} sx={{ whiteSpace: "nowrap", flexShrink: 0, px: 2, minWidth: 0, borderColor: "#00A79D", color: "#00A79D", "&:hover": { borderColor: "#00A79D", backgroundColor: "rgba(0,167,157,0.08)" } }}>
             Enquire
           </Button>
           <Button
             variant="contained"
             onClick={onScheduleVisit}
             sx={{
-              flex: 1,
+              flexShrink: 0,
               whiteSpace: "nowrap",
+              px: 2,
+              minWidth: 0,
               backgroundImage: "linear-gradient(90deg, #00A79D 0%, #22D3EE 100%)",
               color: "#FFFFFF",
               "&:hover": { backgroundImage: "linear-gradient(90deg, #00A79D 0%, #22D3EE 100%)" },
             }}
           >
-            Schedule visit
+            Book visit
           </Button>
         </>
       )}

@@ -9,6 +9,7 @@ const { requestId, notFound, errorHandler } = require("./middleware/errorHandler
 const { apiLimiter } = require("./middleware/rateLimit");
 const { startNoBrokerSyncCron, startReminderCron } = require("./cron/nobrokerSyncCron");
 const { startRankingScheduler } = require("./jobs/rankingScheduler");
+const { startPopularPushScheduler, runPopularPush, runPersonalPush } = require("./jobs/popularPush");
 const redisCache = require("./utils/redisCache");
 const { configureMongoose, enableQueryProfiling } = require("./config/dbOptimization");
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
@@ -101,6 +102,19 @@ app.post("/api/cron/scraper-trigger", (req, res) => {
     });
 });
 
+// Popular-property + personal push trigger (external cron, e.g. cron-job.org)
+app.get("/api/cron/popular-push", async (req, res) => {
+  const secret = req.query.secret || req.headers["x-cron-secret"];
+  if (!process.env.CRON_SECRET || !secret || secret !== process.env.CRON_SECRET) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  try {
+    res.json({ popular: await runPopularPush(), personal: await runPersonalPush() });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Property sync cron trigger endpoint
 app.get("/api/cron/property-sync-trigger", (req, res) => {
   const secret = req.query.secret || req.headers['x-cron-secret'];
@@ -148,6 +162,11 @@ if (require.main === module) {
   if (process.env.ENABLE_NOBROKER_CRON === "true" && process.env.DISABLE_CRON !== "true") startNoBrokerSyncCron();
   if (process.env.NODE_ENV !== "test" && process.env.DISABLE_CRON !== "true") startReminderCron();
   if (process.env.DISABLE_CRON !== "true") {
+    try {
+      startPopularPushScheduler();
+    } catch (error) {
+      console.error('⚠️ Warning: Failed to start push scheduler:', error.message);
+    }
     try {
       startRankingScheduler();
     } catch (error) {

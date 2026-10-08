@@ -168,11 +168,11 @@ export default function PropertyGalleryPro({
         {supportImages.length > 0 && (
           <Box
             sx={{
-              display: "grid",
               gap: 2,
               gridTemplateColumns: "repeat(2, 1fr)",
               gridTemplateRows: "repeat(2, 1fr)",
-              height: { xs: 180, sm: 240, md: 460 },
+              display: { xs: "none", md: "grid" },
+              height: { md: 460 },
             }}
           >
             {supportImages.map((img, i) => {
@@ -206,6 +206,39 @@ export default function PropertyGalleryPro({
           </Box>
         )}
       </Box>
+
+      {/* Phones: swipeable thumbnail strip instead of the 2x2 grid */}
+      {gallery.length > 1 && (
+        <Box
+          sx={{
+            display: { xs: "flex", md: "none" },
+            gap: 1.5,
+            mt: 2,
+            overflowX: "auto",
+            scrollSnapType: "x proximity",
+            pb: 1,
+            "&::-webkit-scrollbar": { display: "none" },
+          }}
+        >
+          {gallery.slice(1, 9).map((img, i) => {
+            const isLast = i === 7 && gallery.length > 9;
+            return (
+              <Box
+                key={i}
+                onClick={() => open(i + 1)}
+                sx={{ position: "relative", flex: "0 0 96px", height: 72, borderRadius: "10px", overflow: "hidden", scrollSnapAlign: "start", cursor: "pointer" }}
+              >
+                <GalleryImage src={img} alt={`Property view ${i + 2}`} sx={{ "&:hover": { transform: "none" } }} />
+                {isLast && (
+                  <Stack alignItems="center" justifyContent="center" sx={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,20,45,0.62)", color: "common.white" }}>
+                    <Typography variant="caption" sx={{ color: "inherit", fontWeight: 700 }}>+{gallery.length - 9}</Typography>
+                  </Stack>
+                )}
+              </Box>
+            );
+          })}
+        </Box>
+      )}
 
       <Dialog fullScreen open={isOpen} onClose={close} slotProps={{ paper: { sx: { backgroundColor: "rgba(4,12,24,0.98)" } } }}>
         <Stack sx={{ height: "100%" }}>

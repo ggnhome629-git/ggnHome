@@ -9,6 +9,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import theme from './theme/theme';
 import { AuthProvider } from './Context/AuthContext';
 import { AgentAuthProvider } from './Context/AgentAuthContext';
+import AppBridge from './components/app/AppBridge';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -18,6 +19,7 @@ root.render(
       <AuthProvider>
         <AgentAuthProvider>
           <Router>
+            <AppBridge />
             <App />
           </Router>
         </AgentAuthProvider>
