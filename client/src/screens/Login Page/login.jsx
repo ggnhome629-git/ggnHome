@@ -108,12 +108,14 @@ export default function LoginModal() {
           >
             Continue browsing <ArrowRight size={14} />
           </Link>
+          {/* Agent login disabled
           <Typography variant="body2" sx={{ color: "text.secondary" }}>
             Are you an agent?{" "}
             <Link component="button" type="button" underline="hover" onClick={() => navigate("/agent/login")} sx={{ fontWeight: 700, color: "secondary.main" }}>
               Agent login
             </Link>
           </Typography>
+          */}
         </Stack>
       }
     >

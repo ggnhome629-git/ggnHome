@@ -227,7 +227,8 @@ export function normaliseProperty(raw, type) {
     // the listing lives on the source portal, so every CTA points there.
     sourcePortal,
     sourceUrl,
-    isAffiliate: Boolean(sourcePortal && sourceUrl),
+    // Affiliate flow disabled: all listings behave like own listings.
+    isAffiliate: false,
 
     // Commission, when an owner/agent has actually set one. Never rendered
     // otherwise (see PART 6 of the upgrade guide).

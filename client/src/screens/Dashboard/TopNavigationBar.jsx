@@ -997,6 +997,7 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
                           }}
                         />
                       )}
+                      {/* Agent Login menu item disabled
                       { (user.role === "Agent" || user.role === "admin") && (
                         <MenuItem
                           icon={Home}
@@ -1007,6 +1008,7 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
                           }}
                         />
                       )}
+                      */}
                       { ( user.role === "admin") && (
                         <MenuItem
                           icon={Home}
