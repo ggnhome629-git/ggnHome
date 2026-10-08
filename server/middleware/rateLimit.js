@@ -1,19 +1,29 @@
 const rateLimit = require("express-rate-limit");
+const mongoose = require("mongoose");
 const redisCache = require("../utils/redisCache");
+const RateLimitHit = require("../models/RateLimitHit.model");
 
 // Render runs multiple instances of this service, each with its own process
 // memory. express-rate-limit's default store counts hits in that memory, so
 // "15 per 15 min" really means ~15 per instance -- an attacker's requests
 // land on whichever instance the load balancer picks, and each instance's
-// counter resets independently. This store counts hits in Redis instead
-// (shared across every instance) when Redis is configured and connected,
-// using an atomic INCR so concurrent requests can't race each other.
-// Falls back to a local in-memory Map -- today's behavior, not worse --
-// whenever Redis isn't connected, so this never makes rate limiting weaker.
+// counter resets independently. Confirmed live: RateLimit-Remaining jumped
+// backwards across sequential requests in production.
+//
+// This store shares hit counts across every instance instead, in order of
+// preference:
+//   1. Redis, if configured and connected (atomic INCR) -- not provisioned
+//      today, but used automatically the moment REDIS_URL is set, no code
+//      change needed.
+//   2. MongoDB, already connected from every instance -- an atomic
+//      findOneAndUpdate($inc) against models/RateLimitHit.model.js, which
+//      self-expires via a TTL index.
+//   3. A local in-memory Map, only if both of the above are unreachable --
+//      today's pre-fix behavior, never worse than before this change.
 class SharedStore {
   constructor(prefix) {
     this.prefix = prefix;
-    this.localHits = new Map(); // key -> { count, resetAt } used only as fallback
+    this.localHits = new Map(); // key -> { count, resetAt } used only as last-resort fallback
   }
 
   init(options) {
@@ -36,8 +46,25 @@ class SharedStore {
           resetTime: new Date(Date.now() + (pttl > 0 ? pttl : this.windowMs)),
         };
       } catch (_) {
-        // Redis hiccup mid-request: fall through to the local counter below
+        // Redis hiccup mid-request: fall through to Mongo/memory below
         // rather than letting the request through unlimited.
+      }
+    }
+
+    if (mongoose.connection.readyState === 1) {
+      try {
+        const now = Date.now();
+        const doc = await RateLimitHit.findOneAndUpdate(
+          { key: redisKey },
+          {
+            $inc: { count: 1 },
+            $setOnInsert: { resetAt: new Date(now + this.windowMs) },
+          },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
+        return { totalHits: doc.count, resetTime: doc.resetAt };
+      } catch (_) {
+        // Mongo hiccup / race on the upsert: fall through to local memory.
       }
     }
 
@@ -53,11 +80,18 @@ class SharedStore {
   }
 
   async decrement(key) {
+    const redisKey = `ratelimit:${this.prefix}:${key}`;
     const redisClient = redisCache.isConnected() ? redisCache.getClient() : null;
     if (redisClient) {
       try {
-        const n = await redisClient.decr(`ratelimit:${this.prefix}:${key}`);
-        if (n <= 0) await redisClient.del(`ratelimit:${this.prefix}:${key}`);
+        const n = await redisClient.decr(redisKey);
+        if (n <= 0) await redisClient.del(redisKey);
+        return;
+      } catch (_) {}
+    }
+    if (mongoose.connection.readyState === 1) {
+      try {
+        await RateLimitHit.updateOne({ key: redisKey, count: { $gt: 0 } }, { $inc: { count: -1 } });
         return;
       } catch (_) {}
     }
@@ -66,10 +100,16 @@ class SharedStore {
   }
 
   async resetKey(key) {
+    const redisKey = `ratelimit:${this.prefix}:${key}`;
     const redisClient = redisCache.isConnected() ? redisCache.getClient() : null;
     if (redisClient) {
       try {
-        await redisClient.del(`ratelimit:${this.prefix}:${key}`);
+        await redisClient.del(redisKey);
+      } catch (_) {}
+    }
+    if (mongoose.connection.readyState === 1) {
+      try {
+        await RateLimitHit.deleteOne({ key: redisKey });
       } catch (_) {}
     }
     this.localHits.delete(key);
