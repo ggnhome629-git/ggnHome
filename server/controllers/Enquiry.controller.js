@@ -77,12 +77,10 @@ const createEnquiry = async (req, res) => {
       // No agentUserId / ownerUserId required
     }
 
-    // ❌ Invalid configuration ONLY if not Admin
-    if (property.ownerType !== "Admin" && !agentUserId && !ownerUserId) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid property owner configuration"
-      });
+    // Scraped / ownerless listings have no agent or owner user: the lead goes
+    // to admin instead of being rejected.
+    if (!agentUserId && !ownerUserId) {
+      enquiryFor = "Admin";
     }
 
     // 5️⃣ Create enquiry
