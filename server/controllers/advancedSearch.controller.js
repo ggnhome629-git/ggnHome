@@ -12,6 +12,7 @@ const RentalProperty = require("../models/Rentalproperty.model");
 const SaleProperty = require("../models/SaleProperty.model");
 const cache = require("../utils/cache");
 const { logger } = require("../config/logger");
+const { escapeRegex } = require("../utils/escapeRegex");
 
 /**
  * Advanced Search with Filters
@@ -90,7 +91,7 @@ const advancedSearch = async (req, res) => {
 
     // Sector filter
     if (sector && sector.trim()) {
-      filter.Sector = { $regex: sector, $options: "i" };
+      filter.Sector = { $regex: escapeRegex(sector), $options: "i" };
     }
 
     // Price range
@@ -273,7 +274,7 @@ const autocomplete = async (req, res) => {
       case "location":
         suggestions = await Model.distinct("Sector", {
           isActive: true,
-          Sector: { $regex: query, $options: "i" },
+          Sector: { $regex: escapeRegex(query), $options: "i" },
         }).limit(parseInt(limit));
         break;
 
@@ -293,21 +294,21 @@ const autocomplete = async (req, res) => {
       case "propertytype":
         suggestions = await Model.distinct("propertyType", {
           isActive: true,
-          propertyType: { $regex: query, $options: "i" },
+          propertyType: { $regex: escapeRegex(query), $options: "i" },
         }).limit(parseInt(limit));
         break;
 
       case "furnishing":
         suggestions = await Model.distinct("furnishing", {
           isActive: true,
-          furnishing: { $regex: query, $options: "i" },
+          furnishing: { $regex: escapeRegex(query), $options: "i" },
         }).limit(parseInt(limit));
         break;
 
       default:
         suggestions = await Model.distinct("Sector", {
           isActive: true,
-          Sector: { $regex: query, $options: "i" },
+          Sector: { $regex: escapeRegex(query), $options: "i" },
         }).limit(parseInt(limit));
     }
 
@@ -351,7 +352,7 @@ const getFilterMetadata = async (req, res) => {
 
     const filter = { isActive: true };
     if (sector) {
-      filter.Sector = { $regex: sector, $options: "i" };
+      filter.Sector = { $regex: escapeRegex(sector), $options: "i" };
     }
 
     // Aggregate statistics

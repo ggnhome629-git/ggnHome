@@ -1,3 +1,4 @@
+const { escapeRegex } = require('../utils/escapeRegex');
 const Payment = require('../models/Payment.model');
 const { saleProfileFields } = require("../utils/saleProfile");
 const mongoose = require('mongoose');
@@ -146,10 +147,10 @@ const getCallbackRequests = async (req, res) => {
 
     if (search) {
       filter.$or = [
-        { name: new RegExp(search, 'i') },
-        { phone: new RegExp(search, 'i') },
-        { email: new RegExp(search, 'i') },
-        { issue: new RegExp(search, 'i') }
+        { name: new RegExp(escapeRegex(search), 'i') },
+        { phone: new RegExp(escapeRegex(search), 'i') },
+        { email: new RegExp(escapeRegex(search), 'i') },
+        { issue: new RegExp(escapeRegex(search), 'i') }
       ];
     }
 
@@ -1718,7 +1719,7 @@ const createRentalPropertyAdmin = async (req, res) => {
       // Save or update Sector collection with configurations
       // ------------------------------
       const existingSector = await Sector.findOne({
-        name: { $regex: new RegExp(`^${cleanSector}$`, "i") },
+        name: { $regex: new RegExp(`^${escapeRegex(cleanSector)}$`, "i") },
       });
 
       if (existingSector) {

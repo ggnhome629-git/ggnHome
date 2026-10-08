@@ -1,4 +1,5 @@
 const SupportTicket = require("../models/SupportTicket.model");
+const { escapeRegex } = require("../utils/escapeRegex");
 const FaqArticle = require("../models/FaqArticle.model");
 const User = require("../models/user.model");
 
@@ -35,7 +36,7 @@ exports.getFaqSuggest = async (req, res) => {
     const { q } = req.query;
     if (!q || q.length < 2) return res.json({ success: true, suggestions: [] });
     const suggestions = await FaqArticle.find(
-      { isPublished: true, question: new RegExp(q, "i") },
+      { isPublished: true, question: new RegExp(escapeRegex(q), "i") },
       { question: 1, category: 1 },
       { limit: 8, sort: { question: 1 } }
     );

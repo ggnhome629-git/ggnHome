@@ -614,7 +614,9 @@ exports.searchPropertiesonLocation = async (req, res) => {
     // ----- Build OR search conditions (dedupe & robust field coverage) -----
     const uniqueFields = [...new Set(queryFields.filter(Boolean))];
     const orConditions = uniqueFields.flatMap((field) => {
-      const regex = new RegExp(String(field).trim(), "i");
+      // field is user-supplied (req.body.queryFields) -- escape before building
+      // a RegExp or a crafted pattern can hang MongoDB's regex engine (ReDoS).
+      const regex = new RegExp(escapeRegex(String(field).trim()), "i");
       return [
         { Sector: regex },
         { address: regex },
@@ -702,8 +704,9 @@ exports.getUserDashboard = async (req, res) => {
         .split(/\s+/)
         .map((part) => part.trim())
         .filter(Boolean);
-      // Build regex for each sub-part
-      const regexArray = queryParts.map((word) => new RegExp(word, "i"));
+      // Build regex for each sub-part (word ultimately traces back to
+      // user-supplied search text stored in SearchHistory -- escape it)
+      const regexArray = queryParts.map((word) => new RegExp(escapeRegex(word), "i"));
       // Match against multiple fields for any sub-part
       const orConditions = regexArray.flatMap((r) => [
         { Sector: r },

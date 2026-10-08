@@ -18,6 +18,7 @@
 const RentalProperty = require("../models/Rentalproperty.model");
 const SaleProperty = require("../models/SaleProperty.model");
 const { logger } = require("../config/logger");
+const { escapeRegex } = require("../utils/escapeRegex");
 
 /**
  * Process batch requests
@@ -176,7 +177,7 @@ async function searchBatch(filters, params) {
     };
 
     if (filters.Sector) {
-      filter.Sector = { $regex: filters.Sector, $options: "i" };
+      filter.Sector = { $regex: escapeRegex(filters.Sector), $options: "i" };
     }
     if (filters.minPrice) {
       filter[priceField] = filter[priceField] || {};

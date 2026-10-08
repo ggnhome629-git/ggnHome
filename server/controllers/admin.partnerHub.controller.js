@@ -1,5 +1,6 @@
 // server/controllers/admin.partnerHub.controller.js
 const Agent = require('../models/Agent.model');
+const { escapeRegex } = require('../utils/escapeRegex');
 const mongoose = require('mongoose');
 
 /**
@@ -72,9 +73,9 @@ const listAgentsForHub = async (req, res) => {
     }
     if (search) {
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { mobileNumber: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
+        { name: { $regex: escapeRegex(search), $options: 'i' } },
+        { mobileNumber: { $regex: escapeRegex(search), $options: 'i' } },
+        { email: { $regex: escapeRegex(search), $options: 'i' } },
       ];
     }
 

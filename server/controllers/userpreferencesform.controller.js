@@ -1,5 +1,6 @@
 const UserPreferenceForm = require('../models/userpreferenceForm.model');
 const User = require('../models/user.model');
+const { escapeRegex } = require('../utils/escapeRegex');
 
 // Helper to parse pagination params
 function parsePagination(req) {
@@ -93,7 +94,7 @@ exports.listPreferenceForms = async (req, res) => {
     const q = {};
     if (req.query.mobileNumber) q.mobileNumber = req.query.mobileNumber;
     if (req.query.bhkSize) q.bhkSize = req.query.bhkSize;
-    if (req.query.preferredLocation) q.preferredLocation = { $regex: req.query.preferredLocation, $options: 'i' };
+    if (req.query.preferredLocation) q.preferredLocation = { $regex: escapeRegex(req.query.preferredLocation), $options: 'i' };
 
     const [items, total] = await Promise.all([
       UserPreferenceForm.find(q).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),

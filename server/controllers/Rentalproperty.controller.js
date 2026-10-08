@@ -9,6 +9,7 @@
 // ==============================
 const SearchHistory = require("../models/SearchHistory.model.js");
 const { stripProtectedFields } = require("../utils/protectedFields");
+const { escapeRegex } = require("../utils/escapeRegex");
 const RentalProperty = require("../models/Rentalproperty.model.js");
 const Sector = require("../models/Sector.model.js");
 const User = require("../models/user.model.js");
@@ -140,7 +141,7 @@ const createRentalProperty = async (req, res) => {
       // Save or update Sector collection with configurations
       // ------------------------------
       const existingSector = await Sector.findOne({
-        name: { $regex: new RegExp(`^${cleanSector}$`, "i") },
+        name: { $regex: new RegExp(`^${escapeRegex(cleanSector)}$`, "i") },
       });
 
       if (existingSector) {

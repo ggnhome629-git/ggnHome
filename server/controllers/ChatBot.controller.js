@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { escapeRegex } = require("../utils/escapeRegex");
 const ChatSession = require("../models/ChatSession.model");
 const ChatMessage = require("../models/ChatMessage.model");
 const SupportTicket = require("../models/SupportTicket.model");
@@ -34,7 +35,13 @@ exports.sendMessage = async (req, res) => {
     let handoffSuggested = false;
 
     // Fallback: answer known FAQ keywords.
-    const faq = await FaqArticle.findOne({ isPublished: true, question: { $regex: new RegExp(`\\b${userText.split(" ").join("|")}\\b`, "i") } });
+    // userText is raw, public, unauthenticated chat input -- escape each
+    // word before building the OR-regex or a crafted message can hang
+    // MongoDB's regex engine (ReDoS), reachable by anyone with no login.
+    const faqWordPattern = userText.split(" ").map(escapeRegex).join("|");
+    const faq = faqWordPattern
+      ? await FaqArticle.findOne({ isPublished: true, question: { $regex: new RegExp(`\\b${faqWordPattern}\\b`, "i") } })
+      : null;
     if (faq) {
       reply = `FAQ: ${faq.answer}`;
     } else if (userText.toLowerCase().includes("help") || userText.toLowerCase().includes("human")) {

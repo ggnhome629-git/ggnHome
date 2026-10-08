@@ -2,6 +2,7 @@
 const mongoose = require('mongoose');
 const { saleProfileFields } = require("../utils/saleProfile");
 const { stripProtectedFields } = require("../utils/protectedFields");
+const { escapeRegex } = require("../utils/escapeRegex");
 const Agent = require('../models/Agent.model');
 const UserPreferenceForm = require('../models/userpreferenceForm.model');
 const SearchHistory = require("../models/SearchHistory.model.js");
@@ -127,7 +128,7 @@ const createRentalPropertyAgent = async (req, res) => {
       // Save or update Sector collection with configurations
       // ------------------------------
       const existingSector = await Sector.findOne({
-        name: { $regex: new RegExp(`^${cleanSector}$`, "i") },
+        name: { $regex: new RegExp(`^${escapeRegex(cleanSector)}$`, "i") },
       });
 
       if (existingSector) {
