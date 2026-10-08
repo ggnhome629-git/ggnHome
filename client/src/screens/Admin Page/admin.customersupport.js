@@ -1,14 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box, Button, Card, CardContent, Grid, Typography, TextField,
-  InputAdornment, Avatar, Chip, Dialog, DialogTitle, DialogContent,
-  DialogActions, IconButton, Tooltip, Skeleton, Stack, Alert,
-} from "@mui/material";
-import {
-  Search, RefreshCw, TrendingUp, Users, LogIn, LogOut, Phone,
-  Filter, CheckCircle, XCircle, Calendar, Home, ArrowUpRight,
-} from "lucide-react";
-import { PageHeader, StatCard, StatusChip, ConfirmDialog, EmptyState } from "./shell/adminUi";
+import { Box, Button, Card, CardContent, Grid, Typography, TextField, InputAdornment, Avatar, Chip, IconButton, Skeleton, Stack, Alert } from "@mui/material";
+import { Search, RefreshCw, Phone, CheckCircle, Calendar, ArrowUpRight } from "lucide-react";
+import { PageHeader, StatCard, EmptyState } from "./shell/adminUi";
 import { useNavigate } from "react-router-dom";
 import "./admin.css";
 

@@ -1,18 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import {
-  X,
-  CheckCircle2,
-  Clock,
-  AlertCircle,
-  TrendingUp,
-  Zap,
-  Database,
-  Image,
-  Users,
-  Lock,
-  BarChart3,
-  Download,
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { X, CheckCircle2, TrendingUp } from 'lucide-react';
 
 const TasksRecommendationsModal = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('tasks');

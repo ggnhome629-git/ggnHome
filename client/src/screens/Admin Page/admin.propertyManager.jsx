@@ -1,60 +1,14 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Grid,
-  Typography,
-  Stack,
-  TextField,
-  Alert,
-  Chip,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  Pagination,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  InputAdornment,
-  useMediaQuery,
-  useTheme,
-  LinearProgress,
-} from "@mui/material";
-import {
-  Home,
-  Search,
-  Filter,
-  Eye,
-  Edit,
-  Trash2,
-  MapPin,
-  DollarSign,
-  SquareFeet,
-  Users,
-  Calendar,
-  Check,
-  AlertCircle,
-  Download,
-  Plus,
-  RefreshCw,
-  ChevronRight,
-} from "lucide-react";
+import { Box, Button, Card, CardContent, Grid, Typography, Stack, TextField, Alert, Chip, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Dialog, DialogTitle, DialogContent, DialogActions, IconButton, Pagination, FormControl, InputLabel, Select, MenuItem, InputAdornment, useMediaQuery, useTheme } from "@mui/material";
+import { Pencil, Home, Search, Filter, Eye, Trash2, MapPin, Check, AlertCircle, Download, Plus, RefreshCw } from "lucide-react";
+import { useAdminFeedback } from "./shell/adminUi";
+import EditPropertyModal from "./admin.editpropertymodel";
 
 import './admin.css';
 
 const AdminPropertyManager = () => {
+  const { confirm, notify, feedback } = useAdminFeedback();
+  const [editingId, setEditingId] = useState(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
@@ -69,7 +23,7 @@ const AdminPropertyManager = () => {
   const [showDetails, setShowDetails] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
-  const API_BASE = process.env.REACT_APP_Base_API || "http://localhost:2000";
+  const API_BASE = process.env.REACT_APP_Base_API || "";
   const itemsPerPage = 10;
 
   // Fetch properties
@@ -87,7 +41,7 @@ const AdminPropertyManager = () => {
       const response = await fetch(
         `${API_BASE}/api/admin/properties?${query}`,
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${(localStorage.getItem("accessToken") || localStorage.getItem("token"))}` },
           credentials: "include",
         }
       );
@@ -130,14 +84,14 @@ const AdminPropertyManager = () => {
 
   // Delete property
   const deleteProperty = async (id, propertyTitle) => {
-    if (!window.confirm(`Are you sure you want to delete "${propertyTitle}"?`)) {
+    if (!(await confirm({ title: "Delete property", message: `Are you sure you want to delete "${propertyTitle}"?`, confirmLabel: "Delete", danger: true }))) {
       return;
     }
 
     try {
       const response = await fetch(`${API_BASE}/api/admin/properties/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${(localStorage.getItem("accessToken") || localStorage.getItem("token"))}` },
         credentials: "include",
       });
 
@@ -184,6 +138,13 @@ const AdminPropertyManager = () => {
 
   return (
     <Box className="admin-dashboard">
+      {feedback}
+      <EditPropertyModal
+        propertyId={editingId}
+        isOpen={Boolean(editingId)}
+        onClose={() => setEditingId(null)}
+        onSuccess={() => { setEditingId(null); fetchProperties(page); }}
+      />
       <Box className="admin-container">
         {/* Header */}
         <Box className="flex items-center justify-between mb-6 flex-wrap gap-3">
@@ -494,6 +455,14 @@ const AdminPropertyManager = () => {
                           </IconButton>
                           <IconButton
                             size="small"
+                            onClick={() => setEditingId(property._id)}
+                            aria-label="Edit property"
+                            className="focus-ring"
+                          >
+                            <Pencil size={18} />
+                          </IconButton>
+                          <IconButton
+                            size="small"
                             color="error"
                             onClick={() => deleteProperty(property._id, property.title)}
                             aria-label="Delete property"
@@ -614,6 +583,14 @@ const AdminPropertyManager = () => {
                             className="focus-ring"
                           >
                             <Eye size={16} />
+                          </IconButton>
+                          <IconButton
+                            size="small"
+                            onClick={() => setEditingId(property._id)}
+                            title="Edit property"
+                            className="focus-ring"
+                          >
+                            <Pencil size={16} />
                           </IconButton>
                           <IconButton
                             size="small"

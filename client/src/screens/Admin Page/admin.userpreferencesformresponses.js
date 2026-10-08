@@ -1,15 +1,9 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
-import {
-  Box, Button, Card, CardContent, Grid, Typography, TextField,
-  InputAdornment, Avatar, Chip, IconButton, Dialog, DialogTitle,
-  DialogContent, DialogActions, CircularProgress, Stack, Tooltip,
-  Skeleton, Alert, FormControl, InputLabel, Select, MenuItem,
-} from "@mui/material";
-import { Search, RefreshCw, Filter, Phone, Mail, MessageSquare, Users, LogIn, LogOut, MapPin, CheckCircle, AlertCircle } from "lucide-react";
-import { PageHeader, StatCard, StatusChip, ConfirmDialog, EmptyState, CopyField, MaskedPhone } from "./shell/adminUi";
-import { AnimatedNumber } from "../../components/motion";
+import { Box, Button, Card, CardContent, Grid, Typography, TextField, InputAdornment, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, CircularProgress, Stack, Tooltip, Alert, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
+import { RefreshCw, Filter, Phone, MessageSquare, Users, LogIn, LogOut, MapPin, CheckCircle, AlertCircle } from "lucide-react";
+import { PageHeader, StatCard, ConfirmDialog, CopyField } from "./shell/adminUi";
 import "./admin.css";
 
 const AdminPreferencesDashboard = () => {

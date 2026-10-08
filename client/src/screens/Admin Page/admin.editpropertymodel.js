@@ -682,7 +682,7 @@ function handlePanoFilesSelected(files) {
           if (field.type === "select") {
             return (
               <Box key={field.key} sx={span}>
-                <TextField {...shared} select SelectProps={{ native: true }}>
+                <TextField {...shared} select SelectProps={{ native: true }} InputLabelProps={{ shrink: true }}>
                   <option value="">Select</option>
                   {field.options?.map((opt) => (
                     <option key={opt} value={opt}>

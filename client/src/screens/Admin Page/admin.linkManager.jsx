@@ -22,13 +22,14 @@ import {
   Paper,
 } from "@mui/material";
 import { Copy, Trash2, Edit2, Plus, CheckCircle, AlertCircle } from "lucide-react";
-import { radii } from "../../theme/theme";
+import { useAdminFeedback } from "./shell/adminUi";
 
 /**
  * Link Manager - Manage affiliate link mappings
  * Maps internal property links to affiliate portal links with live updates
  */
 export default function LinkManager() {
+  const { confirm, notify, feedback } = useAdminFeedback();
   const [links, setLinks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -84,7 +85,7 @@ export default function LinkManager() {
 
   const handleSave = async () => {
     if (!formData.propertyId || !formData.normalLink || !formData.affiliateLink) {
-      alert("Please fill in all fields");
+      notify("Please fill in all fields", "warning");
       return;
     }
 
@@ -97,8 +98,8 @@ export default function LinkManager() {
     handleCloseDialog();
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm("Delete this link mapping?")) {
+  const handleDelete = async (id) => {
+    if (await confirm({ title: "Delete link", message: "Delete this link mapping?", confirmLabel: "Delete", danger: true })) {
       const newLinks = links.filter((l) => l.id !== id);
       setLinks(newLinks);
       localStorage.setItem("affiliateLinks", JSON.stringify(newLinks));
@@ -113,6 +114,7 @@ export default function LinkManager() {
 
   return (
     <Box sx={{ p: { xs: 3, md: 4 } }}>
+      {feedback}
       <Stack spacing={4}>
         {/* Header */}
         <Box>

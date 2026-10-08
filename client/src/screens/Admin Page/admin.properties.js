@@ -1,15 +1,8 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import {
-  Box, Button, Card, CardContent, Grid, Typography, TextField,
-  Select, MenuItem, FormControl, InputAdornment, IconButton,
-  Skeleton, Stack, Chip, Tooltip, Alert,
-} from "@mui/material";
-import {
-  CheckCircle, XCircle, Clock, User, DollarSign, Calendar, Home,
-  Bell, Gift, RefreshCw, Eye, Copy, AlertCircle,
-} from "lucide-react";
-import { PageHeader, StatCard, StatusChip, CopyField, MaskedPhone } from "./shell/adminUi";
+import { Box, Button, Card, CardContent, Grid, Typography, Skeleton, Chip, Alert } from "@mui/material";
+import { CheckCircle, XCircle, Clock, User, DollarSign, Calendar, Home, Bell, Gift, RefreshCw, AlertCircle } from "lucide-react";
+import { PageHeader, StatCard } from "./shell/adminUi";
 import "./admin.css";
 
 export default function AdminProperties() {

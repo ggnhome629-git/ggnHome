@@ -1,43 +1,6 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Grid,
-  Typography,
-  Stack,
-  Alert,
-  Chip,
-  LinearProgress,
-  Paper,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  Divider,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-} from "@mui/material";
-import {
-  RefreshCw,
-  Play,
-  Square,
-  Eye,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  Database,
-  Zap,
-  Smartphone,
-  Camera,
-  BarChart3,
-} from "lucide-react";
+import { Box, Button, Card, CardContent, Grid, Typography, Stack, Alert, Chip, LinearProgress, Paper, Divider, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
+import { RefreshCw, Play, Square, Eye, TrendingUp, AlertCircle, CheckCircle, Database, Zap, Camera } from "lucide-react";
 
 const AdminPropertySync = () => {
   const [syncStatus, setSyncStatus] = useState(null);
@@ -48,7 +11,7 @@ const AdminPropertySync = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [showReport, setShowReport] = useState(false);
 
-  const API_BASE = process.env.REACT_APP_Base_API || "http://localhost:2000";
+  const API_BASE = process.env.REACT_APP_Base_API || "";
 
   // Fetch sync status
   const fetchStatus = async () => {
@@ -56,7 +19,7 @@ const AdminPropertySync = () => {
       const response = await fetch(
         `${API_BASE}/api/admin/property-sync/status`,
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${(localStorage.getItem("accessToken") || localStorage.getItem("token"))}` },
           credentials: "include",
         }
       );
@@ -75,7 +38,7 @@ const AdminPropertySync = () => {
       const response = await fetch(
         `${API_BASE}/api/admin/property-sync/logs?limit=50`,
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${(localStorage.getItem("accessToken") || localStorage.getItem("token"))}` },
           credentials: "include",
         }
       );
@@ -114,7 +77,7 @@ const AdminPropertySync = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${(localStorage.getItem("accessToken") || localStorage.getItem("token"))}`,
           },
           credentials: "include",
           body: JSON.stringify({ source: "nobroker" }),
@@ -143,7 +106,7 @@ const AdminPropertySync = () => {
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${(localStorage.getItem("accessToken") || localStorage.getItem("token"))}`,
           },
           credentials: "include",
         }

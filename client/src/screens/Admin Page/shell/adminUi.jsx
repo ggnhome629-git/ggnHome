@@ -10,6 +10,7 @@ import {
   DialogContentText,
   DialogTitle,
   Skeleton,
+  Snackbar,
   Stack,
   IconButton,
   Tooltip,
@@ -374,4 +375,55 @@ export function MaskedPhone({ value, label }) {
       </Tooltip>
     </Stack>
   );
+}
+
+
+/**
+ * Drop-in replacement for window.confirm()/alert(): `confirm(opts)` resolves to
+ * true/false from a ConfirmDialog, `notify(msg, severity)` shows a Snackbar.
+ * Render `feedback` once inside the screen.
+ */
+export function useAdminFeedback() {
+  const [dialog, setDialog] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  const confirm = (opts) =>
+    new Promise((resolve) => {
+      const o = typeof opts === "string" ? { message: opts } : opts;
+      setDialog({ ...o, resolve });
+    });
+  const settle = (value) => {
+    if (dialog) dialog.resolve(value);
+    setDialog(null);
+  };
+  const notify = (message, severity = "info") => setToast({ message, severity });
+
+  const feedback = (
+    <>
+      <ConfirmDialog
+        open={Boolean(dialog)}
+        title={dialog?.title || "Please confirm"}
+        message={dialog?.message}
+        impact={dialog?.impact}
+        confirmLabel={dialog?.confirmLabel || "Confirm"}
+        danger={dialog?.danger}
+        onConfirm={() => settle(true)}
+        onCancel={() => settle(false)}
+      />
+      <Snackbar
+        open={Boolean(toast)}
+        autoHideDuration={toast?.severity === "error" ? null : 4000}
+        onClose={(_, reason) => reason !== "clickaway" && setToast(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        {toast ? (
+          <Alert severity={toast.severity} variant="filled" onClose={() => setToast(null)} sx={{ borderRadius: "8px" }}>
+            {toast.message}
+          </Alert>
+        ) : undefined}
+      </Snackbar>
+    </>
+  );
+
+  return { confirm, notify, feedback };
 }

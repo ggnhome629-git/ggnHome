@@ -1,23 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Grid,
-  Typography,
-  TextField,
-  Chip,
-  Avatar,
-  InputAdornment,
-  Collapse,
-  Alert,
-  Stack,
-  useMediaQuery,
-  useTheme,
-  Paper,
-} from "@mui/material";
-import { Search, List, ChevronDown, ChevronUp, Filter, RefreshCw } from 'lucide-react';
+import { Box, Button, Card, CardContent, Grid, Typography, TextField, Chip, InputAdornment, Collapse, Stack } from "@mui/material";
+import { Search, ChevronDown, ChevronUp, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import './admin.css';

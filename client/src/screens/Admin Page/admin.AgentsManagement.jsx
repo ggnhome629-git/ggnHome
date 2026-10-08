@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { StaggerContainer, StaggerItem } from '../../components/motion';
 import {
   Box,
   Button,
@@ -16,9 +15,10 @@ import {
   InputAdornment,
   CircularProgress,
 } from "@mui/material";
-import { ChevronDown, ChevronUp, Search, User, Mail, Phone, MapPin, Briefcase, Star, Calendar } from 'lucide-react';
-import TopNavigationBar from '../Dashboard/TopNavigationBar';
+import { ChevronDown, ChevronUp, Search, Mail, Phone } from 'lucide-react';
+import { useAdminFeedback } from "./shell/adminUi";
 const AgentManagement = () => {
+  const { confirm, notify, feedback } = useAdminFeedback();
   const [agents, setAgents] = useState([]);
   const [expandedAgent, setExpandedAgent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -228,7 +228,7 @@ const response = await fetch(`${process.env.REACT_APP_Base_API || ''}/api/admin/
 
   // Reset agent password (admin)
   const resetAgentPassword = async (agentId) => {
-    if (!window.confirm('Are you sure you want to reset this agent’s password?')) return;
+    if (!(await confirm({ title: 'Reset password', message: 'Are you sure you want to reset this agent’s password?', confirmLabel: 'Reset', danger: true }))) return;
 
     try {
       const response = await fetch(
@@ -248,10 +248,10 @@ const response = await fetch(`${process.env.REACT_APP_Base_API || ''}/api/admin/
         throw new Error(data.message || 'Failed to reset password');
       }
 
-      alert(`Password reset successfully.\nMobile: ${data.mobileNumber}`);
+      notify(`Password reset successfully. Mobile: ${data.mobileNumber}`, 'success');
     } catch (err) {
       console.error('Reset password error:', err);
-      alert(err.message || 'Error resetting password');
+      notify(err.message || 'Error resetting password', 'error');
     }
   };
 
@@ -279,6 +279,7 @@ const response = await fetch(`${process.env.REACT_APP_Base_API || ''}/api/admin/
 
   return (
     <Box className="admin-dashboard">
+      {feedback}
       <Box className="admin-container">
         {/* Header */}
         <Box

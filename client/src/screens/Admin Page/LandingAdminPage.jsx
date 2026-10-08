@@ -1,35 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-  LayoutDashboard,
-  Users,
-  MessageSquare,
-  Phone,
-  Home,
-  TrendingUp,
-  Activity,
-  ArrowRight,
-  BarChart3,
-  Settings,
-  Smartphone,
-  Megaphone,
-  ShieldAlert,
-  UserPlus,
-} from 'lucide-react';
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  TextField,
-  Typography,
-  Stack,
-  Alert,
-  Chip,
-  Avatar,
-  Divider,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
+import { LayoutDashboard, Users, MessageSquare, Phone, Home, TrendingUp, Activity, ArrowRight, BarChart3, Settings, Smartphone, UserPlus } from 'lucide-react';
+import { Box, Button, Card, CardContent, TextField, Typography, Alert, Chip, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
 import './admin.css';

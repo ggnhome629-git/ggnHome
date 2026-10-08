@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box, Button, Card, CardContent, Grid, Typography, TextField,
-  Select, MenuItem, FormControl, InputLabel, InputAdornment,
-  Avatar, Chip, IconButton, Skeleton, Stack, Alert, Tooltip,
-} from "@mui/material";
-import {
-  RefreshCw, Users, Smartphone, Loader2, Clock, Database, Activity,
-} from "lucide-react";
-import { PageHeader, StatCard, StatusChip } from "./shell/adminUi";
+import { Box, Button, Card, CardContent, Typography, Skeleton, Stack, Alert } from "@mui/material";
+import { RefreshCw, Database, Activity } from "lucide-react";
+import { PageHeader } from "./shell/adminUi";
 import "./admin.css";
 
 export default function AdminUsageDashboard() {

@@ -1,24 +1,6 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Card,
-  CardContent,
-  Chip,
-  Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography,
-  Paper,
-  CircularProgress,
-  Alert,
-  IconButton,
-} from "@mui/material";
-import { ExternalLink, TrendingUp, AlertCircle } from "lucide-react";
+import { Box, Card, CardContent, Chip, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Typography, Paper, CircularProgress, Alert } from "@mui/material";
+import { ExternalLink, AlertCircle } from "lucide-react";
 import { radii } from "../../theme/theme";
 
 /**

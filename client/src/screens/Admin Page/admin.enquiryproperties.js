@@ -1,14 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
-import {
-  Box, Button, Card, CardContent, Grid, Typography, TextField,
-  InputAdornment, Avatar, Chip, Dialog, DialogTitle, DialogContent,
-  DialogActions, IconButton, Tooltip, Skeleton, Stack, Alert,
-} from "@mui/material";
-import {
-  Search, RefreshCw, Mail, Phone, MapPin, Home, Eye, Trash2,
-  Calendar, DollarSign, ChevronLeft, ChevronRight,
-} from "lucide-react";
-import { PageHeader, StatCard, StatusChip, ConfirmDialog, EmptyState } from "./shell/adminUi";
+import React, { useState, useEffect } from "react";
+import { Box, Button, Card, Grid, Typography, IconButton, Skeleton, Stack, Alert } from "@mui/material";
+import { RefreshCw, Mail, Phone, MapPin, Home, Eye, Trash2, Calendar, DollarSign } from "lucide-react";
+import { PageHeader, StatCard, ConfirmDialog, EmptyState } from "./shell/adminUi";
 import { useNavigate } from "react-router-dom";
 import "./admin.css";
 

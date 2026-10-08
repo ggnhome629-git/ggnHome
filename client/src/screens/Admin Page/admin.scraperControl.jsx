@@ -1,43 +1,6 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Grid,
-  Typography,
-  Stack,
-  TextField,
-  Alert,
-  Chip,
-  LinearProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
-  Tooltip,
-} from "@mui/material";
-import {
-  Play,
-  Square,
-  RefreshCw,
-  Eye,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Server,
-  TrendingUp,
-  Zap,
-  Copy,
-  ExternalLink,
-} from "lucide-react";
+import { Box, Button, Card, CardContent, Grid, Typography, Stack, TextField, Alert, Chip, LinearProgress, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
+import { Play, Square, RefreshCw, Eye, CheckCircle, Server, Zap } from "lucide-react";
 
 const AdminScraperControl = () => {
   const [scraperStatus, setScraperStatus] = useState(null);
@@ -49,13 +12,13 @@ const AdminScraperControl = () => {
   const [stats, setStats] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  const API_BASE = process.env.REACT_APP_Base_API || "http://localhost:2000";
+  const API_BASE = process.env.REACT_APP_Base_API || "";
 
   // Fetch scraper status
   const fetchStatus = async () => {
     try {
       const response = await fetch(`${API_BASE}/api/admin/scraper/status`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${(localStorage.getItem("accessToken") || localStorage.getItem("token"))}` },
         credentials: "include",
       });
       const data = await response.json();
@@ -74,7 +37,7 @@ const AdminScraperControl = () => {
       const response = await fetch(
         `${API_BASE}/api/admin/scraper/logs?limit=50`,
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          headers: { Authorization: `Bearer ${(localStorage.getItem("accessToken") || localStorage.getItem("token"))}` },
           credentials: "include",
         }
       );
@@ -112,7 +75,7 @@ const AdminScraperControl = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${(localStorage.getItem("accessToken") || localStorage.getItem("token"))}`,
         },
         credentials: "include",
         body: JSON.stringify({ source }),
@@ -138,7 +101,7 @@ const AdminScraperControl = () => {
       const response = await fetch(`${API_BASE}/api/admin/scraper/stop`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${(localStorage.getItem("accessToken") || localStorage.getItem("token"))}`,
         },
         credentials: "include",
       });

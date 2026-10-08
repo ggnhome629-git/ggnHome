@@ -26,6 +26,7 @@ import { useNavigate } from "react-router-dom";
 import PromoCard from "../../components/promo/PromoCard";
 import { PROMO_ICONS, PROMO_THEMES } from "../../components/promo/promoData";
 import PromoJsonImport from "./PromoJsonImport";
+import { useAdminFeedback } from "./shell/adminUi";
 
 const BASE = process.env.REACT_APP_Base_API;
 
@@ -70,6 +71,7 @@ const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("en-IN", { day: "2-di
 
 /** Admin → Promo cards: what shows on the dashboard and between search results. */
 export default function AdminPromos() {
+  const { confirm, notify, feedback } = useAdminFeedback();
   const navigate = useNavigate();
   const [promos, setPromos] = useState([]);
   const [error, setError] = useState("");
@@ -131,7 +133,7 @@ export default function AdminPromos() {
   };
 
   const remove = async (promo) => {
-    if (!window.confirm(`Delete "${promo.title}"? This cannot be undone.`)) return;
+    if (!(await confirm({ title: "Delete promo", message: `Delete "${promo.title}"? This cannot be undone.`, confirmLabel: "Delete", danger: true }))) return;
     try {
       await api(`/api/admin/promos/${promo._id}`, { method: "DELETE" });
       load();
@@ -149,6 +151,7 @@ export default function AdminPromos() {
 
   return (
     <Box sx={{ backgroundColor: "background.default", minHeight: "100vh", py: { xs: 6, md: 10 } }}>
+      {feedback}
       <Container maxWidth="lg">
         <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
           <IconButton aria-label="Back to admin" onClick={() => navigate("/admin/Landingpage")}>

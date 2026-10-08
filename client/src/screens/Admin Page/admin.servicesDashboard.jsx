@@ -1,16 +1,7 @@
 import React, { useState, useEffect } from "react";
-import {
-  Box, Button, Card, CardContent, Grid, Typography, TextField,
-  Select, MenuItem, FormControl, InputAdornment, InputBase,
-  IconButton, Chip, Dialog, DialogTitle, DialogContent, DialogActions,
-  Skeleton, Stack, Snackbar, Alert, InputLabel, useMediaQuery, useTheme,
-} from "@mui/material";
-import {
-  Package, Clock, CheckCircle, AlertCircle, Home, Phone, Calendar,
-  FileText, Wrench, X, ChevronRight, Filter, Search, Edit, Save,
-  XCircle, User, Building, RefreshCw, MessageCircle,
-} from "lucide-react";
-import { PageHeader, StatCard, StatusChip, CopyField } from "./shell/adminUi";
+import { Box, Button, Card, CardContent, Grid, Typography, TextField, Select, MenuItem, FormControl, InputAdornment, IconButton, Chip, Dialog, DialogContent, DialogActions, Skeleton, Stack, Alert, InputLabel, useMediaQuery, useTheme } from "@mui/material";
+import { Package, Clock, CheckCircle, AlertCircle, Home, Calendar, X, ChevronRight, Filter, Search, Edit, Save, User, Building, RefreshCw, MessageCircle } from "lucide-react";
+import { PageHeader, StatCard } from "./shell/adminUi";
 import "./admin.css";
 
 const SERVICE_TYPES = {

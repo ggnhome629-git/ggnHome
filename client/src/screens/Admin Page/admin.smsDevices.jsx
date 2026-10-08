@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import { Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAdminFeedback } from "./shell/adminUi";
 
 /**
  * Admin → SMS phones. Every phone running the ggnhome-sms-service app shows up
@@ -60,6 +61,7 @@ const ago = (iso) => {
 };
 
 export default function AdminSmsDevices() {
+  const { confirm, notify, feedback } = useAdminFeedback();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -94,7 +96,7 @@ export default function AdminSmsDevices() {
   };
 
   const remove = async (d) => {
-    if (!window.confirm(`Remove "${d.name}"? It re-registers itself if the app is still running.`)) return;
+    if (!(await confirm({ title: "Remove device", message: `Remove "${d.name}"? It re-registers itself if the app is still running.`, confirmLabel: "Remove", danger: true }))) return;
     try {
       await api(`/api/admin/sms-devices/${d.deviceId}`, { method: "DELETE" });
       load();
@@ -120,6 +122,7 @@ export default function AdminSmsDevices() {
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#F4F7F9", p: { xs: 2, md: 4 } }}>
+      {feedback}
       <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
         <Box component="img" src="/Logo2.jpg" alt="ggnHome" sx={{ width: 48, height: 48, borderRadius: 2 }} />
         <Box sx={{ flex: 1 }}>

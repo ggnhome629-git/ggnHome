@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Box, Button, Card, CardContent, Divider, Stack, Switch, Typography, CircularProgress, Alert } from "@mui/material";
 import { Settings, RefreshCw } from "lucide-react";
+import { useAdminFeedback } from "./shell/adminUi";
 
 /**
  * Feature Toggles Admin Page — control visibility of Flatmates and Agent portals.
  * Settings are stored in localStorage and can be synced to the backend later.
  */
 export default function FeatureTogglesAdmin() {
+  const { confirm, notify, feedback } = useAdminFeedback();
   const [features, setFeatures] = useState({
     flatmates: false,
     agentPortal: false,
@@ -55,8 +57,8 @@ export default function FeatureTogglesAdmin() {
     }));
   };
 
-  const handleReset = () => {
-    if (window.confirm("Reset all features to OFF?")) {
+  const handleReset = async () => {
+    if (await confirm({ title: "Reset features", message: "Reset all features to OFF?", confirmLabel: "Reset", danger: true })) {
       setFeatures({ flatmates: false, agentPortal: false });
       localStorage.removeItem("admin:featureToggles");
       setMessage("✓ Features reset");
@@ -75,6 +77,7 @@ export default function FeatureTogglesAdmin() {
 
   return (
     <Box sx={{ p: { xs: 3, md: 4 } }}>
+      {feedback}
       <Stack spacing={3}>
         {/* Header */}
         <Stack direction="row" spacing={2} alignItems="center">
