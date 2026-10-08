@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Users, MessageSquare, Phone, Home, TrendingUp, Activity, ArrowRight, BarChart3, Settings, Smartphone, UserPlus } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquare, Home, TrendingUp, ArrowRight, Settings } from 'lucide-react';
 import { Box, Button, Card, CardContent, TextField, Typography, Alert, Chip, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
@@ -13,7 +13,6 @@ const AdminLandingPage = () => {
   
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
-  const [hoveredCard, setHoveredCard] = useState(null);
   const [admins, setAdmins] = useState([]);
   const emailRef = useRef();
   const [loading, setLoading] = useState(false);
@@ -96,133 +95,69 @@ const AdminLandingPage = () => {
     }
   };
 
-  const adminCards = [
+  // Grouped so the landing page shows a few cards instead of seventeen.
+  const adminGroups = [
     {
-      id: 'dashboard',
-      title: 'Dashboard',
-      description: 'Overview of all system metrics and analytics',
+      id: 'overview',
+      title: 'Overview',
       icon: LayoutDashboard,
-      route: '/admin/Dashboard',
       color: '#003366',
+      links: [{ label: 'Dashboard', route: '/admin/Dashboard' }],
     },
     {
-      id: 'users',
-      title: 'User Management',
-      description: 'Manage users, rewards, preferences, and properties',
-      icon: Users,
-      route: '/admin/UserManagement',
-      color: '#8B5CF6',
-    },
-    {
-      id: 'enquiries',
-      title: 'Enquiries',
-      description: 'View and manage property enquiries',
+      id: 'leads',
+      title: 'Leads & Requests',
       icon: MessageSquare,
-      route: '/admin/enquiries',
       color: '#10B981',
-    },
-    {
-      id: 'callbacks',
-      title: 'Callback Requests',
-      description: 'Handle customer callback requests',
-      icon: Phone,
-      route: '/admin/callback',
-      color: '#F59E0B',
+      links: [
+        { label: 'Enquiries', route: '/admin/enquiries' },
+        { label: 'Callback Requests', route: '/admin/callback' },
+        { label: 'Preference Forms', route: '/admin/userpreferenceformresponses' },
+        { label: 'Services', route: '/admin/services' },
+      ],
     },
     {
       id: 'properties',
-      title: 'All Properties',
-      description: 'Browse every listing grouped by sector',
+      title: 'Properties',
       icon: Home,
-      route: '/admin/rewardsproperties',
       color: '#EF4444',
+      links: [
+        { label: 'Property Manager', route: '/admin/propertymanager' },
+        { label: 'All Properties', route: '/admin/rewardsproperties' },
+        { label: 'Add Property', route: '/admin/add-property' },
+      ],
     },
     {
-      id: 'propertyManager',
-      title: 'Property Manager',
-      description: 'Activate, deactivate, and review properties',
-      icon: Settings,
-      route: '/admin/propertymanager',
-      color: '#6366F1',
-    },
-    {
-      id: 'addProperty',
-      title: 'Add Property',
-      description: 'Add new property listings to the system',
-      icon: Home,
-      route: '/admin/add-property',
-      color: '#F97316',
-    },
-    {
-      id: 'services',
-      title: 'Services',
-      description: 'Manage service requests and track progress',
-      icon: Activity,
-      route: '/admin/services',
-      color: '#22D3EE',
-    },
-    {
-      id: 'smsDevices',
-      title: 'SMS Phones',
-      description: 'OTP SMS gateway phones: status, limits, test send',
-      icon: Smartphone,
-      route: '/admin/sms-devices',
-      color: '#0EA5E9',
-    },
-    {
-      id: 'usage',
-      title: 'Usage Tracker',
-      description: 'Track usage and performance metrics',
-      icon: BarChart3,
-      route: '/admin/usagetrack',
-      color: '#64748B',
-    },
-    {
-      id: 'rewards',
-      title: 'Rewards',
-      description: 'Send and review reward distributions',
-      icon: TrendingUp,
-      route: '/admin/rewards',
-      color: '#00A79D',
-    },
-    {
-      id: 'preferences',
-      title: 'Preference Forms',
-      description: 'View and manage user preference form submissions',
-      icon: MessageSquare,
-      route: '/admin/userpreferenceformresponses',
-      color: '#8B5CF6',
-    },
-    {
-      id: 'agents',
-      title: 'Agents Management',
-      description: 'View and manage real estate agents',
+      id: 'people',
+      title: 'Users & Agents',
       icon: Users,
-      route: '/admin/agentsmanagement',
-      color: '#003366',
+      color: '#8B5CF6',
+      links: [
+        { label: 'User Management', route: '/admin/UserManagement' },
+        { label: 'Agents Management', route: '/admin/agentsmanagement' },
+        { label: 'Register Agent', route: '/admin/agent-registration' },
+      ],
     },
     {
-      id: 'registerAgent',
-      title: 'Register Agent',
-      description: 'Register a new agent with ID proofs and sectors',
-      icon: UserPlus,
-      route: '/admin/agent-registration',
-      color: '#22D3EE',
-    },    {
-      id: 'payments',
-      title: 'Payments',
-      description: 'Approve pending payments and distribute rewards',
-      icon: Home,
-      route: '/admin/payments',
-      color: '#0D9488',
+      id: 'money',
+      title: 'Rewards & Payments',
+      icon: TrendingUp,
+      color: '#00A79D',
+      links: [
+        { label: 'Rewards', route: '/admin/rewards' },
+        { label: 'Payments', route: '/admin/payments' },
+      ],
     },
     {
-      id: 'settings',
-      title: 'Settings',
-      description: 'Configure features, promotions, scraper, affiliates, and SMS devices',
+      id: 'system',
+      title: 'System',
       icon: Settings,
-      route: '/admin/settings',
-      color: '#6B7280',
+      color: '#64748B',
+      links: [
+        { label: 'Settings', route: '/admin/settings' },
+        { label: 'Usage Tracker', route: '/admin/usagetrack' },
+        { label: 'SMS Phones', route: '/admin/sms-devices' },
+      ],
     },
   ];
 
@@ -273,101 +208,47 @@ const AdminLandingPage = () => {
               xs: '1fr',
               sm: 'repeat(2, 1fr)',
               lg: 'repeat(3, 1fr)',
-              xl: 'repeat(4, 1fr)',
             },
             gap: 4,
           }}
         >
-          {adminCards.map((card, index) => {
-            const Icon = card.icon;
-            const isHovered = hoveredCard === card.id;
-
+          {adminGroups.map((group) => {
+            const Icon = group.icon;
             return (
               <Card
-                key={card.id}
-                sx={{
-                  height: '100%',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  border: `2px solid ${isHovered ? card.color : '#E5E9EE'}`,
-                  bgcolor: 'background.paper',
-                  transform: isHovered ? 'translateY(-4px)' : 'translateY(0)',
-                  boxShadow: isHovered
-                    ? `0 12px 24px ${card.color}25, 0 0 0 1px ${card.color}15`
-                    : '0 2px 8px rgba(0,51,102,0.05)',
-                  '&:hover': {
-                    borderColor: card.color,
-                  },
-                  '&:focus-visible': {
-                    outline: '2px solid #00A79D',
-                    outlineOffset: 2,
-                  },
-                  animation: 'fadeIn 200ms ease-out',
-                  animationDelay: `${index * 30}ms`,
-                  animationFillMode: 'both',
-                }}
-                onMouseEnter={() => setHoveredCard(card.id)}
-                onMouseLeave={() => setHoveredCard(null)}
-                onClick={() => handleNavigation(card.route)}
+                key={group.id}
+                sx={{ height: '100%', border: '1px solid #E5E9EE', bgcolor: 'background.paper', boxShadow: '0 2px 8px rgba(0,51,102,0.05)' }}
               >
                 <CardContent sx={{ p: 4, '&:last-child': { pb: 4 } }}>
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
-                    <Box
-                      sx={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        bgcolor: `${card.color}15`,
-                        color: card.color,
-                        transition: 'transform 0.2s ease',
-                        transform: isHovered ? 'scale(1.05)' : 'scale(1)',
-                      }}
-                    >
-                      <Icon size={28} strokeWidth={1.75} />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
+                    <Box sx={{ width: 40, height: 40, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: `${group.color}15`, color: group.color }}>
+                      <Icon size={22} strokeWidth={1.75} />
                     </Box>
-                    <Box
-                      sx={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 1.5,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        bgcolor: '#F4F7F9',
-                        transition: 'transform 0.2s ease',
-                        transform: isHovered ? 'translateX(4px)' : 'translateX(0)',
-                      }}
-                    >
-                      <ArrowRight size={18} color="#5B6B7B" />
-                    </Box>
+                    <Typography variant="h3" sx={{ fontSize: '18px', fontWeight: 700 }}>
+                      {group.title}
+                    </Typography>
                   </Box>
-
-                  <Typography
-                    variant="h3"
-                    sx={{
-                      fontSize: { xs: '18px', sm: '20px' },
-                      fontWeight: 700,
-                      color: 'text.primary',
-                      mb: 1.5,
-                      letterSpacing: '-0.3px',
-                    }}
-                  >
-                    {card.title}
-                  </Typography>
-
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: 'text.secondary',
-                      lineHeight: 1.6,
-                      fontSize: { xs: '13px', sm: '14px' },
-                    }}
-                  >
-                    {card.description}
-                  </Typography>
+                  <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                    {group.links.map((link) => (
+                      <Box
+                        key={link.route}
+                        role="link"
+                        tabIndex={0}
+                        onClick={() => handleNavigation(link.route)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleNavigation(link.route)}
+                        sx={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          py: 1.5, px: 2, borderRadius: 1.5, cursor: 'pointer', fontSize: '14px', fontWeight: 500,
+                          color: 'text.primary',
+                          '&:hover': { bgcolor: `${group.color}10`, color: group.color },
+                          '&:focus-visible': { outline: '2px solid #00A79D' },
+                        }}
+                      >
+                        {link.label}
+                        <ArrowRight size={16} />
+                      </Box>
+                    ))}
+                  </Box>
                 </CardContent>
               </Card>
             );

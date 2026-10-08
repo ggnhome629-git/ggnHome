@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Button, Card, Grid, Typography, IconButton, Skeleton, Stack, Alert } from "@mui/material";
+import { Box, Button, Card, Grid, Typography, Chip, IconButton, Skeleton, Stack, Alert } from "@mui/material";
 import { RefreshCw, Mail, Phone, MapPin, Home, Eye, Trash2, Calendar, DollarSign } from "lucide-react";
 import { PageHeader, StatCard, ConfirmDialog, EmptyState } from "./shell/adminUi";
 import { useNavigate } from "react-router-dom";
@@ -193,6 +193,7 @@ export default function AdminEnquiryProperties() {
               <thead>
                 <tr>
                   <th>Property</th>
+                  <th>Source</th>
                   <th>Owner</th>
                   <th>Customer</th>
                   <th>Message</th>
@@ -220,6 +221,13 @@ export default function AdminEnquiryProperties() {
                       </Typography>
                     </td>
                     <td>
+                      {enquiry.property?.sourcePortal ? (
+                        <Chip size="small" label={`Scraped · ${enquiry.property.sourcePortal === "nobroker" ? "NoBroker" : "99acres"}`} sx={{ bgcolor: "rgba(245,158,11,0.15)", color: "#B45309", fontWeight: 700 }} />
+                      ) : (
+                        <Chip size="small" label={enquiry.property?.ownerType === "Agent" ? "Agent property" : "Normal · Owner property"} sx={{ bgcolor: "rgba(0,167,157,0.14)", color: "#00857D", fontWeight: 700 }} />
+                      )}
+                    </td>
+                    <td>
                       {enquiry.owner ? (
                         <>
                           <Box className="admin-flex admin-gap-2 admin-mb-1">
@@ -233,7 +241,7 @@ export default function AdminEnquiryProperties() {
                         </>
                       ) : (
                         <Typography variant="body2" color="text.disabled" style={{ fontStyle: "italic" }}>
-                          No owner found
+                          {enquiry.property?.sourcePortal ? "Scraped – admin only" : "No owner found"}
                         </Typography>
                       )}
                     </td>
