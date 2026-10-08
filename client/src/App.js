@@ -35,7 +35,7 @@ const UserManagementSystem = lazy(() => import("./screens/Admin Page/admin.userm
 const AdminLandingPage = lazy(() => import("./screens/Admin Page/LandingAdminPage"));
 const EnquiryPage = lazy(() => import("./screens/Visit Schedule/enquiry"));
 const AboutPage = lazy(() => import("./screens/Customer Support/About"));
-const AdminPropertyManager = lazy(() => import("./screens/Admin Page/admin.propertyManager"));
+const AdminPropertyManager = lazy(() => import("./screens/Admin Page/admin.propertyManager.jsx"));
 const AdminProtectedRoute = lazy(() => import("./screens/Admin Page/AdminProtectedRoutes"));
 const AdminPropertyListingForm = lazy(() => import("./screens/Admin Page/admin.addproperty"));
 const InvestRealEstatePage = lazy(() => import("./screens/Dashboard/InvestinRealEstateCardSection"));

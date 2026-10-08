@@ -10,7 +10,7 @@ const AffiliateTracker = React.lazy(() => import("./admin.affiliateTracker"));
 const AffiliateConfig = React.lazy(() => import("./admin.affiliateConfig"));
 const LinkManager = React.lazy(() => import("./admin.linkManager"));
 const ScraperControl = React.lazy(() => import("./admin.scraperControl"));
-const PropertyManager = React.lazy(() => import("./admin.propertyManager"));
+const PropertyManager = React.lazy(() => import("./admin.propertyManager.jsx"));
 const PropertySync = React.lazy(() => import("./admin.propertySync"));
 
 const SETTINGS_TABS = [
