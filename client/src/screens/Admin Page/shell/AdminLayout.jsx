@@ -35,6 +35,25 @@ import {
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../Context/AuthContext";
 import { ADMIN_NAV, ADMIN_NAV_ITEMS, adminCrumb } from "./adminNav";
+import { NotSetUpBanner } from "./adminUi";
+
+// Shared "alive" button treatment for every admin screen: gradient primary
+// buttons that lift on hover, tinted outlined buttons, rounded colourful chips.
+const lively = {
+  "& .MuiButton-root": { textTransform: "none", fontWeight: 700, borderRadius: "8px", transition: "transform .15s ease, box-shadow .15s ease, background-color .15s ease" },
+  "& .MuiButton-containedPrimary:not(.no-lively)": { backgroundImage: "linear-gradient(120deg,#003366 0%,#0B5C7A 100%)", boxShadow: "0 2px 8px rgba(0,51,102,0.25)", "&:hover": { transform: "translateY(-1px)", boxShadow: "0 6px 16px rgba(0,51,102,0.30)" } },
+  "& .MuiButton-containedSuccess": { backgroundImage: "linear-gradient(120deg,#059669,#10B981)", "&:hover": { transform: "translateY(-1px)", boxShadow: "0 6px 16px rgba(16,185,129,0.35)" } },
+  "& .MuiButton-containedError": { backgroundImage: "linear-gradient(120deg,#B91C1C,#EF4444)", "&:hover": { transform: "translateY(-1px)", boxShadow: "0 6px 16px rgba(220,38,38,0.35)" } },
+  "& .MuiButton-outlinedPrimary:not(.no-lively)": { borderColor: "#00A79D", color: "#00857D", "&:hover": { backgroundColor: "rgba(0,167,157,0.10)", borderColor: "#00857D", transform: "translateY(-1px)" } },
+  "& .MuiButton-text:hover": { backgroundColor: "rgba(0,167,157,0.10)" },
+  "& .MuiIconButton-root:hover": { backgroundColor: "rgba(0,167,157,0.12)" },
+  "& .MuiTab-root": { textTransform: "none", fontWeight: 700 },
+  "& .MuiTab-root.Mui-selected": { color: "#00857D" },
+  "& .MuiTabs-indicator": { height: 3, borderRadius: 3, background: "linear-gradient(90deg,#00A79D,#22D3EE)" },
+  "& .MuiTableHead-root .MuiTableCell-head": { backgroundColor: "#F0F6F9", color: "#003366", fontWeight: 700 },
+  "& .MuiTableRow-hover:hover, & .MuiTableBody-root .MuiTableRow-root:hover": { backgroundColor: "rgba(0,167,157,0.05)" },
+  "& .MuiChip-root": { fontWeight: 600 },
+};
 
 const RAIL_WIDTH = 264;
 const RAIL_WIDTH_COMPACT = 76;
@@ -67,7 +86,7 @@ function NavList({ compact, onNavigate }) {
           {!compact && (
             <Typography
               variant="caption"
-              sx={{ display: "block", px: 4, pb: 1, color: "#9AA7B4", fontWeight: 700, letterSpacing: "0.08em" }}
+              sx={{ display: "flex", alignItems: "center", gap: 1, px: 4, pb: 1, color: section.color, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", fontSize: "0.68rem", "&::before": { content: '""', width: 6, height: 6, borderRadius: "50%", backgroundColor: section.color } }}
             >
               {section.group}
             </Typography>
@@ -104,24 +123,32 @@ function NavList({ compact, onNavigate }) {
                   py: compact ? 1.5 : 2,
                   borderRadius: "8px",
                   cursor: "pointer",
-                  color: active ? "#003366" : "#5B6B7B",
-                  backgroundColor: active ? "rgba(0,167,157,0.10)" : "transparent",
+                  color: active ? section.color : "#475569",
+                  backgroundColor: active ? `${section.color}1A` : "transparent",
+                  opacity: item.notSetUp && !active ? 0.62 : 1,
                   fontWeight: active ? 700 : 500,
                   fontSize: compact ? "0.625rem" : "0.875rem",
                   lineHeight: 1.2,
                   textAlign: "center",
                   transition: "background-color .15s ease, color .15s ease",
                   "&::before": active
-                    ? { content: '""', position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 3, height: "60%", backgroundColor: "#00A79D", borderRadius: "0 3px 3px 0" }
+                    ? { content: '""', position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 4, height: "62%", backgroundColor: section.color, borderRadius: "0 4px 4px 0" }
                     : undefined,
-                  "&:hover": { backgroundColor: "#F0F6F9", color: "#003366" },
-                  "&:focus-visible": { outline: "2px solid #00A79D", outlineOffset: 1 },
+                  "&:hover": { backgroundColor: `${section.color}14`, color: section.color, opacity: 1, transform: compact ? "none" : "translateX(2px)" },
+                  "&:focus-visible": { outline: `2px solid ${section.color}`, outlineOffset: 1 },
                 }}
               >
-                <Icon size={compact ? 20 : 18} strokeWidth={1.75} style={{ flexShrink: 0 }} />
-                <Box component="span" sx={{ whiteSpace: compact ? "normal" : "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: compact ? 64 : "none" }}>
+                <Box sx={{ width: compact ? 30 : 28, height: compact ? 30 : 28, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, backgroundColor: active ? section.color : `${section.color}18`, color: active ? "#fff" : section.color }}>
+                  <Icon size={16} strokeWidth={2} />
+                </Box>
+                <Box component="span" sx={{ whiteSpace: compact ? "normal" : "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: compact ? 64 : "none", flex: compact ? "none" : 1, textAlign: compact ? "center" : "left" }}>
                   {item.label}
                 </Box>
+                {item.notSetUp && !compact && (
+                  <Box component="span" sx={{ fontSize: "0.58rem", fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", px: 1, py: 0.25, borderRadius: "999px", backgroundColor: "rgba(100,116,139,0.16)", color: "#64748B", whiteSpace: "nowrap" }}>
+                    Not set up
+                  </Box>
+                )}
               </Box>
             );
             return compact ? (
@@ -216,10 +243,10 @@ function CommandPalette({ open, onClose }) {
               onClick={() => go(item)}
               sx={{ px: 3, py: 1.5 }}
             >
-              <Icon size={18} strokeWidth={1.75} color="#00A79D" style={{ marginRight: 12 }} />
+              <Icon size={18} strokeWidth={2} color={item.color} style={{ marginRight: 12 }} />
               <ListItemText
                 primary={item.label}
-                secondary={item.group}
+                secondary={item.notSetUp ? `${item.group} · Not set up` : item.group}
                 primaryTypographyProps={{ fontSize: "0.9rem", fontWeight: 600 }}
                 secondaryTypographyProps={{ fontSize: "0.72rem" }}
               />
@@ -429,6 +456,7 @@ export default function AdminLayout() {
             backgroundColor: "rgba(255,255,255,0.92)",
             backdropFilter: "blur(8px)",
             borderBottom: "1px solid #E5E9EE",
+            "&::after": { content: '""', position: "absolute", left: 0, right: 0, bottom: -1, height: 3, background: "linear-gradient(90deg,#003366,#00A79D,#22D3EE,#8B5CF6,#F59E0B)" },
           }}
         >
           <IconButton className="md:hidden" onClick={() => setDrawerOpen(true)} aria-label="Open navigation" sx={{ display: { xs: "inline-flex", md: "none" } }}>
@@ -511,14 +539,17 @@ export default function AdminLayout() {
           </Button>
 
           <IconButton onClick={(e) => setUserAnchor(e.currentTarget)} aria-label="Account menu" sx={{ ml: 0.5 }}>
-            <Avatar sx={{ width: 34, height: 34, backgroundColor: "#003366", fontSize: "0.8rem", fontWeight: 700 }}>
+            <Avatar sx={{ width: 34, height: 34, backgroundImage: "linear-gradient(135deg,#00A79D,#003366)", fontSize: "0.8rem", fontWeight: 700 }}>
               {initials}
             </Avatar>
           </IconButton>
         </Box>
 
         {/* Page content */}
-        <Box component="main" sx={{ flex: 1, width: "100%", maxWidth: 1440, mx: "auto", p: { xs: 4, md: 6 } }}>
+        <Box component="main" sx={{ flex: 1, width: "100%", maxWidth: 1440, mx: "auto", p: { xs: 4, md: 6 }, ...lively }}>
+          {ADMIN_NAV_ITEMS.find((i) => i.notSetUp && i.route === location.pathname) && (
+            <NotSetUpBanner feature={crumb.label} />
+          )}
           <Outlet />
         </Box>
       </Box>
@@ -546,7 +577,7 @@ export default function AdminLayout() {
         <MenuItem onClick={() => navigate("/admin/add-property")}>Add property</MenuItem>
         <MenuItem onClick={() => navigate("/admin/agent-registration")}>Register agent</MenuItem>
         <MenuItem onClick={() => navigate("/admin/promos")}>New promo</MenuItem>
-        <MenuItem onClick={() => navigate("/admin/rewards")}>Send reward</MenuItem>
+        <MenuItem onClick={() => navigate("/admin/enquiries")}>View enquiries</MenuItem>
       </MuiMenu>
 
       {/* User menu — sign out lives only here (PART 4) */}

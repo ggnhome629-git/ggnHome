@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LayoutDashboard, Users, MessageSquare, Home, TrendingUp, ArrowRight, Settings } from 'lucide-react';
+import { Sparkles, LayoutDashboard, Users, MessageSquare, Home, TrendingUp, ArrowRight, Settings } from 'lucide-react';
 import { Box, Button, Card, CardContent, TextField, Typography, Alert, Chip, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
@@ -144,8 +144,8 @@ const AdminLandingPage = () => {
       icon: TrendingUp,
       color: '#00A79D',
       links: [
-        { label: 'Rewards', route: '/admin/rewards' },
-        { label: 'Payments', route: '/admin/payments' },
+        { label: 'Rewards', route: '/admin/rewards', notSetUp: true },
+        { label: 'Payments', route: '/admin/payments', notSetUp: true },
       ],
     },
     {
@@ -156,7 +156,7 @@ const AdminLandingPage = () => {
       links: [
         { label: 'Settings', route: '/admin/settings' },
         { label: 'Usage Tracker', route: '/admin/usagetrack' },
-        { label: 'SMS Phones', route: '/admin/sms-devices' },
+        { label: 'SMS Phones', route: '/admin/sms-devices', notSetUp: true },
       ],
     },
   ];
@@ -166,38 +166,29 @@ const AdminLandingPage = () => {
       {/* Admin shell is provided by AdminLayout - no need for TopNavigationBar here */}
       <Box sx={{ maxWidth: 1440, mx: 'auto' }}>
         {/* Header */}
-        <Box sx={{ mb: 8 }}>
-          <Typography
-            variant="h1"
-            sx={{
-              fontSize: { xs: '24px', md: '32px' },
-              fontWeight: 700,
-              color: 'primary.main',
-              letterSpacing: '-0.5px',
-            }}
-          >
-            Admin Portal
+        <Box
+          sx={{
+            mb: 6, p: { xs: 4, md: 6 }, borderRadius: '16px', color: '#fff',
+            backgroundImage: 'linear-gradient(120deg, #002244 0%, #003366 40%, #0B7A85 80%, #00A79D 100%)',
+            boxShadow: '0 12px 32px rgba(0,51,102,0.25)', position: 'relative', overflow: 'hidden',
+          }}
+        >
+          <Box sx={{ position: 'absolute', right: -40, top: -40, width: 220, height: 220, borderRadius: '50%', background: 'rgba(34,211,238,0.18)' }} />
+          <Box sx={{ position: 'absolute', right: 120, bottom: -70, width: 160, height: 160, borderRadius: '50%', background: 'rgba(139,92,246,0.22)' }} />
+          <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+            <Sparkles size={22} color="#FCD34D" />
+            <Typography variant="h1" sx={{ fontSize: { xs: '24px', md: '32px' }, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px' }}>
+              Welcome back{user?.name ? `, ${String(user.name).split(' ')[0]}` : ''}
+            </Typography>
+          </Box>
+          <Typography sx={{ position: 'relative', color: 'rgba(255,255,255,0.85)', fontSize: { xs: '14px', md: '16px' } }}>
+            Everything you manage on GgnHome, in one place. Pick a section to get started.
           </Typography>
-          <Typography
-            variant="body1"
-            sx={{
-              color: 'text.secondary',
-              mt: 1,
-              lineHeight: 1.6,
-              fontSize: { xs: '14px', md: '16px' },
-            }}
-          >
-            Centralized management system for your platform
-          </Typography>
-          <Box
-            sx={{
-              width: 80,
-              height: 4,
-              bgcolor: 'linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%)',
-              borderRadius: 1,
-              mt: 4,
-            }}
-          />
+          <Box sx={{ position: 'relative', display: 'flex', gap: 2, mt: 4, flexWrap: 'wrap' }}>
+            <Button className="no-lively" onClick={() => navigate('/admin/propertymanager')} variant="contained" sx={{ bgcolor: '#fff', color: '#003366', fontWeight: 700, textTransform: 'none', '&:hover': { bgcolor: '#E6FFFB' } }}>Review properties</Button>
+            <Button className="no-lively" onClick={() => navigate('/admin/enquiries')} variant="outlined" sx={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff', fontWeight: 700, textTransform: 'none', '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.12)' } }}>View enquiries</Button>
+            <Button className="no-lively" onClick={() => navigate('/admin/Dashboard')} variant="outlined" sx={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff', fontWeight: 700, textTransform: 'none', '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.12)' } }}>Open dashboard</Button>
+          </Box>
         </Box>
 
         {/* Main Cards */}
@@ -217,11 +208,11 @@ const AdminLandingPage = () => {
             return (
               <Card
                 key={group.id}
-                sx={{ height: '100%', border: '1px solid #E5E9EE', bgcolor: 'background.paper', boxShadow: '0 2px 8px rgba(0,51,102,0.05)' }}
+                sx={{ height: '100%', border: `1px solid ${group.color}33`, borderTop: `4px solid ${group.color}`, backgroundImage: `linear-gradient(160deg, ${group.color}12 0%, #fff 50%)`, boxShadow: '0 2px 8px rgba(0,51,102,0.05)', transition: 'transform .15s ease, box-shadow .15s ease', '&:hover': { transform: 'translateY(-3px)', boxShadow: `0 12px 28px ${group.color}30` } }}
               >
                 <CardContent sx={{ p: 4, '&:last-child': { pb: 4 } }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-                    <Box sx={{ width: 40, height: 40, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: `${group.color}15`, color: group.color }}>
+                    <Box sx={{ width: 40, height: 40, borderRadius: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: group.color, color: '#fff', boxShadow: `0 4px 10px ${group.color}55` }}>
                       <Icon size={22} strokeWidth={1.75} />
                     </Box>
                     <Typography variant="h3" sx={{ fontSize: '18px', fontWeight: 700 }}>
@@ -244,7 +235,12 @@ const AdminLandingPage = () => {
                           '&:focus-visible': { outline: '2px solid #00A79D' },
                         }}
                       >
-                        {link.label}
+                        <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: 1, opacity: link.notSetUp ? 0.6 : 1 }}>
+                          {link.label}
+                          {link.notSetUp && (
+                            <Chip label="Not set up" size="small" sx={{ height: 18, fontSize: '0.62rem', fontWeight: 800, bgcolor: 'rgba(100,116,139,0.16)', color: '#64748B' }} />
+                          )}
+                        </Box>
                         <ArrowRight size={16} />
                       </Box>
                     ))}

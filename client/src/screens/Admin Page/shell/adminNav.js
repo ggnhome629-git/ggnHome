@@ -22,6 +22,10 @@ import {
  * this list, and screens are grouped the way Material 3 recommends: a small
  * number of groups, 3-7 destinations each, labels always visible.
  *
+ * `color` tints each group's icons across the rail and palette. `notSetUp`
+ * dims an item and shows a "Not set up" tag for features that exist in code
+ * but are not live yet (payments gateway, rewards payouts, SMS phones).
+ *
  * `permission` is optional and read by AdminLayout — the backend still ships
  * a single "admin" role today, so nothing is locked yet, but adding
  * `permission: "admins:manage"` to an item is all it takes once super-admin
@@ -30,6 +34,7 @@ import {
 export const ADMIN_NAV = [
   {
     group: "Overview",
+    color: "#003366",
     items: [
       { id: "home", label: "Home", route: "/admin/Landingpage", icon: Home },
       { id: "dashboard", label: "Dashboard", route: "/admin/Dashboard", icon: LayoutDashboard },
@@ -37,6 +42,7 @@ export const ADMIN_NAV = [
   },
   {
     group: "Listings",
+    color: "#EF4444",
     items: [
       { id: "properties", label: "Property Manager", route: "/admin/propertymanager", icon: Building2 },
       { id: "browse", label: "All Properties", route: "/admin/rewardsproperties", icon: Home },
@@ -45,6 +51,7 @@ export const ADMIN_NAV = [
   },
   {
     group: "People",
+    color: "#8B5CF6",
     items: [
       { id: "users", label: "Users", route: "/admin/UserManagement", icon: Users },
       { id: "agents", label: "Agents", route: "/admin/agentsmanagement", icon: Users },
@@ -53,6 +60,7 @@ export const ADMIN_NAV = [
   },
   {
     group: "Leads",
+    color: "#10B981",
     items: [
       { id: "enquiries", label: "Enquiries", route: "/admin/enquiries", icon: MessageSquare },
       { id: "callbacks", label: "Callback Requests", route: "/admin/callback", icon: PhoneCall },
@@ -62,19 +70,22 @@ export const ADMIN_NAV = [
   },
   {
     group: "Marketing",
+    color: "#F59E0B",
     items: [
       { id: "promos", label: "Promo Cards", route: "/admin/promos", icon: Megaphone },
-      { id: "rewards", label: "Rewards", route: "/admin/rewards", icon: Gift },
+      { id: "rewards", label: "Rewards", route: "/admin/rewards", icon: Gift, notSetUp: true },
     ],
   },
   {
     group: "Money",
-    items: [{ id: "payments", label: "Payments", route: "/admin/payments", icon: CreditCard }],
+    color: "#00A79D",
+    items: [{ id: "payments", label: "Payments", route: "/admin/payments", icon: CreditCard, notSetUp: true }],
   },
   {
     group: "System",
+    color: "#64748B",
     items: [
-      { id: "sms", label: "SMS Phones", route: "/admin/sms-devices", icon: Smartphone },
+      { id: "sms", label: "SMS Phones", route: "/admin/sms-devices", icon: Smartphone, notSetUp: true },
       { id: "usage", label: "Usage & Limits", route: "/admin/usagetrack", icon: Gauge },
       { id: "settings", label: "Settings", route: "/admin/settings", icon: Settings },
     ],
@@ -83,7 +94,7 @@ export const ADMIN_NAV = [
 
 /** Flat list for search / palette lookups. */
 export const ADMIN_NAV_ITEMS = ADMIN_NAV.flatMap((section) =>
-  section.items.map((item) => ({ ...item, group: section.group }))
+  section.items.map((item) => ({ ...item, group: section.group, color: section.color }))
 );
 
 /** Route -> { group, label } for breadcrumbs; falls back to a prettified path. */

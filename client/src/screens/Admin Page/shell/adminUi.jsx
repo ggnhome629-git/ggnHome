@@ -81,7 +81,18 @@ export function StatusChip({ status, size = "small", sx }) {
 /** Title / description / actions row with optional tabs + last-updated (5.1). */
 export function PageHeader({ title, description, actions, tabs, lastUpdated, onRefresh, children }) {
   return (
-    <Box sx={{ mb: 5 }}>
+    <Box
+      sx={{
+        mb: 5,
+        p: { xs: 3, md: 4 },
+        borderRadius: "14px",
+        border: "1px solid #D9EEF0",
+        borderTop: "4px solid #00A79D",
+        backgroundImage: "linear-gradient(120deg, rgba(0,167,157,0.10) 0%, rgba(34,211,238,0.07) 55%, rgba(139,92,246,0.07) 100%)",
+        backgroundColor: "#fff",
+        boxShadow: "0 2px 8px rgba(0,51,102,0.05)",
+      }}
+    >
       <Stack
         direction={{ xs: "column", sm: "row" }}
         spacing={3}
@@ -133,7 +144,7 @@ export function StatCard({ icon: Icon, label, value = 0, prefix = "", suffix = "
             width: 40,
             height: 40,
             borderRadius: "50%",
-            backgroundColor: `${tone}1A`,
+            backgroundColor: `${tone}26`,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -185,12 +196,14 @@ export function StatCard({ icon: Icon, label, value = 0, prefix = "", suffix = "
     height: "100%",
     borderRadius: "12px",
     backgroundColor: "background.paper",
+    backgroundImage: `linear-gradient(160deg, ${tone}14 0%, #ffffff 55%)`,
     border: "1px solid",
-    borderColor: "divider",
+    borderColor: `${tone}33`,
+    borderTop: `4px solid ${tone}`,
     boxShadow: "0 2px 8px rgba(0,51,102,0.05)",
     transition: "transform .15s ease, box-shadow .15s ease",
     cursor: onClick ? "pointer" : "default",
-    "&:hover": onClick ? { transform: "translateY(-2px)", boxShadow: "0 8px 24px rgba(0,51,102,0.10)" } : null,
+    "&:hover": onClick ? { transform: "translateY(-3px)", boxShadow: `0 10px 26px ${tone}33` } : { boxShadow: `0 6px 18px ${tone}22` },
     "&:focus-visible": { outline: "2px solid #00A79D", outlineOffset: 2 },
   };
 
@@ -426,4 +439,21 @@ export function useAdminFeedback() {
   );
 
   return { confirm, notify, feedback };
+}
+
+
+/**
+ * Banner for features that exist in the code but are not switched on yet.
+ * Pages show it above their content so admins know the screen is a preview.
+ */
+export function NotSetUpBanner({ feature, children }) {
+  return (
+    <Alert
+      severity="info"
+      variant="outlined"
+      sx={{ mb: 4, borderRadius: "10px", borderColor: "#CBD5E1", backgroundColor: "#F8FAFC", color: "#334155", "& .MuiAlert-icon": { color: "#64748B" } }}
+    >
+      <b>{feature} is not set up yet.</b> {children || "You can look around, but nothing here is live for users."}
+    </Alert>
+  );
 }

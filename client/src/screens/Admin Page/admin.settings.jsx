@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Box, Tab, Tabs, Typography, Stack } from "@mui/material";
+import { Box, Chip, Tab, Tabs, Typography, Stack } from "@mui/material";
+import { NotSetUpBanner } from "./shell/adminUi";
 import { Settings, Gift, Smartphone, Power, LinkIcon, TrendingUp, Link2, Server, Home, RefreshCw } from "lucide-react";
 
 // Lazy load the sub-pages
@@ -17,12 +18,12 @@ const SETTINGS_TABS = [
   { id: "scraper", label: "Scraper Control", icon: Server, component: ScraperControl },
   { id: "properties", label: "Property Manager", icon: Home, component: PropertyManager },
   { id: "propertySync", label: "Property Sync", icon: RefreshCw, component: PropertySync },
-  { id: "toggles", label: "Feature Toggles", icon: Power, component: FeatureToggles },
+  { id: "toggles", notSetUp: true, label: "Feature Toggles", icon: Power, component: FeatureToggles },
   { id: "promos", label: "Promo Cards", icon: Gift, component: PromoCards },
-  { id: "sms", label: "SMS Devices", icon: Smartphone, component: SmsDevices },
-  { id: "affiliates", label: "Affiliate Tracker", icon: TrendingUp, component: AffiliateTracker },
-  { id: "affiliateConfig", label: "Affiliate Config", icon: LinkIcon, component: AffiliateConfig },
-  { id: "linkManager", label: "Link Manager", icon: Link2, component: LinkManager },
+  { id: "sms", notSetUp: true, label: "SMS Devices", icon: Smartphone, component: SmsDevices },
+  { id: "affiliates", notSetUp: true, label: "Affiliate Tracker", icon: TrendingUp, component: AffiliateTracker },
+  { id: "affiliateConfig", notSetUp: true, label: "Affiliate Config", icon: LinkIcon, component: AffiliateConfig },
+  { id: "linkManager", notSetUp: true, label: "Link Manager", icon: Link2, component: LinkManager },
 ];
 
 /**
@@ -40,7 +41,7 @@ export default function AdminSettings() {
       {/* Header */}
       <Box sx={{ backgroundColor: "background.paper", borderBottom: "1px solid", borderColor: "divider", p: { xs: 3, md: 4 } }}>
         <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-          <Settings size={28} color="#003366" />
+          <Box sx={{ width: 44, height: 44, borderRadius: "12px", display: "flex", alignItems: "center", justifyContent: "center", backgroundImage: "linear-gradient(135deg,#64748B,#003366)", color: "#fff" }}><Settings size={24} /></Box>
           <Box>
             <Typography variant="h2" sx={{ fontSize: "1.75rem", fontWeight: 700, color: "primary.main" }}>
               Settings
@@ -82,10 +83,12 @@ export default function AdminSettings() {
               <Tab
                 key={tab.id}
                 value={tab.id}
+                sx={tab.notSetUp && activeTab !== tab.id ? { opacity: 0.6 } : undefined}
                 label={
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Icon size={16} />
                     <span>{tab.label}</span>
+                    {tab.notSetUp && <Chip label="Not set up" size="small" sx={{ height: 16, fontSize: "0.58rem", fontWeight: 800, bgcolor: "rgba(100,116,139,0.16)", color: "#64748B" }} />}
                   </Stack>
                 }
               />
@@ -96,6 +99,11 @@ export default function AdminSettings() {
 
       {/* Tab Content */}
       <Box sx={{ p: 0 }}>
+        {activeConfig?.notSetUp && (
+          <Box sx={{ px: { xs: 2, md: 4 }, pt: 3 }}>
+            <NotSetUpBanner feature={activeConfig.label} />
+          </Box>
+        )}
         <React.Suspense
           fallback={
             <Box sx={{ p: 4, textAlign: "center" }}>
