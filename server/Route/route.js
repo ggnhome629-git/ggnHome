@@ -7,8 +7,6 @@ const router = express.Router();
 const User = require("../models/user.model.js");
 
 const multer = require("multer");
-const excelUpload = multer({ storage: multer.memoryStorage() });
-
 const upload = require("../middleware/multer");
 const { verifyToken, verifyTokenOptional , verifyAgentToken , verifyAgentTokenOptional , verifyTokenOrAgent } = require("../middleware/auth");
 const {

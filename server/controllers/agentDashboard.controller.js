@@ -9,7 +9,6 @@ const RentalProperty = require("../models/Rentalproperty.model.js");
 const Sector = require("../models/Sector.model.js");
 
 const multer = require("multer");
-const xlsx = require("xlsx");
 const { uploadWithFallback } = require("../config/FileHandling");
 const { calculateRankingAfterSave } = require("../hooks/propertyRankingHook");
 

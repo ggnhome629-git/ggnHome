@@ -14,7 +14,6 @@ const Sector = require("../models/Sector.model.js");
 const User = require("../models/user.model.js");
 
 const multer = require("multer");
-const xlsx = require("xlsx");
 const { uploadWithFallback } = require("../config/FileHandling");
 const { calculateRankingAfterSave } = require("../hooks/propertyRankingHook");
 
