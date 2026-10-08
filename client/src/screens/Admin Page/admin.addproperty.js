@@ -1,10 +1,8 @@
 import React from "react";
 import { ClipboardList, Eye, PhoneCall, ShieldCheck } from "lucide-react";
-import TopNavigationBar from "../Dashboard/TopNavigationBar";
 import { useAuth } from "../../Context/AuthContext";
 import PropertyPostForm from "../Add property/PropertyPostForm";
 
-const NAV_ITEMS = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 const ADMIN_POINTS = [
   { icon: PhoneCall, title: "Verify With The Owner", text: "Confirm price, availability and photos before saving." },
   { icon: ShieldCheck, title: "Owner Number Stays Private", text: "It's stored for the team, never shown on the listing." },
@@ -16,6 +14,11 @@ const ADMIN_POINTS = [
  * /admin/add-property — the shared post form plus the admin-only fields:
  * owner's mobile number and the extra rental details (lease, policies,
  * neighbourhood).
+ *
+ * The shared PropertyPostForm already provides the MUI form controls, the
+ * details / images / amenities sections and the sticky Back–Continue action
+ * bar on mobile (PostFormLayout). The admin shell (AdminLayout) owns page
+ * navigation, so no TopNavigationBar is rendered inside it.
  */
 export default function AdminPropertyListingForm() {
   const { user } = useAuth();
@@ -23,7 +26,6 @@ export default function AdminPropertyListingForm() {
   return (
     <PropertyPostForm
       mode="admin"
-      nav={<TopNavigationBar navItems={NAV_ITEMS} />}
       user={user}
       roleLabel="Admin"
       endpoints={{ rent: `${base}/api/admin/addrentproperties`, sale: `${base}/api/admin/addsaleproperties` }}
