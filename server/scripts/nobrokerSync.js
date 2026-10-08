@@ -106,11 +106,11 @@ function sleep(ms) {
  */
 async function syncNoBrokerListings({
   dryRun = false,
-  hardDeleteOnRemove = true,
+  hardDeleteOnRemove = false,
   delayMs = 450,
 } = {}) {
   const docs = await RentalProperty.find({ sourceUrl: { $exists: true } })
-    .select("_id sourceUrl isActive sourceRemovalFlaggedAt")
+    .select("_id sourceUrl isActive isPostedNew sourceRemovalFlaggedAt")
     .lean();
 
   const now = new Date();
@@ -157,11 +157,13 @@ async function syncNoBrokerListings({
         summary.active++;
         const set = { sourceStatus: "active", sourceCheckedAt: now };
         const unset = doc.sourceRemovalFlaggedAt ? { sourceRemovalFlaggedAt: "" } : undefined;
-        if (doc.isActive === false) summary.reactivated++;
+        // Listings still awaiting admin approval (isPostedNew) must never be published by the sync.
+        const reactivate = doc.isActive === false && !doc.isPostedNew;
+        if (reactivate) summary.reactivated++;
         if (!dryRun) {
           await RentalProperty.updateOne(
             { _id: doc._id },
-            { $set: { ...set, isActive: true }, ...(unset ? { $unset: unset } : {}) }
+            { $set: { ...set, ...(reactivate ? { isActive: true } : {}) }, ...(unset ? { $unset: unset } : {}) }
           );
         }
       } else if (result.status === "inactive") {

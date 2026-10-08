@@ -157,9 +157,10 @@ if (require.main === module) {
   });
 
   // NoBroker sync no longer auto-runs. Start it manually (npm run sync:nobroker,
-  // or the /api/cron/* trigger endpoints). Set ENABLE_NOBROKER_CRON=true to
-  // bring back the daily 3:30 AM IST schedule.
-  if (process.env.ENABLE_NOBROKER_CRON === "true" && process.env.DISABLE_CRON !== "true") startNoBrokerSyncCron();
+  // or the /api/cron/* trigger endpoints), or turn on the daily 3:30 AM IST run from
+  // Admin > Scraper Control.
+  // Always scheduled; the job itself checks the admin-panel toggle (Scraper Control) before running.
+  if (process.env.DISABLE_CRON !== "true") startNoBrokerSyncCron();
   if (process.env.NODE_ENV !== "test" && process.env.DISABLE_CRON !== "true") startReminderCron();
   if (process.env.DISABLE_CRON !== "true") {
     try {

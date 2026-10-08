@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Button, Card, CardContent, Grid, Typography, Stack, TextField, Alert, Chip, LinearProgress, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
+import { Box, Button, Card, CardContent, Grid, Typography, Stack, Switch, TextField, Alert, Chip, LinearProgress, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import { Play, Square, RefreshCw, Eye, CheckCircle, Server, Zap } from "lucide-react";
 
 const AdminScraperControl = () => {
@@ -13,6 +13,44 @@ const AdminScraperControl = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   const API_BASE = process.env.REACT_APP_Base_API || "";
+
+  // NoBroker daily sync (hides listings NoBroker has rented out / removed)
+  const [nbSync, setNbSync] = useState(null);
+  const nbHeaders = () => ({
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${localStorage.getItem("accessToken") || localStorage.getItem("token")}`,
+  });
+  const fetchNbSync = async () => {
+    try {
+      const r = await fetch(`${API_BASE}/api/admin/scraper/nobroker-sync`, { headers: nbHeaders(), credentials: "include" });
+      const d = await r.json();
+      if (d.success) setNbSync(d.data);
+    } catch (e) {
+      console.error("Error fetching NoBroker sync:", e);
+    }
+  };
+  const toggleNbSync = async (enabled) => {
+    setNbSync((p) => ({ ...p, enabled }));
+    try {
+      const r = await fetch(`${API_BASE}/api/admin/scraper/nobroker-sync`, { method: "PUT", headers: nbHeaders(), credentials: "include", body: JSON.stringify({ enabled }) });
+      if (!r.ok) throw new Error();
+      setMessage(`✓ NoBroker daily sync ${enabled ? "enabled" : "disabled"}`);
+    } catch (e) {
+      setMessage("Failed to update NoBroker sync setting");
+      fetchNbSync();
+    }
+  };
+  const runNbSync = async () => {
+    try {
+      const r = await fetch(`${API_BASE}/api/admin/scraper/nobroker-sync/run`, { method: "POST", headers: nbHeaders(), credentials: "include" });
+      const d = await r.json();
+      setMessage(r.ok ? "✓ Sync started - this takes a while, refresh to see results" : d.message || "Could not start sync");
+      fetchNbSync();
+    } catch (e) {
+      setMessage("Could not start sync");
+    }
+  };
+  useEffect(() => { fetchNbSync(); }, []);
 
   // Fetch scraper status
   const fetchStatus = async () => {
@@ -145,6 +183,33 @@ const AdminScraperControl = () => {
           {message}
         </Alert>
       )}
+
+      {/* NoBroker listing sync */}
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="space-between" alignItems={{ sm: "center" }}>
+            <Box>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>NoBroker listing sync</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {nbSync?.schedule || "Daily 3:30 AM IST"} - checks every scraped listing on NoBroker and hides the ones that were rented out or removed.
+              </Typography>
+              {nbSync?.lastRun && (
+                <Typography variant="caption" color="text.secondary">
+                  Last run {new Date(nbSync.lastRun.at).toLocaleString()} ({nbSync.lastRun.trigger}): {nbSync.lastRun.summary?.active ?? 0} live, {nbSync.lastRun.summary?.deactivated ?? 0} hidden, {nbSync.lastRun.summary?.removalFlagged ?? 0} flagged removed
+                  {nbSync.lastRun.summary?.breakerTripped ? " - STOPPED: looks blocked by NoBroker" : ""}
+                </Typography>
+              )}
+            </Box>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Button size="small" variant="outlined" disabled={!nbSync || nbSync.running} onClick={runNbSync}>
+                {nbSync?.running ? "Running..." : "Run now"}
+              </Button>
+              <Switch checked={!!nbSync?.enabled} disabled={!nbSync} onChange={(e) => toggleNbSync(e.target.checked)} />
+              <Typography variant="body2">{nbSync?.enabled ? "On" : "Off"}</Typography>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
 
       {/* Status Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>

@@ -117,6 +117,37 @@ router.patch(
 );
 
 /**
+ * NoBroker listing sync (daily 3:30 AM IST) - toggle + last run, controlled from the admin panel.
+ */
+const nbSync = () => require("../cron/nobrokerSyncCron");
+let nbSyncRunning = false;
+
+router.get("/nobroker-sync", verifyToken, checkAdminEmail, async (req, res, next) => {
+  try {
+    const AppSetting = require("../models/AppSetting.model");
+    const { isSyncEnabled, SETTING_KEY } = nbSync();
+    const s = await AppSetting.findOne({ key: SETTING_KEY }).lean();
+    res.json({ success: true, data: { enabled: await isSyncEnabled(), running: nbSyncRunning, schedule: "Daily 3:30 AM IST", lastRun: s?.value?.lastRun || null } });
+  } catch (e) { next(e); }
+});
+
+router.put("/nobroker-sync", verifyToken, checkAdminEmail, validate(Joi.object({ enabled: Joi.boolean().required() }), "body"), async (req, res, next) => {
+  try {
+    const AppSetting = require("../models/AppSetting.model");
+    const { SETTING_KEY } = nbSync();
+    await AppSetting.updateOne({ key: SETTING_KEY }, { $set: { "value.enabled": req.body.enabled } }, { upsert: true });
+    res.json({ success: true, data: { enabled: req.body.enabled } });
+  } catch (e) { next(e); }
+});
+
+router.post("/nobroker-sync/run", verifyToken, checkAdminEmail, scraperLimiter, (req, res) => {
+  if (nbSyncRunning) return res.status(409).json({ success: false, message: "Sync already running" });
+  nbSyncRunning = true;
+  nbSync().runAndRecord("manual").catch((e) => console.error("[nobrokerSync] manual run failed:", e)).finally(() => { nbSyncRunning = false; });
+  res.json({ success: true, message: "Sync started" });
+});
+
+/**
  * Error handling middleware for this router
  */
 router.use((err, req, res, next) => {
