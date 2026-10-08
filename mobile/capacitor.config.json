@@ -1,0 +1,6 @@
+{
+  "appId": "com.tanush.ggnhome",
+  "appName": "GgnHome",
+  "webDir": "www",
+  "server": { "url": "https://www.ggnhome.com", "cleartext": false, "androidScheme": "https" }
+}
