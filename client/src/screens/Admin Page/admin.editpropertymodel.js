@@ -1,5 +1,53 @@
 import React, { useEffect, useState, useRef } from "react";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
+import {
+  Alert,
+  Box,
+  Button,
+  Checkbox,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  IconButton,
+  Skeleton,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { ImagePlus, Upload, X } from "lucide-react";
+import { EmptyState } from "./shell/adminUi";
+import "./admin.css";
+
+/** Shared section-card chrome from the admin design tokens (sx, never inline style objects). */
+const SECTION_CARD = {
+  bgcolor: "#FFFFFF",
+  borderRadius: "12px",
+  p: 4,
+  border: "1px solid",
+  borderColor: "divider",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+};
+
+const SECTION_TITLE = {
+  fontWeight: 700,
+  color: "primary.main",
+  fontSize: "1rem",
+  mb: 3,
+  pb: 2,
+  borderBottom: "2px solid #22D3EE",
+};
+
+const CAPTION = {
+  display: "block",
+  fontWeight: 700,
+  color: "text.secondary",
+  mb: 1,
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+};
 
 const GROUPS_RENTAL = [
   {
@@ -112,7 +160,6 @@ function formatArrayValue(value) {
   if (typeof value === "string") return value;
   return "";
 }
-
 export default function EditPropertyModal({ propertyId, isOpen, onClose, onSuccess }) {
   const [propertyType, setPropertyType] = useState("rental");
   const [formData, setFormData] = useState(getInitialFormData(GROUPS_RENTAL));
@@ -125,7 +172,6 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
   const [existingPanos, setExistingPanos] = useState([]); // [{title,url,yaw,pitch,notes}]
   const [newPanos, setNewPanos] = useState([]); // [{ file, title, yaw, pitch, notes }]
   const panoInputRef = useRef(null);
-  const modalRef = useRef(null);
   const fileInputRef = useRef(null);
 
   // Sanitizer: trims strings, removes empty strings, coerces numeric-like fields,
@@ -196,24 +242,6 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    function onKeyDown(e) {
-      if (e.key === "Escape") onClose();
-    }
-    function onClick(e) {
-      if (modalRef.current && !modalRef.current.contains(e.target)) {
-        onClose();
-      }
-    }
-    document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("mousedown", onClick);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("mousedown", onClick);
-    };
-  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (!isOpen || !propertyId) return;
@@ -417,7 +445,7 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
   }, [isOpen, propertyId]);
 
   function handleInputChange(e, field) {
-    const { type, value, checked, files } = e.target;
+    const { value, checked, files } = e.target;
     if (field.type === "checkbox") {
       setFormData(f => ({ ...f, [field.key]: checked }));
     } else if (field.type === "array") {
@@ -632,442 +660,489 @@ function handlePanoFilesSelected(files) {
       setSubmitting(false);
     }
   }
-
-  if (!isOpen) return null;
-
-  const groupsMain = (propertyType === 'sale' ? GROUPS_SALE : GROUPS_RENTAL)
-    .filter(g => g.name !== 'Images');
+  const groupsMain = (propertyType === "sale" ? GROUPS_SALE : GROUPS_RENTAL).filter((g) => g.name !== "Images");
 
   const renderGroupCard = (group) => (
-    <div
-      key={group.name}
-      style={{
-        background: '#fff',
-        borderRadius: 12,
-        padding: '20px 24px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-      }}
-    >
-      <div
-        style={{
-          fontWeight: 600,
-          fontSize: 16,
-          marginBottom: 18,
-          color: '#495057',
-          paddingBottom: 12,
-          borderBottom: '2px solid #e9ecef',
-        }}
-      >
+    <Box key={group.name} sx={SECTION_CARD}>
+      <Typography variant="h3" sx={SECTION_TITLE}>
         {group.name}
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        {group.fields.map((field) => (
-          <div key={field.key} style={{ gridColumn: field.type === 'textarea' ? '1 / -1' : 'auto' }}>
-            <label htmlFor={field.key} style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#495057', marginBottom: 6 }}>
-              {field.label}
-            </label>
-            {field.type === 'select' ? (
-              <select
-                id={field.key}
-                value={formData[field.key]}
-                onChange={(e) => handleInputChange(e, field)}
-                style={{ width: '100%', border: '1px solid #ced4da', borderRadius: 6, padding: '9px 12px', fontSize: 14, background: '#fff', color: '#495057' }}
-              >
-                <option value=''>Select</option>
-                {field.options?.map((opt) => (
-                  <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
-                ))}
-              </select>
-            ) : field.type === 'textarea' ? (
-              <textarea
-                id={field.key}
-                value={formData[field.key]}
-                onChange={(e) => handleInputChange(e, field)}
-                rows={4}
-                style={{ width: '100%', border: '1px solid #ced4da', borderRadius: 6, padding: '9px 12px', fontSize: 14, background: '#fff', color: '#495057', resize: 'vertical' }}
-              />
-            ) : field.type === 'checkbox' ? (
-              <div style={{ display: 'flex', alignItems: 'center', marginTop: 8 }}>
-                <input id={field.key} type='checkbox' checked={!!formData[field.key]} onChange={(e) => handleInputChange(e, field)} style={{ width: 18, height: 18, cursor: 'pointer' }} />
-              </div>
-            ) : field.type === 'array' ? (
-              <input
-                id={field.key}
-                type='text'
-                value={formatArrayValue(formData[field.key])}
-                placeholder='Comma-separated values'
-                onChange={(e) => handleInputChange(e, field)}
-                style={{ width: '100%', border: '1px solid #ced4da', borderRadius: 6, padding: '9px 12px', fontSize: 14, background: '#fff', color: '#495057' }}
-              />
-            ) : (
-              <input
-                id={field.key}
+      </Typography>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+        {group.fields.map((field) => {
+          const wide = field.type === "textarea";
+          const span = wide ? { gridColumn: "1 / -1" } : undefined;
+          const shared = {
+            id: field.key,
+            label: field.label,
+            value: field.type === "array" ? formatArrayValue(formData[field.key]) : formData[field.key] ?? "",
+            onChange: (e) => handleInputChange(e, field),
+            fullWidth: true,
+          };
+
+          if (field.type === "select") {
+            return (
+              <Box key={field.key} sx={span}>
+                <TextField {...shared} select SelectProps={{ native: true }}>
+                  <option value="">Select</option>
+                  {field.options?.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                    </option>
+                  ))}
+                </TextField>
+              </Box>
+            );
+          }
+
+          if (field.type === "checkbox") {
+            return (
+              <Box key={field.key} sx={span}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={!!formData[field.key]}
+                      onChange={(e) => handleInputChange(e, field)}
+                      inputProps={{ id: field.key }}
+                    />
+                  }
+                  label={field.label}
+                />
+              </Box>
+            );
+          }
+
+          if (field.type === "textarea") {
+            return (
+              <Box key={field.key} sx={span}>
+                <TextField {...shared} multiline minRows={4} />
+              </Box>
+            );
+          }
+
+          if (field.type === "array") {
+            return (
+              <Box key={field.key} sx={span}>
+                <TextField {...shared} helperText="Comma-separated values" />
+              </Box>
+            );
+          }
+
+          return (
+            <Box key={field.key} sx={span}>
+              <TextField
+                {...shared}
                 type={field.type}
-                value={formData[field.key]}
-                onChange={(e) => handleInputChange(e, field)}
-                style={{ width: '100%', border: '1px solid #ced4da', borderRadius: 6, padding: '9px 12px', fontSize: 14, background: '#fff', color: '#495057' }}
+                {...(field.type === "date" ? { InputLabelProps: { shrink: true } } : {})}
+                inputProps={field.type === "number" ? { min: 0, inputMode: "numeric" } : undefined}
               />
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
+            </Box>
+          );
+        })}
+      </Box>
+    </Box>
   );
 
   const ImagesCard = (
-    <div
-      style={{
-        background: '#fff',
-        borderRadius: 12,
-        padding: '20px 24px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-        position: 'relative'
-      }}
-    >
-      <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 18, color: '#495057', paddingBottom: 12, borderBottom: '2px solid #e9ecef' }}>
+    <Box sx={SECTION_CARD}>
+      <Typography variant="h3" sx={SECTION_TITLE}>
         Property Images
-      </div>
-      <div style={{ marginBottom: 20 }}>
-        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#495057', marginBottom: 8 }}>Upload New Images</label>
-        <div
-          style={{ textAlign: 'center', border: uploadHover ? '2px dashed #007bff' : '2px dashed #ced4da', borderRadius: 12, padding: '40px 20px', cursor: 'pointer', background: uploadHover ? '#e9f5ff' : '#f8f9fa', transition: 'all 0.3s' }}
+      </Typography>
+
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="caption" sx={CAPTION}>
+          Upload New Images
+        </Typography>
+        <Box
+          component="div"
+          role="button"
+          tabIndex={0}
+          onClick={() => fileInputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
           onMouseEnter={() => setUploadHover(true)}
           onMouseLeave={() => setUploadHover(false)}
-          onClick={() => fileInputRef.current?.click()}
+          sx={{
+            textAlign: "center",
+            border: "2px dashed",
+            borderColor: uploadHover ? "#00A79D" : "#CBD5E1",
+            borderRadius: "12px",
+            py: 5,
+            px: 3,
+            cursor: "pointer",
+            bgcolor: uploadHover ? "rgba(0,167,157,0.06)" : "#F8FAFC",
+            transition: "all 0.2s",
+            "&:focus-visible": { outline: "2px solid #00A79D", outlineOffset: 2 },
+          }}
         >
-          <input
-            type='file'
+          <Box
+            component="input"
+            type="file"
             multiple
-            accept='image/*'
-            onChange={(e) => handleInputChange(e, { key: 'images', type: 'file', multiple: true })}
-            style={{ display: 'none' }}
+            accept="image/*"
             ref={fileInputRef}
+            onChange={(e) => handleInputChange(e, { key: "images", type: "file", multiple: true })}
+            sx={{ display: "none" }}
           />
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            <svg width='36' height='36' fill='#007bff' xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 16a1 1 0 0 1-1-1V9.41l-1.3 1.3a1 1 0 0 1-1.4-1.42l3-3a1 1 0 0 1 1.4 0l3 3a1 1 0 1 1-1.4 1.42L13 9.41V15a1 1 0 0 1-1 1Zm8-4a1 1 0 0 1 0 2h-1v4a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-4H4a1 1 0 0 1 0-2h16ZM7 18h10v-4H7v4Z'/></svg>
-            <span style={{ fontSize: 14, color: '#6c757d' }}>Click or drag images to upload</span>
-          </div>
-        </div>
-      </div>
+          <Stack alignItems="center" spacing={1}>
+            <Upload size={30} color="#00A79D" />
+            <Typography variant="body2" sx={{ color: "text.secondary" }}>
+              Click or drag images to upload
+            </Typography>
+          </Stack>
+        </Box>
+      </Box>
 
-      {(existingImages.length > 0 || newImages.length > 0) ? (
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 500, color: '#495057', marginBottom: 12 }}>Current Images ({existingImages.length + newImages.length})</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, maxHeight: 400, overflowY: 'auto', padding: 4 }}>
+      {existingImages.length > 0 || newImages.length > 0 ? (
+        <Box>
+          <Typography variant="caption" sx={CAPTION}>
+            Current Images ({existingImages.length + newImages.length})
+          </Typography>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)" },
+              gap: 1.5,
+              maxHeight: 400,
+              overflowY: "auto",
+            }}
+          >
             {existingImages.map((img, idx) => (
-              <div key={img + idx} style={{ position: 'relative', paddingBottom: '100%', borderRadius: 8, overflow: 'hidden', border: '2px solid #e9ecef' }}>
-                <img src={typeof img === 'string' ? img : ''} alt={`Property ${idx + 1}`} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button type='button' onClick={() => handleRemoveExistingImage(idx)} style={{ position: 'absolute', top: 4, right: 4, border: 'none', background: 'rgba(255, 255, 255, 0.95)', borderRadius: '50%', width: 24, height: 24, fontSize: 16, color: '#dc3545', cursor: 'pointer', boxShadow: '0 2px 6px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }} aria-label='Remove image'>×</button>
-              </div>
+              <Box key={img + idx} sx={{ position: "relative", borderRadius: "8px", overflow: "hidden", border: "2px solid #E5E9EE", aspectRatio: "1 / 1" }}>
+                <Box
+                  component="img"
+                  src={typeof img === "string" ? img : ""}
+                  alt={`Property ${idx + 1}`}
+                  sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                />
+                <IconButton
+                  aria-label="Remove image"
+                  onClick={() => handleRemoveExistingImage(idx)}
+                  sx={{
+                    position: "absolute",
+                    top: 4,
+                    right: 4,
+                    width: 44,
+                    height: 44,
+                    bgcolor: "rgba(255,255,255,0.95)",
+                    color: "#DC2626",
+                    "&:hover": { bgcolor: "#FFFFFF" },
+                  }}
+                >
+                  <X size={18} />
+                </IconButton>
+              </Box>
             ))}
             {newImages.map((img, idx) => (
-              <div key={img.name + idx} style={{ position: 'relative', paddingBottom: '100%', borderRadius: 8, overflow: 'hidden', border: '2px solid #28a745' }}>
-                <img src={URL.createObjectURL(img)} alt={`New ${idx + 1}`} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', top: 4, left: 4, background: '#28a745', color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600 }}>NEW</div>
-              </div>
+              <Box key={img.name + idx} sx={{ position: "relative", borderRadius: "8px", overflow: "hidden", border: "2px solid #10B981", aspectRatio: "1 / 1" }}>
+                <Box
+                  component="img"
+                  src={URL.createObjectURL(img)}
+                  alt={`New ${idx + 1}`}
+                  sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+                />
+                <Chip
+                  label="NEW"
+                  size="small"
+                  sx={{ position: "absolute", top: 6, left: 6, height: 22, fontWeight: 700, bgcolor: "#10B981", color: "#FFFFFF" }}
+                />
+              </Box>
             ))}
-          </div>
-        </div>
+          </Box>
+        </Box>
       ) : (
-        <div style={{ textAlign: 'center', padding: '40px 20px', color: '#adb5bd', fontSize: 14 }}>No images uploaded yet</div>
+        <EmptyState
+          icon={ImagePlus}
+          title="No images yet"
+          description="Upload images above — they appear here before you save."
+        />
       )}
-    </div>
+    </Box>
   );
 
   const PanoCard = (
-    <div
-      style={{
-        background: '#fff',
-        borderRadius: 12,
-        padding: '20px 24px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-        marginTop: 16,
-      }}
-    >
-      <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 10, color: '#495057', paddingBottom: 12, borderBottom: '2px solid #e9ecef', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span>360° Panoramic Scenes</span>
-        <span style={{ fontSize: 12, color: '#6c757d' }}>{existingPanos.length + newPanos.length}/6</span>
-      </div>
+    <Box sx={SECTION_CARD}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2.5, pb: 2, borderBottom: "2px solid #22D3EE" }}>
+        <Typography variant="h3" sx={{ fontWeight: 700, color: "primary.main", fontSize: "1rem", m: 0 }}>
+          360° Panoramic Scenes
+        </Typography>
+        <Chip
+          label={`${existingPanos.length + newPanos.length}/6`}
+          size="small"
+          sx={{ fontWeight: 700, borderRadius: "999px", bgcolor: "rgba(0,51,102,0.08)", color: "primary.main" }}
+        />
+      </Stack>
 
       {existingPanos.length > 0 && (
-        <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 13, fontWeight: 500, color: '#495057', marginBottom: 8 }}>Existing Scenes</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+        <Box sx={{ mb: 2.5 }}>
+          <Typography variant="caption" sx={CAPTION}>
+            Existing Scenes
+          </Typography>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5 }}>
             {existingPanos.map((p, idx) => (
-              <div key={idx} style={{ position: 'relative', border: '1px solid #e9ecef', borderRadius: 8, overflow: 'hidden' }}>
-                <img src={p.url} alt={p.title || `scene-${idx+1}`} style={{ width: '100%', height: 90, objectFit: 'cover' }} />
-                <div style={{ padding: 8, fontSize: 12, color: '#495057' }}>
-                  <div style={{ fontWeight: 600, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{p.title || `Scene ${idx+1}`}</div>
-                  <div style={{ opacity: .7 }}>Yaw {p.yaw || 0}°, Pitch {p.pitch || 0}°</div>
-                </div>
-                <button type='button' onClick={() => removeExistingPano(idx)} style={{ position: 'absolute', top: 6, right: 6, background: '#fff', border: '1px solid #e9ecef', borderRadius: 6, padding: '2px 8px', fontSize: 12, cursor: 'pointer', color: '#dc3545' }}>Remove</button>
-              </div>
+              <Box key={idx} sx={{ position: "relative", border: "1px solid", borderColor: "divider", borderRadius: "8px", overflow: "hidden", bgcolor: "#FFFFFF" }}>
+                <Box component="img" src={p.url} alt={p.title || `scene-${idx + 1}`} sx={{ width: "100%", height: 96, objectFit: "cover", display: "block" }} />
+                <Box sx={{ p: 1.5 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                    {p.title || `Scene ${idx + 1}`}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    Yaw {p.yaw || 0}°, Pitch {p.pitch || 0}°
+                  </Typography>
+                </Box>
+                <Button
+                  size="small"
+                  onClick={() => removeExistingPano(idx)}
+                  sx={{
+                    position: "absolute",
+                    top: 4,
+                    right: 4,
+                    minHeight: 44,
+                    minWidth: 0,
+                    px: 1.5,
+                    bgcolor: "rgba(255,255,255,0.95)",
+                    color: "#DC2626",
+                    fontWeight: 700,
+                    fontSize: "0.75rem",
+                    "&:hover": { bgcolor: "#FFFFFF" },
+                  }}
+                >
+                  Remove
+                </Button>
+              </Box>
             ))}
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
 
-      <div style={{ marginBottom: 12 }}>
-        <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#495057', marginBottom: 8 }}>Upload New 360° Images</label>
-        <div
-          style={{ textAlign: 'center', border: uploadHover ? '2px dashed #0d6efd' : '2px dashed #ced4da', borderRadius: 12, padding: '24px 16px', cursor: 'pointer', background: uploadHover ? '#e9f5ff' : '#f8f9fa', transition: 'all 0.3s' }}
+      <Box sx={{ mb: 2.5 }}>
+        <Typography variant="caption" sx={CAPTION}>
+          Upload New 360° Images
+        </Typography>
+        <Box
+          component="div"
+          role="button"
+          tabIndex={0}
+          onClick={() => panoInputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              panoInputRef.current?.click();
+            }
+          }}
           onMouseEnter={() => setUploadHover(true)}
           onMouseLeave={() => setUploadHover(false)}
-          onClick={() => panoInputRef.current?.click()}
-        >
-          <input type='file' multiple accept='image/*' onChange={(e) => handlePanoFilesSelected(e.target.files)} style={{ display: 'none' }} ref={panoInputRef} />
-          <div style={{ fontSize: 13, color: '#6c757d' }}>Click or drag to add up to {Math.max(0, 6 - (existingPanos.length + newPanos.length))} scenes</div>
-        </div>
-      </div>
-
-      {newPanos.length > 0 && (
-        <div>
-          <div style={{ fontSize: 13, fontWeight: 500, color: '#495057', marginBottom: 8 }}>New Scenes</div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
-            {newPanos.map((p, idx) => {
-              const url = p.file ? URL.createObjectURL(p.file) : null;
-              return (
-                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: 12, border: '1px solid #e9ecef', borderRadius: 8, padding: 10 }}>
-                  <div>
-                    {url ? (
-                      <img src={url} alt={`new-${idx}`} style={{ width: 100, height: 70, objectFit: 'cover', borderRadius: 6 }} onLoad={() => URL.revokeObjectURL(url)} />
-                    ) : (
-                      <div style={{ width: 100, height: 70, background: '#e9ecef', borderRadius: 6 }} />
-                    )}
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                    <input type='text' placeholder='Title (e.g., Living Room)' value={p.title} onChange={(e)=>updateNewPano(idx,{ title: e.target.value })} style={{ border: '1px solid #ced4da', borderRadius: 6, padding: '8px 10px', fontSize: 13 }} />
-                    <input type='number' placeholder='Yaw' value={p.yaw} onChange={(e)=>updateNewPano(idx,{ yaw: e.target.value })} style={{ border: '1px solid #ced4da', borderRadius: 6, padding: '8px 10px', fontSize: 13 }} />
-                    <input type='number' placeholder='Pitch' value={p.pitch} onChange={(e)=>updateNewPano(idx,{ pitch: e.target.value })} style={{ border: '1px solid #ced4da', borderRadius: 6, padding: '8px 10px', fontSize: 13 }} />
-                    <input type='text' placeholder='Notes' value={p.notes} onChange={(e)=>updateNewPano(idx,{ notes: e.target.value })} style={{ border: '1px solid #ced4da', borderRadius: 6, padding: '8px 10px', fontSize: 13 }} />
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gridColumn: '1 / -1' }}>
-                      <button type='button' onClick={()=>removeNewPano(idx)} style={{ background: '#fff', border: '1px solid #e9ecef', color: '#dc3545', borderRadius: 6, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>Remove</button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  const groupsToRender = propertyType === "sale" ? GROUPS_SALE : GROUPS_RENTAL;
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        zIndex: 1000,
-        left: 0,
-        top: 0,
-        width: "100vw",
-        height: "100vh",
-        background: "rgba(0,0,0,0.4)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-      }}
-    >
-      <div
-        ref={modalRef}
-        style={{
-          background: "#f8f9fa",
-          borderRadius: "16px",
-          maxWidth: "1100px",
-          width: "100%",
-          maxHeight: "92vh",
-          overflowY: "auto",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {/* Header */}
-        <div
-          style={{
-            background: "#fff",
-            padding: "20px 32px",
-            borderBottom: "1px solid #e9ecef",
-            borderRadius: "16px 16px 0 0",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            position: "sticky",
-            top: 0,
-            zIndex: 10,
+          sx={{
+            textAlign: "center",
+            border: "2px dashed",
+            borderColor: uploadHover ? "#00A79D" : "#CBD5E1",
+            borderRadius: "12px",
+            py: 4,
+            px: 3,
+            cursor: "pointer",
+            bgcolor: uploadHover ? "rgba(0,167,157,0.06)" : "#F8FAFC",
+            transition: "all 0.2s",
+            "&:focus-visible": { outline: "2px solid #00A79D", outlineOffset: 2 },
           }}
         >
-          <h2 style={{ margin: 0, fontWeight: 600, fontSize: 22, color: "#212529" }}>
-            Edit Property
-          </h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              fontSize: 28,
-              cursor: "pointer",
-              color: "#6c757d",
-              fontWeight: 400,
-              lineHeight: 1,
-              padding: 0,
-              width: 32,
-              height: 32,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
+          <Box
+            component="input"
+            type="file"
+            multiple
+            accept="image/*"
+            ref={panoInputRef}
+            onChange={(e) => handlePanoFilesSelected(e.target.files)}
+            sx={{ display: "none" }}
+          />
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            Click or drag to add up to {Math.max(0, 6 - (existingPanos.length + newPanos.length))} scenes
+          </Typography>
+        </Box>
+      </Box>
 
-        {/* Content */}
-        <div style={{ flex: 1, overflowY: "auto" }}>
-          {loading ? (
-            <div style={{ padding: 60, textAlign: "center", color: "#6c757d" }}>
-              Loading property details...
-            </div>
-          ) : error ? (
-            <div
-              style={{
-                margin: "24px 32px",
-                padding: "16px 20px",
-                background: "#fff3cd",
-                border: "1px solid #ffc107",
-                borderRadius: 8,
-                color: "#856404",
-              }}
-            >
-              {error}
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} style={{ padding: "24px 32px" }}>
-              {!isMobile ? (
-                // Desktop: two-column layout, both Images and Pano in the right column
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                    {groupsMain.map(renderGroupCard)}
-                  </div>
-                  <div style={{ position: isMobile ? 'relative' : 'sticky', top: isMobile ? undefined : 100, alignSelf: 'start' }}>
-                    {ImagesCard}
-                    {PanoCard}
-                  </div>
-                </div>
-              ) : (
-                // Mobile: paginated pages
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 8 }}>
-                    {Array.from({ length: groupsMain.length + 2 }).map((_, i) => (
-                      <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: i === page ? '#007bff' : '#ced4da' }} />
-                    ))}
-                  </div>
+      {newPanos.length > 0 && (
+        <Box>
+          <Typography variant="caption" sx={CAPTION}>
+            New Scenes
+          </Typography>
+          {newPanos.map((p, idx) => {
+            const url = p.file ? URL.createObjectURL(p.file) : null;
+            return (
+              <Box
+                key={idx}
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", sm: "110px 1fr" },
+                  gap: 1.5,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  borderRadius: "8px",
+                  p: 1.5,
+                  mb: 1.5,
+                  bgcolor: "#F8FAFC",
+                }}
+              >
+                <Box>
+                  {url ? (
+                    <Box
+                      component="img"
+                      src={url}
+                      alt={`new-${idx}`}
+                      onLoad={() => URL.revokeObjectURL(url)}
+                      sx={{ width: { xs: "100%", sm: 110 }, height: 76, objectFit: "cover", borderRadius: "6px" }}
+                    />
+                  ) : (
+                    <Box sx={{ width: { xs: "100%", sm: 110 }, height: 76, bgcolor: "#E5E9EE", borderRadius: "6px" }} />
+                  )}
+                </Box>
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5 }}>
+                  <TextField size="small" label="Title" placeholder="e.g., Living Room" value={p.title} onChange={(e) => updateNewPano(idx, { title: e.target.value })} />
+                  <TextField size="small" type="number" label="Yaw" value={p.yaw} onChange={(e) => updateNewPano(idx, { yaw: e.target.value })} />
+                  <TextField size="small" type="number" label="Pitch" value={p.pitch} onChange={(e) => updateNewPano(idx, { pitch: e.target.value })} />
+                  <TextField size="small" label="Notes" value={p.notes} onChange={(e) => updateNewPano(idx, { notes: e.target.value })} />
+                  <Stack direction="row" justifyContent="flex-end" sx={{ gridColumn: "1 / -1" }}>
+                    <Button variant="outlined" color="error" onClick={() => removeNewPano(idx)} sx={{ minHeight: 44 }}>
+                      Remove
+                    </Button>
+                  </Stack>
+                </Box>
+              </Box>
+            );
+          })}
+        </Box>
+      )}
+    </Box>
+  );
 
-                  <div>
-                    {page < groupsMain.length ? (
-                      renderGroupCard(groupsMain[page])
-                    ) : page === groupsMain.length ? (
-                      ImagesCard
-                    ) : (
-                      PanoCard
-                    )}
-                  </div>
+  return (
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      fullScreen={isMobile}
+      fullWidth
+      maxWidth="lg"
+      scroll="paper"
+      aria-labelledby="edit-property-title"
+      slotProps={{ paper: { sx: { borderRadius: isMobile ? 0 : "16px", maxHeight: "92vh", display: "flex", flexDirection: "column" } } }}
+    >
+      <DialogTitle
+        id="edit-property-title"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 2,
+          px: { xs: 2, sm: 3 },
+          py: 1.5,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+          fontWeight: 700,
+          color: "primary.main",
+          fontSize: "1.15rem",
+        }}
+      >
+        Edit Property
+        <IconButton aria-label="Close" onClick={onClose} sx={{ width: 44, height: 44 }}>
+          <X size={22} color="#5B6B7B" />
+        </IconButton>
+      </DialogTitle>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-                    <button
-                      type='button'
-                      onClick={() => setPage((p) => Math.max(0, p - 1))}
-                      disabled={page === 0}
-                      style={{ background: '#f8f9fa', color: '#495057', border: '1px solid #ced4da', borderRadius: 8, padding: '10px 16px', fontSize: 14, fontWeight: 500, cursor: page === 0 ? 'not-allowed' : 'pointer' }}
-                    >
-                      Back
-                    </button>
-                    <button
-                      type='button'
-                      onClick={() => setPage((p) => Math.min(groupsMain.length + 1, p + 1))}
-                      disabled={page === groupsMain.length + 1}
-                      style={{ background: '#007bff', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 16px', fontSize: 14, fontWeight: 500, cursor: page === groupsMain.length + 1 ? 'not-allowed' : 'pointer' }}
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              )}
-            </form>
-          )}
-        </div>
+      <DialogContent sx={{ flex: 1, overflowY: "auto", minHeight: 0, p: { xs: 2, sm: 3 } }}>
+        {loading ? (
+          <Stack spacing={2}>
+            {[...Array(6)].map((_, i) => (
+              <Box key={i}>
+                <Skeleton variant="text" width="30%" height={24} />
+                <Skeleton variant="rounded" height={56} sx={{ borderRadius: "8px" }} />
+              </Box>
+            ))}
+          </Stack>
+        ) : error ? (
+          <Alert severity="error" sx={{ borderRadius: "8px" }}>
+            {error}
+          </Alert>
+        ) : (
+          <form id="edit-property-form" onSubmit={handleSubmit}>
+            {!isMobile ? (
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 3, alignItems: "start" }}>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>{groupsMain.map(renderGroupCard)}</Box>
+                <Box sx={{ position: { md: "sticky" }, top: 0, alignSelf: "start", display: "flex", flexDirection: "column", gap: 3 }}>
+                  {ImagesCard}
+                  {PanoCard}
+                </Box>
+              </Box>
+            ) : (
+              <Box>
+                <Box sx={{ display: "flex", justifyContent: "center", gap: 1, mb: 2 }}>
+                  {Array.from({ length: groupsMain.length + 2 }).map((_, i) => (
+                    <Box key={i} sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: i === page ? "primary.main" : "divider" }} />
+                  ))}
+                </Box>
 
-        {/* Footer */}
-        {!loading && !error && (
-          <div
-            style={{
-              background: "#fff",
-              padding: "16px 32px",
-              borderTop: "1px solid #e9ecef",
-              borderRadius: "0 0 16px 16px",
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: 12,
-              position: "sticky",
-              bottom: 0,
-            }}
-          >
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                background: "#f8f9fa",
-                color: "#495057",
-                border: "1px solid #ced4da",
-                borderRadius: 8,
-                padding: "10px 24px",
-                fontSize: 14,
-                fontWeight: 500,
-                cursor: "pointer",
-                transition: "all 0.2s",
-              }}
-              disabled={submitting}
-              onMouseOver={(e) => {
-                if (!submitting) e.target.style.background = "#e9ecef";
-              }}
-              onMouseOut={(e) => {
-                e.target.style.background = "#f8f9fa";
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              onClick={handleSubmit}
-              style={{
-                background: "#007bff",
-                color: "#fff",
-                border: "none",
-                borderRadius: 8,
-                padding: "10px 32px",
-                fontSize: 14,
-                fontWeight: 500,
-                cursor: submitting ? "not-allowed" : "pointer",
-                opacity: submitting ? 0.6 : 1,
-                transition: "all 0.2s",
-              }}
-              disabled={submitting}
-              onMouseOver={(e) => {
-                if (!submitting) e.target.style.background = "#0056b3";
-              }}
-              onMouseOut={(e) => {
-                if (!submitting) e.target.style.background = "#007bff";
-              }}
-            >
-              {submitting ? "Saving Changes..." : "Save Changes"}
-            </button>
-          </div>
+                {page < groupsMain.length ? renderGroupCard(groupsMain[page]) : page === groupsMain.length ? ImagesCard : PanoCard}
+
+                <Stack direction="row" justifyContent="space-between" sx={{ mt: 3 }}>
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                    sx={{ minHeight: 44, minWidth: 110, borderColor: "divider", color: "text.secondary" }}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="contained"
+                    onClick={() => setPage((p) => Math.min(groupsMain.length + 1, p + 1))}
+                    disabled={page === groupsMain.length + 1}
+                    sx={{ minHeight: 44, minWidth: 110, bgcolor: "#003366", "&:hover": { bgcolor: "#002244" } }}
+                  >
+                    Next
+                  </Button>
+                </Stack>
+              </Box>
+            )}
+          </form>
         )}
-      </div>
-    </div>
+      </DialogContent>
+
+      {!loading && !error && (
+        <DialogActions
+          sx={{
+            px: { xs: 2, sm: 3 },
+            py: 2,
+            borderTop: "1px solid",
+            borderColor: "divider",
+            bgcolor: "background.paper",
+            justifyContent: "flex-end",
+            gap: 2,
+            flexWrap: "wrap",
+          }}
+        >
+          <Button
+            type="button"
+            variant="outlined"
+            onClick={onClose}
+            disabled={submitting}
+            sx={{ minHeight: 44, minWidth: 120, borderColor: "divider", color: "text.secondary", fontWeight: 700 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            form="edit-property-form"
+            variant="contained"
+            disabled={submitting}
+            sx={{ minHeight: 44, minWidth: 160, fontWeight: 700, bgcolor: "#003366", "&:hover": { bgcolor: "#002244" } }}
+          >
+            {submitting ? "Saving Changes..." : "Save Changes"}
+          </Button>
+        </DialogActions>
+      )}
+    </Dialog>
   );
 }
