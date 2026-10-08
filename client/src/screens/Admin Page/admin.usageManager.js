@@ -1,6 +1,357 @@
-import React, { useState, useEffect } from 'react';
-import { Cloud, HardDrive, TrendingUp, Image, RefreshCw, AlertCircle, CheckCircle, Mail, MapPin, BarChart3, Activity, Zap } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Grid,
+  Skeleton,
+  Stack,
+  Typography,
+} from "@mui/material";
+import {
+  BarChart3,
+  CheckCircle,
+  Cloud,
+  HardDrive,
+  Image,
+  Mail,
+  MapPin,
+  RefreshCw,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { EmptyState, PageHeader } from "./shell/adminUi";
+import "./admin.css";
+
+/** Shared card chrome from the admin design tokens, applied via sx (never inline style objects). */
+const CARD = {
+  borderRadius: "12px",
+  border: "1px solid",
+  borderColor: "divider",
+  boxShadow: "0 2px 8px rgba(0,51,102,0.05)",
+};
+
+const formatBytes = (bytes) => {
+  if (!bytes || bytes === 0) return "0 B";
+  const gb = bytes / 1024 ** 3;
+  if (gb >= 1) return `${gb.toFixed(2)} GB`;
+  const mb = bytes / 1024 ** 2;
+  if (mb >= 1) return `${mb.toFixed(2)} MB`;
+  const kb = bytes / 1024;
+  return `${kb.toFixed(2)} KB`;
+};
+
+const formatNum = (n) => Number(n || 0).toLocaleString("en-IN");
+
+/** Small icon + label + value tile for the executive summary. */
+function MetricTile({ icon: Icon, label, value, color, bg }) {
+  return (
+    <Box
+      sx={{
+        backgroundColor: "#FFFFFF",
+        p: 3,
+        borderRadius: "10px",
+        border: "1px solid",
+        borderColor: "divider",
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        minWidth: 0,
+        height: "100%",
+      }}
+    >
+      <Box
+        sx={{
+          p: 1.5,
+          backgroundColor: bg,
+          borderRadius: "8px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <Icon size={20} color={color} />
+      </Box>
+      <Box sx={{ minWidth: 0 }}>
+        <Typography variant="caption" sx={{ display: "block", color: "text.secondary", fontWeight: 600 }}>
+          {label}
+        </Typography>
+        <Typography sx={{ fontSize: "1.125rem", fontWeight: 700, color: "text.primary", fontVariantNumeric: "tabular-nums", wordBreak: "break-word" }}>
+          {value}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+/** Usage meter: track + percentage label (amber at 75%, red at 90%). */
+function ProgressBar({ percentage, color }) {
+  const barColor = percentage >= 90 ? "#EF4444" : percentage >= 75 ? "#F59E0B" : color;
+  return (
+    <Box sx={{ width: "100%" }}>
+      <Box sx={{ width: "100%", height: 8, backgroundColor: "#E5E9EE", borderRadius: "4px", overflow: "hidden" }}>
+        <Box
+          sx={{
+            width: `${Math.min(percentage, 100)}%`,
+            height: "100%",
+            backgroundColor: barColor,
+            transition: "width 0.5s ease",
+          }}
+        />
+      </Box>
+      <Typography variant="caption" sx={{ display: "block", mt: 0.5, textAlign: "right", fontWeight: 700, color: "text.secondary" }}>
+        {percentage.toFixed(1)}%
+      </Typography>
+    </Box>
+  );
+}
+
+/** Label / value row shared by every usage-meter card (matches usageManager2). */
+function Row({ label, value, last, children }) {
+  return (
+    <Box
+      sx={{
+        py: 1.5,
+        borderBottom: last ? "none" : "1px solid #F4F7F9",
+      }}
+    >
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
+          {label}
+        </Typography>
+        <Typography variant="body2" sx={{ fontWeight: 600, color: "text.primary", fontVariantNumeric: "tabular-nums" }}>
+          {value}
+        </Typography>
+      </Box>
+      {children}
+    </Box>
+  );
+}
+
+/** Card header with a gradient icon tile (same layout on all three services). */
+function UsageCardHeader({ icon: Icon, title, subtitle, gradient, action }) {
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+      <Box
+        sx={{
+          width: 44,
+          height: 44,
+          borderRadius: 2,
+          background: gradient,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <Icon size={22} color="#FFFFFF" />
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography variant="h2" sx={{ fontWeight: 700, fontSize: "1.1rem", color: "text.primary" }}>
+          {title}
+        </Typography>
+        {subtitle && (
+          <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
+            {subtitle}
+          </Typography>
+        )}
+      </Box>
+      {action}
+    </Box>
+  );
+}
+
+/** One Cloudinary account: credits + storage meters and transform count. */
+function AccountCard({ account }) {
+  if (account.error) {
+    return (
+      <Alert severity="error" sx={{ borderRadius: "8px" }}>
+        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+          {account.cloudName}
+        </Typography>
+        <Typography variant="caption">{account.error}</Typography>
+      </Alert>
+    );
+  }
+
+  const creditsPercentage = (account.credits.used / account.credits.limit) * 100;
+  const storagePercentage = account.storage.limit ? (account.storage.bytes / account.storage.limit) * 100 : 0;
+  const status =
+    creditsPercentage >= 90
+      ? { bg: "#FEE2E2", fg: "#991B1B", label: "Critical" }
+      : creditsPercentage >= 75
+      ? { bg: "#FEF3C7", fg: "#92400E", label: "High" }
+      : { bg: "#D1FAE5", fg: "#065F46", label: "Normal" };
+
+  return (
+    <Card variant="outlined" sx={{ borderRadius: "10px", height: "100%" }}>
+      <CardContent sx={{ pb: 2 }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1, mb: 2 }}>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: "primary.main" }}>
+              {account.cloudName}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              Account #{account.index + 1}
+            </Typography>
+          </Box>
+          <Chip
+            size="small"
+            label={status.label}
+            sx={{ height: 22, fontSize: "0.65rem", fontWeight: 700, borderRadius: "6px", backgroundColor: status.bg, color: status.fg }}
+          />
+        </Box>
+
+        <Row
+          label="Credits"
+          value={`${account.credits.used.toFixed(1)} / ${account.credits.limit}`}
+        >
+          <Box sx={{ mt: 1 }}>
+            <ProgressBar percentage={creditsPercentage} color="#10B981" />
+          </Box>
+        </Row>
+
+        <Row label="Storage" value={formatBytes(account.storage.bytes)}>
+          <Box sx={{ mt: 1 }}>
+            <ProgressBar percentage={storagePercentage} color="#3B82F6" />
+          </Box>
+        </Row>
+
+        <Row label="Transforms" value={formatNum(account.transformations.count)} last />
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Brevo email service: plan, credit meter and delivery stats. */
+function BrevoCard({ data, lastRefresh }) {
+  if (!data) return null;
+
+  const { account, usage } = data;
+  const creditsUsed = account.creditsLimit - account.creditsRemaining;
+  const creditsPercentage = (creditsUsed / account.creditsLimit) * 100;
+  const deliveryRate = usage.sent > 0 ? (usage.delivered / usage.sent) * 100 : 0;
+  const openRate = usage.delivered > 0 ? (usage.opens / usage.delivered) * 100 : 0;
+
+  return (
+    <Box>
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="h3" sx={{ fontSize: "1rem", fontWeight: 700, color: "primary.main" }}>
+          {account.company}
+        </Typography>
+        <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
+          {account.email} • {account.planType}
+        </Typography>
+      </Box>
+
+      <Row label="Email Credits" value={`${formatNum(creditsUsed)} / ${formatNum(account.creditsLimit)}`}>
+        <Box sx={{ mt: 1 }}>
+          <ProgressBar percentage={creditsPercentage} color="#10B981" />
+        </Box>
+      </Row>
+
+      <Grid container spacing={2} sx={{ mt: 1 }}>
+        {[
+          { label: "Sent", value: formatNum(usage.sent), color: "text.primary" },
+          { label: "Delivered", value: `${deliveryRate.toFixed(1)}%`, color: "#047857" },
+          { label: "Open Rate", value: `${openRate.toFixed(1)}%`, color: "#1565C0" },
+        ].map((stat) => (
+          <Grid item xs={12} sm={4} key={stat.label}>
+            <Box sx={{ textAlign: "center", py: 2.5, px: 1, backgroundColor: "#F4F7F9", borderRadius: "6px" }}>
+              <Typography sx={{ fontSize: "1.25rem", fontWeight: 800, color: stat.color, fontVariantNumeric: "tabular-nums" }}>
+                {stat.value}
+              </Typography>
+              <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mt: 0.5 }}>
+                {stat.label}
+              </Typography>
+            </Box>
+          </Grid>
+        ))}
+      </Grid>
+
+      {lastRefresh && (
+        <Typography variant="caption" sx={{ display: "block", mt: 2, color: "text.secondary" }}>
+          Last updated: {new Date(lastRefresh).toLocaleString()}
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
+/** LocationIQ geocoding: daily request meter plus remaining / bonus. */
+function LocationiqCard({ data, lastRefresh }) {
+  if (!data) return null;
+
+  const { balance } = data;
+  const dailyLimit = 5000;
+  const used = dailyLimit - balance.day;
+  const usagePercentage = (used / dailyLimit) * 100;
+
+  return (
+    <Box>
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+          Geocoding API status: {data.raw.status}
+        </Typography>
+      </Box>
+
+      <Row label="Daily Requests" value={`${formatNum(used)} / ${formatNum(dailyLimit)}`}>
+        <Box sx={{ mt: 1 }}>
+          <ProgressBar percentage={usagePercentage} color="#3B82F6" />
+        </Box>
+      </Row>
+
+      <Grid container spacing={2} sx={{ mt: 1 }}>
+        <Grid item xs={6}>
+          <Box sx={{ textAlign: "center", py: 2.5, px: 1, backgroundColor: "#F4F7F9", borderRadius: "6px" }}>
+            <Typography sx={{ fontSize: "1.25rem", fontWeight: 800, color: "text.primary", fontVariantNumeric: "tabular-nums" }}>
+              {formatNum(balance.day)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mt: 0.5 }}>
+              Remaining
+            </Typography>
+          </Box>
+        </Grid>
+        <Grid item xs={6}>
+          <Box sx={{ textAlign: "center", py: 2.5, px: 1, backgroundColor: "#F4F7F9", borderRadius: "6px" }}>
+            <Typography sx={{ fontSize: "1.25rem", fontWeight: 800, color: "#3B82F6", fontVariantNumeric: "tabular-nums" }}>
+              {formatNum(balance.bonus)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mt: 0.5 }}>
+              Bonus
+            </Typography>
+          </Box>
+        </Grid>
+      </Grid>
+
+      {lastRefresh && (
+        <Typography variant="caption" sx={{ display: "block", mt: 2, color: "text.secondary" }}>
+          Last updated: {new Date(lastRefresh).toLocaleString()}
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
+/** Skeleton rows used while a service loads (never a blank page). */
+function CardSkeleton({ rows = 5 }) {
+  return (
+    <Stack spacing={1.5}>
+      {[...Array(rows)].map((_, i) => (
+        <Box key={i} sx={{ display: "flex", justifyContent: "space-between", py: 1.5 }}>
+          <Skeleton width={140} height={18} />
+          <Skeleton width={80} height={18} />
+        </Box>
+      ))}
+    </Stack>
+  );
+}
+
 const CloudinaryDashboard = () => {
   const [accounts, setAccounts] = useState([]);
   const [brevoData, setBrevoData] = useState(null);
@@ -16,18 +367,18 @@ const CloudinaryDashboard = () => {
   const [locationiqLastRefresh, setLocationiqLastRefresh] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [brevoRefreshing, setBrevoRefreshing] = useState(false);
-    const [locationiqRefreshing, setLocationiqRefreshing] = useState(false);
-    const navigate = useNavigate();
+  const [locationiqRefreshing, setLocationiqRefreshing] = useState(false);
+  const navigate = useNavigate();
 
   // Get access token from localStorage for all protected admin API calls
   const accessToken = localStorage.getItem("accessToken");
 
-  const BASE_API = process.env.REACT_APP_Base_API || 'http://localhost:2000';
+  const BASE_API = process.env.REACT_APP_Base_API || "http://localhost:2000";
 
   const fetchUsage = async (force = false) => {
     try {
       setRefreshing(true);
-      const url = `${BASE_API}/api/admin/cloudinary/usage${force ? '?force=true' : ''}`;
+      const url = `${BASE_API}/api/admin/cloudinary/usage${force ? "?force=true" : ""}`;
       const response = await fetch(url, {
         credentials: "include",
         headers: {
@@ -41,10 +392,10 @@ const CloudinaryDashboard = () => {
         setLastRefresh(result.refreshedAt);
         setError(null);
       } else {
-        setError(result.message || 'Failed to fetch usage data');
+        setError(result.message || "Failed to fetch usage data");
       }
     } catch (err) {
-      setError(err.message || 'Network error');
+      setError(err.message || "Network error");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -68,10 +419,10 @@ const CloudinaryDashboard = () => {
         setBrevoLastRefresh(new Date().toISOString());
         setBrevoError(null);
       } else {
-        setBrevoError(result.message || 'Failed to fetch Brevo usage data');
+        setBrevoError(result.message || "Failed to fetch Brevo usage data");
       }
     } catch (err) {
-      setBrevoError(err.message || 'Network error');
+      setBrevoError(err.message || "Network error");
     } finally {
       setBrevoLoading(false);
       setBrevoRefreshing(false);
@@ -95,10 +446,10 @@ const CloudinaryDashboard = () => {
         setLocationiqLastRefresh(new Date().toISOString());
         setLocationiqError(null);
       } else {
-        setLocationiqError(result.message || 'Failed to fetch LocationIQ usage data');
+        setLocationiqError(result.message || "Failed to fetch LocationIQ usage data");
       }
     } catch (err) {
-      setLocationiqError(err.message || 'Network error');
+      setLocationiqError(err.message || "Network error");
     } finally {
       setLocationiqLoading(false);
       setLocationiqRefreshing(false);
@@ -111,652 +462,218 @@ const CloudinaryDashboard = () => {
     fetchLocationiqUsage();
   }, []);
 
-  const formatBytes = (bytes) => {
-    if (!bytes || bytes === 0) return '0 B';
-    const gb = bytes / (1024 ** 3);
-    if (gb >= 1) return `${gb.toFixed(2)} GB`;
-    const mb = bytes / (1024 ** 2);
-    if (mb >= 1) return `${mb.toFixed(2)} MB`;
-    const kb = bytes / 1024;
-    return `${kb.toFixed(2)} KB`;
-  };
-
-  const MiniMetric = ({ label, value, icon: Icon, color, bgColor }) => (
-    <div style={{
-      backgroundColor: '#FFFFFF',
-      padding: '16px',
-      borderRadius: '10px',
-      border: '1px solid #E5E7EB',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-      minWidth: '160px'
-    }}>
-      <div style={{
-        padding: '10px',
-        backgroundColor: bgColor,
-        borderRadius: '8px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}>
-        <Icon size={20} color={color} />
-      </div>
-      <div>
-        <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: '500', marginBottom: '2px' }}>
-          {label}
-        </div>
-        <div style={{ fontSize: '18px', color: '#111827', fontWeight: '700' }}>
-          {value}
-        </div>
-      </div>
-    </div>
-  );
-
-  const ProgressBar = ({ percentage, color, showLabel = true }) => {
-    const getColor = () => {
-      if (percentage >= 90) return '#EF4444';
-      if (percentage >= 75) return '#F59E0B';
-      return color;
-    };
-
-    return (
-      <div style={{ width: '100%' }}>
-        <div style={{
-          width: '100%',
-          height: '8px',
-          backgroundColor: '#F3F4F6',
-          borderRadius: '4px',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            width: `${Math.min(percentage, 100)}%`,
-            height: '100%',
-            backgroundColor: getColor(),
-            transition: 'width 0.5s ease'
-          }} />
-        </div>
-        {showLabel && (
-          <div style={{
-            marginTop: '4px',
-            fontSize: '11px',
-            color: '#6B7280',
-            textAlign: 'right',
-            fontWeight: '600'
-          }}>
-            {percentage.toFixed(1)}%
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const CompactAccountCard = ({ account }) => {
-    if (account.error) {
-      return (
-        <div style={{
-          backgroundColor: '#FEF2F2',
-          borderRadius: '8px',
-          padding: '16px',
-          border: '1px solid #FCA5A5'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <AlertCircle size={18} color="#DC2626" />
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#DC2626' }}>
-                {account.cloudName}
-              </div>
-              <div style={{ fontSize: '12px', color: '#991B1B', marginTop: '2px' }}>
-                {account.error}
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    const creditsPercentage = (account.credits.used / account.credits.limit) * 100;
-    const storagePercentage = account.storage.limit
-      ? (account.storage.bytes / account.storage.limit) * 100
-      : 0;
-
-    const getStatusColor = () => {
-      if (creditsPercentage >= 90) return { bg: '#FEE2E2', text: '#991B1B', badge: 'Critical' };
-      if (creditsPercentage >= 75) return { bg: '#FEF3C7', text: '#92400E', badge: 'High' };
-      return { bg: '#D1FAE5', text: '#065F46', badge: 'Normal' };
-    };
-
-    const status = getStatusColor();
-
-    return (
-      <div style={{
-        backgroundColor: '#FFFFFF',
-        borderRadius: '8px',
-        padding: '16px',
-        border: '1px solid #E5E7EB',
-        transition: 'all 0.2s',
-        cursor: 'pointer'
-      }}
-      onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'}
-      onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'none'}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
-          <div>
-            <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827', marginBottom: '2px' }}>
-              {account.cloudName}
-            </div>
-            <div style={{ fontSize: '11px', color: '#6B7280' }}>
-              Account #{account.index + 1}
-            </div>
-          </div>
-          <span style={{
-            padding: '2px 8px',
-            borderRadius: '6px',
-            fontSize: '10px',
-            fontWeight: '600',
-            backgroundColor: status.bg,
-            color: status.text
-          }}>
-            {status.badge}
-          </span>
-        </div>
-
-        <div style={{ marginBottom: '12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-            <span style={{ fontSize: '11px', color: '#6B7280', fontWeight: '500' }}>Credits</span>
-            <span style={{ fontSize: '11px', color: '#111827', fontWeight: '600' }}>
-              {account.credits.used.toFixed(1)} / {account.credits.limit}
-            </span>
-          </div>
-          <ProgressBar percentage={creditsPercentage} color="#10B981" />
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '11px' }}>
-          <div>
-            <div style={{ color: '#6B7280', marginBottom: '2px' }}>Storage</div>
-            <div style={{ color: '#111827', fontWeight: '600' }}>{formatBytes(account.storage.bytes)}</div>
-          </div>
-          <div>
-            <div style={{ color: '#6B7280', marginBottom: '2px' }}>Transforms</div>
-            <div style={{ color: '#111827', fontWeight: '600' }}>{account.transformations.count.toLocaleString()}</div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const BrevoCompactCard = ({ data }) => {
-    if (!data) return null;
-
-    const { account, usage } = data;
-    const creditsUsed = account.creditsLimit - account.creditsRemaining;
-    const creditsPercentage = (creditsUsed / account.creditsLimit) * 100;
-    const deliveryRate = usage.sent > 0 ? (usage.delivered / usage.sent) * 100 : 0;
-    const openRate = usage.delivered > 0 ? (usage.opens / usage.delivered) * 100 : 0;
-
-    return (
-      <div style={{
-        backgroundColor: '#FFFFFF',
-        borderRadius: '8px',
-        padding: '20px',
-        border: '1px solid #E5E7EB'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
-          <div>
-            <div style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>
-              {account.company}
-            </div>
-            <div style={{ fontSize: '12px', color: '#6B7280' }}>
-              {account.email} • {account.planType}
-            </div>
-          </div>
-          <Mail size={24} color="#10B981" />
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-            <span style={{ fontSize: '12px', color: '#6B7280', fontWeight: '500' }}>Email Credits</span>
-            <span style={{ fontSize: '12px', color: '#111827', fontWeight: '600' }}>
-              {creditsUsed.toLocaleString()} / {account.creditsLimit.toLocaleString()}
-            </span>
-          </div>
-          <ProgressBar percentage={creditsPercentage} color="#10B981" />
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-          <div style={{ textAlign: 'center', padding: '12px', backgroundColor: '#F9FAFB', borderRadius: '6px' }}>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: '#111827' }}>
-              {usage.sent.toLocaleString()}
-            </div>
-            <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>Sent</div>
-          </div>
-          <div style={{ textAlign: 'center', padding: '12px', backgroundColor: '#F9FAFB', borderRadius: '6px' }}>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: '#10B981' }}>
-              {deliveryRate.toFixed(1)}%
-            </div>
-            <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>Delivered</div>
-          </div>
-          <div style={{ textAlign: 'center', padding: '12px', backgroundColor: '#F9FAFB', borderRadius: '6px' }}>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: '#3B82F6' }}>
-              {openRate.toFixed(1)}%
-            </div>
-            <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>Open Rate</div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const LocationiqCompactCard = ({ data }) => {
-    if (!data) return null;
-
-    const { balance } = data;
-    const dailyLimit = 5000;
-    const used = dailyLimit - balance.day;
-    const usagePercentage = (used / dailyLimit) * 100;
-
-    return (
-      <div style={{
-        backgroundColor: '#FFFFFF',
-        borderRadius: '8px',
-        padding: '20px',
-        border: '1px solid #E5E7EB'
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '16px' }}>
-          <div>
-            <div style={{ fontSize: '16px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>
-              LocationIQ
-            </div>
-            <div style={{ fontSize: '12px', color: '#6B7280' }}>
-              Geocoding API • {data.raw.status}
-            </div>
-          </div>
-          <MapPin size={24} color="#3B82F6" />
-        </div>
-
-        <div style={{ marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-            <span style={{ fontSize: '12px', color: '#6B7280', fontWeight: '500' }}>Daily Requests</span>
-            <span style={{ fontSize: '12px', color: '#111827', fontWeight: '600' }}>
-              {used.toLocaleString()} / {dailyLimit.toLocaleString()}
-            </span>
-          </div>
-          <ProgressBar percentage={usagePercentage} color="#3B82F6" />
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-          <div style={{ textAlign: 'center', padding: '12px', backgroundColor: '#F9FAFB', borderRadius: '6px' }}>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: '#111827' }}>
-              {balance.day.toLocaleString()}
-            </div>
-            <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>Remaining</div>
-          </div>
-          <div style={{ textAlign: 'center', padding: '12px', backgroundColor: '#F9FAFB', borderRadius: '6px' }}>
-            <div style={{ fontSize: '20px', fontWeight: '700', color: '#3B82F6' }}>
-              {balance.bonus.toLocaleString()}
-            </div>
-            <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>Bonus</div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        backgroundColor: '#F9FAFB',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <RefreshCw size={48} color="#10B981" style={{ animation: 'spin 1s linear infinite' }} />
-          <p style={{ marginTop: '16px', color: '#6B7280', fontSize: '16px' }}>Loading usage data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{
-        minHeight: '100vh',
-        backgroundColor: '#F9FAFB',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-      }}>
-        <div style={{
-          backgroundColor: '#FEF2F2',
-          padding: '32px',
-          borderRadius: '12px',
-          border: '1px solid #FCA5A5',
-          maxWidth: '500px'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <AlertCircle size={32} color="#DC2626" />
-            <h2 style={{ margin: 0, color: '#DC2626', fontSize: '20px' }}>Error Loading Data</h2>
-          </div>
-          <p style={{ color: '#991B1B', margin: '0 0 16px 0' }}>{error}</p>
-          <button
-            onClick={() => fetchUsage(true)}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: '#DC2626',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer'
-            }}
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const totalCredits = accounts.reduce((sum, acc) => sum + (acc.credits?.used || 0), 0);
   const totalStorage = accounts.reduce((sum, acc) => sum + (acc.storage?.bytes || 0), 0);
   const totalBandwidth = accounts.reduce((sum, acc) => sum + (acc.bandwidth?.bytes || 0), 0);
   const totalTransformations = accounts.reduce((sum, acc) => sum + (acc.transformations?.count || 0), 0);
-  const avgCreditsUsage = accounts.length > 0
-    ? accounts.reduce((sum, acc) => sum + ((acc.credits?.used || 0) / (acc.credits?.limit || 1) * 100), 0) / accounts.length
-    : 0;
+  const avgCreditsUsage =
+    accounts.length > 0
+      ? accounts.reduce((sum, acc) => sum + ((acc.credits?.used || 0) / (acc.credits?.limit || 1)) * 100, 0) / accounts.length
+      : 0;
+
+  const anyRefreshing = refreshing || brevoRefreshing || locationiqRefreshing;
+
+  const refreshAll = () => {
+    fetchUsage(true);
+    fetchBrevoUsage();
+    fetchLocationiqUsage();
+  };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      backgroundColor: '#F9FAFB',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-      }}>
-          <button onClick={() => navigate('/admin/usagetrack2')}>Page 2</button>
-      <style>
-        {`
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-
-          div::-webkit-scrollbar {
-            height: 8px;
-            width: 8px;
-          }
-
-          div::-webkit-scrollbar-track {
-            background: #F3F4F6;
-            border-radius: 4px;
-          }
-
-          div::-webkit-scrollbar-thumb {
-            background: #9CA3AF;
-            border-radius: 4px;
-          }
-
-          div::-webkit-scrollbar-thumb:hover {
-            background: #6B7280;
-          }
-        `}
-      </style>
-
-      {/* Header */}
-      <div style={{
-        backgroundColor: '#FFFFFF',
-        borderBottom: '1px solid #E5E7EB',
-        padding: '20px 32px'
-      }}>
-        <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                backgroundColor: '#10B981',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <BarChart3 size={28} color="#FFFFFF" />
-              </div>
-              <div>
-                <h1 style={{ margin: 0, color: '#111827', fontSize: '28px', fontWeight: '700' }}>
-                  Usage Tracker
-                </h1>
-                <p style={{ margin: '4px 0 0 0', color: '#6B7280', fontSize: '14px' }}>
-                  Real-time monitoring of Cloudinary, Brevo & LocationIQ services
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                fetchUsage(true);
-                fetchBrevoUsage();
-                fetchLocationiqUsage();
-              }}
-              disabled={refreshing}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '12px 24px',
-                backgroundColor: refreshing ? '#E5E7EB' : '#10B981',
-                color: refreshing ? '#9CA3AF' : '#FFFFFF',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: '600',
-                cursor: refreshing ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s'
-              }}
+    <>
+      <PageHeader
+        title="Usage Tracker"
+        description="Real-time monitoring of Cloudinary, Brevo & LocationIQ services"
+        actions={
+          <>
+            <Button variant="outlined" onClick={() => navigate("/admin/usagetrack2")} sx={{ minHeight: 44 }}>
+              Page 2
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<RefreshCw size={16} />}
+              onClick={refreshAll}
+              disabled={anyRefreshing}
+              sx={{ minHeight: 44, bgcolor: "#00A79D", "&:hover": { bgcolor: "#008f85" } }}
             >
-              <RefreshCw size={18} style={refreshing ? { animation: 'spin 1s linear infinite' } : {}} />
-              {refreshing ? 'Refreshing...' : 'Refresh All'}
-            </button>
-          </div>
-        </div>
-      </div>
+              {anyRefreshing ? "Refreshing…" : "Refresh All"}
+            </Button>
+          </>
+        }
+      />
 
-      <div style={{ maxWidth: '1600px', margin: '0 auto', padding: '32px' }}>
-        {/* Executive Summary */}
-        <div style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
-          padding: '24px',
-          marginBottom: '32px',
-          border: '1px solid #E5E7EB'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-            <Activity size={24} color="#10B981" />
-            <h2 style={{ margin: 0, color: '#111827', fontSize: '20px', fontWeight: '700' }}>
-              Executive Summary
-            </h2>
-          </div>
+      {/* Cloudinary / page-level error */}
+      {error && (
+        <Alert
+          severity="error"
+          sx={{ mb: 4, borderRadius: "8px" }}
+          action={
+            <Button color="inherit" size="small" onClick={() => fetchUsage(true)} sx={{ minHeight: 40, fontWeight: 700 }}>
+              Retry
+            </Button>
+          }
+        >
+          Failed to load Cloudinary usage: {error}
+        </Alert>
+      )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px' }}>
-            <MiniMetric
-              label="Total Accounts"
-              value={accounts.length}
-              icon={Cloud}
-              color="#10B981"
-              bgColor="#D1FAE5"
-            />
-            <MiniMetric
-              label="Avg Credits Usage"
-              value={`${avgCreditsUsage.toFixed(1)}%`}
-              icon={Zap}
-              color="#F59E0B"
-              bgColor="#FEF3C7"
-            />
-            <MiniMetric
-              label="Total Storage"
-              value={formatBytes(totalStorage)}
-              icon={HardDrive}
-              color="#3B82F6"
-              bgColor="#DBEAFE"
-            />
-            <MiniMetric
-              label="Total Bandwidth"
-              value={formatBytes(totalBandwidth)}
-              icon={TrendingUp}
-              color="#8B5CF6"
-              bgColor="#EDE9FE"
-            />
-            <MiniMetric
-              label="Transformations"
-              value={totalTransformations.toLocaleString()}
-              icon={Image}
-              color="#EC4899"
-              bgColor="#FCE7F3"
-            />
-            <MiniMetric
-              label="Total Credits"
-              value={totalCredits.toFixed(1)}
-              icon={CheckCircle}
-              color="#10B981"
-              bgColor="#D1FAE5"
-            />
-          </div>
-
+      {/* Executive Summary */}
+      <Card sx={{ ...CARD, mb: 4 }}>
+        <CardContent>
+          <UsageCardHeader
+            icon={BarChart3}
+            title="Executive Summary"
+            subtitle="All Cloudinary accounts combined"
+            gradient="linear-gradient(135deg, #003366 0%, #00A79D 100%)"
+          />
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={4} lg={2}>
+              <MetricTile icon={Cloud} label="Total Accounts" value={accounts.length} color="#10B981" bg="#D1FAE5" />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4} lg={2}>
+              <MetricTile icon={Zap} label="Avg Credits Usage" value={`${avgCreditsUsage.toFixed(1)}%`} color="#F59E0B" bg="#FEF3C7" />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4} lg={2}>
+              <MetricTile icon={HardDrive} label="Total Storage" value={formatBytes(totalStorage)} color="#3B82F6" bg="#DBEAFE" />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4} lg={2}>
+              <MetricTile icon={TrendingUp} label="Total Bandwidth" value={formatBytes(totalBandwidth)} color="#8B5CF6" bg="#EDE9FE" />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4} lg={2}>
+              <MetricTile icon={Image} label="Transformations" value={formatNum(totalTransformations)} color="#EC4899" bg="#FCE7F3" />
+            </Grid>
+            <Grid item xs={12} sm={6} md={4} lg={2}>
+              <MetricTile icon={CheckCircle} label="Total Credits" value={totalCredits.toFixed(1)} color="#10B981" bg="#D1FAE5" />
+            </Grid>
+          </Grid>
           {lastRefresh && (
-            <div style={{
-              marginTop: '16px',
-              padding: '12px',
-              backgroundColor: '#F9FAFB',
-              borderRadius: '8px',
-              fontSize: '12px',
-              color: '#6B7280',
-              textAlign: 'center'
-            }}>
+            <Typography variant="caption" sx={{ display: "block", mt: 2, color: "text.secondary" }}>
               Last updated: {new Date(lastRefresh).toLocaleString()}
-            </div>
+            </Typography>
           )}
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Cloudinary Accounts */}
-        <div style={{ marginBottom: '32px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-            <Cloud size={24} color="#10B981" />
-            <h2 style={{ margin: 0, color: '#111827', fontSize: '20px', fontWeight: '700' }}>
-              Cloudinary Media Storage
-            </h2>
-            <span style={{
-              marginLeft: 'auto',
-              padding: '4px 12px',
-              backgroundColor: '#F3F4F6',
-              color: '#6B7280',
-              borderRadius: '6px',
-              fontSize: '12px',
-              fontWeight: '600'
-            }}>
-              {accounts.length} Accounts
-            </span>
-          </div>
+      {/* Cloudinary accounts */}
+      <Card sx={{ ...CARD, mb: 4 }}>
+        <CardContent>
+          <UsageCardHeader
+            icon={Cloud}
+            title="Cloudinary Media Storage"
+            subtitle={`${accounts.length} account${accounts.length === 1 ? "" : "s"}`}
+            gradient="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+            action={
+              <Chip
+                size="small"
+                label={`${accounts.length} Accounts`}
+                sx={{ height: 24, fontWeight: 700, borderRadius: "999px", bgcolor: "rgba(0,51,102,0.08)", color: "primary.main" }}
+              />
+            }
+          />
+          {loading ? (
+            <Grid container spacing={2}>
+              {[0, 1, 2].map((i) => (
+                <Grid item xs={12} sm={6} lg={4} key={i}>
+                  <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: "10px", p: 3 }}>
+                    <Skeleton variant="rounded" width="60%" height={20} sx={{ mb: 2 }} />
+                    <Skeleton variant="rounded" width="100%" height={8} sx={{ mb: 1, borderRadius: "4px" }} />
+                    <Skeleton variant="rounded" width="100%" height={8} sx={{ mb: 1, borderRadius: "4px" }} />
+                    <Skeleton variant="rounded" width="70%" height={8} sx={{ borderRadius: "4px" }} />
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          ) : accounts.length === 0 && !error ? (
+            <EmptyState
+              icon={Cloud}
+              title="No Cloudinary accounts yet"
+              description="Once accounts are configured, their credits, storage and transformations show up here."
+            />
+          ) : (
+            <Grid container spacing={2}>
+              {accounts.map((account) => (
+                <Grid item xs={12} sm={6} lg={4} key={account.index}>
+                  <AccountCard account={account} />
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </CardContent>
+      </Card>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-            gap: '16px'
-          }}>
-            {accounts.map(account => (
-              <CompactAccountCard key={account.index} account={account} />
-            ))}
-          </div>
-        </div>
+      {/* Brevo + LocationIQ */}
+      <Grid container spacing={3}>
+        <Grid item xs={12} lg={6}>
+          <Card sx={{ ...CARD, height: "100%" }}>
+            <CardContent>
+              <UsageCardHeader
+                icon={Mail}
+                title="Brevo Email Service"
+                subtitle={brevoData ? `${brevoData.account.company} • ${brevoData.account.planType}` : "Plan, credits and delivery stats"}
+                gradient="linear-gradient(135deg, #10B981 0%, #059669 100%)"
+                action={
+                  brevoRefreshing ? (
+                    <Chip size="small" label="Refreshing…" sx={{ height: 24, fontWeight: 700, borderRadius: "999px", bgcolor: "rgba(33,150,243,0.14)", color: "#1565C0" }} />
+                  ) : null
+                }
+              />
+              {brevoError ? (
+                <Alert
+                  severity="error"
+                  sx={{ borderRadius: "8px" }}
+                  action={
+                    <Button color="inherit" size="small" onClick={() => fetchBrevoUsage()} sx={{ minHeight: 40, fontWeight: 700 }}>
+                      Retry
+                    </Button>
+                  }
+                >
+                  {brevoError}
+                </Alert>
+              ) : brevoLoading ? (
+                <CardSkeleton />
+              ) : (
+                <BrevoCard data={brevoData} lastRefresh={brevoLastRefresh} />
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
 
-        {/* Services Grid */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-          gap: '24px'
-        }}>
-          {/* Brevo */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <Mail size={24} color="#10B981" />
-              <h2 style={{ margin: 0, color: '#111827', fontSize: '20px', fontWeight: '700' }}>
-                Brevo Email Service
-              </h2>
-            </div>
-
-            {brevoError ? (
-              <div style={{
-                backgroundColor: '#FEF2F2',
-                borderRadius: '8px',
-                padding: '20px',
-                border: '1px solid #FCA5A5'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <AlertCircle size={20} color="#DC2626" />
-                  <span style={{ fontSize: '14px', color: '#DC2626', fontWeight: '600' }}>
-                    {brevoError}
-                  </span>
-                </div>
-              </div>
-            ) : brevoLoading ? (
-              <div style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: '8px',
-                padding: '40px',
-                border: '1px solid #E5E7EB',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <RefreshCw size={24} color="#10B981" style={{ animation: 'spin 1s linear infinite' }} />
-              </div>
-            ) : (
-              <BrevoCompactCard data={brevoData} />
-            )}
-          </div>
-
-          {/* LocationIQ */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-              <MapPin size={24} color="#3B82F6" />
-              <h2 style={{ margin: 0, color: '#111827', fontSize: '20px', fontWeight: '700' }}>
-                LocationIQ Geocoding
-              </h2>
-            </div>
-
-            {locationiqError ? (
-              <div style={{
-                backgroundColor: '#FEF2F2',
-                borderRadius: '8px',
-                padding: '20px',
-                border: '1px solid #FCA5A5'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <AlertCircle size={20} color="#DC2626" />
-                  <span style={{ fontSize: '14px', color: '#DC2626', fontWeight: '600' }}>
-                    {locationiqError}
-                  </span>
-                </div>
-              </div>
-            ) : locationiqLoading ? (
-              <div style={{
-                backgroundColor: '#FFFFFF',
-                borderRadius: '8px',
-                padding: '40px',
-                border: '1px solid #E5E7EB',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <RefreshCw size={24} color="#3B82F6" style={{ animation: 'spin 1s linear infinite' }} />
-              </div>
-            ) : (
-              <LocationiqCompactCard data={locationiqData} />
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+        <Grid item xs={12} lg={6}>
+          <Card sx={{ ...CARD, height: "100%" }}>
+            <CardContent>
+              <UsageCardHeader
+                icon={MapPin}
+                title="LocationIQ Geocoding"
+                subtitle="Daily requests, remaining quota and bonus"
+                gradient="linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)"
+                action={
+                  locationiqRefreshing ? (
+                    <Chip size="small" label="Refreshing…" sx={{ height: 24, fontWeight: 700, borderRadius: "999px", bgcolor: "rgba(33,150,243,0.14)", color: "#1565C0" }} />
+                  ) : null
+                }
+              />
+              {locationiqError ? (
+                <Alert
+                  severity="error"
+                  sx={{ borderRadius: "8px" }}
+                  action={
+                    <Button color="inherit" size="small" onClick={() => fetchLocationiqUsage()} sx={{ minHeight: 40, fontWeight: 700 }}>
+                      Retry
+                    </Button>
+                  }
+                >
+                  {locationiqError}
+                </Alert>
+              ) : locationiqLoading ? (
+                <CardSkeleton />
+              ) : (
+                <LocationiqCard data={locationiqData} lastRefresh={locationiqLastRefresh} />
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </>
   );
 };
 
