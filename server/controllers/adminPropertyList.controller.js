@@ -16,9 +16,14 @@ const toRow = (doc, kind) => {
     bhk: config || (p.bedrooms ? `${p.bedrooms} BHK` : ""),
     area: p.totalArea?.sqft ?? "",
     bath: p.bathrooms,
-    source: p.source || "Own",
+    source: p.sourcePortal || p.source || "Own",
+    origin: p.sourcePortal ? "scraped" : "own",
+    ownerType: p.ownerType || "Owner",
     status: p.status || "ACTIVE",
     isActive: !!p.isActive,
+    isPending: !!(p.isPostedNew || p.isEdited),
+    isPostedNew: !!p.isPostedNew,
+    isEdited: !!p.isEdited,
     listingType: kind,
     createdAt: p.createdAt,
   };
@@ -32,11 +37,16 @@ const listAdminProperties = async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 100);
-    const { search, source, status } = req.query;
+    const { search, source, status, origin, state, approval } = req.query;
 
     const filter = {};
     if (source) filter.source = String(source);
     if (status) filter.status = String(status);
+    if (origin === "scraped") filter.sourcePortal = { $exists: true, $ne: null };
+    if (origin === "own") filter.sourcePortal = null;
+    if (state === "active") filter.isActive = true;
+    if (state === "inactive") filter.isActive = false;
+    if (approval === "pending") filter.$and = [{ $or: [{ isPostedNew: true }, { isEdited: true }] }];
     if (search) {
       const rx = new RegExp(escapeRegex(search), "i");
       filter.$or = [{ title: rx }, { Sector: rx }, { address: rx }];
@@ -62,4 +72,61 @@ const listAdminProperties = async (req, res) => {
   }
 };
 
-module.exports = { listAdminProperties };
+const PENDING = { $or: [{ isPostedNew: true }, { isEdited: true }] };
+const SCRAPED = { sourcePortal: { $exists: true, $ne: null } };
+const OWN = { sourcePortal: null };
+
+const countBoth = async (filter) => {
+  const [a, b] = await Promise.all([RentalProperty.countDocuments(filter), SaleProperty.countDocuments(filter)]);
+  return a + b;
+};
+
+/** GET /api/admin/properties/counts — totals shown at the top of Property Manager. */
+const getPropertyCounts = async (req, res) => {
+  try {
+    const [total, rental, sale, active, inactive, scraped, own, pendingScraped, pendingOwn] = await Promise.all([
+      countBoth({}),
+      RentalProperty.countDocuments({}),
+      SaleProperty.countDocuments({}),
+      countBoth({ isActive: true }),
+      countBoth({ isActive: false }),
+      countBoth(SCRAPED),
+      countBoth(OWN),
+      countBoth({ $and: [PENDING, SCRAPED] }),
+      countBoth({ $and: [PENDING, OWN] }),
+    ]);
+    res.json({ success: true, counts: { total, rental, sale, active, inactive, scraped, own, pendingScraped, pendingOwn } });
+  } catch (err) {
+    console.error("getPropertyCounts error:", err);
+    res.status(500).json({ success: false, message: "Failed to load counts" });
+  }
+};
+
+/**
+ * POST /api/admin/properties/bulk-approve
+ * body: { ids: [...] } or { origin: "scraped" | "own" } to approve every pending listing of that kind.
+ */
+const bulkApproveProperties = async (req, res) => {
+  try {
+    const { ids, origin } = req.body || {};
+    let filter;
+    if (Array.isArray(ids) && ids.length) {
+      const valid = ids.filter((id) => mongoose.isValidObjectId(id));
+      filter = { _id: { $in: valid } };
+    } else if (origin === "scraped") {
+      filter = { $and: [PENDING, SCRAPED] };
+    } else if (origin === "own") {
+      filter = { $and: [PENDING, OWN] };
+    } else {
+      return res.status(400).json({ success: false, message: "Provide ids or origin" });
+    }
+    const update = { $set: { isActive: true, isPostedNew: false, isEdited: false } };
+    const [r, s] = await Promise.all([RentalProperty.updateMany(filter, update), SaleProperty.updateMany(filter, update)]);
+    res.json({ success: true, approved: (r.modifiedCount || 0) + (s.modifiedCount || 0) });
+  } catch (err) {
+    console.error("bulkApproveProperties error:", err);
+    res.status(500).json({ success: false, message: "Bulk approve failed" });
+  }
+};
+
+module.exports = { listAdminProperties, getPropertyCounts, bulkApproveProperties };
