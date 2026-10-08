@@ -5,12 +5,12 @@ import {
   Box, Button, Card, CardContent, Grid, Typography, TextField,
   InputAdornment, Avatar, Chip, IconButton, Dialog, DialogTitle,
   DialogContent, DialogActions, CircularProgress, Stack, Tooltip,
-  Skeleton, Alert,
+  Skeleton, Alert, FormControl, InputLabel, Select, MenuItem,
 } from "@mui/material";
-import { Search, RefreshCw, Filter, Phone, Mail, MessageSquare, Users, LogIn, LogOut, MapPin } from "lucide-react";
+import { Search, RefreshCw, Filter, Phone, Mail, MessageSquare, Users, LogIn, LogOut, MapPin, CheckCircle, AlertCircle } from "lucide-react";
 import { PageHeader, StatCard, StatusChip, ConfirmDialog, EmptyState, CopyField, MaskedPhone } from "./shell/adminUi";
-import { AnimatedNumber } from "../../../components/motion";
-import "../admin.css";
+import { AnimatedNumber } from "../../components/motion";
+import "./admin.css";
 
 const AdminPreferencesDashboard = () => {
   const [preferences, setPreferences] = useState([]);
@@ -534,100 +534,12 @@ For assistance, please contact: 9654131789 | support@ggnhome.com`;
           )}
         </Box>
       </Box>
-      <div>
-
-          {/* Statistics Cards */}
-          <div style={styles.statsContainer}>
-            <div style={styles.statCard}>
-              <div style={{ ...styles.statNumber, color: "#003366" }}>
-                {stats.total}
-              </div>
-              <div style={styles.statLabel}>Total Preferences</div>
-            </div>
-            <div style={styles.statCard}>
-              <div style={{ ...styles.statNumber, color: "#00A79D" }}>
-                {stats.loggedIn}
-              </div>
-              <div style={styles.statLabel}>Users Logged In</div>
-            </div>
-            <div style={styles.statCard}>
-              <div style={{ ...styles.statNumber, color: "#FF6B6B" }}>
-                {stats.notLoggedIn}
-              </div>
-              <div style={styles.statLabel}>Not Logged In</div>
-            </div>
-          </div>
-
-          {/* Graph */}
-          <div style={styles.graphContainer}>
-            <h3 style={styles.graphTitle}>User Login Status</h3>
-            <div style={styles.graphBar}>
-              <div
-                style={{
-                  ...styles.graphBarFill,
-                  width: `${loggedInPercentage}%`,
-                }}
-              ></div>
-            </div>
-            <div style={styles.graphLabels}>
-              <span>Not Logged In ({stats.notLoggedIn})</span>
-              <span>Logged In ({stats.loggedIn})</span>
-            </div>
-          </div>
-
-          {/* Controls */}
-          <div style={styles.controlsContainer}>
-            <input
-              type="text"
-              placeholder="Filter by Mobile"
-              value={filters.mobileNumber}
-              onChange={(e) =>
-                handleFilterChange("mobileNumber", e.target.value)
-              }
-              style={styles.filterInput}
-            />
-            <input
-              type="text"
-              placeholder="Filter by Location"
-              value={filters.preferredLocation}
-              onChange={(e) =>
-                handleFilterChange("preferredLocation", e.target.value)
-              }
-              style={styles.filterInput}
-            />
-            <select
-              value={filters.bhkSize}
-              onChange={(e) => handleFilterChange("bhkSize", e.target.value)}
-              style={styles.filterSelect}
-            >
-              <option value="">All BHK Sizes</option>
-              <option value="1BHK">1 BHK</option>
-              <option value="2BHK">2 BHK</option>
-              <option value="3BHK">3 BHK</option>
-              <option value="4BHK">4 BHK</option>
-              <option value="4BHK+">4+ BHK</option>
-            </select>
-            <button
-              onClick={handleMatchUsers}
-              disabled={matching}
-              style={{
-                ...styles.matchButton,
-                ...(matching && { opacity: 0.7, cursor: "not-allowed" }),
-              }}
-            >
-              {matching ? "🔄 Matching..." : "🔗 Match Users"}
-            </button>
-            <button onClick={fetchPreferences} style={styles.refreshButton}>
-              🔄 Refresh
-            </button>
-          </div>
-        </div>
 
         {/* Preferences Cards */}
         {loading ? (
-          <div style={styles.loadingSpinner}>
-            <div style={styles.spinner}></div>
-          </div>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+            <CircularProgress sx={{ color: '#00A79D' }} />
+          </Box>
         ) : (
           <>
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 3 }}>
@@ -781,7 +693,6 @@ For assistance, please contact: 9654131789 | support@ggnhome.com`;
           ))}
         </Box>
 
-        </Box>
 
         {/* Pagination */}
         {pagination.totalPages > 1 && (
@@ -807,7 +718,6 @@ For assistance, please contact: 9654131789 | support@ggnhome.com`;
             </Button>
           </Box>
         )}
-      </Box>
 
       {/* Alerts */}
       {assignSuccess && (
@@ -823,9 +733,11 @@ For assistance, please contact: 9654131789 | support@ggnhome.com`;
         </Alert>
       )}
 
+        </>
       )}
 
       {/* Agent Details Modal */}
+      {selectedAgent && (
       <Dialog
         open={selectedAgent != null}
         onClose={() => setSelectedAgent(null)}
@@ -873,6 +785,7 @@ For assistance, please contact: 9654131789 | support@ggnhome.com`;
           </Button>
         </DialogActions>
       </Dialog>
+      )}
 
       {/* Delete confirmation dialog */}
       <ConfirmDialog

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import {
   Box, Button, Card, CardContent, Grid, Typography, TextField,
   Select, MenuItem, FormControl, InputAdornment, IconButton,
@@ -8,7 +9,7 @@ import {
   CheckCircle, XCircle, Clock, User, DollarSign, Calendar, Home,
   Bell, Gift, RefreshCw, Eye, Copy, AlertCircle,
 } from "lucide-react";
-import { PageHeader, StatCard, StatusChip, CopyField, MaskedPhone } from "../shell/adminUi";
+import { PageHeader, StatCard, StatusChip, CopyField, MaskedPhone } from "./shell/adminUi";
 import "./admin.css";
 
 export default function AdminProperties() {

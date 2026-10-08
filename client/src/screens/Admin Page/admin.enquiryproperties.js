@@ -8,7 +8,7 @@ import {
   Search, RefreshCw, Mail, Phone, MapPin, Home, Eye, Trash2,
   Calendar, DollarSign, ChevronLeft, ChevronRight,
 } from "lucide-react";
-import { PageHeader, StatCard, StatusChip, ConfirmDialog, EmptyState } from "../shell/adminUi";
+import { PageHeader, StatCard, StatusChip, ConfirmDialog, EmptyState } from "./shell/adminUi";
 import { useNavigate } from "react-router-dom";
 import "./admin.css";
 

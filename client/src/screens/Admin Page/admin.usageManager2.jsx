@@ -7,7 +7,7 @@ import {
 import {
   RefreshCw, Users, Smartphone, Loader2, Clock, Database, Activity,
 } from "lucide-react";
-import { PageHeader, StatCard, StatusChip } from "../shell/adminUi";
+import { PageHeader, StatCard, StatusChip } from "./shell/adminUi";
 import "./admin.css";
 
 export default function AdminUsageDashboard() {

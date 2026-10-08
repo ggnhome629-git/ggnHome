@@ -8,7 +8,7 @@ import {
   Search, RefreshCw, TrendingUp, Users, LogIn, LogOut, Phone,
   Filter, CheckCircle, XCircle, Calendar, Home, ArrowUpRight,
 } from "lucide-react";
-import { PageHeader, StatCard, StatusChip, ConfirmDialog, EmptyState } from "../shell/adminUi";
+import { PageHeader, StatCard, StatusChip, ConfirmDialog, EmptyState } from "./shell/adminUi";
 import { useNavigate } from "react-router-dom";
 import "./admin.css";
 
