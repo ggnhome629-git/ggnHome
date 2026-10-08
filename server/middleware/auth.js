@@ -24,7 +24,7 @@ const verifyToken = async (req, res, next) => {
             return res.status(401).json({ message: "Access token not found." });
         }
         
-        const decodedAccessToken = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
+        const decodedAccessToken = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, { algorithms: ["HS256"] });
         const userId = decodedAccessToken.id || decodedAccessToken.sub;
         if (!userId) {
             return res.status(401).json({ message: "Invalid token payload." });
@@ -51,7 +51,7 @@ const verifyTokenOptional = async (req, res, next) => {
     const accessToken = req.cookies.accessToken || bearer;
     if (!accessToken) return next(); // allow guest access
 
-    const decodedAccessToken = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
+    const decodedAccessToken = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, { algorithms: ["HS256"] });
     if (!decodedAccessToken || !(decodedAccessToken.id || decodedAccessToken.sub)) return next(); // e.g. an agent token
     const user = await User.findById(decodedAccessToken.id || decodedAccessToken.sub).select('-password');
     if (user) req.user = user;
@@ -83,7 +83,7 @@ const verifyAgentToken = async (req, res, next) => {
 
     let decoded;
     try {
-      decoded = jwt.verify(token, agentAccessSecret);
+      decoded = jwt.verify(token, agentAccessSecret, { algorithms: ["HS256"] });
     } catch (e) {
       return res.status(401).json({ message: "Invalid agent token." });
     }
@@ -125,7 +125,7 @@ const verifyTokenOrAgent = async (req, res, next) => {
         process.env.ACCESS_TOKEN_SECRET ||
         process.env.JWT_SECRET;
 
-      const decodedAgent = jwt.verify(token, agentSecret);
+      const decodedAgent = jwt.verify(token, agentSecret, { algorithms: ["HS256"] });
 
       if (decodedAgent?.role === "Agent" && decodedAgent.agentId) {
         const agent = await Agent.findById(decodedAgent.agentId);
@@ -148,7 +148,8 @@ const verifyTokenOrAgent = async (req, res, next) => {
     try {
       const decodedUser = jwt.verify(
         token,
-        process.env.ACCESS_TOKEN_SECRET
+        process.env.ACCESS_TOKEN_SECRET,
+        { algorithms: ["HS256"] }
       );
 
       const userId = decodedUser.id || decodedUser.sub;
@@ -191,7 +192,7 @@ const verifyAgentTokenOptional = async (req, res, next) => {
       process.env.JWT_SECRET;
 
     try {
-      decoded = jwt.verify(token, agentAccessSecret);
+      decoded = jwt.verify(token, agentAccessSecret, { algorithms: ["HS256"] });
     } catch (e) {
       const agentRefreshSecret =
         process.env.REFRESH_TOKEN_AGENT_SECRET ||
@@ -199,7 +200,7 @@ const verifyAgentTokenOptional = async (req, res, next) => {
         process.env.JWT_REFRESH_SECRET;
 
       try {
-        decoded = jwt.verify(token, agentRefreshSecret);
+        decoded = jwt.verify(token, agentRefreshSecret, { algorithms: ["HS256"] });
       } catch (e2) {
         return next();
       }
