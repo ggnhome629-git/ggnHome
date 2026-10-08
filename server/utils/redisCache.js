@@ -175,6 +175,16 @@ function checkConnection() {
 }
 
 /**
+ * Raw ioredis client, for callers that need commands this module doesn't
+ * wrap (e.g. atomic INCR for a shared rate-limit store). Null until
+ * initialize() has connected. Always check isConnected()/checkConnection()
+ * first -- a reference can go stale if Redis drops mid-request.
+ */
+function getClient() {
+  return checkConnection() ? client : null;
+}
+
+/**
  * Graceful shutdown
  */
 async function disconnect() {
@@ -198,5 +208,6 @@ module.exports = {
   clearAll,
   getStats,
   isConnected: checkConnection,
+  getClient,
   disconnect
 };

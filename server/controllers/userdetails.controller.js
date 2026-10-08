@@ -113,7 +113,7 @@ exports.saveUserDetails = async (req, res) => {
       userId,
       { $set: updateData },
       { new: true, runValidators: true }
-    );
+    ).select("-password -refreshToken -otp -otpExpiry -otpAttempts");
 
     // Handle user not found
     if (!updatedUser) {
