@@ -346,16 +346,22 @@ export default function PropertyDetailPage({ type }) {
           <Box
             sx={{
               mt: { xs: 5, md: 7 },
-              display: "grid",
+              // Phones/tablets: a plain column (header, price card, content). The
+              // two-column grid is desktop-only — grid areas mis-sized rows inside
+              // the Android WebView and stacked cards on top of each other.
+              display: { xs: "flex", lg: "grid" },
+              flexDirection: "column",
               gap: { xs: 5, lg: 7 },
-              alignItems: "start",
-              gridTemplateColumns: { xs: "minmax(0, 1fr)", lg: "minmax(0, 1fr) 360px" },
-              gridTemplateAreas: { xs: '"header" "side" "main"', lg: '"header side" "main side"' },
+              alignItems: { lg: "start" },
+              gridTemplateColumns: { lg: "minmax(0, 1fr) 360px" },
+              gridTemplateAreas: { lg: '"header side" "main side"' },
+              "& > *": { minWidth: 0 },
             }}
           >
-            <Box sx={{ gridArea: "header" }}>
+            <Box sx={{ gridArea: "header", order: 1 }}>
               <PropertyHero property={property} />
-              <Box sx={{ mt: 5 }}>
+              {/* Phones get Save / Enquire / Book visit from the sticky bottom bar, so the inline action row is desktop-only. */}
+              <Box sx={{ mt: 5, display: { xs: "none", md: "block" } }}>
                 <QuickActionsBar
                   property={property}
                   saved={saved}
@@ -366,7 +372,8 @@ export default function PropertyDetailPage({ type }) {
               </Box>
             </Box>
 
-            <Box sx={{ gridArea: "side", alignSelf: "stretch" }}>
+            {/* The price/contact sidebar is desktop-only; on phones the bottom bar + enquiry form at the end cover it. */}
+            <Box sx={{ gridArea: "side", alignSelf: { lg: "stretch" }, order: 2, display: { xs: "none", lg: "block" } }}>
               <Stack spacing={4} sx={{ position: { lg: "sticky" }, top: { lg: 88 } }}>
                 {!property.isAffiliate && (
                   <PriceActionsCard
@@ -384,7 +391,7 @@ export default function PropertyDetailPage({ type }) {
               </Stack>
             </Box>
 
-            <Stack spacing={5} sx={{ gridArea: "main", minWidth: 0 }}>
+            <Stack spacing={5} sx={{ gridArea: "main", minWidth: 0, order: 3 }}>
               <OverviewSection property={property} />
               <PriceSection property={property} onOpenEmi={() => setEmiOpen(true)} />
               <SaleSpecificSection property={property} />
