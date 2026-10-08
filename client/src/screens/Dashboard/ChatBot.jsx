@@ -104,6 +104,9 @@ export default function Chatbot() {
           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
             Ask about listings, sectors or pricing
           </Typography>
+          <Typography variant="caption" sx={{ display: 'block', color: '#00857D', fontWeight: 700, mt: 0.25 }}>
+            Currently learning — will be live soon
+          </Typography>
         </Box>
       </Stack>
 
