@@ -142,8 +142,10 @@ if (require.main === module) {
     console.warn('⚠️ Warning: Redis cache initialization failed:', err.message);
   });
 
-  // Daily background sync: mirrors each scraped listing's live NoBroker status
-  if (process.env.DISABLE_CRON !== "true") startNoBrokerSyncCron();
+  // NoBroker sync no longer auto-runs. Start it manually (npm run sync:nobroker,
+  // or the /api/cron/* trigger endpoints). Set ENABLE_NOBROKER_CRON=true to
+  // bring back the daily 3:30 AM IST schedule.
+  if (process.env.ENABLE_NOBROKER_CRON === "true" && process.env.DISABLE_CRON !== "true") startNoBrokerSyncCron();
   if (process.env.NODE_ENV !== "test" && process.env.DISABLE_CRON !== "true") startReminderCron();
   if (process.env.DISABLE_CRON !== "true") {
     try {
