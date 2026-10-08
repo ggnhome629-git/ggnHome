@@ -177,6 +177,10 @@ produces new warnings.
 --------------------------------------------------------------------------------
 7. EVERY ADMIN CARD — WHAT'S INSIDE, AND ITS UI UPGRADE STATUS
 --------------------------------------------------------------------------------
+Status refreshed 8 Oct 2026 on branch claude/vigilant-goldberg-20biwm
+(commits 11e8c90..306d5fb): Dashboard, User Management, Usage Tracker,
+Rewards, Add Property and the Edit Property modal were rebuilt in this pass;
+the other cards show the state of the redesign already on this branch.
 
 The admin landing page (/admin/Landingpage) shows one card per admin tool,
 in the order below. For each card: where it goes, which file renders the
@@ -191,16 +195,16 @@ Legend for "UI status":
   (counts of inline style objects are given to show how much styling is
    hand-rolled on each page)
 
-Shared admin UI kit available but NOT yet used by any page:
+Shared admin UI kit — now used by every redesigned page below:
   client/src/screens/Admin Page/shell/adminUi.jsx  (added 7 Oct 2026, c5d9fc5)
     PageHeader   — title, description, actions, tabs, "last updated" + refresh
-    StatCard     — icon, label, animated value, delta, hint, loading state
+    StatCard     — icon, label, animated value, delta, hint, loading state,
+                   decimals (added 8 Oct 2026, e.g. Avg Rating shows 4.3)
     StatusChip   — consistent coloured status labels
     ConfirmDialog— replaces window.confirm()
     EmptyState   — icon + title + description + action
     CopyField    — read-only value with copy button
     MaskedPhone  — phone number hidden until revealed
-  Moving the ORIGINAL pages onto this kit is the recommended next UI step.
 
 
  Card 1 — PROMO CARDS
@@ -220,7 +224,7 @@ Shared admin UI kit available but NOT yet used by any page:
 
  Card 2 — DASHBOARD
    Route      : /admin/Dashboard
-   File       : admin.dashboardoverview.jsx  (1230 lines)
+   File       : admin.dashboardoverview.jsx  (1142 lines)
    Inside     : "Admin Dashboard Overview". Headline stats with animated
                 numbers; payment status counts (Pending / Approved / Completed);
                 Revenue by Payment Method; User Growth (last 12 months);
@@ -230,12 +234,16 @@ Shared admin UI kit available but NOT yet used by any page:
                 Method, Date); property leaderboards (Most Viewed, Most Saved,
                 Top Rated) and engagement totals (Total Properties, Total
                 Views, Total Saves, Avg Engagement Time). Paginated sections.
-   UI status  : ORIGINAL — 231 inline style objects. Only the AnimatedNumber
-                motion component has been added.
+   UI status  : UPGRADED (8 Oct 2026, this branch) — rebuilt on the shared
+                admin kit: PageHeader, 8 StatCard KPIs (AnimatedNumber),
+                StatusChip payment tiles, MUI tables with Previous/Next
+                pagination, keyboard-accessible collapsible sections and
+                skeleton / EmptyState / error-retry states.
+                0 inline style objects (was 231).
 
  Card 3 — USER MANAGEMENT
    Route      : /admin/UserManagement
-   File       : admin.usermanagement.js  (1155 lines)
+   File       : admin.usermanagement.js  (994 lines)
    Inside     : "User Management Dashboard". Paginated user list with
                 expandable rows. Each user shows email and last-used date; AI
                 assistant preferences (Rental / Sale); rewards (Total, Latest,
@@ -245,11 +253,16 @@ Shared admin UI kit available but NOT yet used by any page:
                 configuration, Cloudinary account + folder, type, BHK, listed
                 by, location, posted on) with "Load more"; payments (amount,
                 date).
-   UI status  : ORIGINAL — 217 inline style objects.
+   UI status  : UPGRADED (8 Oct 2026, this branch) — expandable user rows
+                rebuilt as MUI Accordion cards; rewards, engagement, listed
+                properties (with "Load more") and payments sections kept;
+                MUI tables with StatusChip statuses plus skeleton /
+                EmptyState / error-retry states.
+                0 inline style objects (was 217).
 
  Card 4 — ENQUIRIES
    Route      : /admin/enquiries
-   File       : admin.enquiryproperties.js  (898 lines)
+   File       : admin.enquiryproperties.js  (317 lines)
                 (imported in App.js under the misleading name
                  "PaymentsRewardsDashboard")
    Inside     : "Property Enquiries — Manage and track all customer
@@ -258,29 +271,35 @@ Shared admin UI kit available but NOT yet used by any page:
                 Actions; property details loaded per row; delete enquiry
                 (admin-protected API); pagination. Light framer-motion
                 animation.
-   UI status  : ORIGINAL — 94 inline style objects, 3 alert()/confirm() calls.
+   UI status  : UPGRADED — MUI + the shared kit (PageHeader, StatCard,
+                ConfirmDialog, EmptyState) with skeleton loading;
+                0 alert()/confirm() calls, 2 minor inline style objects
+                remain (icon margin, italic note).
 
  Card 5 — CALLBACK REQUESTS
    Route      : /admin/callback
-   File       : admin.customersupport.js  (777 lines)
+   File       : admin.customersupport.js  (511 lines)
    Inside     : Stat row (Total Requests, Pending, In Progress, Resolved);
                 filter bar (Status, Sort By: Date Created / Name, Order:
                 Descending / Ascending, Search); list of requests with name,
                 phone, email, preferred time and "Issue / Message"; refresh;
                 pagination. Read-only: there is no way to change a request's
                 status from this page.
-   UI status  : ORIGINAL — 77 inline style objects; uses the shared
-                Stagger motion wrappers for list animation.
+   UI status  : UPGRADED — MUI + the shared kit (filter card, stat tiles,
+                expandable request cards, pagination, EmptyState);
+                0 inline style objects (was 77).
 
  Card 6 — ALL PROPERTIES
    Route      : /admin/rewardsproperties   (/admin/all-properties redirects here)
-   File       : admin.allproperties.jsx  (995 lines)
+   File       : admin.allproperties.jsx  (679 lines)
    Inside     : Browse every listing grouped by sector. Hero ("Discover Your
                 Perfect Property"), stat row (Total Properties, For Rent, For
                 Sale, Sectors), sort (Newest First, Price Low→High, Price
                 High→Low, by Sector), rent/sale filter, Min / Max Price
                 filters, property cards with agent name, mobile and email.
-   UI status  : ORIGINAL — 77 inline style objects, no icon library.
+   UI status  : UPGRADED — MUI with sx styling and lucide icons;
+                2 inline style objects remain (image hover transform on
+                property cards).
    Note       : the copy ("Discover Your Perfect Property … premium
                 properties") is customer-facing marketing text, not admin text.
 
@@ -302,80 +321,104 @@ Shared admin UI kit available but NOT yet used by any page:
 
  Card 8 — PROPERTY MANAGER
    Route      : /admin/propertymanager
-   File       : admin.propertyManager.js  (817 lines)  ← what actually loads
-                admin.propertyManager.jsx           ← newer, NOT loaded (see 5.1)
+   File       : admin.propertyManager.jsx  (815 lines)  ← what loads now
+                admin.propertyManager.js               ← deleted on this branch
    Inside     : "Property Management". Counters (Pending, Reviewed, Active,
                 Total); "Sort / Filter" bar; list of rental + sale listings
                 newest first; activate / deactivate / mark reviewed; delete
                 with a "Confirm Delete" modal; toast notifications.
-   UI status  : ORIGINAL in practice — 69 inline style objects. A redesigned
-                MUI version exists in admin.propertyManager.jsx (5b8e7bf) but
-                is shadowed by the .js file.
-   Also in    : Settings → Property Manager tab (same shadowing applies).
+   UI status  : UPGRADED — the redesigned MUI admin.propertyManager.jsx is
+                what loads on both entry points now (old .js deleted,
+                430529b); 8 small inline style objects remain (skeleton
+                widths / list spacing) and delete still uses a browser
+                confirm() pop-up.
+   Also in    : Settings → Property Manager tab.
+   Edit modal : admin.editpropertymodel.js (1148 lines) — rebuilt on the MUI
+                Dialog in this pass: section cards, images + 360 panoramas,
+                skeleton / error / empty states and a sticky save bar on
+                mobile; 0 inline styles. Not imported by any screen today
+                (only propertymanager.txt references it).
 
  Card 9 — ADD PROPERTY
    Route      : /admin/add-property
-   File       : admin.addproperty.js  (40 lines)
+   File       : admin.addproperty.js  (42 lines)
    Inside     : The shared post-property form (same one agents and users
                 use) plus admin-only fields: owner's mobile number and extra
                 rental details (lease, policies, neighbourhood).
-   UI status  : UPGRADED — aadedad switched it to the new shared post form.
+   UI status  : UPGRADED — aadedad switched it to the new shared post form;
+                this pass also dropped the public TopNavigationBar from the
+                wrapper (8 Oct 2026): AdminLayout owns navigation, and the
+                shared PropertyPostForm supplies the MUI form controls, the
+                details / images / amenities sections and the sticky
+                Back-Continue action bar on mobile.
 
  Card 10 — SERVICES
    Route      : /admin/services
-   File       : admin.servicesDashboard.jsx  (1362 lines)
+   File       : admin.servicesDashboard.jsx  (831 lines)
    Inside     : Managed-services requests. Stat row (Total Requests,
                 Pending, In Progress, Completed); filter and search; request
                 list; detail panel (name, email, phone, role Owner/Renter,
                 address, property, type Rental/Sale, sector, contact,
                 preferred date, notes); inline edit + save of status.
-   UI status  : ORIGINAL — 141 inline style objects, 3 alert()/confirm()
-                calls. Uses lucide icons.
+   UI status  : UPGRADED — MUI + the shared kit (PageHeader, StatCard,
+                ConfirmDialog, EmptyState); 0 alert()/confirm() calls and
+                4 small inline style objects remain (was 141 + 3 pop-ups).
 
  Card 11 — USAGE TRACKER
    Route      : /admin/usagetrack
-   File       : admin.usageManager.js  (762 lines)
+   File       : admin.usageManager.js  (680 lines)
                 (an alternative version is routed at /admin/usagetrack2 →
                  admin.usageManager2, with no card or sidebar link)
    Inside     : Third-party quota usage. Cloudinary (Credits, Storage,
                 Transforms, per account), email service (Email Credits, Sent,
                 Delivered, Open Rate), maps/API (Daily Requests, Remaining,
                 Bonus); refresh; second page of accounts.
-   UI status  : ORIGINAL — 105 inline style objects.
+   UI status  : UPGRADED (8 Oct 2026, this branch) — matches the
+                admin.usageManager2 card layout: PageHeader with Refresh All
+                and the Page 2 link, executive-summary metric tiles and one
+                usage-meter card layout for Cloudinary / Brevo / LocationIQ
+                with per-service skeletons, error cards with Retry and an
+                EmptyState. 0 inline style objects (was 105).
 
  Card 12 — REWARDS MANAGEMENT
    Route      : /admin/rewards
-   File       : admin.RewardsSection.js  (518 lines)
+   File       : admin.RewardsSection.js  (323 lines)
    Inside     : Send a reward to a user by email with a message ("Distribute
                 Reward"), email validation, success / error banners, and a
                 list of the rewards sent from this page.
-   UI status  : ORIGINAL — 36 inline style objects plus 6 CSS class names.
-   Note       : renders its own public-site top navigation (For Buyers / For
-                Tenants / For Owners / Insights) inside the admin shell.
+   UI status  : UPGRADED (8 Oct 2026, this branch) — MUI form (recipient
+                email, message with counter, gradient Distribute / Reset
+                buttons), result Snackbar (success auto-hides, errors stay
+                until dismissed), and the session list with skeleton +
+                EmptyState. 0 inline style objects (was 36).
+   Note       : no longer renders the public-site top navigation inside the
+                admin shell — AdminLayout owns navigation now.
 
  Card 13 — USER PREFERENCE FORM RESPONSES
    Route      : /admin/userpreferenceformresponses
-   File       : admin.userpreferencesformresponses.js  (1069 lines)
+   File       : admin.userpreferencesformresponses.js  (805 lines)
    Inside     : "User Preferences Dashboard". Stats (Total Preferences, Users
                 Logged In, Not Logged In); filters (login status, BHK size);
                 response cards (location, budget, BHK, property type,
                 furnishing, move-in date, actual vs agent brokerage); assign
                 an agent from a paginated agent picker (20 per page, with
                 agent details modal); one-click WhatsApp message to the user.
-   UI status  : ORIGINAL — 95 inline style objects, 10 alert()/confirm()
-                calls (the most of any page).
+   UI status  : UPGRADED — MUI + the shared kit (PageHeader, StatCard,
+                ConfirmDialog, EmptyState); 0 alert()/confirm() calls and
+                3 small inline style objects remain (was 95 + 10 pop-ups).
 
  Card 14 — AGENTS MANAGEMENT
    Route      : /admin/agentsmanagement
-   File       : admin.AgentsManagement.jsx  (912 lines)
+   File       : admin.AgentsManagement.jsx  (780 lines)
    Inside     : "Agent Management". Filters (status: All / Active / Inactive,
                 sector, search); expandable agent rows: agent information
                 (type, agency, experience, rating, total leads, joined),
                 preferred sectors, viewed client leads (loaded on expand), ID
                 proof; actions: toggle visibility, approve, suspend, reset
                 password.
-   UI status  : ORIGINAL — 62 inline style objects, 3 alert()/confirm()
-                calls. Uses Stagger motion wrappers.
+   UI status  : UPGRADED — rebuilt on MUI (filters, expandable agent rows);
+                1 inline style object remains. Remaining polish: 3 browser
+                pop-ups (reset-password alert/confirm).
 
  Card 15 — REGISTER AGENT
    Route      : /admin/agent-registration
@@ -391,11 +434,13 @@ Shared admin UI kit available but NOT yet used by any page:
 
  Card 16 — PAYMENTS
    Route      : /admin/payments
-   File       : admin.properties.js  (644 lines)
+   File       : admin.properties.js  (394 lines)
    Inside     : Two lists: "Pending Payments" (property, amount, method,
                 email; approve / reject) and "Approved Payments — Eligible for
                 Rewards" (date, reward tier); approving moves a payment across.
-   UI status  : ORIGINAL — 83 inline style objects, 2 alert()/confirm() calls.
+   UI status  : UPGRADED — MUI + the shared kit (PageHeader, StatCard,
+                StatusChip, ConfirmDialog, EmptyState); 0 alert()/confirm()
+                calls, 1 small inline style object remains.
 
  Card 17 — SETTINGS  (added by this change)
    Route      : /admin/settings
@@ -408,20 +453,22 @@ Shared admin UI kit available but NOT yet used by any page:
 
  Landing page itself — ADMIN PORTAL
    Route      : /admin/Landingpage
-   File       : LandingAdminPage.jsx  (490 lines)
+   File       : LandingAdminPage.jsx  (531 lines)
    Inside     : The 17 cards above, plus "Manage Admin Access" (promote a
                 user to admin by email) and the "Current Admins" list.
-   UI status  : ORIGINAL — inline style objects, hover state tracked in
-                React state; cards navigate with full page reloads (5.3).
+   UI status  : UPGRADED — rebuilt on MUI with sx (0 inline style objects);
+                cards navigate with react-router, so the full page reloads
+                noted in 5.3 are gone on this branch.
 
- Summary
-   UPGRADED (5): Promo Cards, SMS Phones, Add Property, Register Agent,
-                 Settings
-   ORIGINAL (12): Dashboard, User Management, Enquiries, Callback Requests,
-                 All Properties, Property Manager (in practice), Services,
-                 Usage Tracker, Rewards Management, User Preference Form
-                 Responses, Agents Management, Payments
-                 — plus the landing page itself.
+ Summary (refreshed 8 Oct 2026 on claude/vigilant-goldberg-20biwm)
+   UPGRADED (17 cards + the landing page): every card above.
+   ORIGINAL (0).
+   Remaining polish (small, non-blocking):
+     - browser pop-ups still in use: Promo delete, SMS device delete,
+       Property Manager delete, Agent password reset (alert/confirm)
+     - leftover inline style objects: Property Manager 8, Services 4,
+       Preference Responses 3, All Properties 2, Enquiries 2, Agents 1,
+       Payments 1
 
 
 --------------------------------------------------------------------------------
