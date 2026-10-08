@@ -272,10 +272,10 @@ const autocomplete = async (req, res) => {
     switch (field.toLowerCase()) {
       case "sector":
       case "location":
-        suggestions = await Model.distinct("Sector", {
+        suggestions = (await Model.distinct("Sector", {
           isActive: true,
           Sector: { $regex: escapeRegex(query), $options: "i" },
-        }).limit(parseInt(limit));
+        })).slice(0, parseInt(limit));
         break;
 
       case "title":
@@ -292,24 +292,24 @@ const autocomplete = async (req, res) => {
         break;
 
       case "propertytype":
-        suggestions = await Model.distinct("propertyType", {
+        suggestions = (await Model.distinct("propertyType", {
           isActive: true,
           propertyType: { $regex: escapeRegex(query), $options: "i" },
-        }).limit(parseInt(limit));
+        })).slice(0, parseInt(limit));
         break;
 
       case "furnishing":
-        suggestions = await Model.distinct("furnishing", {
+        suggestions = (await Model.distinct("furnishing", {
           isActive: true,
           furnishing: { $regex: escapeRegex(query), $options: "i" },
-        }).limit(parseInt(limit));
+        })).slice(0, parseInt(limit));
         break;
 
       default:
-        suggestions = await Model.distinct("Sector", {
+        suggestions = (await Model.distinct("Sector", {
           isActive: true,
           Sector: { $regex: escapeRegex(query), $options: "i" },
-        }).limit(parseInt(limit));
+        })).slice(0, parseInt(limit));
     }
 
     // Cache suggestions (30 minutes)

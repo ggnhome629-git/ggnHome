@@ -43,6 +43,39 @@ const userSchema = new mongoose.Schema(
       enum: ["renter", "owner", "admin" , "Agent"],
       default: "renter",
     },
+
+    // Fields accepted by POST /api/user/save-details (userdetails.controller.js).
+    // That endpoint has no current frontend caller, but was silently discarding
+    // every one of these on every call -- findByIdAndUpdate ran against a
+    // schema that didn't declare them, so Mongoose's default strict mode
+    // dropped them all while the endpoint still replied 200 "updated
+    // successfully". Declared here so the endpoint actually persists what it
+    // already accepts, whenever it's wired up to the client.
+    name: { type: String, trim: true },
+    fullName: { type: String, trim: true },
+    dateOfBirth: { type: Date },
+    gender: { type: String, enum: ["male", "female", "other", ""], default: "" },
+    alternateContact: { type: String, trim: true },
+    address: { type: String, trim: true },
+    propertyTypePreference: { type: String, trim: true },
+    budgetMin: { type: Number },
+    budgetMax: { type: Number },
+    preferredLocations: { type: [String], default: undefined },
+    bedrooms: { type: Number },
+    bathrooms: { type: Number },
+    furnishingPreference: { type: String, trim: true },
+    transactionType: { type: String, trim: true },
+    occupation: { type: String, trim: true },
+    monthlyIncome: { type: Number },
+    // Free-form bank/payment details -- never returned by any route today
+    // (saveUserDetails strips it along with refreshToken/otp before
+    // responding), but keep it out of the default-selected field set too so
+    // a future query that forgets to .select() it doesn't start leaking it.
+    bankPaymentInfo: { type: mongoose.Schema.Types.Mixed, select: false },
+    governmentID: { type: String, trim: true, select: false },
+    kycDocuments: { type: [String], default: undefined, select: false },
+    consentNotifications: { type: Boolean, default: false },
+
     accessToken: {
       type: String,
     },

@@ -78,7 +78,16 @@ exports.saveUserDetails = async (req, res) => {
     const updateData = {};
 
     // Collect Personal Information
-    if (req.body.fullName !== undefined) updateData.fullName = req.body.fullName;
+    if (req.body.fullName !== undefined) {
+      updateData.fullName = req.body.fullName;
+      // getUserDetails/auth/me (and the JWT payload) read `name`, not
+      // `fullName` -- mirror it so a saved profile actually shows up where
+      // the rest of the app already looks for it.
+      updateData.name = req.body.fullName;
+    }
+    if (req.body.name !== undefined && req.body.fullName === undefined) {
+      updateData.name = req.body.name;
+    }
     if (req.body.dateOfBirth !== undefined) updateData.dateOfBirth = req.body.dateOfBirth;
     if (req.body.gender !== undefined) updateData.gender = req.body.gender;
 
