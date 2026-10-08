@@ -1,4 +1,5 @@
 const rateLimit = require("express-rate-limit");
+const { ipKeyGenerator } = require("express-rate-limit");
 const mongoose = require("mongoose");
 const redisCache = require("../utils/redisCache");
 const RateLimitHit = require("../models/RateLimitHit.model");
@@ -116,6 +117,25 @@ class SharedStore {
   }
 }
 
+// Default key: the client's real IP. Traffic reaches this app through two
+// proxies (Cloudflare, then Render's own router), and depending on exactly
+// how many hops `trust proxy` ends up trusting, req.ip can resolve to one
+// of Cloudflare's many edge IPs instead of the real client -- confirmed
+// live: RateLimit-Remaining on repeated requests from one unchanging
+// connection came back non-monotonic (14,14,14,13,13,12,...,13,11,10,12),
+// consistent with each request being keyed under a slightly different
+// apparent IP. Cloudflare's CF-Connecting-IP header is set at their edge
+// from the actual client connection and can't be spoofed by the client (any
+// value sent by the client is overwritten), so it's used first when
+// present; req.ip (via express-rate-limit's IPv6-safe helper) is the
+// fallback for traffic that doesn't come through Cloudflare, e.g. direct
+// requests in a non-production environment.
+const cfSafeKeyGenerator = (req) => {
+  const cfIp = req.headers["cf-connecting-ip"];
+  if (cfIp) return ipKeyGenerator(String(cfIp));
+  return ipKeyGenerator(req.ip);
+};
+
 // Counts per IP. Behind Render's proxy `trust proxy` must be set (index.js)
 // or every user shares one bucket.
 const make = ({ name, windowMs, max, message, keyGenerator }) => {
@@ -126,6 +146,7 @@ const make = ({ name, windowMs, max, message, keyGenerator }) => {
     legacyHeaders: false,
     skip: () => process.env.DISABLE_RATE_LIMIT === "true",
     store: new SharedStore(name),
+    keyGenerator: keyGenerator || cfSafeKeyGenerator,
     handler: (req, res, _next, options) => {
       const retryAfterSec = Math.ceil(options.windowMs / 1000);
       res.set("Retry-After", String(retryAfterSec));
@@ -136,11 +157,6 @@ const make = ({ name, windowMs, max, message, keyGenerator }) => {
       });
     },
   };
-
-  // Only add keyGenerator if provided and not relying on IP
-  if (keyGenerator) {
-    config.keyGenerator = keyGenerator;
-  }
 
   return rateLimit(config);
 };
