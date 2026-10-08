@@ -123,7 +123,7 @@ export function PageHeader({ title, description, actions, tabs, lastUpdated, onR
  * KPI tile: icon in a tinted circle, count-up number (AnimatedNumber, 700ms),
  * delta chip and an optional click that applies the matching filter (5.2).
  */
-export function StatCard({ icon: Icon, label, value = 0, prefix = "", suffix = "", delta, hint, onClick, loading, tone = "#003366" }) {
+export function StatCard({ icon: Icon, label, value = 0, prefix = "", suffix = "", delta, hint, onClick, loading, tone = "#003366", decimals = 0 }) {
   const body = (
     <>
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 3 }}>
@@ -164,7 +164,7 @@ export function StatCard({ icon: Icon, label, value = 0, prefix = "", suffix = "
           component="div"
           sx={{ fontSize: "1.75rem", fontWeight: 800, color: "text.primary", fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}
         >
-          <AnimatedNumber value={value} prefix={prefix} suffix={suffix} duration={0.7} />
+          <AnimatedNumber value={value} prefix={prefix} suffix={suffix} decimals={decimals} duration={0.7} />
         </Typography>
       )}
 
