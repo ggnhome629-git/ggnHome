@@ -21,11 +21,15 @@ const MIN_GAP_MS = Number(process.env.SMS_DEVICE_MIN_GAP_MS) || 5000;
 // Soft cap per SIM per day, to stay clear of carrier spam limits.
 const DAILY_LIMIT = Number(process.env.SMS_DEVICE_DAILY_LIMIT) || 90;
 
-// TEMPORARY, FOR TESTING ONLY: falls back to a well-known key when
-// SMS_DEVICE_KEY is not set in the environment. Anyone who knows it can read
-// queued OTPs, so set a real SMS_DEVICE_KEY on Render before real users.
+// Dev-only fallback so a local checkout works without extra setup. Never
+// used in production: claimNext() hands back queued OTP text verbatim, so a
+// guessable key here would let anyone read live OTPs and take over accounts.
 const DEFAULT_TEST_KEY = "test123";
-exports.getDeviceKey = () => process.env.SMS_DEVICE_KEY || DEFAULT_TEST_KEY;
+exports.getDeviceKey = () => {
+  if (process.env.SMS_DEVICE_KEY) return process.env.SMS_DEVICE_KEY;
+  if (process.env.NODE_ENV !== "production") return DEFAULT_TEST_KEY;
+  return null; // production with no key configured: reject every request below
+};
 
 function safeEqual(a, b) {
   const x = Buffer.from(String(a || ""));
@@ -39,7 +43,7 @@ const todayKey = () => new Date().toISOString().slice(0, 10);
 exports.verifyGatewayDevice = (req, res, next) => {
   const key = exports.getDeviceKey();
   const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
-  if (!safeEqual(token, key)) return res.status(401).json({ message: "Unauthorized" });
+  if (!key || !safeEqual(token, key)) return res.status(401).json({ message: "Unauthorized" });
   next();
 };
 

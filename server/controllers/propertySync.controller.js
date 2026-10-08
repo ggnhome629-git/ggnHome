@@ -201,7 +201,7 @@ const getStatistics = async (req, res) => {
 const cronTrigger = async (req, res) => {
   const secret = req.query.secret || req.headers['x-cron-secret'];
 
-  if (secret !== process.env.CRON_SECRET) {
+  if (!process.env.CRON_SECRET || !secret || secret !== process.env.CRON_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

@@ -11,6 +11,14 @@ const excelUpload = multer({ storage: multer.memoryStorage() });
 
 const upload = require("../middleware/multer");
 const { verifyToken, verifyTokenOptional , verifyAgentToken , verifyAgentTokenOptional , verifyTokenOrAgent } = require("../middleware/auth");
+const {
+  otpRequestLimiter,
+  otpRequestIpLimiter,
+  otpVerifyLimiter,
+  loginLimiter,
+  guestFormLimiter,
+  chatLimiter,
+} = require("../middleware/rateLimit");
 
 // Controllers
 const { requestOtp, verifyOtp, loginWithPassword, setPassword, checkMobile , setRecoveryEmail , changePasswordDirect } = require("../controllers/login.controller");
@@ -118,11 +126,11 @@ router.get("/api/users", verifyToken, checkAdminEmail, async (req, res) => {
 });
 
 // ================== AUTH ROUTES ==================
-router.post("/login/request-otp", requestOtp);
-router.post("/login/password", loginWithPassword);
-router.post("/login/verify-otp", verifyOtp);
+router.post("/login/request-otp", otpRequestLimiter, otpRequestIpLimiter, requestOtp);
+router.post("/login/password", loginLimiter, loginWithPassword);
+router.post("/login/verify-otp", otpVerifyLimiter, verifyOtp);
 router.post("/auth/set-password", verifyToken, setPassword);
-router.post("/auth/check-mobile", checkMobile);
+router.post("/auth/check-mobile", otpRequestIpLimiter, checkMobile);
 
 // ================== SMS GATEWAY (Android app polls these) ==================
 const { verifyGatewayDevice, claimNext, reportResult, reportDelivery, adminListDevices, adminUpdateDevice, adminDeleteDevice, adminTestSend, adminSmsLog } = require("../controllers/smsGateway.controller");
@@ -192,11 +200,11 @@ router.get("/api/admin/rewards/:userId", verifyToken, checkAdminEmail, getUserRe
 
 router.patch("/api/admin/update-role", verifyToken, checkAdminEmail, updateUserRole);
 router.get("/api/properties", verifyToken, checkAdminEmail, getAllProperties);
-router.get('/api/admin/cloudinary/usage',  getAccountsUsage);
-router.get('/api/admin/brevo/usage', getBrevoUsage);
-router.get('/api/admin/mongo/usage', getMongoUsage);
-router.get('/api/admin/gnews/usage', getGNewsUsage);
-router.get('/api/admin/locationiq/usage', getLocationIQUsage);
+router.get('/api/admin/cloudinary/usage', verifyToken, checkAdminEmail, getAccountsUsage);
+router.get('/api/admin/brevo/usage', verifyToken, checkAdminEmail, getBrevoUsage);
+router.get('/api/admin/mongo/usage', verifyToken, checkAdminEmail, getMongoUsage);
+router.get('/api/admin/gnews/usage', verifyToken, checkAdminEmail, getGNewsUsage);
+router.get('/api/admin/locationiq/usage', verifyToken, checkAdminEmail, getLocationIQUsage);
 // Admin updates status of any request
 router.patch("/api/admin/services/:id/status", verifyToken, checkAdminEmail, updateServiceRequestDetails)
 router.put(
@@ -271,7 +279,7 @@ router.post(
 
 
 // ================== User Preference form ==================
-router.post("/api/userpreferenceform", savePreferenceForm);
+router.post("/api/userpreferenceform", guestFormLimiter, savePreferenceForm);
 // ================== AI ROUTES ==================
 router.post("/api/predict-price", verifyToken, predictPrice);
 
@@ -296,7 +304,7 @@ router.get("/api/enquiry", verifyToken, checkAdminEmail, getEnquiries);
 router.delete("/admin/api/deleteenquiry/:id", verifyToken, checkAdminEmail, deleteEnquiry);
 
 // ================== CHATBOT ROUTES ==================
-router.post("/api/chatbot", getChatResponse);
+router.post("/api/chatbot", chatLimiter, getChatResponse);
 router.get("/api/chatbot/initial-questions", getInitialQuestions);
 
 // ================== SALE & RENTAL PROPERTY ROUTES ==================

@@ -77,7 +77,9 @@ app.get("/api/keep-alive", (req, res) => {
 app.post("/api/cron/scraper-trigger", (req, res) => {
   const secret = req.query.secret || req.headers['x-cron-secret'];
 
-  if (secret !== process.env.CRON_SECRET) {
+  // If CRON_SECRET isn't configured, refuse rather than silently letting
+  // `undefined !== undefined` (i.e. no secret supplied) pass the check.
+  if (!process.env.CRON_SECRET || !secret || secret !== process.env.CRON_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -103,7 +105,7 @@ app.post("/api/cron/scraper-trigger", (req, res) => {
 app.get("/api/cron/property-sync-trigger", (req, res) => {
   const secret = req.query.secret || req.headers['x-cron-secret'];
 
-  if (secret !== process.env.CRON_SECRET) {
+  if (!process.env.CRON_SECRET || !secret || secret !== process.env.CRON_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
