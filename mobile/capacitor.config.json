@@ -2,7 +2,7 @@
   "appId": "com.tanush.ggnhome",
   "appName": "GgnHome",
   "webDir": "www",
-  "appendUserAgent": "GgnHomeApp/1.1.0",
+  "appendUserAgent": "GgnHomeApp/1.2.0",
   "backgroundColor": "#FFFFFF",
   "server": {
     "url": "https://www.ggnhome.com",

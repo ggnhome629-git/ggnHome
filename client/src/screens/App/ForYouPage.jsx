@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Button, Chip, Skeleton, Stack, Typography } from "@mui/material";
-import { BedDouble, MapPin, RefreshCw, Ruler, Sparkles, WifiOff } from "lucide-react";
+import { BedDouble, Bell, MapPin, RefreshCw, Ruler, Settings, Sparkles, WifiOff } from "lucide-react";
 import { Navigate, useNavigate } from "react-router-dom";
 import MobileBottomNav from "../Dashboard/MobileBottomNav";
 import { useAuth } from "../../Context/AuthContext";
@@ -188,9 +188,17 @@ export default function ForYouPage() {
               {data?.personalised ? "Homes matched to what you've viewed, saved and searched" : user ? "Browse a few homes and we'll tailor this" : "Top homes right now — sign in to personalise"}
             </Typography>
           </Box>
-          <Button onClick={load} aria-label="Refresh" sx={{ minWidth: 40, color: "#fff", backgroundColor: "rgba(255,255,255,0.14)", borderRadius: "12px", "&:hover": { backgroundColor: "rgba(255,255,255,0.24)" } }}>
-            <RefreshCw size={18} />
-          </Button>
+          <Stack direction="row" spacing={0.75}>
+            {[
+              { label: "Refresh", icon: RefreshCw, onClick: load },
+              { label: "Notifications", icon: Bell, onClick: () => navigate("/app/notifications") },
+              { label: "App settings", icon: Settings, onClick: () => navigate("/app/settings") },
+            ].map(({ label, icon: Icon, onClick }) => (
+              <Button key={label} onClick={onClick} aria-label={label} sx={{ minWidth: 38, width: 38, height: 38, p: 0, color: "#fff", backgroundColor: "rgba(255,255,255,0.14)", borderRadius: "12px", "&:hover": { backgroundColor: "rgba(255,255,255,0.24)" } }}>
+                <Icon size={17} />
+              </Button>
+            ))}
+          </Stack>
         </Stack>
         <Stack direction="row" spacing={1} sx={{ mt: 2.5 }}>
           {FILTERS.map((f) => (

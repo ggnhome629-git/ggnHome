@@ -11,6 +11,7 @@ const { checkAdminEmail } = require("../middleware/adminOnly");
 const { getRecommendations } = require("../services/appRecommender");
 const { runPopularPush, runPersonalPush } = require("../jobs/popularPush");
 const push = require("../services/push");
+const Notification = require("../models/Notification.model");
 
 const appOnly = (req, res, next) => {
   if (/GgnHomeApp/i.test(req.get("user-agent") || "")) return next();
@@ -80,6 +81,47 @@ router.get("/recommendations", appOnly, verifyTokenOptional, async (req, res) =>
   } catch (err) {
     console.error("[app recommendations]", err);
     res.status(500).json({ success: false, message: "Could not load recommendations" });
+  }
+});
+
+// ---- App version (in-app "update available" prompt) ---------------------
+// Bump APP_LATEST_VERSION / APP_UPDATE_URL on the server when a new APK ships.
+router.get("/version", appOnly, (req, res) => {
+  res.set("Cache-Control", "public, max-age=300");
+  res.json({
+    latest: process.env.APP_LATEST_VERSION || "1.2.0",
+    minimum: process.env.APP_MIN_VERSION || "1.0.0",
+    updateUrl: process.env.APP_UPDATE_URL || "",
+    notes: process.env.APP_UPDATE_NOTES || "",
+  });
+});
+
+// ---- Notification inbox --------------------------------------------------
+router.get("/notifications", appOnly, verifyToken, async (req, res) => {
+  try {
+    const items = await Notification.find({ userId: req.user._id }).sort({ createdAt: -1 }).limit(50).lean();
+    const unread = items.filter((n) => !n.readAt).length;
+    res.json({ success: true, items, unread });
+  } catch (err) {
+    res.status(500).json({ message: "Could not load notifications" });
+  }
+});
+
+router.patch("/notifications/read-all", appOnly, verifyToken, async (req, res) => {
+  try {
+    await Notification.updateMany({ userId: req.user._id, readAt: null }, { readAt: new Date() });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: "Could not update notifications" });
+  }
+});
+
+router.patch("/notifications/:id/read", appOnly, verifyToken, async (req, res) => {
+  try {
+    await Notification.updateOne({ _id: req.params.id, userId: req.user._id }, { readAt: new Date() });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ message: "Could not update notification" });
   }
 });
 

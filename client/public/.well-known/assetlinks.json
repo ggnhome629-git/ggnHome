@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.tanush.ggnhome",
+    "sha256_cert_fingerprints": [
+      "1F:A4:27:08:0F:5F:20:B7:AD:31:36:0E:2C:AB:D7:6E:64:37:D8:4F:22:F2:CD:D9:2E:01:E8:93:2A:CA:09:4D"
+    ]
+  }
+}]

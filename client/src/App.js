@@ -29,6 +29,8 @@ const PaymentsRewardsDashboard = lazy(() => import("./screens/Admin Page/admin.e
 const SeeAllProperties = lazy(() => import("./screens/Dashboard/SeeAllProperties"));
 const PropertyAnalytics = lazy(() => import("./screens/User-Properties/PropertyAnalysis"));
 const Analytics = lazy(() => import("./screens/User-Properties/Analytics"));
+const AppSettingsPage = lazy(() => import("./screens/App/AppSettingsPage"));
+const NotificationsPage = lazy(() => import("./screens/App/NotificationsPage"));
 const ForYouPage = lazy(() => import("./screens/App/ForYouPage"));
 const Savedproperties = lazy(() => import("./screens/Dashboard/savedproperties"));
 const AdminDashboard = lazy(() => import("./screens/Admin Page/admin.dashboardoverview"));
@@ -160,6 +162,8 @@ function App() {
       <Route path="/userpreferenceform" element={<UserPreferenceForm />} />
       {/* App-only personalised feed: public (guests get top picks), gated inside the page */}
       <Route path="/app/for-you" element={<ForYouPage />} />
+      <Route path="/app/settings" element={<AppSettingsPage />} />
+      <Route path="/app/notifications" element={<NotificationsPage />} />
       <Route element={<ProtectedRoutes />}>
         <Route path="/AIassistant" element={<PropertySearchInterface />} />
         <Route path="/AIassistant-Rent" element={<VoiceAssistantRentResponsive />} />

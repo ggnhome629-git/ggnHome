@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { isNativeApp, nativePlugin } from "../../utils/nativeApp";
 import { Button, Dialog, IconButton, Stack, TextField, Typography } from "@mui/material";
 import { X } from "lucide-react";
 import { radii } from "../../theme/theme";
@@ -9,6 +10,16 @@ import { radii } from "../../theme/theme";
  */
 export default function ShareDialog({ open, onClose, link, title = "Share property" }) {
   const [copied, setCopied] = useState(false);
+
+  // In the Android app, skip our dialog and open the system share sheet.
+  useEffect(() => {
+    if (!open || !isNativeApp()) return;
+    const Share = nativePlugin("Share");
+    if (!Share?.share) return;
+    Share.share({ title: `${title} — GgnHome`, text: `${title} on GgnHome`, url: link, dialogTitle: "Share via" })
+      .catch(() => {})
+      .finally(onClose);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const copyLink = async () => {
     try {
@@ -21,7 +32,7 @@ export default function ShareDialog({ open, onClose, link, title = "Share proper
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: `${radii.lg}px`, p: 2 } }}>
+    <Dialog open={open && !(isNativeApp() && nativePlugin("Share")?.share)} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: `${radii.lg}px`, p: 2 } }}>
       <Stack spacing={5} sx={{ p: 4 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Typography variant="h3" sx={{ fontSize: "1.1rem", color: "primary.main" }}>

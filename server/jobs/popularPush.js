@@ -13,6 +13,7 @@
 const cron = require("node-cron");
 const DeviceToken = require("../models/DeviceToken.model");
 const PushLog = require("../models/PushLog.model");
+const Notification = require("../models/Notification.model");
 const push = require("../services/push");
 const { getPopularProperties, getRecommendations, formatPrice } = require("../services/appRecommender");
 
@@ -23,6 +24,17 @@ function describe(p) {
     .filter(Boolean)
     .join(" · ");
   return bits;
+}
+
+/** Keep a copy in each signed-in user's in-app notification inbox. */
+async function inbox(userIds, { title, body, link }) {
+  const ids = (userIds || []).filter(Boolean).slice(0, 1000);
+  if (!ids.length) return;
+  try {
+    await Notification.insertMany(ids.map((userId) => ({ userId, type: "app_push", title, body, link, channel: "push" })));
+  } catch (err) {
+    console.warn("[push] inbox write failed:", err.message);
+  }
 }
 
 async function runPopularPush({ dryRun = false } = {}) {
@@ -50,6 +62,7 @@ async function runPopularPush({ dryRun = false } = {}) {
 
   const result = await push.sendToTokens(tokens, message);
   await PushLog.create({ propertyId: pick.id, propertyType: pick.type, kind: "popular", sent: result.sent, failed: result.failed });
+  await inbox(devices.length ? await DeviceToken.distinct("userId", { popularPushes: true, userId: { $ne: null } }) : [], message);
   return { ok: true, property: pick.id, devices: tokens.length, ...result };
 }
 
@@ -79,6 +92,7 @@ async function runPersonalPush({ max = 300 } = {}) {
         data: { kind: "personal", propertyId: top.id },
       });
       sent += r.sent;
+      await inbox([d.userId], { title: "Picked for you 🏡", body: `${top.title} — ${describe(top)}`, link: top.path });
       await DeviceToken.updateOne({ _id: d._id }, { lastPersonalPushAt: new Date() });
     } catch (err) {
       console.warn("[push] personal push failed:", err.message);
