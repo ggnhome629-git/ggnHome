@@ -14,12 +14,12 @@ android {
         versionCode 4
         versionName '4.0'
 
-        // Addresses and device keys of the two servers. The keys must match SMS_DEVICE_KEY on each server
-        // (the GitHub build reads them from repo secrets; the defaults only work on a non-production server).
+        // Addresses of the two servers and the ONE shared SMS_KEY (the GitHub build reads it from the SMS_KEY repo
+        // secret; the 'test123' default only works against a non-production server).
         buildConfigField 'String', 'GGNHOME_URL', "\"${System.getenv('SMS_GGNHOME_URL') ?: 'https://api.ggnhome.com'}\""
-        buildConfigField 'String', 'GGNHOME_KEY', "\"${System.getenv('SMS_GGNHOME_DEVICE_KEY') ?: 'test123'}\""
+        buildConfigField 'String', 'GGNHOME_KEY', "\"${System.getenv('SMS_KEY') ?: 'test123'}\""
         buildConfigField 'String', 'SHINE_URL', "\"${System.getenv('SMS_SHINE_URL') ?: 'https://we-three-api.onrender.com'}\""
-        buildConfigField 'String', 'SHINE_KEY', "\"${System.getenv('SMS_SHINE_DEVICE_KEY') ?: 'test123'}\""
+        buildConfigField 'String', 'SHINE_KEY', "\"${System.getenv('SMS_KEY') ?: 'test123'}\""
     }
 
     buildFeatures {

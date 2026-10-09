@@ -58,6 +58,8 @@ exports.HARD_CAPS = HARD_CAPS;
 // guessable key here would let anyone read live OTPs and take over accounts.
 const DEFAULT_TEST_KEY = "test123";
 exports.getDeviceKey = () => {
+  // One shared key (SMS_KEY) for the phones and the website console; SMS_DEVICE_KEY is the older name.
+  if (process.env.SMS_KEY) return process.env.SMS_KEY;
   if (process.env.SMS_DEVICE_KEY) return process.env.SMS_DEVICE_KEY;
   if (process.env.NODE_ENV !== "production") return DEFAULT_TEST_KEY;
   return null; // production with no key configured: reject every request below
