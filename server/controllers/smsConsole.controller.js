@@ -1,4 +1,4 @@
-// The hidden SMS Service console (client route /sms-service/app/manage). One owner password; the page then manages
+// The hidden SMS Service console (client route /sms-service/app/manage). Opened with the shared SMS_KEY; the page then manages
 // BOTH services: GGN Home (this server) and Shine One Estate (the We Three server on Render, called here with a
 // shared key so the key never reaches a browser).
 const crypto = require("crypto");
@@ -8,11 +8,13 @@ const SmsDevice = require("../models/SmsDevice.model");
 const SmsLog = require("../models/SmsLog.model");
 const SmsQueue = require("../models/SmsQueue.model");
 const SmsSetting = require("../models/SmsSetting.model");
-const { getLimits, effectiveLimits, dropLimitsCache, HARD_CAPS } = require("./smsGateway.controller");
+const { getLimits, effectiveLimits, dropLimitsCache, HARD_CAPS, getDeviceKey } = require("./smsGateway.controller");
 
 const ONLINE_WINDOW_MS = 20 * 1000;
 const SHINE_URL = () => (process.env.SHINE_API_URL || "https://we-three-api.onrender.com").replace(/\/+$/, "");
-const tokenSecret = () => process.env.SMS_CONSOLE_JWT_SECRET || process.env.JWT_SECRET || "";
+const tokenSecret = () => process.env.JWT_SECRET || "";
+// The one shared key (SMS_KEY) is also what you type to open the console.
+const sharedKey = () => getDeviceKey() || "";
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
 const safeEqual = (a, b) => {
@@ -23,20 +25,20 @@ const safeEqual = (a, b) => {
 
 // ------------------------------------------------------------------ auth ----
 
-// POST /api/sms-console/login { password } -> { token }. Not set up (no SMS_CONSOLE_PASSWORD) = refuses everyone.
+// POST /api/sms-console/login { password } -> { token }, where "password" is the shared SMS_KEY. Not set up = 404.
 exports.login = async (req, res) => {
-  const expected = process.env.SMS_CONSOLE_PASSWORD;
+  const expected = sharedKey();
   if (!expected || !tokenSecret()) return res.status(404).json({ message: "Not found" });
   await new Promise((r) => setTimeout(r, 400)); // slows guessing
-  if (!safeEqual(req.body && req.body.password, expected)) return res.status(401).json({ message: "Wrong password" });
-  const token = jwt.sign({ scope: "sms-console" }, tokenSecret(), { expiresIn: "12h" });
-  res.json({ token, expiresInHours: 12 });
+  if (!safeEqual(req.body && req.body.password, expected)) return res.status(401).json({ message: "Wrong key" });
+  const token = jwt.sign({ scope: "sms-console" }, tokenSecret(), { expiresIn: "30d" });
+  res.json({ token, expiresInDays: 30 });
 };
 
 exports.verifyConsole = (req, res, next) => {
   try {
     const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
-    if (!token || !tokenSecret() || !process.env.SMS_CONSOLE_PASSWORD) throw new Error("no token");
+    if (!token || !tokenSecret() || !sharedKey()) throw new Error("no token");
     const payload = jwt.verify(token, tokenSecret());
     if (payload.scope !== "sms-console") throw new Error("wrong scope");
     next();
@@ -48,8 +50,8 @@ exports.verifyConsole = (req, res, next) => {
 // ----------------------------------------------------------- Shine One ----
 
 async function shine(method, path, data) {
-  if (!process.env.SMS_CONSOLE_KEY) {
-    const err = new Error("SMS_CONSOLE_KEY is not set on this server");
+  if (!sharedKey()) {
+    const err = new Error("SMS_KEY is not set on this server");
     err.status = 503;
     throw err;
   }
@@ -58,7 +60,7 @@ async function shine(method, path, data) {
       method,
       url: `${SHINE_URL()}/api/sms-console${path}`,
       data,
-      headers: { "X-Console-Key": process.env.SMS_CONSOLE_KEY },
+      headers: { "X-Console-Key": sharedKey() },
       timeout: 70 * 1000, // the free Render server can take a minute to wake up
     });
     return r.data;

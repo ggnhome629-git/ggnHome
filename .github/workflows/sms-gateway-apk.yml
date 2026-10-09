@@ -16,9 +16,8 @@ jobs:
         working-directory: sms-gateway-app
     env:
       # Optional: set these repo secrets to also publish to Firebase App Distribution.
-      # The device keys baked into the app; they must match SMS_DEVICE_KEY on each server.
-      SMS_GGNHOME_DEVICE_KEY: ${{ secrets.SMS_GGNHOME_DEVICE_KEY }}
-      SMS_SHINE_DEVICE_KEY: ${{ secrets.SMS_SHINE_DEVICE_KEY }}
+      # The one shared key baked into the app; it must equal SMS_KEY on both servers.
+      SMS_KEY: ${{ secrets.SMS_KEY }}
       FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
       FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
     steps:

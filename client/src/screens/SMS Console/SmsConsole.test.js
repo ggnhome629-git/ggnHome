@@ -29,31 +29,31 @@ const overview = {
 };
 
 beforeEach(() => {
-  sessionStorage.clear();
+  localStorage.clear();
   global.fetch = jest.fn(async (url, opts = {}) => {
     const path = String(url).split("/api/sms-console")[1];
     if (path === "/login") {
       const ok = JSON.parse(opts.body).password === "right";
-      return { ok, status: ok ? 200 : 401, json: async () => (ok ? { token: "t" } : { message: "Wrong password" }) };
+      return { ok, status: ok ? 200 : 401, json: async () => (ok ? { token: "t" } : { message: "Wrong key" }) };
     }
     if (path === "/overview") return { ok: true, status: 200, json: async () => overview };
     return { ok: true, status: 200, json: async () => ({ ok: true }) };
   });
 });
 
-test("shows only a password box until signed in, and rejects a wrong password", async () => {
+test("shows only a key box until signed in, and rejects a wrong key", async () => {
   render(<SmsConsole />);
-  expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+  expect(screen.getByLabelText(/sms key/i)).toBeInTheDocument();
   expect(screen.queryByText(/Phones/)).not.toBeInTheDocument();
-  fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "nope" } });
+  fireEvent.change(screen.getByLabelText(/sms key/i), { target: { value: "nope" } });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
-  expect(await screen.findByText("Wrong password")).toBeInTheDocument();
+  expect(await screen.findByText("Wrong key")).toBeInTheDocument();
   expect(global.fetch.mock.calls.some(([u]) => String(u).includes("/overview"))).toBe(false);
 });
 
 test("after sign-in lists the phones with a switch per service, and the Shine One times", async () => {
   render(<SmsConsole />);
-  fireEvent.change(screen.getByLabelText(/password/i), { target: { value: "right" } });
+  fireEvent.change(screen.getByLabelText(/sms key/i), { target: { value: "right" } });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
   expect(await screen.findByDisplayValue("Office phone")).toBeInTheDocument();
   expect(screen.getByText("1 of 1 phones online")).toBeInTheDocument();

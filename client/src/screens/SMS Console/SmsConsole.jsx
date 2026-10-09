@@ -32,7 +32,7 @@ import {
 import { Trash2 } from "lucide-react";
 
 /**
- * SMS Service console — hidden page (/sms-service/app/manage). One owner password; then it manages both services:
+ * SMS Service console — hidden page (/sms-service/app/manage). Opened with the shared SMS key; it manages both services:
  * phones (which service each one sends for), limits, Shine One sending times, per-sheet message + Auto-send, a log
  * and a test send. The Android app only shows status; everything is changed here.
  */
@@ -40,17 +40,18 @@ const BASE = process.env.REACT_APP_Base_API;
 const TOKEN_KEY = "smsConsoleToken";
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+// Kept on this device (not just this tab), so the key is typed once.
 const getToken = () => {
   try {
-    return sessionStorage.getItem(TOKEN_KEY) || "";
+    return localStorage.getItem(TOKEN_KEY) || "";
   } catch (e) {
     return "";
   }
 };
 const setToken = (t) => {
   try {
-    if (t) sessionStorage.setItem(TOKEN_KEY, t);
-    else sessionStorage.removeItem(TOKEN_KEY);
+    if (t) localStorage.setItem(TOKEN_KEY, t);
+    else localStorage.removeItem(TOKEN_KEY);
   } catch (e) {
     /* private mode: stay signed in for this page view only */
   }
@@ -110,9 +111,9 @@ function Login({ onDone }) {
           SMS Service
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Owner sign-in
+          Enter the SMS key
         </Typography>
-        <TextField fullWidth type="password" label="Password" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} />
+        <TextField fullWidth type="password" label="SMS key" autoFocus value={password} onChange={(e) => setPassword(e.target.value)} />
         {error && (
           <Alert severity="error" sx={{ mt: 2 }}>
             {error}
