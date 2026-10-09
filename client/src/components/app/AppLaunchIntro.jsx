@@ -1,15 +1,36 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { isNativeApp } from "../../utils/nativeApp";
 
 /**
- * Animated launch screen: brand mark draws in over a drifting aurora with
- * expanding ripple rings, then the whole layer lifts away to reveal the app.
- * Plays on every cold start inside the Android app and once per browser
- * session on the website. Skipped for users who prefer reduced motion.
+ * Launch screen: the brand mark settles in, the wordmark rises letter by
+ * letter, and a status line says we're curating listings while the first
+ * screen loads. It holds for a comfortable minimum so it is actually seen,
+ * then lifts away once the page has loaded (capped so it never blocks).
+ *
+ * Low-power phones (few CPU cores, <=4 GB RAM, or Data Saver) get a static
+ * gradient instead of animated blobs. Only transform/opacity are animated,
+ * which the GPU handles cheaply; no blur filters are used.
  */
 const SEEN_KEY = "ggn:introSeen";
-const DURATION_MS = 1900;
+const MIN_MS = 3200; // long enough to read the status line
+const MAX_MS = 5000; // never hold the user longer than this
+
+const STATUS_LINES = [
+  "Curating properties near you",
+  "Finding homes that fit your budget",
+  "Checking the latest listings",
+];
+
+const isLowPower = () => {
+  try {
+    const cores = navigator.hardwareConcurrency || 8;
+    const mem = navigator.deviceMemory || 8;
+    return cores <= 4 || mem <= 4 || navigator.connection?.saveData === true;
+  } catch {
+    return false;
+  }
+};
 
 const shouldPlay = () => {
   try {
@@ -25,11 +46,34 @@ const shouldPlay = () => {
 
 export default function AppLaunchIntro() {
   const [show, setShow] = useState(shouldPlay);
+  const [line, setLine] = useState(0);
+  const lowPower = useMemo(isLowPower, []);
 
+  // Hide once the page has loaded and the minimum time has passed (or at the cap).
   useEffect(() => {
     if (!show) return undefined;
-    const t = setTimeout(() => setShow(false), DURATION_MS);
-    return () => clearTimeout(t);
+    const start = Date.now();
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      const wait = Math.max(0, MIN_MS - (Date.now() - start));
+      setTimeout(() => setShow(false), wait);
+    };
+    if (document.readyState === "complete") finish();
+    else window.addEventListener("load", finish, { once: true });
+    const cap = setTimeout(() => setShow(false), MAX_MS);
+    return () => {
+      window.removeEventListener("load", finish);
+      clearTimeout(cap);
+    };
+  }, [show]);
+
+  // Rotate the status line gently while we wait.
+  useEffect(() => {
+    if (!show) return undefined;
+    const t = setInterval(() => setLine((i) => (i + 1) % STATUS_LINES.length), 1100);
+    return () => clearInterval(t);
   }, [show]);
 
   const word = "GgnHome".split("");
@@ -41,8 +85,7 @@ export default function AppLaunchIntro() {
           key="intro"
           onClick={() => setShow(false)}
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 1.06, filter: "blur(6px)" }}
-          transition={{ duration: 0.55, ease: [0.4, 0, 0.2, 1] }}
+          exit={{ opacity: 0, transition: { duration: 0.6, ease: [0.4, 0, 0.2, 1] } }}
           style={{
             position: "fixed",
             inset: 0,
@@ -51,79 +94,96 @@ export default function AppLaunchIntro() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
+            padding: 24,
             overflow: "hidden",
-            background: "radial-gradient(120% 90% at 50% 40%, #0B5C7A 0%, #003366 55%, #001B36 100%)",
+            background: "linear-gradient(160deg, #0B5C7A 0%, #003366 55%, #001B36 100%)",
+            willChange: "opacity",
           }}
         >
-          {/* Drifting aurora blobs */}
-          {[
-            { c: "#00A79D", x: "-30%", y: "-25%", d: 0 },
-            { c: "#22D3EE", x: "35%", y: "30%", d: 0.2 },
-            { c: "#8B5CF6", x: "25%", y: "-35%", d: 0.4 },
-          ].map((b, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 0.6 }}
-              animate={{ opacity: 0.45, scale: 1.1, x: [0, 30, -20], y: [0, -20, 15] }}
-              transition={{ duration: 2.4, delay: b.d, ease: "easeInOut" }}
-              style={{ position: "absolute", left: "50%", top: "50%", width: 360, height: 360, marginLeft: -180, marginTop: -180, translate: `${b.x} ${b.y}`, borderRadius: "50%", background: b.c, filter: "blur(80px)" }}
-            />
-          ))}
+          {/* Soft aurora: animated only on capable phones */}
+          {!lowPower &&
+            [0, 1].map((i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 0.22, scale: 1.05, x: i ? [0, -24, 0] : [0, 24, 0], y: i ? [0, 18, 0] : [0, -18, 0] }}
+                transition={{ opacity: { duration: 1.2 }, scale: { duration: 1.6, ease: "easeOut" }, x: { duration: 9, repeat: Infinity, ease: "easeInOut" }, y: { duration: 9, repeat: Infinity, ease: "easeInOut" } }}
+                style={{
+                  position: "absolute",
+                  width: 420,
+                  height: 420,
+                  left: i ? "45%" : "-20%",
+                  top: i ? "40%" : "-15%",
+                  borderRadius: "50%",
+                  background: i ? "radial-gradient(circle, #22D3EE 0%, transparent 65%)" : "radial-gradient(circle, #00A79D 0%, transparent 65%)",
+                  pointerEvents: "none",
+                }}
+              />
+            ))}
 
-          {/* Ripple rings */}
-          {[0, 0.35, 0.7].map((d) => (
-            <motion.span
-              key={d}
-              initial={{ scale: 0.4, opacity: 0.7 }}
-              animate={{ scale: 3.2, opacity: 0 }}
-              transition={{ duration: 1.6, delay: 0.25 + d, ease: "easeOut" }}
-              style={{ position: "absolute", width: 120, height: 120, borderRadius: "50%", border: "2px solid rgba(34,211,238,0.6)" }}
-            />
-          ))}
-
-          {/* Logo mark: house outline draws itself */}
+          {/* Logo tile: fades and scales in, then holds still */}
           <motion.div
-            initial={{ scale: 0.5, opacity: 0, rotate: -12 }}
-            animate={{ scale: 1, opacity: 1, rotate: 0 }}
-            transition={{ type: "spring", stiffness: 220, damping: 16, delay: 0.1 }}
-            style={{ position: "relative", width: 96, height: 96, borderRadius: 26, background: "linear-gradient(135deg,#00A79D,#22D3EE)", boxShadow: "0 18px 50px rgba(34,211,238,0.45)", display: "flex", alignItems: "center", justifyContent: "center" }}
+            initial={{ scale: 0.7, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
+            style={{ position: "relative", width: 104, height: 104, borderRadius: 28, background: "linear-gradient(135deg,#00A79D,#22D3EE)", boxShadow: "0 16px 40px rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
-            <svg width="58" height="58" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <motion.path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.9, delay: 0.35, ease: "easeInOut" }} />
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <motion.path
+                d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"
+                initial={{ pathLength: 0 }}
+                animate={{ pathLength: 1 }}
+                transition={{ duration: 1.2, delay: 0.5, ease: "easeInOut" }}
+              />
             </svg>
           </motion.div>
 
-          {/* Wordmark, letter by letter */}
-          <div style={{ display: "flex", marginTop: 22, position: "relative" }}>
+          {/* Wordmark rises in */}
+          <motion.div
+            initial="hidden"
+            animate="show"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07, delayChildren: 0.9 } } }}
+            style={{ display: "flex", marginTop: 24, position: "relative" }}
+          >
             {word.map((ch, i) => (
               <motion.span
                 key={i}
-                initial={{ y: 24, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.55 + i * 0.05, type: "spring", stiffness: 300, damping: 20 }}
-                style={{ color: "#fff", fontSize: 34, fontWeight: 800, letterSpacing: "0.01em", fontFamily: "inherit" }}
+                variants={{ hidden: { y: 18, opacity: 0 }, show: { y: 0, opacity: 1, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } } }}
+                style={{ color: "#fff", fontSize: 34, fontWeight: 800, letterSpacing: "0.01em" }}
               >
                 {ch}
               </motion.span>
             ))}
-          </div>
+          </motion.div>
+
           <motion.p
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 0.85, y: 0 }}
-            transition={{ delay: 1.0, duration: 0.4 }}
-            style={{ color: "#BDEFF5", margin: "6px 0 0", fontSize: 14, letterSpacing: "0.18em", textTransform: "uppercase", position: "relative" }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.9 }}
+            transition={{ delay: 1.6, duration: 0.6 }}
+            style={{ color: "#BDEFF5", margin: "8px 0 0", fontSize: 13, letterSpacing: "0.16em", textTransform: "uppercase", position: "relative" }}
           >
             Find your home in Gurgaon
           </motion.p>
 
-          {/* Progress shimmer */}
-          <div style={{ position: "absolute", bottom: "calc(48px + env(safe-area-inset-bottom))", width: 140, height: 4, borderRadius: 4, background: "rgba(255,255,255,0.15)", overflow: "hidden" }}>
+          {/* Loading status: rotating message + indeterminate bar */}
+          <div style={{ position: "absolute", bottom: "calc(56px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "0 24px" }}>
             <motion.div
-              initial={{ x: "-100%" }}
-              animate={{ x: "0%" }}
-              transition={{ duration: DURATION_MS / 1000 - 0.2, ease: "easeInOut" }}
-              style={{ width: "100%", height: "100%", background: "linear-gradient(90deg,#00A79D,#22D3EE)" }}
-            />
+              key={line}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              style={{ color: "#E6FBFD", fontSize: 14, fontWeight: 600, textAlign: "center" }}
+            >
+              {STATUS_LINES[line]}…
+            </motion.div>
+            <div style={{ width: 160, height: 4, borderRadius: 4, background: "rgba(255,255,255,0.18)", overflow: "hidden" }}>
+              <motion.div
+                initial={{ x: "-100%" }}
+                animate={{ x: "100%" }}
+                transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                style={{ width: "100%", height: "100%", background: "linear-gradient(90deg,#00A79D,#22D3EE)" }}
+              />
+            </div>
           </div>
         </motion.div>
       )}
