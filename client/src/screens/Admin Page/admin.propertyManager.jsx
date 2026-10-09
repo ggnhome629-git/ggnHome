@@ -20,6 +20,13 @@ const TABS = [
   { key: "own", label: "Owner / agent approvals", query: { origin: "own", approval: "pending" }, bulkOrigin: "own" },
 ];
 
+const thumb = (r) => {
+  const first = Array.isArray(r.images) ? r.images[0] : r.image || r.thumbnail;
+  return (first && (first.url || first)) || "";
+};
+const statusLabel = (r) => (r.isActive ? "Live" : r.isPending ? (r.isEdited ? "Edited – review" : "New – review") : "Not live");
+const sourceLabel = (r) => (r.origin === "scraped" ? (r.source === "nobroker" ? "NoBroker" : "99acres") : r.ownerType === "Agent" ? "Agent" : "Owner");
+
 const money = (r) => (r.price ? `₹${Number(r.price).toLocaleString("en-IN")}${r.listingType === "rent" ? "/mo" : ""}` : "—");
 
 export default function AdminPropertyManager() {
@@ -118,7 +125,7 @@ export default function AdminPropertyManager() {
         title="Property Manager"
         description="Approve, edit and manage every listing"
         actions={
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
             <Button variant="outlined" size="small" startIcon={<RefreshCw size={15} />} onClick={refresh}>Refresh</Button>
             <Button variant="outlined" size="small" startIcon={<Download size={15} />} onClick={exportCsv}>Export CSV</Button>
             <Button variant="contained" size="small" onClick={() => navigate("/admin/add-property")}>Add property</Button>
@@ -189,7 +196,37 @@ export default function AdminPropertyManager() {
         <EmptyState icon={Home} title={current.bulkOrigin ? "Nothing waiting for approval" : "No properties found"} description="Try a different search or filter." />
       ) : (
         <Card className="admin-card" sx={{ overflow: "hidden" }}>
-          <Box className="admin-table-wrap">
+          {/* Phone layout: one card per property so nothing is clipped */}
+          <Box sx={{ display: { xs: "block", md: "none" } }}>
+            {loading && <Typography sx={{ textAlign: "center", p: 4 }}>Loading…</Typography>}
+            {!loading && rows.map((r) => (
+              <Box key={r._id} sx={{ display: "flex", gap: 2, p: 2.5, borderBottom: "1px solid #E5E9EE" }}>
+                {current.bulkOrigin && (
+                  <Checkbox size="small" sx={{ alignSelf: "flex-start", p: 0.5 }} checked={selected.includes(r._id)} onChange={() => toggle(r._id)} />
+                )}
+                <Box sx={{ width: 72, height: 72, borderRadius: "8px", flexShrink: 0, bgcolor: "#EEF3F6", backgroundImage: thumb(r) ? `url(${thumb(r)})` : "none", backgroundSize: "cover", backgroundPosition: "center", display: "flex", alignItems: "center", justifyContent: "center", color: "#9AA7B4" }}>
+                  {!thumb(r) && <Home size={22} />}
+                </Box>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: "0.9rem", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{r.title || "Untitled"}</Typography>
+                  <Typography sx={{ fontWeight: 800, color: "#003366", fontSize: "0.95rem" }}>{money(r)}{r.bhk ? ` · ${/bhk/i.test(r.bhk) ? r.bhk : `${r.bhk} BHK`}` : ""}</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.location || "—"} · {new Date(r.createdAt).toLocaleDateString()}</Typography>
+                  <Stack direction="row" spacing={0.75} sx={{ my: 1, flexWrap: "wrap", rowGap: 0.75 }}>
+                    <Chip size="small" label={sourceLabel(r)} sx={r.origin === "scraped" ? { bgcolor: "rgba(245,158,11,0.15)", color: "#B45309", fontWeight: 700 } : { bgcolor: "rgba(0,167,157,0.14)", color: "#00857D", fontWeight: 700 }} />
+                    <Chip size="small" variant="outlined" color={r.isActive ? "success" : r.isPending ? "warning" : "default"} label={statusLabel(r)} />
+                  </Stack>
+                  <Stack direction="row" spacing={0.5}>
+                    {!r.isActive && <IconButton aria-label="Approve" sx={{ color: "success.main" }} onClick={() => approve({ ids: [r._id] }, `Approve "${r.title}"?`)}><Check size={18} /></IconButton>}
+                    <IconButton aria-label="View" onClick={() => navigate(r.listingType === "rent" ? `/Rentaldetails/${r._id}` : `/Saledetails/${r._id}`)}><Eye size={18} /></IconButton>
+                    <IconButton aria-label="Edit" onClick={() => setEditingId(r._id)}><Pencil size={18} /></IconButton>
+                    <IconButton aria-label="Delete" color="error" onClick={() => remove(r)}><Trash2 size={18} /></IconButton>
+                  </Stack>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+
+          <Box className="admin-table-wrap" sx={{ display: { xs: "none", md: "block" } }}>
             <table className="admin-table">
               <thead>
                 <tr>

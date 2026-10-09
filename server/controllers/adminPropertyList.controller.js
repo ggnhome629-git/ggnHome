@@ -24,6 +24,7 @@ const toRow = (doc, kind) => {
     isPending: !!(p.isPostedNew || p.isEdited),
     isPostedNew: !!p.isPostedNew,
     isEdited: !!p.isEdited,
+    image: Array.isArray(p.images) ? p.images[0] || "" : "",
     listingType: kind,
     createdAt: p.createdAt,
   };
