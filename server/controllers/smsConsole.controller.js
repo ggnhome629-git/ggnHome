@@ -12,9 +12,13 @@ const { getLimits, effectiveLimits, dropLimitsCache, HARD_CAPS, getDeviceKey } =
 
 const ONLINE_WINDOW_MS = 20 * 1000;
 const SHINE_URL = () => (process.env.SHINE_API_URL || "https://we-three-api.onrender.com").replace(/\/+$/, "");
-const tokenSecret = () => process.env.JWT_SECRET || "";
 // The one shared key (SMS_KEY) is also what you type to open the console.
 const sharedKey = () => getDeviceKey() || "";
+// Sign-ins are signed with a secret derived from that key, so no other env var is needed (changing the key signs everyone out).
+const tokenSecret = () => {
+  const k = sharedKey();
+  return k ? crypto.createHmac("sha256", k).update("sms-console-sign-in").digest("hex") : "";
+};
 const todayKey = () => new Date().toISOString().slice(0, 10);
 
 const safeEqual = (a, b) => {
