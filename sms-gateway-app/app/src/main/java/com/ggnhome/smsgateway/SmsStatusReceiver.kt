@@ -22,6 +22,7 @@ class SmsStatusReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val qid = intent.getStringExtra("qid") ?: return
+        val svc = Config.service(intent.getStringExtra("svc") ?: "") ?: Config.SERVICES.first()
         val pending = goAsync()
         Thread {
             try {
@@ -29,7 +30,7 @@ class SmsStatusReceiver : BroadcastReceiver() {
                     ACTION_SENT -> if (resultCode != Activity.RESULT_OK) {
                         val why = sendError(resultCode)
                         Config.updateLog(context, qid, false, "Not sent: $why")
-                        post(context, qid, "undelivered", "Not sent: $why")
+                        post(context, svc, qid, "undelivered", "Not sent: $why")
                     }
                     ACTION_DELIVERED -> {
                         val pdu = intent.getByteArrayExtra("pdu")
@@ -39,11 +40,11 @@ class SmsStatusReceiver : BroadcastReceiver() {
                         when {
                             status == 0 -> {
                                 Config.updateLog(context, qid, true, "Delivered")
-                                post(context, qid, "delivered", "")
+                                post(context, svc, qid, "delivered", "")
                             }
                             status >= 64 -> {
                                 Config.updateLog(context, qid, false, "Not delivered (carrier code $status)")
-                                post(context, qid, "undelivered", "carrier code $status")
+                                post(context, svc, qid, "undelivered", "carrier code $status")
                             }
                             else -> Config.updateLog(context, qid, true, "Sent, carrier still trying ($status)")
                         }
@@ -63,13 +64,13 @@ class SmsStatusReceiver : BroadcastReceiver() {
         else -> "error $code"
     }
 
-    private fun post(context: Context, qid: String, status: String, detail: String) {
+    private fun post(context: Context, svc: Svc, qid: String, status: String, detail: String) {
         try {
-            val c = URL("${Config.url(context)}/sms-gateway/$qid/delivery").openConnection() as HttpURLConnection
+            val c = URL(svc.url("/$qid/delivery")).openConnection() as HttpURLConnection
             c.requestMethod = "POST"
             c.connectTimeout = 10000
             c.readTimeout = 15000
-            c.setRequestProperty("Authorization", "Bearer ${Config.key(context)}")
+            c.setRequestProperty("Authorization", "Bearer ${svc.key}")
             c.setRequestProperty("X-Device-Id", Config.deviceId(context))
             c.setRequestProperty("Content-Type", "application/json")
             c.doOutput = true

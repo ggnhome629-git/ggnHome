@@ -15,22 +15,19 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
-import android.text.InputType
 import android.view.Gravity
-import android.view.View
 import android.widget.Button
-import android.widget.FrameLayout
-import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import java.net.HttpURLConnection
-import java.net.URL
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+// Read-only status screen. Nothing is configured here: limits, sending times and which service this phone works for
+// are all managed on the website console. The only controls are Start/Stop (and the Android permissions they need).
 class MainActivity : Activity() {
 
     private val navy = Color.parseColor("#003366")
@@ -38,28 +35,16 @@ class MainActivity : Activity() {
     private val grey = Color.parseColor("#5B6B7B")
     private val bg = Color.parseColor("#F4F7F9")
 
-    private lateinit var statePill: TextView
-    private lateinit var connView: TextView
-    private lateinit var beatView: TextView
-    private lateinit var eventView: TextView
-    private lateinit var sentView: TextView
+    private class SvcViews(val pill: TextView, val line1: TextView, val line2: TextView, val line3: TextView)
+
+    private val views = HashMap<String, SvcViews>()
     private lateinit var bgView: TextView
     private lateinit var logView: TextView
-    private lateinit var queueView: TextView
-    private lateinit var paceView: TextView
-
-    private lateinit var admin: AdminWeb
-    private lateinit var smsScreen: View
-    private lateinit var adminScreen: View
-    private lateinit var tabAdmin: TextView
-    private lateinit var tabSms: TextView
-    private var currentTab = "admin"
+    private lateinit var noteView: TextView
     private lateinit var toggleBtn: Button
-    private lateinit var urlInput: EditText
-    private lateinit var keyInput: EditText
 
     private val handler = Handler(Looper.getMainLooper())
-    private var testResult = ""
+    private var note = ""
     private val ticker = object : Runnable {
         override fun run() {
             refresh()
@@ -93,7 +78,7 @@ class MainActivity : Activity() {
 
     private fun value(): TextView = TextView(this).apply {
         setTextColor(Color.parseColor("#1B2A3A"))
-        textSize = 15f
+        textSize = 14f
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -102,7 +87,6 @@ class MainActivity : Activity() {
 
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
 
-        // ---- header: logo + name ----
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -129,7 +113,7 @@ class MainActivity : Activity() {
             setTypeface(typeface, Typeface.BOLD)
         })
         titles.addView(TextView(this).apply {
-            text = "ggnHome Admin · sends login OTPs from this SIM"
+            text = "Status only · managed from the website"
             setTextColor(Color.parseColor("#B8D4E8"))
             textSize = 12f
         })
@@ -141,30 +125,34 @@ class MainActivity : Activity() {
             setPadding(dp(16), dp(4), dp(16), dp(24))
         }
 
-        // ---- status card ----
-        val status = card()
-        statePill = TextView(this).apply {
-            textSize = 13f
-            setTypeface(typeface, Typeface.BOLD)
-            setTextColor(Color.WHITE)
-            setPadding(dp(12), dp(4), dp(12), dp(4))
+        // One status card per service.
+        for (svc in Config.SERVICES) {
+            val svcCard = card()
+            svcCard.addView(TextView(this).apply {
+                text = svc.label
+                setTextColor(navy)
+                textSize = 16f
+                setTypeface(typeface, Typeface.BOLD)
+            })
+            val pill = TextView(this).apply {
+                textSize = 12f
+                setTypeface(typeface, Typeface.BOLD)
+                setTextColor(Color.WHITE)
+                setPadding(dp(12), dp(4), dp(12), dp(4))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { topMargin = dp(8) }
+            }
+            svcCard.addView(pill)
+            val l1 = value().apply { setPadding(0, dp(10), 0, 0) }
+            val l2 = value().apply { setPadding(0, dp(4), 0, 0) }
+            val l3 = value().apply { setPadding(0, dp(4), 0, 0); setTextColor(grey) }
+            svcCard.addView(l1)
+            svcCard.addView(l2)
+            svcCard.addView(l3)
+            body.addView(svcCard)
+            views[svc.id] = SvcViews(pill, l1, l2, l3)
         }
-        status.addView(statePill)
-        status.addView(label("Connection"))
-        connView = value().also { status.addView(it) }
-        status.addView(label("Last server check"))
-        beatView = value().also { status.addView(it) }
-        status.addView(label("Last event"))
-        eventView = value().also { status.addView(it) }
-        status.addView(label("Waiting in server queue"))
-        queueView = value().also { status.addView(it) }
-        status.addView(label("Anti-block pacing"))
-        paceView = value().also { status.addView(it) }
-        status.addView(label("Background running"))
-        bgView = value().also { status.addView(it) }
-        status.addView(label("SMS sent by this phone"))
-        sentView = value().also { status.addView(it) }
-        body.addView(status)
 
         toggleBtn = Button(this).apply {
             setTextColor(Color.WHITE)
@@ -176,6 +164,12 @@ class MainActivity : Activity() {
             ).apply { topMargin = dp(16) }
         }
         body.addView(toggleBtn)
+        noteView = TextView(this).apply {
+            setTextColor(grey)
+            textSize = 13f
+            setPadding(0, dp(8), 0, 0)
+        }
+        body.addView(noteView)
 
         body.addView(Button(this).apply {
             text = "Allow background running (recommended)"
@@ -186,61 +180,23 @@ class MainActivity : Activity() {
             ).apply { topMargin = dp(8) }
         })
 
-        // ---- device + advanced ----
         val device = card()
-        device.addView(label("This device"))
-        device.addView(value().apply { text = "${Config.deviceName()}\nID ${Config.deviceId(this@MainActivity).take(8)}" })
-
-        val advanced = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            visibility = View.GONE
-        }
-        advanced.addView(label("Server URL"))
-        urlInput = EditText(this).apply {
-            inputType = InputType.TYPE_TEXT_VARIATION_URI
-            setText(Config.url(this@MainActivity))
-        }
-        advanced.addView(urlInput)
-        advanced.addView(label("Device key"))
-        keyInput = EditText(this).apply {
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            setText(Config.key(this@MainActivity))
-        }
-        advanced.addView(keyInput)
-        device.addView(TextView(this).apply {
-            text = "Advanced settings ▾"
-            setTextColor(teal)
-            setPadding(0, dp(14), 0, dp(4))
-            setOnClickListener {
-                advanced.visibility = if (advanced.visibility == View.GONE) View.VISIBLE else View.GONE
-            }
-        })
-        device.addView(advanced)
+        device.addView(label("This phone"))
+        device.addView(value().apply { text = "${Config.deviceName()}\nID ${Config.deviceId(this@MainActivity).take(8)} · v${Config.APP_VERSION}" })
+        device.addView(label("Background running"))
+        bgView = value().also { device.addView(it) }
         body.addView(device)
 
-        // ---- history of sent messages ----
         val history = card()
-        val historyHeader = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        historyHeader.addView(TextView(this).apply {
-            text = "Sent messages"
+        history.addView(TextView(this).apply {
+            text = "Recent messages"
             setTextColor(navy)
             textSize = 16f
             setTypeface(typeface, Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         })
-        historyHeader.addView(TextView(this).apply {
-            text = "Clear"
-            setTextColor(teal)
-            setPadding(dp(8), dp(4), dp(8), dp(4))
-            setOnClickListener { Config.clearLog(this@MainActivity); refresh() }
-        })
-        history.addView(historyHeader)
         logView = TextView(this).apply {
             setTextColor(Color.parseColor("#1B2A3A"))
-            textSize = 13f
+            textSize = 12f
             typeface = Typeface.MONOSPACE
             setPadding(0, dp(8), 0, 0)
         }
@@ -248,72 +204,10 @@ class MainActivity : Activity() {
         body.addView(history)
 
         root.addView(body)
-        smsScreen = ScrollView(this).apply {
+        setContentView(ScrollView(this).apply {
             setBackgroundColor(bg)
             addView(root)
-        }
-
-        admin = AdminWeb(this)
-        adminScreen = admin.build()
-
-        val pages = FrameLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f)
-            addView(adminScreen)
-            addView(smsScreen)
-        }
-
-        // ---- bottom tab bar ----
-        val tabs = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setBackgroundColor(Color.WHITE)
-            elevation = dp(8).toFloat()
-        }
-        tabAdmin = tabButton("▦  Admin") { showTab("admin") }
-        tabSms = tabButton("✉  SMS Service") { showTab("sms") }
-        tabs.addView(tabAdmin)
-        tabs.addView(tabSms)
-
-        setContentView(LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(pages)
-            addView(tabs)
         })
-        showTab(Config.prefs(this).getString("tab", "admin") ?: "admin")
-    }
-
-    private fun tabButton(text: String, onClick: () -> Unit) = TextView(this).apply {
-        this.text = text
-        gravity = Gravity.CENTER
-        textSize = 14f
-        setTypeface(typeface, Typeface.BOLD)
-        setPadding(0, dp(14), 0, dp(14))
-        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        setOnClickListener { onClick() }
-    }
-
-    private fun showTab(tab: String) {
-        currentTab = tab
-        Config.prefs(this).edit().putString("tab", tab).apply()
-        val isAdmin = tab == "admin"
-        adminScreen.visibility = if (isAdmin) View.VISIBLE else View.GONE
-        smsScreen.visibility = if (isAdmin) View.GONE else View.VISIBLE
-        if (isAdmin) admin.ensureLoaded()
-        for ((v, on) in listOf(tabAdmin to isAdmin, tabSms to !isAdmin)) {
-            v.setTextColor(if (on) navy else grey)
-            v.background = if (on) rounded(Color.parseColor("#E6F6F5"), 0) else null
-        }
-    }
-
-    @Deprecated("Activity API")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == AdminWeb.FILE_REQUEST) admin.onFileResult(resultCode, data)
-    }
-
-    @Deprecated("Activity API")
-    override fun onBackPressed() {
-        if (currentTab == "admin" && admin.goBack()) return
-        super.onBackPressed()
     }
 
     override fun onResume() {
@@ -331,20 +225,11 @@ class MainActivity : Activity() {
         if (prefs.getBoolean(Config.KEY_ENABLED, false)) {
             stopService(Intent(this, GatewayService::class.java))
             prefs.edit().putBoolean(Config.KEY_ENABLED, false).apply()
-            testResult = ""
+            note = ""
             refresh()
             return
         }
-
-        val url = urlInput.text.toString().trim().trimEnd('/')
-        val key = keyInput.text.toString().trim()
-        if (!url.startsWith("https://") || key.isEmpty()) {
-            testResult = "Server URL must start with https:// and the key can't be empty."
-            refresh()
-            return
-        }
-        prefs.edit().putString(Config.KEY_URL, url).putString(Config.KEY_DEVICE, key)
-            .putBoolean(Config.KEY_ENABLED, true).apply()
+        prefs.edit().putBoolean(Config.KEY_ENABLED, true).apply()
 
         val needed = mutableListOf(Manifest.permission.SEND_SMS)
         if (Build.VERSION.SDK_INT >= 33) needed.add(Manifest.permission.POST_NOTIFICATIONS)
@@ -362,19 +247,17 @@ class MainActivity : Activity() {
             startGateway()
         } else {
             Config.prefs(this).edit().putBoolean(Config.KEY_ENABLED, false).apply()
-            testResult = "SMS permission is required to send OTPs."
+            note = "SMS permission is required to send messages."
             refresh()
         }
     }
 
     private fun startGateway() {
-        testResult = "Testing connection…"
-        refresh()
-        testConnection()
         try {
             startForegroundService(Intent(this, GatewayService::class.java))
+            note = ""
         } catch (e: Exception) {
-            testResult = "Could not start service: ${e.message}"
+            note = "Could not start service: ${e.message}"
         }
         refresh()
         // Without this exemption Android may stop the service when the screen is off.
@@ -382,40 +265,10 @@ class MainActivity : Activity() {
         if (!pm.isIgnoringBatteryOptimizations(packageName)) askIgnoreBatteryOptimizations()
     }
 
-    // One-off request so a wrong URL / key is reported immediately.
-    private fun testConnection() {
-        val url = Config.url(this)
-        val key = Config.key(this)
-        val id = Config.deviceId(this)
-        Thread {
-            val result = try {
-                val c = URL("$url/sms-gateway/next").openConnection() as HttpURLConnection
-                c.connectTimeout = 10000
-                c.readTimeout = 15000
-                c.setRequestProperty("Authorization", "Bearer $key")
-                c.setRequestProperty("X-Device-Id", id)
-                c.setRequestProperty("X-Device-Name", Config.deviceName())
-                c.setRequestProperty("X-App-Version", Config.APP_VERSION)
-                c.setRequestProperty("X-Device-Ready", "0")
-                val code = c.responseCode
-                c.disconnect()
-                when (code) {
-                    200, 204 -> "Connected ✔ — phone registered with the server"
-                    401 -> "Server reachable but the device key is WRONG"
-                    404 -> "Server reachable but gateway route not found (old server version?)"
-                    else -> "Server answered HTTP $code"
-                }
-            } catch (e: Exception) {
-                "Cannot reach server: ${e.javaClass.simpleName} ${e.message ?: ""}"
-            }
-            handler.post { testResult = result; refresh() }
-        }.start()
-    }
-
     private fun askIgnoreBatteryOptimizations() {
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         if (pm.isIgnoringBatteryOptimizations(packageName)) {
-            testResult = "Background running already allowed ✔"
+            note = "Background running already allowed ✔"
             refresh()
             return
         }
@@ -432,53 +285,70 @@ class MainActivity : Activity() {
     private fun refresh() {
         val prefs = Config.prefs(this)
         val on = prefs.getBoolean(Config.KEY_ENABLED, false)
-        val beat = prefs.getLong(Config.KEY_BEAT, 0L)
-        val fresh = beat != 0L && System.currentTimeMillis() - beat < 15000
+        val hhmmss = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
 
-        statePill.text = when {
-            !on -> "STOPPED"
-            fresh -> "ONLINE"
-            else -> "STARTING…"
+        for (svc in Config.SERVICES) {
+            val v = views[svc.id] ?: continue
+            val beat = prefs.getLong(Config.beatKey(svc), 0L)
+            val fresh = beat != 0L && System.currentTimeMillis() - beat < 15000
+            v.pill.text = when {
+                !on -> "STOPPED"
+                fresh -> "ONLINE"
+                else -> "CONNECTING…"
+            }
+            v.pill.background = rounded(
+                when {
+                    !on -> Color.parseColor("#8A98A5")
+                    fresh -> Color.parseColor("#1E9E5A")
+                    else -> Color.parseColor("#E0A100")
+                }, 20
+            )
+            val pending = prefs.getInt(Config.queueKey(svc), -1)
+            v.line1.text = "Sent by this phone: ${prefs.getInt(Config.sentKey(svc), 0)}" +
+                (if (pending >= 0) " · waiting: $pending" else "")
+            v.line2.text = statusLine(prefs.getString(Config.statusKey(svc), null))
+            v.line3.text = "Last check ${if (beat == 0L) "never" else hhmmss.format(Date(beat))} · ${prefs.getString(Config.lastKey(svc), "—")}"
         }
-        statePill.background = rounded(
-            when {
-                !on -> Color.parseColor("#8A98A5")
-                fresh -> Color.parseColor("#1E9E5A")
-                else -> Color.parseColor("#E0A100")
-            }, 20
-        )
-        connView.text = if (testResult.isEmpty()) (if (on) "—" else "Not running") else testResult
-        beatView.text = if (beat == 0L) "never"
-        else SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date(beat))
-        eventView.text = prefs.getString(Config.KEY_LAST, "—")
-        sentView.text = prefs.getInt(Config.KEY_SENT, 0).toString()
 
-        val pending = prefs.getInt(Config.KEY_QUEUE, -1)
-        queueView.text = if (pending < 0) "—" else "$pending message(s)"
-        val waitMs = prefs.getLong(Config.KEY_NEXT_SEND, 0L) - System.currentTimeMillis()
-        val lastHour = Config.sentLastHour(this)
-        paceView.text = when {
-            lastHour >= Config.HOURLY_LIMIT -> "Hourly limit reached ($lastHour/${Config.HOURLY_LIMIT}) — other phones take over"
-            waitMs > 0 -> "Cooling down ${(waitMs + 999) / 1000}s · $lastHour/${Config.HOURLY_LIMIT} this hour"
-            else -> "Ready · $lastHour/${Config.HOURLY_LIMIT} this hour"
-        }
+        noteView.text = note
 
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         val unrestricted = pm.isIgnoringBatteryOptimizations(packageName)
-        bgView.text = if (unrestricted) "Allowed ✔ (keeps running when screen is off)"
-        else "Restricted ✘ — tap “Allow background running” below"
+        bgView.text = if (unrestricted) "Allowed ✔ (keeps running when the screen is off)"
+        else "Restricted ✘ — tap “Allow background running”"
         bgView.setTextColor(if (unrestricted) Color.parseColor("#1E9E5A") else Color.parseColor("#C0392B"))
 
         val entries = Config.readLog(this)
         logView.text = if (entries.isEmpty()) "Nothing sent yet." else {
             val fmt = SimpleDateFormat("dd MMM HH:mm:ss", Locale.getDefault())
-            entries.take(50).joinToString("\n") {
+            entries.take(40).joinToString("\n") {
                 val mark = if (it.ok) "✔ ${it.detail}" else "✘ ${it.detail}"
-                "${fmt.format(Date(it.time))}  ${it.number}  $mark"
+                val tag = Config.service(it.svc)?.label?.take(1) ?: "?"
+                "${fmt.format(Date(it.time))} $tag ${it.number} $mark"
             }
         }
 
         toggleBtn.text = if (on) "Stop service" else "Start service"
         toggleBtn.background = rounded(if (on) Color.parseColor("#C0392B") else teal, 14)
+    }
+
+    // Turns the server's /status reply into one readable line (whatever fields that server sends).
+    private fun statusLine(json: String?): String {
+        if (json.isNullOrBlank()) return "Waiting for the server…"
+        return try {
+            val o = JSONObject(json)
+            val parts = ArrayList<String>()
+            if (o.has("enabled") && !o.optBoolean("enabled", true)) parts.add("Switched off for this phone (website)")
+            if (o.optBoolean("paused", false)) parts.add("Paused (website)")
+            if (o.has("sentToday") && o.has("dailyLimit")) parts.add("Today ${o.getInt("sentToday")}/${o.getInt("dailyLimit")}")
+            when (o.optString("window", "")) {
+                "lunch" -> parts.add("Lunch window open")
+                "night" -> parts.add("Night window open")
+                else -> if (o.has("window")) parts.add("Outside sending times")
+            }
+            if (parts.isEmpty()) "Connected" else parts.joinToString(" · ")
+        } catch (_: Exception) {
+            "Connected"
+        }
     }
 }

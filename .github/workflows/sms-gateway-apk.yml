@@ -1,4 +1,4 @@
-name: Build ggnHome Admin APK
+name: Build SMS Service APK
 
 on:
   push:
@@ -16,6 +16,9 @@ jobs:
         working-directory: sms-gateway-app
     env:
       # Optional: set these repo secrets to also publish to Firebase App Distribution.
+      # The device keys baked into the app; they must match SMS_DEVICE_KEY on each server.
+      SMS_GGNHOME_DEVICE_KEY: ${{ secrets.SMS_GGNHOME_DEVICE_KEY }}
+      SMS_SHINE_DEVICE_KEY: ${{ secrets.SMS_SHINE_DEVICE_KEY }}
       FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
       FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
     steps:
@@ -36,13 +39,13 @@ jobs:
         run: gradle assembleRelease --no-daemon
 
       - name: Name the APK
-        run: cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/ggnhome-admin.apk
+        run: cp app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/sms-service.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ggnhome-admin-apk
-          path: sms-gateway-app/app/build/outputs/apk/release/ggnhome-admin.apk
+          name: sms-service-apk
+          path: sms-gateway-app/app/build/outputs/apk/release/sms-service.apk
 
       - name: Distribute via Firebase App Distribution
         if: ${{ env.FIREBASE_APP_ID != '' && env.FIREBASE_SERVICE_ACCOUNT != '' }}
@@ -51,5 +54,5 @@ jobs:
           appId: ${{ secrets.FIREBASE_APP_ID }}
           serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           groups: ${{ vars.FIREBASE_TESTER_GROUPS || 'testers' }}
-          file: sms-gateway-app/app/build/outputs/apk/release/ggnhome-admin.apk
-          releaseNotes: "ggnHome Admin build ${{ github.sha }}"
+          file: sms-gateway-app/app/build/outputs/apk/release/sms-service.apk
+          releaseNotes: "SMS Service build ${{ github.sha }}"

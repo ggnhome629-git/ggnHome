@@ -177,6 +177,28 @@ exports.claimNext = async (req, res) => {
   }
 };
 
+// Read-only status line for the app's screen.
+exports.status = async (req, res) => {
+  try {
+    const deviceId = String(req.headers["x-device-id"] || "").slice(0, 64);
+    const [device, limits, pending] = await Promise.all([
+      deviceId ? SmsDevice.findOne({ deviceId }).lean() : null,
+      getLimits(),
+      SmsQueue.countDocuments({ status: { $in: ["pending", "sending"] } }),
+    ]);
+    const today = todayKey();
+    res.json({
+      enabled: device ? device.enabled : true,
+      sentToday: device && device.dayKey === today ? device.sentToday : 0,
+      dailyLimit: limits.dailyLimit,
+      hourlyLimit: limits.hourlyLimit,
+      pending,
+    });
+  } catch (e) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 // Phone reports the result: { status: "sent" | "failed", error? }
 exports.reportResult = async (req, res) => {
   try {
