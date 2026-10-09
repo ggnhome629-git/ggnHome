@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const SmsQueue = require("../models/SmsQueue.model");
 const SmsDevice = require("../models/SmsDevice.model");
 const SmsLog = require("../models/SmsLog.model");
+const SmsSetting = require("../models/SmsSetting.model");
 
 // Messages older than this are not worth sending (OTP valid for 5 minutes).
 const MAX_AGE_MS = 4 * 60 * 1000;
@@ -15,11 +16,42 @@ const FAILOVER_AFTER_MS = 15 * 1000;
 const RECLAIM_AFTER_MS = 30 * 1000;
 // Total send attempts (each on a different phone) before giving up.
 const MAX_ATTEMPTS = 3;
-// Server-side minimum gap between two SMS from the same phone (the app also
-// paces itself; this protects against old app versions).
-const MIN_GAP_MS = Number(process.env.SMS_DEVICE_MIN_GAP_MS) || 5000;
-// Soft cap per SIM per day, to stay clear of carrier spam limits.
-const DAILY_LIMIT = Number(process.env.SMS_DEVICE_DAILY_LIMIT) || 90;
+// Limits (gap between two SMS from a phone, per-hour and per-day caps) are managed on the SMS console and read from
+// SmsSetting; "auto" mode uses these built-in defaults. Hard caps stop a typo from flooding a SIM.
+const HARD_CAPS = { hourly: 60, daily: 200 };
+const AUTO_LIMITS = {
+  dailyLimit: Number(process.env.SMS_DEVICE_DAILY_LIMIT) || 90,
+  hourlyLimit: 30,
+  gapMinSec: 8,
+  gapMaxSec: 14,
+};
+const clampInt = (v, lo, hi, fallback) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.min(hi, Math.max(lo, Math.round(n))) : fallback;
+};
+function effectiveLimits(doc) {
+  if (!doc || doc.mode !== "custom") return { mode: "auto", ...AUTO_LIMITS };
+  const gapMin = clampInt(doc.gapMinSec, 1, 600, AUTO_LIMITS.gapMinSec);
+  return {
+    mode: "custom",
+    dailyLimit: clampInt(doc.dailyLimit, 1, HARD_CAPS.daily, AUTO_LIMITS.dailyLimit),
+    hourlyLimit: clampInt(doc.hourlyLimit, 1, HARD_CAPS.hourly, AUTO_LIMITS.hourlyLimit),
+    gapMinSec: gapMin,
+    gapMaxSec: Math.max(gapMin, clampInt(doc.gapMaxSec, 1, 900, AUTO_LIMITS.gapMaxSec)),
+  };
+}
+let limitsCache = { at: 0, value: null };
+async function getLimits() {
+  if (limitsCache.value && Date.now() - limitsCache.at < 10 * 1000) return limitsCache.value;
+  const doc = await SmsSetting.findOne({ key: "ggnhome" }).lean();
+  limitsCache = { at: Date.now(), value: effectiveLimits(doc) };
+  return limitsCache.value;
+}
+const dropLimitsCache = () => (limitsCache = { at: 0, value: null });
+exports.getLimits = getLimits;
+exports.effectiveLimits = effectiveLimits;
+exports.dropLimitsCache = dropLimitsCache;
+exports.HARD_CAPS = HARD_CAPS;
 
 // Dev-only fallback so a local checkout works without extra setup. Never
 // used in production: claimNext() hands back queued OTP text verbatim, so a
@@ -57,7 +89,8 @@ exports.pickDevice = async () => {
   });
   if (!online.length) return null;
   const today = todayKey();
-  const underCap = online.filter((d) => d.dayKey !== today || d.sentToday < DAILY_LIMIT);
+  const { dailyLimit } = await getLimits();
+  const underCap = online.filter((d) => d.dayKey !== today || d.sentToday < dailyLimit);
   const ready = underCap.filter((d) => d.ready !== false);
   // Every phone busy/capped: leave it open, the first phone that frees up takes it.
   if (!ready.length) return null;
@@ -99,7 +132,14 @@ exports.claimNext = async (req, res) => {
     res.set("X-Queue-Pending", String(pending));
 
     if (!device.enabled || !device.ready) return res.status(204).end();
-    if (device.lastSentAt && Date.now() - device.lastSentAt.getTime() < MIN_GAP_MS) return res.status(204).end();
+    const limits = await getLimits();
+    // The server paces every phone itself: a random gap after each message, and an hourly cap.
+    if (device.nextAllowedAt && device.nextAllowedAt.getTime() > Date.now()) return res.status(204).end();
+    const lastHour = await SmsLog.countDocuments({
+      deviceId,
+      $or: [{ status: "sent", sentAt: { $gt: new Date(Date.now() - 3600 * 1000) } }, { status: "sending" }],
+    });
+    if (lastHour >= limits.hourlyLimit) return res.status(204).end();
 
     const now = Date.now();
     const fresh = { createdAt: { $gt: new Date(now - MAX_AGE_MS) }, failedBy: { $ne: deviceId } };
@@ -124,12 +164,36 @@ exports.claimNext = async (req, res) => {
       { sort: { createdAt: 1 }, new: true }
     );
     if (!msg) return res.status(204).end();
+    const gapMs = (limits.gapMinSec + Math.random() * (limits.gapMaxSec - limits.gapMinSec)) * 1000;
+    await SmsDevice.updateOne({ deviceId }, { nextAllowedAt: new Date(now + gapMs) }).catch(() => {});
     // Only ever moves queued -> sending, so a slow write can't overwrite "sent".
     await SmsLog.updateOne(
       { queueId: String(msg._id), status: "queued" },
       { status: "sending", deviceId, deviceName: device.name }
     ).catch(() => {});
     res.json({ id: msg._id, phoneNumber: msg.phoneNumber, message: msg.message });
+  } catch (e) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Read-only status line for the app's screen.
+exports.status = async (req, res) => {
+  try {
+    const deviceId = String(req.headers["x-device-id"] || "").slice(0, 64);
+    const [device, limits, pending] = await Promise.all([
+      deviceId ? SmsDevice.findOne({ deviceId }).lean() : null,
+      getLimits(),
+      SmsQueue.countDocuments({ status: { $in: ["pending", "sending"] } }),
+    ]);
+    const today = todayKey();
+    res.json({
+      enabled: device ? device.enabled : true,
+      sentToday: device && device.dayKey === today ? device.sentToday : 0,
+      dailyLimit: limits.dailyLimit,
+      hourlyLimit: limits.hourlyLimit,
+      pending,
+    });
   } catch (e) {
     res.status(500).json({ message: "Server error" });
   }
@@ -217,7 +281,7 @@ exports.adminListDevices = async (req, res) => {
     const devices = await SmsDevice.find().sort({ createdAt: 1 }).lean();
     const pending = await SmsQueue.countDocuments({ status: { $in: ["pending", "sending"] } });
     res.json({
-      dailyLimit: DAILY_LIMIT,
+      dailyLimit: (await getLimits()).dailyLimit,
       pending,
       devices: devices.map((d) => ({
         deviceId: d.deviceId,

@@ -1,28 +1,41 @@
-# ggnHome Admin (Android)
+# SMS Service (Android)
 
-One app with two tabs:
-- **Admin** — the full www.ggnhome.com admin (same pages and UI as the website, log in with your admin number).
-- **SMS Service** — sends ggnHome login OTPs from this phone's SIM, in the background.
+Sends SMS from this phone's SIM for two services — **GGN Home** (login OTPs) and **Shine One Estate** (lead messages
+from the We Three app). The app is a **sender with a read-only status screen**: nothing is configured in it.
 
-Anti-block pacing: each phone waits 8–14 s (random) between SMS and takes at
-most 30 per hour; while a phone cools down the server gives OTPs to the other
-phones, and if all are busy the OTP waits in the queue.
+Everything is managed on the website console, a hidden page at **`/sms-service/app/manage`** on the ggnHome site
+(owner password): which service each phone works for, the limits, the Shine One sending times (lunch / night), and the
+per-sheet message and Auto-send switch.
 
-**How it works:** the server queues each OTP (`SmsQueue`) and picks a random
-*online, enabled* phone that is under its daily limit. Each phone polls
-`GET /sms-gateway/next` every ~3s (header `X-Device-Id`), sends the SMS with
-`SmsManager`, then reports `POST /sms-gateway/:id/result`. If the chosen phone
-doesn't pick a message up within 15s, any other phone may take it.
+## How it works
+Each service has its own polling thread. The phone asks its server for the next message
+(`GET /sms-gateway/next` on GGN Home, `GET /api/sms-gateway/next` on the Shine One server), sends it with
+`SmsManager`, then reports `result` and, later, the carrier `delivery` report. The **server** decides when a phone may
+send (gap between messages, hourly/daily limits, lunch/night windows), so the app has no pacing of its own.
 
-**Server env vars**
-| Var | Meaning |
+## Build
+`.github/workflows/sms-gateway-apk.yml` builds the APK on every push to `main` that touches this folder. Repo secrets:
+
+| Secret | Meaning |
 |---|---|
-| `SMS_DEVICE_KEY` | Shared secret the phones send as `Authorization: Bearer …`. Falls back to `test123` when unset (testing only!). |
-| `SMS_DEVICE_DAILY_LIMIT` | Soft per-phone/day cap used when choosing a phone (default 90). |
-| `SMS_DEFAULT_COUNTRY_CODE` | Prefix for 10-digit numbers (default `+91`). |
+| `SMS_GGNHOME_DEVICE_KEY` | Must equal `SMS_DEVICE_KEY` on the ggnHome server |
+| `SMS_SHINE_DEVICE_KEY` | Must equal `SMS_DEVICE_KEY` on the We Three (Render) server |
 
-**Phones:** install the APK (built by `.github/workflows/sms-gateway-apk.yml`),
-tap *Start service*. Manage phones at `/admin/sms-devices` (admin login).
+Optional env at build time: `SMS_GGNHOME_URL`, `SMS_SHINE_URL`.
 
-The app ships with `https://api.ggnhome.com` and key `test123` as defaults
-(`Config.kt`); both can be changed under *Advanced settings*.
+## Server settings (for the console)
+| Where | Variable | Meaning |
+|---|---|---|
+| ggnHome server | `SMS_CONSOLE_PASSWORD` | Owner password for the console. Unset = the page does not exist |
+| ggnHome server | `SMS_CONSOLE_JWT_SECRET` | Signs console sign-ins (falls back to `JWT_SECRET`) |
+| ggnHome server | `SMS_CONSOLE_KEY` | Shared secret used to call the We Three server (must equal its `SMS_CONSOLE_KEY`) |
+| ggnHome server | `SHINE_API_URL` | Defaults to `https://we-three-api.onrender.com` |
+| ggnHome server | `SMS_DEVICE_KEY` | Device key for GGN Home phones |
+| We Three server | `SMS_DEVICE_KEY`, `SMS_CONSOLE_KEY` | Device key for Shine One phones, and the console key above |
+
+Limits (auto defaults, hard caps 60/hour and 200/day) are edited in the console, not through env vars. `SMS_DEVICE_DAILY_LIMIT`
+is only the default daily limit for GGN Home.
+
+## Phone setup
+Install the APK, tap **Start service**, allow SMS and background running. The phone appears in the console within seconds,
+and you choose there which service(s) it sends for.
