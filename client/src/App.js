@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { setupInterceptors } from "./utils/axiosInterceptor";
 import { pageTransitionVariants } from "./theme/motion";
 import PageLoader from "./components/ui/PageLoader";
+import AppLaunchIntro from "./components/app/AppLaunchIntro";
 import Dashboard from "./screens/Dashboard/dashboard";
 import LoginModal from "./screens/Login Page/login";
 const SmsOtpTest = lazy(() => import("./screens/Test Page/SmsOtpTest"));
@@ -138,6 +139,8 @@ function App() {
   }, [location.pathname]);
 
   return (
+    <>
+    <AppLaunchIntro />
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={location.pathname}
@@ -249,6 +252,7 @@ function App() {
         </Suspense>
       </motion.div>
     </AnimatePresence>
+    </>
   );
 }
 

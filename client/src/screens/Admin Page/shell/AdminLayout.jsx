@@ -510,6 +510,7 @@ export default function AdminLayout() {
         {/* Top bar */}
         <Box
           component="header"
+          className="admin-topbar-glow"
           sx={{
             position: "sticky",
             top: 0,
@@ -613,7 +614,7 @@ export default function AdminLayout() {
         </Box>
 
         {/* Page content */}
-        <Box component="main" sx={{ flex: 1, width: "100%", maxWidth: 1440, mx: "auto", p: { xs: 3, sm: 4, md: 6 }, pb: { xs: "calc(88px + env(safe-area-inset-bottom))", md: 6 }, overflowX: "hidden", ...lively, ...phone }}>
+        <Box component="main" key={location.pathname} className="admin-live" sx={{ flex: 1, width: "100%", maxWidth: 1440, mx: "auto", p: { xs: 3, sm: 4, md: 6 }, pb: { xs: "calc(88px + env(safe-area-inset-bottom))", md: 6 }, overflowX: "hidden", ...lively, ...phone }}>
           {ADMIN_NAV_ITEMS.find((i) => i.notSetUp && i.route === location.pathname) && (
             <NotSetUpBanner feature={crumb.label} />
           )}

@@ -1,3 +1,4 @@
+import { motion, useScroll, useSpring } from "framer-motion";
 import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Box, Button, CircularProgress, Container, LinearProgress, Stack, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
@@ -55,6 +56,8 @@ function LazySection({ fallback, children, sx }) {
 }
 
 export default function RealEstateDashboard() {
+  const { scrollYProgress: rawProgress } = useScroll();
+  const scrollYProgress = useSpring(rawProgress, { stiffness: 140, damping: 24, restDelta: 0.001 });
   const { user } = useAuth();
   const navigate = useNavigate();
   // Hybrid authentication: grab token from localStorage for authenticated APIs
@@ -309,8 +312,14 @@ export default function RealEstateDashboard() {
   };
 
   return (
-    <Box sx={{ backgroundColor: "background.paper", overflowX: "clip" }}>
+    <Box className="dash-live" sx={{ backgroundColor: "background.paper", overflowX: "clip" }}>
       <DashboardSeo />
+
+      {/* Live scroll progress: a thin teal-to-cyan bar that fills as you scroll */}
+      <motion.div
+        aria-hidden
+        style={{ scaleX: scrollYProgress, transformOrigin: "0% 50%", position: "fixed", top: 0, left: 0, right: 0, height: 3, zIndex: 1400, background: "linear-gradient(90deg,#003366,#00A79D,#22D3EE)" }}
+      />
 
       <GiftBanner />
 

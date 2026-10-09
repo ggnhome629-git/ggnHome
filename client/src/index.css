@@ -11,3 +11,52 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* ---- Live effects: user dashboard ------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  /* Cards, images and buttons on the home page respond to touch/hover. */
+  .dash-live .MuiCard-root,
+  .dash-live .MuiPaper-root.MuiPaper-elevation {
+    transition: transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease;
+  }
+  .dash-live .MuiCard-root:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 34px rgba(0, 51, 102, 0.14);
+  }
+  .dash-live .MuiCard-root:active,
+  .dash-live .MuiButton-root:active { transform: scale(0.97); }
+  .dash-live .MuiCard-root img { transition: transform .6s cubic-bezier(.2,.8,.2,1); }
+  .dash-live .MuiCard-root:hover img { transform: scale(1.05); }
+
+  /* Primary buttons get a soft sheen sweep. */
+  .dash-live .MuiButton-contained { position: relative; overflow: hidden; }
+  .dash-live .MuiButton-contained::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+    transform: translateX(-120%);
+    animation: ggn-sheen 3.6s ease-in-out infinite;
+    pointer-events: none;
+  }
+}
+@keyframes ggn-sheen { 0%, 60% { transform: translateX(-120%); } 100% { transform: translateX(120%); } }
+
+/* ---- Live effects: admin console --------------------------------------- */
+@keyframes ggn-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes ggn-gradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+@media (prefers-reduced-motion: no-preference) {
+  .admin-live > * { animation: ggn-rise .45s cubic-bezier(.2,.8,.2,1) both; }
+  .admin-live > *:nth-child(2) { animation-delay: .05s; }
+  .admin-live > *:nth-child(3) { animation-delay: .1s; }
+  .admin-live > *:nth-child(4) { animation-delay: .15s; }
+  .admin-live > *:nth-child(n+5) { animation-delay: .2s; }
+  .admin-live .MuiGrid-item { animation: ggn-rise .5s cubic-bezier(.2,.8,.2,1) both; }
+  .admin-live .MuiGrid-item:nth-child(2) { animation-delay: .06s; }
+  .admin-live .MuiGrid-item:nth-child(3) { animation-delay: .12s; }
+  .admin-live .MuiGrid-item:nth-child(4) { animation-delay: .18s; }
+  .admin-live .MuiCard-root, .admin-live .admin-card { transition: transform .22s ease, box-shadow .22s ease; }
+  .admin-live .MuiGrid-item > .MuiCard-root:hover,
+  .admin-live .MuiGrid-item > * > .MuiCard-root:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0, 51, 102, 0.12); }
+  .admin-live .admin-table-row { transition: background-color .15s ease; }
+  .admin-topbar-glow::after { background-size: 300% 100% !important; animation: ggn-gradient 8s ease infinite; }
+}
+.admin-live .MuiCard-root, .admin-live .admin-card { border-radius: 14px; }

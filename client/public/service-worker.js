@@ -11,17 +11,21 @@
  *  - Images: stale-while-revalidate, capped.
  *  - Anything that writes, authenticates or handles money is never cached.
  */
-const VERSION = "v2";
+const VERSION = "v3";
 const SHELL = `ggn-shell-${VERSION}`;
 const STATIC = `ggn-static-${VERSION}`;
 const API = `ggn-api-${VERSION}`;
 const IMG = `ggn-img-${VERSION}`;
-const KEEP = [SHELL, STATIC, API, IMG];
+const FONT = `ggn-font-${VERSION}`;
+const KEEP = [SHELL, STATIC, API, IMG, FONT];
 
 const SHELL_FILES = ["/", "/index.html", "/offline.html", "/manifest.json", "/Logo2.jpg", "/default-property.jpg"];
 const NEVER_CACHE = /\/(admin|payment|payments|otp|login|logout|register|cron|upload|sms)(\/|\?|$)|\/api\/(admin|payment|enquiry|request-callback|chatbot)/i;
 const CACHEABLE_API = /\/(api\/(activeproperties|getRentalproperties|getSaleproperties|search-properties|search-areas|get-sector-suggestions|propertyAanalysis\/savedProperties|app\/recommendations|recommendations|news|promos?|similar)|auth\/me|api\/user\/dashboard)/i;
-const LIMITS = { [API]: 120, [IMG]: 160 };
+// Public listing data that is identical for every visitor: served instantly
+// from cache and refreshed in the background (stale-while-revalidate).
+const PUBLIC_API = /\/api\/(activeproperties|getRentalproperties|getSaleproperties|search-areas|get-sector-suggestions|news|promos?|similar)/i;
+const LIMITS = { [API]: 200, [IMG]: 300, [FONT]: 30 };
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -130,9 +134,21 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // 3) Listing / saved / recommendation reads.
+  // 3a) Public listings -> instant from cache, refreshed in the background.
+  if (PUBLIC_API.test(url.pathname)) {
+    event.respondWith(staleWhileRevalidate(request, API));
+    return;
+  }
+
+  // 3b) Per-user reads (saved, recommendations, account) -> fresh first.
   if (CACHEABLE_API.test(url.pathname)) {
     event.respondWith(networkFirst(request, API, 6000));
+    return;
+  }
+
+  // 4a) Web fonts never change for a given URL.
+  if (request.destination === "font" || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)) {
+    event.respondWith(cacheFirst(request, FONT));
     return;
   }
 
