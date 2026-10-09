@@ -24,6 +24,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  Grid2x2,
   Home as HomeIcon,
   LogOut,
   Menu as HamburgerIcon,
@@ -54,6 +55,24 @@ const lively = {
   "& .MuiTableRow-hover:hover, & .MuiTableBody-root .MuiTableRow-root:hover": { backgroundColor: "rgba(0,167,157,0.05)" },
   "& .MuiChip-root": { fontWeight: 600 },
 };
+
+// Phone-width fixes applied to every admin screen: tables scroll sideways
+// instead of overflowing the viewport, dialogs go near-full-screen, touch
+// targets stay >= 40px and inputs stay 16px so iOS/Android don't zoom on focus.
+const phone = {
+  "@media (max-width:899.95px)": {
+    "& .MuiTableContainer-root, & .table-scroll": { overflowX: "auto", WebkitOverflowScrolling: "touch" },
+    "& table": { minWidth: 560 },
+    "& .MuiButton-root, & .MuiIconButton-root": { minHeight: 40 },
+    "& input, & select, & textarea": { fontSize: "16px" },
+    "& .MuiDialog-paper": { margin: 12, width: "calc(100% - 24px)", maxWidth: "none", maxHeight: "calc(100% - 24px)" },
+    "& img, & video": { maxWidth: "100%" },
+  },
+};
+
+// Primary destinations pinned to the bottom bar on phones; everything else
+// lives behind "More".
+const TAB_IDS = ["home", "properties", "enquiries", "users"];
 
 const RAIL_WIDTH = 264;
 const RAIL_WIDTH_COMPACT = 76;
@@ -161,6 +180,53 @@ function NavList({ compact, onNavigate }) {
           })}
         </Box>
       ))}
+    </Box>
+  );
+}
+
+/** Phone bottom navigation: four key pages + a "More" sheet with the full list. */
+function BottomTabs({ onMore }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const tabs = TAB_IDS.map((id) => ADMIN_NAV_ITEMS.find((i) => i.id === id)).filter(Boolean);
+  const onTab = tabs.some((t) => location.pathname.startsWith(t.route));
+  return (
+    <Box
+      component="nav"
+      aria-label="Admin quick navigation"
+      sx={{
+        display: { xs: "flex", md: "none" },
+        position: "fixed",
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: (theme) => theme.zIndex.appBar,
+        backgroundColor: "#FFFFFF",
+        borderTop: "1px solid #E5E9EE",
+        boxShadow: "0 -4px 16px rgba(0,51,102,0.08)",
+        pb: "env(safe-area-inset-bottom)",
+      }}
+    >
+      {[...tabs, { id: "more", label: "More", icon: Grid2x2, color: "#003366" }].map((t) => {
+        const Icon = t.icon;
+        const active = t.id === "more" ? !onTab : location.pathname.startsWith(t.route);
+        return (
+          <Box
+            key={t.id}
+            role="link"
+            tabIndex={0}
+            aria-current={active ? "page" : undefined}
+            onClick={() => (t.id === "more" ? onMore() : navigate(t.route))}
+            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (t.id === "more" ? onMore() : navigate(t.route))}
+            sx={{ flex: 1, py: 1.5, display: "flex", flexDirection: "column", alignItems: "center", gap: 0.5, cursor: "pointer", color: active ? "#00857D" : "#64748B", fontSize: "0.65rem", fontWeight: active ? 800 : 600, WebkitTapHighlightColor: "transparent" }}
+          >
+            <Box sx={{ px: 3.5, py: 0.5, borderRadius: "999px", backgroundColor: active ? "rgba(0,167,157,0.14)" : "transparent", display: "flex" }}>
+              <Icon size={20} strokeWidth={2} />
+            </Box>
+            {t.label}
+          </Box>
+        );
+      })}
     </Box>
   );
 }
@@ -448,7 +514,8 @@ export default function AdminLayout() {
             position: "sticky",
             top: 0,
             zIndex: (theme) => theme.zIndex.appBar,
-            height: 64,
+            height: "calc(64px + env(safe-area-inset-top))",
+            pt: "env(safe-area-inset-top)",
             display: "flex",
             alignItems: "center",
             gap: 2,
@@ -546,7 +613,7 @@ export default function AdminLayout() {
         </Box>
 
         {/* Page content */}
-        <Box component="main" sx={{ flex: 1, width: "100%", maxWidth: 1440, mx: "auto", p: { xs: 4, md: 6 }, ...lively }}>
+        <Box component="main" sx={{ flex: 1, width: "100%", maxWidth: 1440, mx: "auto", p: { xs: 3, sm: 4, md: 6 }, pb: { xs: "calc(88px + env(safe-area-inset-bottom))", md: 6 }, overflowX: "hidden", ...lively, ...phone }}>
           {ADMIN_NAV_ITEMS.find((i) => i.notSetUp && i.route === location.pathname) && (
             <NotSetUpBanner feature={crumb.label} />
           )}
@@ -554,7 +621,9 @@ export default function AdminLayout() {
         </Box>
       </Box>
 
-      {/* Mobile navigation drawer */}
+      <BottomTabs onMore={() => setDrawerOpen(true)} />
+
+      {/* Mobile navigation drawer (opened by the hamburger or the "More" tab) */}
       <Drawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
