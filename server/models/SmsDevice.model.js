@@ -17,6 +17,8 @@ const SmsDeviceSchema = new mongoose.Schema(
     dayKey: { type: String }, // "YYYY-MM-DD" the sentToday counter belongs to
     sentToday: { type: Number, default: 0 },
     lastSentAt: { type: Date },
+    // The earliest the server will hand this phone another message (random gap after each one).
+    nextAllowedAt: { type: Date },
     lastError: { type: String },
   },
   { timestamps: true }

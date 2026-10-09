@@ -196,6 +196,13 @@ const guestFormLimiter = make({
   max: 10,
   message: "Too many submissions. Please try again later.",
 });
+// The hidden SMS console's owner login: a guessed password must be hopeless.
+const smsConsoleLoginLimiter = make({
+  name: "sms-console-login",
+  windowMs: 15 * 60 * 1000,
+  max: 8,
+  message: "Too many attempts. Try again in 15 minutes.",
+});
 const chatLimiter = make({ name: "chat", windowMs: 10 * 60 * 1000, max: 60 });
 const apiLimiter = make({ name: "api", windowMs: 60 * 1000, max: 600 });
 
@@ -206,5 +213,6 @@ module.exports = {
   loginLimiter,
   guestFormLimiter,
   chatLimiter,
+  smsConsoleLoginLimiter,
   apiLimiter,
 };

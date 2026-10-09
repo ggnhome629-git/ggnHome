@@ -62,7 +62,7 @@ const AgentRegistration = lazy(() => import("./screens/Agent Page/Register Page/
 const AgentLogin = lazy(() => import("./screens/Agent Page/Login Page/AgentLogin"));
 const AgentDashboard = lazy(() => import("./screens/Agent Page/Dashboard/AgentDashboard"));
 const AgentManagement = lazy(() => import("./screens/Admin Page/admin.AgentsManagement"));
-const AdminSmsDevices = lazy(() => import("./screens/Admin Page/admin.smsDevices"));
+const SmsConsole = lazy(() => import("./screens/SMS Console/SmsConsole"));
 const AdminPromos = lazy(() => import("./screens/Admin Page/admin.promos"));
 const PropertyListingFormAgent = lazy(() => import("./screens/Agent Page/Add property/Propertyadd"));
 const PropertyCardsAgent = lazy(() => import("./screens/Agent Page/User-Properties/propertiesuser"));
@@ -154,6 +154,8 @@ function App() {
       <Route path="/" element={<Dashboard />} />
       <Route path="/login" element={<LoginModal />} />
       <Route path="/test" element={<SmsOtpTest />} />
+      {/* Hidden SMS Service console: not linked anywhere; has its own owner password */}
+      <Route path="/sms-service/app/manage" element={<SmsConsole />} />
       <Route path="/Rentaldetails/:id" element={<RentalPropertydetails />} />
       <Route path="/Saledetails/:id" element={<SalePropertyPage />} />
 
@@ -237,7 +239,8 @@ function App() {
         <Route path="/admin/payments" element={<AdminProtectedRoute element={<AdminPayments />} />} />
         <Route path="/admin/userpreferenceformresponses" element={<AdminProtectedRoute element={<AdminUserPreferencesResponses />} />} />
         <Route path="/admin/agentsmanagement" element={<AdminProtectedRoute element={<AgentManagement />} />} />
-        <Route path="/admin/sms-devices" element={<AdminProtectedRoute element={<AdminSmsDevices />} />} />
+        {/* The SMS phones page moved to the hidden SMS console */}
+        <Route path="/admin/sms-devices" element={<Navigate replace to="/admin/Landingpage" />} />
         <Route path="/admin/promos" element={<AdminProtectedRoute element={<AdminPromos />} />} />
         <Route path="/admin/agent-registration" element={<AdminProtectedRoute element={<AgentRegistrationAdmin />} />} />
         {/* Renamed/legacy paths keep working (spec U10/U11) */}

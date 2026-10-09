@@ -10,7 +10,6 @@ import {
   Megaphone,
   MessageSquare,
   PhoneCall,
-  Smartphone,
   UserPlus,
   Users,
   Wrench,
@@ -85,7 +84,6 @@ export const ADMIN_NAV = [
     group: "System",
     color: "#64748B",
     items: [
-      { id: "sms", label: "SMS Phones", route: "/admin/sms-devices", icon: Smartphone, notSetUp: true },
       { id: "usage", label: "Usage & Limits", route: "/admin/usagetrack", icon: Gauge },
       { id: "settings", label: "Settings", route: "/admin/settings", icon: Settings },
     ],

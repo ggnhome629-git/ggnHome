@@ -156,7 +156,6 @@ const AdminLandingPage = () => {
       links: [
         { label: 'Settings', route: '/admin/settings' },
         { label: 'Usage Tracker', route: '/admin/usagetrack' },
-        { label: 'SMS Phones', route: '/admin/sms-devices', notSetUp: true },
       ],
     },
   ];

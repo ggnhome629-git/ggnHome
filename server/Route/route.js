@@ -16,6 +16,7 @@ const {
   loginLimiter,
   guestFormLimiter,
   chatLimiter,
+  smsConsoleLoginLimiter,
 } = require("../middleware/rateLimit");
 
 // Controllers
@@ -141,6 +142,18 @@ router.patch("/api/admin/sms-devices/:deviceId", verifyToken, checkAdminEmail, a
 router.delete("/api/admin/sms-devices/:deviceId", verifyToken, checkAdminEmail, adminDeleteDevice);
 router.get("/api/admin/sms-log", verifyToken, checkAdminEmail, adminSmsLog);
 router.post("/api/admin/sms-devices/test", verifyToken, checkAdminEmail, adminTestSend);
+// SMS Service console (hidden page at /sms-service/app/manage): its own owner login, then both services.
+const smsConsole = require("../controllers/smsConsole.controller");
+const sc = smsConsole.wrap;
+router.post("/api/sms-console/login", smsConsoleLoginLimiter, sc(smsConsole.login));
+router.get("/api/sms-console/overview", smsConsole.verifyConsole, sc(smsConsole.overview));
+router.put("/api/sms-console/ggnhome/settings", smsConsole.verifyConsole, sc(smsConsole.saveGgnhomeSettings));
+router.put("/api/sms-console/shine/settings", smsConsole.verifyConsole, sc(smsConsole.saveShineSettings));
+router.put("/api/sms-console/shine/sheets", smsConsole.verifyConsole, sc(smsConsole.saveShineSheet));
+router.patch("/api/sms-console/phones/:deviceId", smsConsole.verifyConsole, sc(smsConsole.updatePhone));
+router.delete("/api/sms-console/phones/:deviceId", smsConsole.verifyConsole, sc(smsConsole.deletePhone));
+router.get("/api/sms-console/log", smsConsole.verifyConsole, sc(smsConsole.log));
+router.post("/api/sms-console/test", smsConsole.verifyConsole, sc(smsConsole.test));
 router.post("/auth/set-recovery-email", verifyToken, setRecoveryEmail);
 router.post(
   "/auth/change-password-direct",
