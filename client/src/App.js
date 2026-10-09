@@ -62,6 +62,7 @@ const AgentRegistration = lazy(() => import("./screens/Agent Page/Register Page/
 const AgentLogin = lazy(() => import("./screens/Agent Page/Login Page/AgentLogin"));
 const AgentDashboard = lazy(() => import("./screens/Agent Page/Dashboard/AgentDashboard"));
 const AgentManagement = lazy(() => import("./screens/Admin Page/admin.AgentsManagement"));
+const AdminPing = lazy(() => import("./screens/Health/AdminPing"));
 const SmsConsole = lazy(() => import("./screens/SMS Console/SmsConsole"));
 const AdminPromos = lazy(() => import("./screens/Admin Page/admin.promos"));
 const PropertyListingFormAgent = lazy(() => import("./screens/Agent Page/Add property/Propertyadd"));
@@ -154,6 +155,8 @@ function App() {
       <Route path="/" element={<Dashboard />} />
       <Route path="/login" element={<LoginModal />} />
       <Route path="/test" element={<SmsOtpTest />} />
+      {/* Public status page, outside the admin gate (it is more specific than the /admin layout below) */}
+      <Route path="/admin/ping" element={<AdminPing />} />
       {/* Hidden SMS Service console: not linked anywhere; has its own owner password */}
       <Route path="/sms-service/app/manage" element={<SmsConsole />} />
       <Route path="/Rentaldetails/:id" element={<RentalPropertydetails />} />
