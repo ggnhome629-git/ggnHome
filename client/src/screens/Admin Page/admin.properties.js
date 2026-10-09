@@ -188,7 +188,7 @@ export default function AdminProperties() {
       {activeTab === "approvals" && (
         <>
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }}>
               <StatCard
                 icon={Clock}
                 label="Pending Payments"
@@ -202,7 +202,7 @@ export default function AdminProperties() {
           {!loading && approvals.length > 0 ? (
             <Grid container spacing={3}>
               {approvals.map((a) => (
-                <Grid item xs={12} sm={6} md={4} key={a._id}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={a._id}>
                   <Card className="admin-card">
                     <CardContent sx={{ "&:last-child": { pb: 3 } }}>
                       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2, pb: 2, borderBottom: "1px solid #E5E9EE" }}>
@@ -278,10 +278,10 @@ export default function AdminProperties() {
       {activeTab === "rewards" && (
         <>
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <StatCard icon={Gift} label="Approved Payments" value={rewards.length} tone="#22D3EE" loading={loading} />
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <StatCard
                 icon={CheckCircle}
                 label="Eligible for Rewards"
@@ -295,7 +295,7 @@ export default function AdminProperties() {
           {!loading && rewards.length > 0 ? (
             <Grid container spacing={3}>
               {rewards.map((r) => (
-                <Grid item xs={12} sm={6} md={4} key={r.id}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={r.id}>
                   <Card className="admin-card">
                     <CardContent sx={{ "&:last-child": { pb: 3 } }}>
                       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 2, pb: 2, borderBottom: "1px solid #E5E9EE" }}>

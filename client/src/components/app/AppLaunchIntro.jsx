@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { isNativeApp } from "../../utils/nativeApp";
+import { isNativeApp, nativePlugin } from "../../utils/nativeApp";
 
 /**
  * Launch screen: the brand mark settles in, the wordmark rises letter by
@@ -48,6 +48,18 @@ export default function AppLaunchIntro() {
   const [show, setShow] = useState(shouldPlay);
   const [line, setLine] = useState(0);
   const lowPower = useMemo(isLowPower, []);
+
+  // Hand over from the static boot screen (index.html) and the native splash
+  // as soon as React is up, so the animation is seen from its first frame
+  // instead of playing behind the 2s native splash.
+  useEffect(() => {
+    document.getElementById("ggn-boot")?.remove();
+    try {
+      nativePlugin("SplashScreen")?.hide({ fadeOutDuration: 250 });
+    } catch {
+      /* web or older app build */
+    }
+  }, []);
 
   // Hide once the page has loaded and the minimum time has passed (or at the cap).
   useEffect(() => {

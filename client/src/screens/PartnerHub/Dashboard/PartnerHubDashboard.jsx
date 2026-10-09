@@ -83,7 +83,7 @@ const PartnerHubDashboard = () => {
         <Skeleton variant="text" width={300} height={40} sx={{ mb: 3 }} />
         <Grid container spacing={3}>
           {[1, 2, 3, 4].map(i => (
-            <Grid item xs={12} sm={6} md={3} key={i}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
               <Skeleton variant="rectangular" height={120} />
             </Grid>
           ))}
@@ -114,7 +114,7 @@ const PartnerHubDashboard = () => {
 
       {/* Stats Grid */}
       <Grid container spacing={3} sx={{ mb: 6 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={Home}
             label="Total Properties"
@@ -122,7 +122,7 @@ const PartnerHubDashboard = () => {
             color="#3b82f6"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={MessageSquare}
             label="Total Leads"
@@ -130,7 +130,7 @@ const PartnerHubDashboard = () => {
             color="#10b981"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={TrendingUp}
             label="New Leads"
@@ -138,7 +138,7 @@ const PartnerHubDashboard = () => {
             color="#f59e0b"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={BarChart3}
             label="Partner Rating"
@@ -154,7 +154,7 @@ const PartnerHubDashboard = () => {
           Quick Actions
         </Typography>
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <Button
               variant="contained"
               startIcon={<Plus size={20} />}
@@ -172,7 +172,7 @@ const PartnerHubDashboard = () => {
               Add New Property
             </Button>
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <Button
               variant="outlined"
               onClick={() => navigate('/partner/properties')}
@@ -189,7 +189,7 @@ const PartnerHubDashboard = () => {
               View All Properties
             </Button>
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
             <Button
               variant="outlined"
               onClick={() => navigate('/partner/leads')}
@@ -217,7 +217,7 @@ const PartnerHubDashboard = () => {
           </Typography>
           <Grid container spacing={3}>
             {dashboard?.recentProperties?.sale?.slice(0, 3).map(property => (
-              <Grid item xs={12} sm={6} md={4} key={property._id}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={property._id}>
                 <Card
                   sx={{
                     cursor: 'pointer',

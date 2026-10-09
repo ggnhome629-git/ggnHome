@@ -185,16 +185,16 @@ export default function Analytics() {
         <Stack spacing={6}>
           {/* Key Stats Grid */}
           <Grid container spacing={3}>
-            <Grid item xs={12} sm={6} lg={3}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <StatCard icon={Eye} label="Total Views" value={analytics.totalViews} trend="↑ 12% vs last week" color="#003366" />
             </Grid>
-            <Grid item xs={12} sm={6} lg={3}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <StatCard icon={Heart} label="Total Saves" value={analytics.totalSaves} trend="↑ 8% vs last week" color="#00A79D" />
             </Grid>
-            <Grid item xs={12} sm={6} lg={3}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <StatCard icon={Phone} label="Total Enquiries" value={analytics.totalEnquiries} trend="↑ 15% vs last week" color="#F59E0B" />
             </Grid>
-            <Grid item xs={12} sm={6} lg={3}>
+            <Grid size={{ xs: 12, sm: 6, lg: 3 }}>
               <StatCard icon={Share2} label="Total Shares" value={analytics.totalShares} trend="↑ 20% vs last week" color="#10B981" />
             </Grid>
           </Grid>
@@ -206,7 +206,7 @@ export default function Analytics() {
                 Engagement Metrics
               </Typography>
               <Grid container spacing={4}>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Stack spacing={1}>
                     <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
                       Avg. Time on Page
@@ -216,7 +216,7 @@ export default function Analytics() {
                     </Typography>
                   </Stack>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Stack spacing={1}>
                     <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
                       Save Rate
@@ -226,7 +226,7 @@ export default function Analytics() {
                     </Typography>
                   </Stack>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Stack spacing={1}>
                     <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
                       Enquiry Rate
@@ -236,7 +236,7 @@ export default function Analytics() {
                     </Typography>
                   </Stack>
                 </Grid>
-                <Grid item xs={12} sm={6} md={3}>
+                <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                   <Stack spacing={1}>
                     <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
                       Share Rate
@@ -295,7 +295,7 @@ export default function Analytics() {
                   { source: "Saved", count: 160, percentage: 12.9 },
                   { source: "Share", count: 80, percentage: 6.5 },
                 ].map((item) => (
-                  <Grid item xs={12} sm={6} key={item.source}>
+                  <Grid size={{ xs: 12, sm: 6 }} key={item.source}>
                     <Stack spacing={2}>
                       <Stack direction="row" justifyContent="space-between">
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>

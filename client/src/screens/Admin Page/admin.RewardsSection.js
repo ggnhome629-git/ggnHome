@@ -131,7 +131,7 @@ export default function AdminRewardsSection() {
 
       <Grid container spacing={3}>
         {/* Distribute form */}
-        <Grid item xs={12} lg={7}>
+        <Grid size={{ xs: 12, lg: 7 }}>
           <Card sx={CARD}>
             <CardContent>
               <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 4 }}>
@@ -218,7 +218,7 @@ export default function AdminRewardsSection() {
         </Grid>
 
         {/* Recently distributed (memory-only list, kept from the original page) */}
-        <Grid item xs={12} lg={5}>
+        <Grid size={{ xs: 12, lg: 5 }}>
           <Card sx={{ ...CARD, height: "100%" }}>
             <CardContent>
               <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>

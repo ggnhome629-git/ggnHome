@@ -236,7 +236,7 @@ const AdminPropertySync = () => {
       {/* Summary Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {/* Total Properties */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Stack spacing={1}>
@@ -258,7 +258,7 @@ const AdminPropertySync = () => {
         </Grid>
 
         {/* Verified Count */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Stack spacing={1}>
@@ -284,7 +284,7 @@ const AdminPropertySync = () => {
         </Grid>
 
         {/* Live Properties */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Stack spacing={1}>
@@ -306,7 +306,7 @@ const AdminPropertySync = () => {
         </Grid>
 
         {/* Delisted Properties */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Stack spacing={1}>
@@ -338,7 +338,7 @@ const AdminPropertySync = () => {
 
             <Grid container spacing={2}>
               {/* Progress Overview */}
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <Paper sx={{ p: 2, backgroundColor: "#f5f5f5" }}>
                   <Stack spacing={2}>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -400,7 +400,7 @@ const AdminPropertySync = () => {
               </Grid>
 
               {/* Changes Detected */}
-              <Grid item xs={12} md={6}>
+              <Grid size={{ xs: 12, md: 6 }}>
                 <Paper sx={{ p: 2, backgroundColor: "#f5f5f5" }}>
                   <Stack spacing={2}>
                     <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -453,7 +453,7 @@ const AdminPropertySync = () => {
             </Typography>
 
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Stack spacing={1}>
                   <Typography color="textSecondary" variant="body2">
                     Last Run
@@ -471,7 +471,7 @@ const AdminPropertySync = () => {
                 </Stack>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Stack spacing={1}>
                   <Typography color="textSecondary" variant="body2">
                     Next Scheduled Run
@@ -487,7 +487,7 @@ const AdminPropertySync = () => {
                 </Stack>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Stack spacing={1}>
                   <Typography color="textSecondary" variant="body2">
                     Job Duration
@@ -500,7 +500,7 @@ const AdminPropertySync = () => {
                 </Stack>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={3}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                 <Stack spacing={1}>
                   <Typography color="textSecondary" variant="body2">
                     Success Rate
@@ -537,7 +537,7 @@ const AdminPropertySync = () => {
             </Stack>
 
             <Grid container spacing={2}>
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <Paper sx={{ p: 2, backgroundColor: "#f5f5f5" }}>
                   <Stack spacing={1}>
                     <Typography variant="caption" sx={{ color: "text.secondary" }}>
@@ -553,7 +553,7 @@ const AdminPropertySync = () => {
                 </Paper>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <Paper sx={{ p: 2, backgroundColor: "#f5f5f5" }}>
                   <Stack spacing={1}>
                     <Typography variant="caption" sx={{ color: "text.secondary" }}>
@@ -569,7 +569,7 @@ const AdminPropertySync = () => {
                 </Paper>
               </Grid>
 
-              <Grid item xs={12} sm={6} md={4}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <Paper sx={{ p: 2, backgroundColor: "#f5f5f5" }}>
                   <Stack spacing={1}>
                     <Typography variant="caption" sx={{ color: "text.secondary" }}>

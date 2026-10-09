@@ -125,7 +125,7 @@ function InfoGrid({ children }) {
 
 function InfoGridItem({ span, children }) {
   return (
-    <Grid item xs={12} sm={6} md={span || 4}>
+    <Grid size={{ xs: 12, sm: 6, md: span || 4 }}>
       {children}
     </Grid>
   );
@@ -556,7 +556,7 @@ const UserManagementDashboard = () => {
                               { title: "Rental Preferences", prefs: (aiUsage && aiUsage.rentalPreferences) || {}, empty: "No rental preferences available" },
                               { title: "Sale Preferences", prefs: (aiUsage && aiUsage.salePreferences) || {}, empty: "No sale preferences available" },
                             ].map((pref) => (
-                              <Grid item xs={12} md={6} key={pref.title}>
+                              <Grid size={{ xs: 12, md: 6 }} key={pref.title}>
                                 <Box sx={{ bgcolor: "#F9FAFB", border: "1px solid", borderColor: "divider", borderRadius: "8px", p: 2, height: "100%" }}>
                                   <Typography variant="h4" sx={{ color: "primary.main", fontWeight: 700, mb: 1.5 }}>
                                     {pref.title}
@@ -611,11 +611,11 @@ const UserManagementDashboard = () => {
                   {/* Rewards & Achievements */}
                   <Section icon={Award} title="Rewards & Achievements">
                     <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <StatTile value={user.rewards?.count || 0} label="Total Rewards" />
                       </Grid>
                       {user.rewards?.latestMessage && (
-                        <Grid item xs={12} sm={6} md={9}>
+                        <Grid size={{ xs: 12, sm: 6, md: 9 }}>
                           <InfoItem label="Latest Reward">{user.rewards.latestMessage}</InfoItem>
                         </Grid>
                       )}
@@ -626,10 +626,10 @@ const UserManagementDashboard = () => {
                   {rewardActivity && (
                     <Section icon={Award} title="Reward Activity">
                       <Grid container spacing={2} sx={{ mb: 3 }}>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                           <StatTile value={rewardActivity.active} label="Active Rewards" />
                         </Grid>
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                           <StatTile value={rewardActivity.inactive} label="Inactive Rewards" danger />
                         </Grid>
                       </Grid>
@@ -678,16 +678,16 @@ const UserManagementDashboard = () => {
                   {/* Engagement Statistics */}
                   <Section icon={BarChart3} title="Engagement Statistics">
                     <Grid container spacing={2}>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <StatTile value={user.engagementStats?.totalViews || 0} label="Total Views" />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <StatTile value={user.engagementStats?.totalSaves || 0} label="Total Saves" />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <StatTile value={user.engagementStats?.ratingsCount || 0} label="Ratings Count" />
                       </Grid>
-                      <Grid item xs={12} sm={6} md={3}>
+                      <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                         <StatTile value={user.averageRatingGiven ? user.averageRatingGiven.toFixed(1) : "N/A"} label="Avg Rating Given" />
                       </Grid>
                     </Grid>

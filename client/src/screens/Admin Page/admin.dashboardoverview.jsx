@@ -264,7 +264,7 @@ const AdminDashboard = () => {
         />
         <Grid container spacing={3} sx={{ mb: 4 }}>
           {[...Array(8)].map((_, i) => (
-            <Grid item xs={12} sm={6} md={3} key={i}>
+            <Grid size={{ xs: 12, sm: 6, md: 3 }} key={i}>
               <Card sx={CARD}>
                 <CardContent>
                   <Stack direction="row" justifyContent="space-between" sx={{ mb: 3 }}>
@@ -469,7 +469,7 @@ const AdminDashboard = () => {
       {/* Headline stats */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {headlineStats.map((stat) => (
-          <Grid item xs={12} sm={6} md={3} key={stat.label}>
+          <Grid size={{ xs: 12, sm: 6, md: 3 }} key={stat.label}>
             <StatCard
               icon={stat.icon}
               label={stat.label}
@@ -497,7 +497,7 @@ const AdminDashboard = () => {
 
           <Grid container spacing={3}>
             {paymentTiles.map((tile) => (
-              <Grid item xs={12} sm={4} key={tile.status}>
+              <Grid size={{ xs: 12, sm: 4 }} key={tile.status}>
                 <Box
                   sx={{
                     p: 4,
@@ -529,7 +529,7 @@ const AdminDashboard = () => {
 
       {/* Revenue by method + user growth */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} lg={6}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <Card sx={{ ...CARD, height: "100%" }}>
             <CardContent>
               <Typography variant="h3" sx={{ fontWeight: 700, mb: 3 }}>
@@ -563,7 +563,7 @@ const AdminDashboard = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} lg={6}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <Card sx={{ ...CARD, height: "100%" }}>
             <CardContent>
               <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
@@ -616,7 +616,7 @@ const AdminDashboard = () => {
               />
             ) : (
               <Grid container spacing={3}>
-                <Grid item xs={12} lg={6}>
+                <Grid size={{ xs: 12, lg: 6 }}>
                   <Typography variant="h3" sx={{ fontSize: "1rem", color: "primary.main", mb: 2 }}>
                     Top Search Queries
                   </Typography>
@@ -652,7 +652,7 @@ const AdminDashboard = () => {
                   )}
                 </Grid>
 
-                <Grid item xs={12} lg={6}>
+                <Grid size={{ xs: 12, lg: 6 }}>
                   <Typography variant="h3" sx={{ fontSize: "1rem", color: "primary.main", mb: 2 }}>
                     Most Searched Locations
                   </Typography>
@@ -864,7 +864,7 @@ const AdminDashboard = () => {
         <Collapse in={expandedSections.topProperties}>
           <Box sx={{ p: 3 }}>
             <Grid container spacing={3}>
-              <Grid item xs={12} lg={6}>
+              <Grid size={{ xs: 12, lg: 6 }}>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: "primary.main", mb: 3 }}>
                   Top Rental Properties
                 </Typography>
@@ -872,7 +872,7 @@ const AdminDashboard = () => {
                 {leaderboard("Most Saved", propertyStats.topSavedRental || [], Bookmark, "#22D3EE", (i) => i.savesCount)}
                 {leaderboard("Top Rated", propertyStats.topRatedRental || [], Star, "#F59E0B", (i) => Number(i.avgRating || 0).toFixed(1))}
               </Grid>
-              <Grid item xs={12} lg={6}>
+              <Grid size={{ xs: 12, lg: 6 }}>
                 <Typography variant="h4" sx={{ fontWeight: 700, color: "primary.main", mb: 3 }}>
                   Top Sale Properties
                 </Typography>
@@ -908,7 +908,7 @@ const AdminDashboard = () => {
                 color: "#4A6A8A",
               },
             ].map((metric) => (
-              <Grid item xs={12} sm={6} md={3} key={metric.label}>
+              <Grid size={{ xs: 12, sm: 6, md: 3 }} key={metric.label}>
                 <Box
                   sx={{
                     display: "flex",
@@ -953,7 +953,7 @@ const AdminDashboard = () => {
               { title: "Rental Properties", total: summary.rentalCount, stats: propertyStats.rental || {} },
               { title: "Sale Properties", total: summary.saleCount, stats: propertyStats.sale || {} },
             ].map((group) => (
-              <Grid item xs={12} md={6} key={group.title}>
+              <Grid size={{ xs: 12, md: 6 }} key={group.title}>
                 <Typography variant="h3" sx={{ fontSize: "1rem", color: "primary.main", mb: 2 }}>
                   {group.title}
                 </Typography>
@@ -1005,7 +1005,7 @@ const AdminDashboard = () => {
         <Collapse in={expandedSections.rewards}>
           <Box sx={{ p: 3 }}>
             <Grid container spacing={3} sx={{ mb: 4 }}>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Box className="stat-card" sx={{ textAlign: "center", p: 4 }}>
                   <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
                     Total Rewards
@@ -1015,7 +1015,7 @@ const AdminDashboard = () => {
                   </Typography>
                 </Box>
               </Grid>
-              <Grid item xs={12} sm={6}>
+              <Grid size={{ xs: 12, sm: 6 }}>
                 <Box className="stat-card" sx={{ textAlign: "center", p: 4 }}>
                   <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
                     Unclaimed Rewards
@@ -1084,7 +1084,7 @@ const AdminDashboard = () => {
                 const totalAIUsers = Object.values(aiUsageByRole).reduce((a, b) => a + b, 0) || 1;
                 const percentage = (count / totalAIUsers) * 100;
                 return (
-                  <Grid item xs={12} sm={6} md={4} key={role}>
+                  <Grid size={{ xs: 12, sm: 6, md: 4 }} key={role}>
                     <Box sx={{ p: 3, border: "1px solid", borderColor: "divider", borderRadius: "8px" }}>
                       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 2, mb: 2 }}>
                         <Typography variant="body2" sx={{ fontWeight: 600, textTransform: "capitalize" }}>

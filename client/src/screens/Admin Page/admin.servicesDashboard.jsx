@@ -199,10 +199,10 @@ export default function AdminServiceTracking() {
 
       {/* Stats */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard icon={Package} label="Total Requests" value={totalRequests} tone="#003366" />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={Clock}
             label="Pending"
@@ -210,7 +210,7 @@ export default function AdminServiceTracking() {
             tone="#F59E0B"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={Package}
             label="In Progress"
@@ -218,7 +218,7 @@ export default function AdminServiceTracking() {
             tone="#00A79D"
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <StatCard
             icon={CheckCircle}
             label="Completed"
@@ -314,7 +314,7 @@ export default function AdminServiceTracking() {
               };
 
               return (
-                <Grid item xs={12} sm={6} md={4} key={request._id}>
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={request._id}>
                   <Card
                     className="admin-card"
                     sx={{
@@ -514,7 +514,7 @@ export default function AdminServiceTracking() {
           {isEditing ? (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
               <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControl fullWidth>
                     <InputLabel>User Role *</InputLabel>
                     <Select
@@ -527,7 +527,7 @@ export default function AdminServiceTracking() {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControl fullWidth>
                     <InputLabel>Service Type *</InputLabel>
                     <Select
@@ -541,7 +541,7 @@ export default function AdminServiceTracking() {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <FormControl fullWidth>
                     <InputLabel>Status *</InputLabel>
                     <Select
@@ -555,7 +555,7 @@ export default function AdminServiceTracking() {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Contact Number *"
@@ -566,7 +566,7 @@ export default function AdminServiceTracking() {
                 </Grid>
                 {editData.userRole === "owner" && (
                   <>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <FormControl fullWidth>
                         <InputLabel>Property Type</InputLabel>
                         <Select
@@ -580,7 +580,7 @@ export default function AdminServiceTracking() {
                         </Select>
                       </FormControl>
                     </Grid>
-                    <Grid item xs={12} sm={6}>
+                    <Grid size={{ xs: 12, sm: 6 }}>
                       <TextField
                         fullWidth
                         label="Property ID"
@@ -592,7 +592,7 @@ export default function AdminServiceTracking() {
                     </Grid>
                   </>
                 )}
-                <Grid item xs={12} sm={6}>
+                <Grid size={{ xs: 12, sm: 6 }}>
                   <TextField
                     fullWidth
                     label="Preferred Date"

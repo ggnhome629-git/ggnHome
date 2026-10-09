@@ -261,7 +261,7 @@ function BrevoCard({ data, lastRefresh }) {
           { label: "Delivered", value: `${deliveryRate.toFixed(1)}%`, color: "#047857" },
           { label: "Open Rate", value: `${openRate.toFixed(1)}%`, color: "#1565C0" },
         ].map((stat) => (
-          <Grid item xs={12} sm={4} key={stat.label}>
+          <Grid size={{ xs: 12, sm: 4 }} key={stat.label}>
             <Box sx={{ textAlign: "center", py: 2.5, px: 1, backgroundColor: "#F4F7F9", borderRadius: "6px" }}>
               <Typography sx={{ fontSize: "1.25rem", fontWeight: 800, color: stat.color, fontVariantNumeric: "tabular-nums" }}>
                 {stat.value}
@@ -307,7 +307,7 @@ function LocationiqCard({ data, lastRefresh }) {
       </Row>
 
       <Grid container spacing={2} sx={{ mt: 1 }}>
-        <Grid item xs={6}>
+        <Grid size={{ xs: 6 }}>
           <Box sx={{ textAlign: "center", py: 2.5, px: 1, backgroundColor: "#F4F7F9", borderRadius: "6px" }}>
             <Typography sx={{ fontSize: "1.25rem", fontWeight: 800, color: "text.primary", fontVariantNumeric: "tabular-nums" }}>
               {formatNum(balance.day)}
@@ -317,7 +317,7 @@ function LocationiqCard({ data, lastRefresh }) {
             </Typography>
           </Box>
         </Grid>
-        <Grid item xs={6}>
+        <Grid size={{ xs: 6 }}>
           <Box sx={{ textAlign: "center", py: 2.5, px: 1, backgroundColor: "#F4F7F9", borderRadius: "6px" }}>
             <Typography sx={{ fontSize: "1.25rem", fontWeight: 800, color: "#3B82F6", fontVariantNumeric: "tabular-nums" }}>
               {formatNum(balance.bonus)}
@@ -527,22 +527,22 @@ const CloudinaryDashboard = () => {
             gradient="linear-gradient(135deg, #003366 0%, #00A79D 100%)"
           />
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <MetricTile icon={Cloud} label="Total Accounts" value={accounts.length} color="#10B981" bg="#D1FAE5" />
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <MetricTile icon={Zap} label="Avg Credits Usage" value={`${avgCreditsUsage.toFixed(1)}%`} color="#F59E0B" bg="#FEF3C7" />
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <MetricTile icon={HardDrive} label="Total Storage" value={formatBytes(totalStorage)} color="#3B82F6" bg="#DBEAFE" />
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <MetricTile icon={TrendingUp} label="Total Bandwidth" value={formatBytes(totalBandwidth)} color="#8B5CF6" bg="#EDE9FE" />
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <MetricTile icon={Image} label="Transformations" value={formatNum(totalTransformations)} color="#EC4899" bg="#FCE7F3" />
             </Grid>
-            <Grid item xs={12} sm={6} md={4} lg={2}>
+            <Grid size={{ xs: 12, sm: 6, md: 4, lg: 2 }}>
               <MetricTile icon={CheckCircle} label="Total Credits" value={totalCredits.toFixed(1)} color="#10B981" bg="#D1FAE5" />
             </Grid>
           </Grid>
@@ -573,7 +573,7 @@ const CloudinaryDashboard = () => {
           {loading ? (
             <Grid container spacing={2}>
               {[0, 1, 2].map((i) => (
-                <Grid item xs={12} sm={6} lg={4} key={i}>
+                <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={i}>
                   <Box sx={{ border: "1px solid", borderColor: "divider", borderRadius: "10px", p: 3 }}>
                     <Skeleton variant="rounded" width="60%" height={20} sx={{ mb: 2 }} />
                     <Skeleton variant="rounded" width="100%" height={8} sx={{ mb: 1, borderRadius: "4px" }} />
@@ -592,7 +592,7 @@ const CloudinaryDashboard = () => {
           ) : (
             <Grid container spacing={2}>
               {accounts.map((account) => (
-                <Grid item xs={12} sm={6} lg={4} key={account.index}>
+                <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={account.index}>
                   <AccountCard account={account} />
                 </Grid>
               ))}
@@ -603,7 +603,7 @@ const CloudinaryDashboard = () => {
 
       {/* Brevo + LocationIQ */}
       <Grid container spacing={3}>
-        <Grid item xs={12} lg={6}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <Card sx={{ ...CARD, height: "100%" }}>
             <CardContent>
               <UsageCardHeader
@@ -638,7 +638,7 @@ const CloudinaryDashboard = () => {
           </Card>
         </Grid>
 
-        <Grid item xs={12} lg={6}>
+        <Grid size={{ xs: 12, lg: 6 }}>
           <Card sx={{ ...CARD, height: "100%" }}>
             <CardContent>
               <UsageCardHeader

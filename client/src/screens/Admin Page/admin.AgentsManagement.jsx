@@ -305,7 +305,7 @@ const response = await fetch(`${process.env.REACT_APP_Base_API || ''}/api/admin/
         {/* Filters */}
         <Box sx={{ mb: 4 }}>
           <Grid container spacing={2} alignItems="flex-end">
-            <Grid item xs={12} sm={4} md={4}>
+            <Grid size={{ xs: 12, sm: 4, md: 4 }}>
               <TextField
                 fullWidth
                 placeholder="Search by name, email, phone, or area..."
@@ -325,7 +325,7 @@ const response = await fetch(`${process.env.REACT_APP_Base_API || ''}/api/admin/
                 }}
               />
             </Grid>
-            <Grid item xs={6} sm={3} md={2}>
+            <Grid size={{ xs: 6, sm: 3, md: 2 }}>
               <TextField
                 select
                 fullWidth
@@ -340,7 +340,7 @@ const response = await fetch(`${process.env.REACT_APP_Base_API || ''}/api/admin/
                 <option value="inactive">Inactive</option>
               </TextField>
             </Grid>
-            <Grid item xs={6} sm={3} md={2}>
+            <Grid size={{ xs: 6, sm: 3, md: 2 }}>
               <TextField
                 select
                 fullWidth
@@ -563,7 +563,7 @@ const response = await fetch(`${process.env.REACT_APP_Base_API || ''}/api/admin/
                         <Box sx={{ px: { xs: 3, sm: 4 }, pb: 4, borderTop: '1px solid divider' }}>
                           <Grid container spacing={{ xs: 2, sm: 4 }} sx={{ mt: 3 }}>
                             {/* Agent Information */}
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                               <Box className="card" sx={{ p: 3 }}>
                                 <Typography
                                   variant="caption"
@@ -590,7 +590,7 @@ const response = await fetch(`${process.env.REACT_APP_Base_API || ''}/api/admin/
 
                             {/* Preferred Sectors */}
                             {agent.preferredSectors && agent.preferredSectors.length > 0 && (
-                              <Grid item xs={12} sm={6}>
+                              <Grid size={{ xs: 12, sm: 6 }}>
                                 <Box className="card" sx={{ p: 3 }}>
                                   <Typography
                                     variant="caption"
@@ -625,7 +625,7 @@ const response = await fetch(`${process.env.REACT_APP_Base_API || ''}/api/admin/
                             )}
 
                             {/* Viewed Client Leads */}
-                            <Grid item xs={12}>
+                            <Grid size={{ xs: 12 }}>
                               <Box className="card" sx={{ p: 3 }}>
                                 <Typography
                                   variant="caption"

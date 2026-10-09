@@ -188,7 +188,10 @@ function NavList({ compact, onNavigate }) {
 function BottomTabs({ onMore }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const tabs = TAB_IDS.map((id) => ADMIN_NAV_ITEMS.find((i) => i.id === id)).filter(Boolean);
+  const SHORT = { properties: "Listings" };
+  const tabs = TAB_IDS.map((id) => ADMIN_NAV_ITEMS.find((i) => i.id === id))
+    .filter(Boolean)
+    .map((t) => ({ ...t, label: SHORT[t.id] || t.label }));
   const onTab = tabs.some((t) => location.pathname.startsWith(t.route));
   return (
     <Box

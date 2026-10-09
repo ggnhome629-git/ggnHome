@@ -115,13 +115,13 @@ export default function AdminEnquiryProperties() {
 
       {/* Stats */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <StatCard icon={Home} label="Total Enquiries" value={total} tone="#003366" />
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <StatCard icon={Calendar} label="This Month" value={thisMonth} tone="#00A79D" />
         </Grid>
-        <Grid item xs={12} sm={4}>
+        <Grid size={{ xs: 12, sm: 4 }}>
           <StatCard icon={Eye} label="Today" value={today} tone="#22D3EE" />
         </Grid>
       </Grid>

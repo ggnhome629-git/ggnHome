@@ -214,7 +214,7 @@ const AdminScraperControl = () => {
       {/* Status Cards */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
         {/* Status Card */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Stack spacing={1}>
@@ -249,7 +249,7 @@ const AdminScraperControl = () => {
         </Grid>
 
         {/* Last Run */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Stack spacing={1}>
@@ -270,7 +270,7 @@ const AdminScraperControl = () => {
         </Grid>
 
         {/* Properties Scraped */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Stack spacing={1}>
@@ -289,7 +289,7 @@ const AdminScraperControl = () => {
         </Grid>
 
         {/* Success Rate */}
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
             <CardContent>
               <Stack spacing={1}>

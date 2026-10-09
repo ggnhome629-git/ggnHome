@@ -140,7 +140,7 @@ export default function AdminPropertyManager() {
           { label: "Scraped", value: counts?.scraped, tone: "#F59E0B", hint: counts ? `${counts.pendingScraped} awaiting approval` : undefined },
           { label: "Owner / agent", value: counts?.own, tone: "#00A79D", hint: counts ? `${counts.pendingOwn} awaiting approval` : undefined },
         ].map((c) => (
-          <Grid item xs={6} md={3} key={c.label}>
+          <Grid size={{ xs: 6, md: 3 }} key={c.label}>
             <StatCard icon={Home} label={c.label} value={c.value ?? 0} tone={c.tone} hint={c.hint} loading={!counts} />
           </Grid>
         ))}

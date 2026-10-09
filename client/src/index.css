@@ -49,13 +49,13 @@ code {
   .admin-live > *:nth-child(3) { animation-delay: .1s; }
   .admin-live > *:nth-child(4) { animation-delay: .15s; }
   .admin-live > *:nth-child(n+5) { animation-delay: .2s; }
-  .admin-live .MuiGrid-item { animation: ggn-rise .5s cubic-bezier(.2,.8,.2,1) both; }
-  .admin-live .MuiGrid-item:nth-child(2) { animation-delay: .06s; }
-  .admin-live .MuiGrid-item:nth-child(3) { animation-delay: .12s; }
-  .admin-live .MuiGrid-item:nth-child(4) { animation-delay: .18s; }
+  .admin-live .MuiGrid-container > .MuiGrid-root { animation: ggn-rise .5s cubic-bezier(.2,.8,.2,1) both; }
+  .admin-live .MuiGrid-container > .MuiGrid-root:nth-child(2) { animation-delay: .06s; }
+  .admin-live .MuiGrid-container > .MuiGrid-root:nth-child(3) { animation-delay: .12s; }
+  .admin-live .MuiGrid-container > .MuiGrid-root:nth-child(4) { animation-delay: .18s; }
   .admin-live .MuiCard-root, .admin-live .admin-card { transition: transform .22s ease, box-shadow .22s ease; }
-  .admin-live .MuiGrid-item > .MuiCard-root:hover,
-  .admin-live .MuiGrid-item > * > .MuiCard-root:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0, 51, 102, 0.12); }
+  .admin-live .MuiGrid-container > .MuiGrid-root > .MuiCard-root:hover,
+  .admin-live .MuiGrid-container > .MuiGrid-root > * > .MuiCard-root:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0, 51, 102, 0.12); }
   .admin-live .admin-table-row { transition: background-color .15s ease; }
   .admin-topbar-glow::after { background-size: 300% 100% !important; animation: ggn-gradient 8s ease infinite; }
 }

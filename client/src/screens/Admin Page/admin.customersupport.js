@@ -194,7 +194,7 @@ export default function CallbackRequestsDashboard() {
           { label: "In Progress", value: inProgress, color: "#2196F3", icon: RefreshCw },
           { label: "Resolved", value: resolved, color: "#10B981", icon: CheckCircle },
         ].map((s, i) => (
-          <Grid item xs={6} sm={3} key={i}>
+          <Grid size={{ xs: 6, sm: 3 }} key={i}>
             <StatCard
               icon={s.icon}
               label={s.label}
@@ -335,7 +335,7 @@ export default function CallbackRequestsDashboard() {
                 {isExpanded && (
                   <Box sx={{ px: 3, pb: 3, pt: 0, borderTop: "1px solid #E5E9EE" }}>
                     <Grid container spacing={2} sx={{ mt: 3 }}>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Box className="admin-info-row">
                           <Box className="admin-info-label">
                             <User size={13} /> Full Name
@@ -345,7 +345,7 @@ export default function CallbackRequestsDashboard() {
                           </Typography>
                         </Box>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Box className="admin-info-row">
                           <Box className="admin-info-label">
                             <Phone size={13} /> Phone Number
@@ -355,7 +355,7 @@ export default function CallbackRequestsDashboard() {
                           </Typography>
                         </Box>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Box className="admin-info-row">
                           <Box className="admin-info-label">
                             <MailIcon size={13} /> Email Address
@@ -365,7 +365,7 @@ export default function CallbackRequestsDashboard() {
                           </Typography>
                         </Box>
                       </Grid>
-                      <Grid item xs={12} sm={6}>
+                      <Grid size={{ xs: 12, sm: 6 }}>
                         <Box className="admin-info-row">
                           <Box className="admin-info-label">
                             <Calendar size={13} /> Created At
@@ -376,7 +376,7 @@ export default function CallbackRequestsDashboard() {
                         </Box>
                       </Grid>
                       {req.updatedAt && (
-                        <Grid item xs={12} sm={6}>
+                        <Grid size={{ xs: 12, sm: 6 }}>
                           <Box className="admin-info-row">
                             <Box className="admin-info-label">
                               <Calendar size={13} /> Last Updated

@@ -446,13 +446,13 @@ For assistance, please contact: 9654131789 | support@ggnhome.com`;
       <Box sx={{ mb: 4 }}>
         {/* Stats */}
         <Grid container spacing={3}>
-          <Grid item xs={12} sm={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <StatCard icon={Users} label="Total Preferences" value={stats.total} tone="#003366" />
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <StatCard icon={LogIn} label="Users Logged In" value={stats.loggedIn} tone="#00A79D" />
           </Grid>
-          <Grid item xs={12} sm={4}>
+          <Grid size={{ xs: 12, sm: 4 }}>
             <StatCard icon={LogOut} label="Not Logged In" value={stats.notLoggedIn} tone="#FF6B6B" />
           </Grid>
         </Grid>
@@ -744,25 +744,25 @@ For assistance, please contact: 9654131789 | support@ggnhome.com`;
         </DialogTitle>
         <DialogContent sx={{ pt: 0 }}>
           <Grid container spacing={2} sx={{ mt: 1 }}>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Box sx={{ fontWeight: 600 }}><strong>Email:</strong> {selectedAgent.email}</Box>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Box sx={{ fontWeight: 600 }}><strong>Mobile:</strong> {selectedAgent.mobileNumber}</Box>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Box sx={{ fontWeight: 600 }}><strong>Agency:</strong> {selectedAgent.agencyName || '—'}</Box>
             </Grid>
-            <Grid item xs={12} sm={6}>
+            <Grid size={{ xs: 12, sm: 6 }}>
               <Box sx={{ fontWeight: 600 }}><strong>Experience (yrs):</strong> {selectedAgent.experienceYears || '—'}</Box>
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Box sx={{ fontWeight: 600 }}><strong>Areas Covered:</strong> {(selectedAgent.areasCovered || []).join(', ')}</Box>
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Box sx={{ fontWeight: 600 }}><strong>Preferred Sectors:</strong> {(selectedAgent.preferredSectors || []).join(', ')}</Box>
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{ xs: 12 }}>
               <Box sx={{ fontWeight: 600 }}><strong>Property Types:</strong> {(selectedAgent.propertyTypes || []).join(', ')}</Box>
             </Grid>
           </Grid>
