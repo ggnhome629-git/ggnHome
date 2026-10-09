@@ -1,36 +1,17 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { isNativeApp, nativePlugin } from "../../utils/nativeApp";
 
 /**
- * Launch screen: the brand mark settles in, the wordmark rises letter by
- * letter, and a status line says we're curating listings while the first
- * screen loads. It holds for a comfortable minimum so it is actually seen,
- * then lifts away once the page has loaded (capped so it never blocks).
+ * Launch screen: bright brand colours flow across the screen while the
+ * "GgnHome" wordmark sweeps in with a light shine, then the layer lifts away.
+ * About 2 seconds in total, tap to skip.
  *
- * Low-power phones (few CPU cores, <=4 GB RAM, or Data Saver) get a static
- * gradient instead of animated blobs. Only transform/opacity are animated,
- * which the GPU handles cheaply; no blur filters are used.
+ * Cheap on slow phones: the colour field is CSS gradients moved with
+ * transform only (GPU-composited), no blur filters, no JS animation loop.
  */
 const SEEN_KEY = "ggn:introSeen";
-const MIN_MS = 3200; // long enough to read the status line
-const MAX_MS = 5000; // never hold the user longer than this
-
-const STATUS_LINES = [
-  "Curating properties near you",
-  "Finding homes that fit your budget",
-  "Checking the latest listings",
-];
-
-const isLowPower = () => {
-  try {
-    const cores = navigator.hardwareConcurrency || 8;
-    const mem = navigator.deviceMemory || 8;
-    return cores <= 4 || mem <= 4 || navigator.connection?.saveData === true;
-  } catch {
-    return false;
-  }
-};
+const SHOW_MS = 2100;
 
 const shouldPlay = () => {
   try {
@@ -44,51 +25,40 @@ const shouldPlay = () => {
   }
 };
 
+const CSS = `
+.ggn-intro-flow{position:absolute;inset:-50%;pointer-events:none;
+  background:
+    radial-gradient(closest-side at 30% 35%, rgba(0,167,157,.85), transparent 70%),
+    radial-gradient(closest-side at 70% 30%, rgba(34,211,238,.75), transparent 70%),
+    radial-gradient(closest-side at 60% 70%, rgba(139,92,246,.65), transparent 70%),
+    radial-gradient(closest-side at 30% 75%, rgba(245,158,11,.45), transparent 70%);
+  animation:ggnFlow 6s ease-in-out infinite alternate;will-change:transform}
+.ggn-intro-flow.b{animation-duration:7.5s;animation-direction:alternate-reverse;opacity:.7;mix-blend-mode:screen}
+@keyframes ggnFlow{0%{transform:translate3d(-6%,-4%,0) rotate(0deg) scale(1)}100%{transform:translate3d(6%,5%,0) rotate(25deg) scale(1.12)}}
+.ggn-intro-word span{color:#fff;text-shadow:0 4px 24px rgba(34,211,238,.45);animation:ggnGlow 1s ease-in-out both}
+@keyframes ggnGlow{0%,100%{color:#fff;text-shadow:0 4px 24px rgba(34,211,238,.45)}50%{color:#A5F3FC;text-shadow:0 0 28px rgba(165,243,252,.95)}}
+`;
+
 export default function AppLaunchIntro() {
   const [show, setShow] = useState(shouldPlay);
-  const [line, setLine] = useState(0);
-  const lowPower = useMemo(isLowPower, []);
 
-  // Hand over from the static boot screen (index.html) and the native splash
-  // as soon as React is up, so the animation is seen from its first frame
-  // instead of playing behind the 2s native splash.
+  // Take over from the static boot screen and the native splash right away.
   useEffect(() => {
     document.getElementById("ggn-boot")?.remove();
     try {
-      nativePlugin("SplashScreen")?.hide({ fadeOutDuration: 250 });
+      nativePlugin("SplashScreen")?.hide({ fadeOutDuration: 200 });
     } catch {
       /* web or older app build */
     }
   }, []);
 
-  // Hide once the page has loaded and the minimum time has passed (or at the cap).
   useEffect(() => {
     if (!show) return undefined;
-    const start = Date.now();
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      const wait = Math.max(0, MIN_MS - (Date.now() - start));
-      setTimeout(() => setShow(false), wait);
-    };
-    if (document.readyState === "complete") finish();
-    else window.addEventListener("load", finish, { once: true });
-    const cap = setTimeout(() => setShow(false), MAX_MS);
-    return () => {
-      window.removeEventListener("load", finish);
-      clearTimeout(cap);
-    };
+    const t = setTimeout(() => setShow(false), SHOW_MS);
+    return () => clearTimeout(t);
   }, [show]);
 
-  // Rotate the status line gently while we wait.
-  useEffect(() => {
-    if (!show) return undefined;
-    const t = setInterval(() => setLine((i) => (i + 1) % STATUS_LINES.length), 1100);
-    return () => clearInterval(t);
-  }, [show]);
-
-  const word = "GgnHome".split("");
+  const letters = "GgnHome".split("");
 
   return (
     <AnimatePresence>
@@ -97,7 +67,7 @@ export default function AppLaunchIntro() {
           key="intro"
           onClick={() => setShow(false)}
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { duration: 0.6, ease: [0.4, 0, 0.2, 1] } }}
+          exit={{ opacity: 0, scale: 1.04, transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] } }}
           style={{
             position: "fixed",
             inset: 0,
@@ -106,97 +76,64 @@ export default function AppLaunchIntro() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            padding: 24,
             overflow: "hidden",
-            background: "linear-gradient(160deg, #0B5C7A 0%, #003366 55%, #001B36 100%)",
-            willChange: "opacity",
+            background: "#002244",
           }}
         >
-          {/* Soft aurora: animated only on capable phones */}
-          {!lowPower &&
-            [0, 1].map((i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 0.22, scale: 1.05, x: i ? [0, -24, 0] : [0, 24, 0], y: i ? [0, 18, 0] : [0, -18, 0] }}
-                transition={{ opacity: { duration: 1.2 }, scale: { duration: 1.6, ease: "easeOut" }, x: { duration: 9, repeat: Infinity, ease: "easeInOut" }, y: { duration: 9, repeat: Infinity, ease: "easeInOut" } }}
-                style={{
-                  position: "absolute",
-                  width: 420,
-                  height: 420,
-                  left: i ? "45%" : "-20%",
-                  top: i ? "40%" : "-15%",
-                  borderRadius: "50%",
-                  background: i ? "radial-gradient(circle, #22D3EE 0%, transparent 65%)" : "radial-gradient(circle, #00A79D 0%, transparent 65%)",
-                  pointerEvents: "none",
-                }}
-              />
-            ))}
+          <style>{CSS}</style>
+          <div className="ggn-intro-flow" />
+          <div className="ggn-intro-flow b" />
+          {/* Soft vignette keeps the wordmark readable over the colours */}
+          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, rgba(0,34,68,.15) 0%, rgba(0,20,45,.55) 100%)" }} />
 
-          {/* Logo tile: fades and scales in, then holds still */}
           <motion.div
-            initial={{ scale: 0.7, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.9, delay: 0.15, ease: [0.22, 1, 0.36, 1] }}
-            style={{ position: "relative", width: 104, height: 104, borderRadius: 28, background: "linear-gradient(135deg,#00A79D,#22D3EE)", boxShadow: "0 16px 40px rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}
+            initial={{ scale: 0.6, opacity: 0, y: 10 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 200, damping: 18, delay: 0.05 }}
+            style={{ position: "relative", width: 84, height: 84, borderRadius: 24, background: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.35)", boxShadow: "0 12px 36px rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}
           >
-            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <motion.path
                 d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: 1 }}
-                transition={{ duration: 1.2, delay: 0.5, ease: "easeInOut" }}
+                transition={{ duration: 0.8, delay: 0.2, ease: "easeInOut" }}
               />
             </svg>
           </motion.div>
 
-          {/* Wordmark rises in */}
           <motion.div
             initial="hidden"
             animate="show"
-            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07, delayChildren: 0.9 } } }}
-            style={{ display: "flex", marginTop: 24, position: "relative" }}
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05, delayChildren: 0.3 } } }}
+            className="ggn-intro-word"
+            style={{ position: "relative", display: "flex", marginTop: 20, fontSize: 46, fontWeight: 800, letterSpacing: "-0.01em", lineHeight: 1.1 }}
           >
-            {word.map((ch, i) => (
+            {letters.map((ch, i) => (
               <motion.span
                 key={i}
-                variants={{ hidden: { y: 18, opacity: 0 }, show: { y: 0, opacity: 1, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } } }}
-                style={{ color: "#fff", fontSize: 34, fontWeight: 800, letterSpacing: "0.01em" }}
+                variants={{ hidden: { y: 26, opacity: 0, rotateX: 60 }, show: { y: 0, opacity: 1, rotateX: 0, transition: { type: "spring", stiffness: 260, damping: 20 } } }}
+                style={{ display: "inline-block", animationDelay: `${0.75 + i * 0.07}s` }}
               >
                 {ch}
               </motion.span>
             ))}
           </motion.div>
 
+          <motion.div
+            initial={{ scaleX: 0, opacity: 0 }}
+            animate={{ scaleX: 1, opacity: 1 }}
+            transition={{ delay: 0.8, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            style={{ position: "relative", marginTop: 12, width: 120, height: 3, borderRadius: 3, background: "linear-gradient(90deg,#00A79D,#22D3EE,#8B5CF6,#F59E0B)" }}
+          />
           <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.9 }}
-            transition={{ delay: 1.6, duration: 0.6 }}
-            style={{ color: "#BDEFF5", margin: "8px 0 0", fontSize: 13, letterSpacing: "0.16em", textTransform: "uppercase", position: "relative" }}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 0.9, y: 0 }}
+            transition={{ delay: 1.0, duration: 0.4 }}
+            style={{ position: "relative", color: "#E0F7FA", margin: "12px 0 0", fontSize: 12, letterSpacing: "0.22em", textTransform: "uppercase" }}
           >
-            Find your home in Gurgaon
+            Get Space · Get Rewarded
           </motion.p>
-
-          {/* Loading status: rotating message + indeterminate bar */}
-          <div style={{ position: "absolute", bottom: "calc(56px + env(safe-area-inset-bottom))", left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 14, padding: "0 24px" }}>
-            <motion.div
-              key={line}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              style={{ color: "#E6FBFD", fontSize: 14, fontWeight: 600, textAlign: "center" }}
-            >
-              {STATUS_LINES[line]}…
-            </motion.div>
-            <div style={{ width: 160, height: 4, borderRadius: 4, background: "rgba(255,255,255,0.18)", overflow: "hidden" }}>
-              <motion.div
-                initial={{ x: "-100%" }}
-                animate={{ x: "100%" }}
-                transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-                style={{ width: "100%", height: "100%", background: "linear-gradient(90deg,#00A79D,#22D3EE)" }}
-              />
-            </div>
-          </div>
         </motion.div>
       )}
     </AnimatePresence>

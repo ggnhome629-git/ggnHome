@@ -1,1471 +1,346 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
-// Professional Color Palette
-const COLORS = {
-  // Primary Colors
-  primaryDark: '#1a365d',
-  primary: '#2d3748',
-  primaryLight: '#4a5568',
-  
-  // Secondary Colors
-  secondaryDark: '#2c5aa0',
-  secondary: '#3182ce',
-  secondaryLight: '#4299e1',
-  
-  // Accent Colors
-  accent: '#00b5d8',
-  accentLight: '#0bc5ea',
-  
-  // Neutral Colors
-  neutralDark: '#2d3748',
-  neutral: '#718096',
-  neutralLight: '#e2e8f0',
-  neutralLighter: '#f7fafc',
-  
-  // Status Colors
-  success: '#38a169',
-  warning: '#d69e2e',
-  error: '#e53e3e',
-  
-  // Background Colors
-  background: '#ffffff',
-  surface: '#f8fafc',
-  overlay: 'rgba(26, 32, 44, 0.8)'
+/**
+ * Property Preference Form — collects a lead's requirements and posts them to
+ * /api/userpreferenceform. Same fields and payload as before; the UI is now
+ * card-based in GgnHome brand colours, with tap-friendly chips on phones and
+ * a live progress bar. Every section is always visible (no scroll-triggered
+ * reveals that left blank gaps).
+ */
+
+const EMPTY = {
+  userName: "",
+  mobileNumber: "",
+  preferredLocation: "",
+  budgetRange: "",
+  bhkSize: "",
+  propertyType: "",
+  furnishingLevel: "",
+  moveInDate: "",
+  brokerageAmount: 1499,
 };
 
-const UserPreferenceForm = () => {
-  const [formData, setFormData] = useState({
-    userName: '',
-    mobileNumber: '',
-    preferredLocation: '',
-    budgetRange: '',
-    bhkSize: '',
-    propertyType: '',
-    furnishingLevel: '',
-    moveInDate: '',
-    brokerageAmount: 1499
-  });
+const BHK = [
+  { value: "1BHK", label: "1 BHK" },
+  { value: "2BHK", label: "2 BHK" },
+  { value: "3BHK", label: "3 BHK" },
+  { value: "4BHK", label: "4 BHK" },
+  { value: "4BHK+", label: "4+ BHK" },
+];
+const FURNISHING = [
+  { value: "fully-furnished", label: "Fully furnished" },
+  { value: "semi-furnished", label: "Semi furnished" },
+  { value: "unfurnished", label: "Unfurnished" },
+];
+const PROPERTY_TYPES = ["Apartment", "Builder Floor", "Independent House", "Villa", "Studio", "PG / Co-living"];
+const BUDGETS = ["Under ₹20k", "₹20k – 40k", "₹40k – 70k", "₹70k+", "Under ₹1 Cr", "₹1 – 2 Cr", "₹2 Cr+"];
+const TIMELINE = [
+  { key: "immediate", label: "Immediately" },
+  { key: "15", label: "Within 15 days" },
+  { key: "30", label: "Within 30 days" },
+  { key: "flexible", label: "Flexible" },
+];
+const MIN_FEE = 1499;
+const MAX_FEE = 5999;
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showFullScreenLoader, setShowFullScreenLoader] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [validFields, setValidFields] = useState({});
-  const [focusedField, setFocusedField] = useState(null);
-  const [showBrokerageInfo, setShowBrokerageInfo] = useState(false);
-  
-  const sectionRefs = useRef([]);
+const CSS = `
+.upf{min-height:100vh;background:linear-gradient(180deg,#F4F7F9 0%,#EAF4F6 100%);padding:0 0 calc(110px + env(safe-area-inset-bottom));font-family:inherit;color:#1F2D3D}
+.upf-hero{position:relative;overflow:hidden;color:#fff;padding:36px 20px 72px;text-align:center;
+  background:linear-gradient(125deg,#002244 0%,#003366 45%,#0B5C7A 75%,#00A79D 100%)}
+.upf-hero::before,.upf-hero::after{content:"";position:absolute;width:320px;height:320px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(closest-side,rgba(34,211,238,.45),transparent);top:-120px;right:-80px;animation:upfFloat 9s ease-in-out infinite alternate}
+.upf-hero::after{background:radial-gradient(closest-side,rgba(139,92,246,.35),transparent);top:auto;bottom:-160px;left:-100px;right:auto;animation-duration:11s}
+@keyframes upfFloat{to{transform:translate3d(30px,24px,0) scale(1.1)}}
+.upf-hero h1{position:relative;margin:0;font-size:clamp(1.6rem,4.5vw,2.3rem);font-weight:800;letter-spacing:-.01em}
+.upf-hero p{position:relative;margin:10px auto 0;max-width:520px;opacity:.88;font-size:.98rem;line-height:1.5}
+.upf-wrap{max-width:760px;margin:-48px auto 0;padding:0 16px;position:relative}
+.upf-progress{background:#fff;border-radius:16px;padding:16px 18px;box-shadow:0 8px 24px rgba(0,51,102,.08);margin-bottom:16px}
+.upf-steps{display:flex;justify-content:space-between;font-size:.78rem;font-weight:700;color:#7A8B9C;margin-bottom:10px}
+.upf-steps span.on{color:#00857D}
+.upf-bar{height:8px;border-radius:8px;background:#E5EEF2;overflow:hidden}
+.upf-bar i{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,#00A79D,#22D3EE);transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.upf-card{background:#fff;border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 8px 24px rgba(0,51,102,.06);border:1px solid #E6EEF2}
+.upf-card h2{display:flex;align-items:center;gap:10px;margin:0 0 4px;font-size:1.08rem;font-weight:800;color:#003366}
+.upf-card h2 .n{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.8rem;color:#fff;background:linear-gradient(135deg,#00A79D,#22D3EE);flex-shrink:0}
+.upf-card h2 .n.done{background:#10B981}
+.upf-card .sub{margin:0 0 16px 38px;font-size:.85rem;color:#6B7C8D}
+.upf-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:600px){.upf-grid{grid-template-columns:1fr}}
+.upf-field label{display:block;font-size:.8rem;font-weight:700;color:#4A6A8A;margin:0 0 6px}
+.upf-field input{width:100%;box-sizing:border-box;height:48px;padding:0 14px;border-radius:12px;border:1.5px solid #D8E3EA;background:#F9FBFC;font-size:16px;color:#1F2D3D;outline:none;transition:border-color .2s,box-shadow .2s,background .2s}
+.upf-field input:focus{border-color:#00A79D;background:#fff;box-shadow:0 0 0 4px rgba(0,167,157,.14)}
+.upf-field input.ok{border-color:#9ADBD5}
+.upf-field .hint{font-size:.75rem;color:#C0392B;margin-top:4px}
+.upf-chips{display:flex;flex-wrap:wrap;gap:8px}
+.upf-chip{border:1.5px solid #D8E3EA;background:#fff;color:#38506A;border-radius:999px;padding:9px 14px;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .18s ease;-webkit-tap-highlight-color:transparent}
+.upf-chip:hover{border-color:#00A79D;color:#00857D}
+.upf-chip:active{transform:scale(.96)}
+.upf-chip.on{background:linear-gradient(135deg,#00A79D,#0FB5C9);border-color:transparent;color:#fff;box-shadow:0 6px 14px rgba(0,167,157,.28)}
+.upf-block{margin-top:16px}
+.upf-block > label{display:block;font-size:.8rem;font-weight:700;color:#4A6A8A;margin:0 0 8px}
+.upf-fee{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0 12px}
+.upf-fee b{font-size:1.6rem;color:#003366}
+.upf-step{width:40px;height:40px;border-radius:50%;border:1.5px solid #D8E3EA;background:#fff;font-size:1.2rem;color:#003366;cursor:pointer}
+.upf-range{width:100%;accent-color:#00A79D;height:28px}
+.upf-scale{display:flex;justify-content:space-between;font-size:.75rem;color:#7A8B9C}
+.upf-perk{margin-top:12px;padding:10px 12px;border-radius:12px;background:#F0FBFA;color:#0B6E66;font-size:.83rem}
+.upf-link{border:none;background:none;color:#00857D;font-weight:700;cursor:pointer;font-size:.82rem;padding:0;margin-left:auto}
+.upf-submit{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-top:1px solid #E6EEF2}
+.upf-submit button{display:block;width:100%;max-width:728px;margin:0 auto;height:54px;border:none;border-radius:14px;font-size:1rem;font-weight:800;color:#fff;cursor:pointer;
+  background:linear-gradient(120deg,#003366,#0B5C7A 55%,#00A79D);box-shadow:0 10px 24px rgba(0,51,102,.25);transition:transform .15s,opacity .2s}
+.upf-submit button:active{transform:scale(.98)}
+.upf-submit button:disabled{opacity:.45;box-shadow:none;cursor:not-allowed}
+.upf-err{max-width:728px;margin:0 auto 8px;color:#B42318;font-size:.85rem;text-align:center}
+.upf-modal{position:fixed;inset:0;z-index:1500;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,27,54,.55)}
+.upf-modal > div{background:#fff;border-radius:20px;padding:26px 22px;max-width:420px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.25)}
+.upf-modal h3{margin:12px 0 8px;color:#003366;font-size:1.3rem}
+.upf-modal p{color:#4A6A8A;font-size:.92rem;line-height:1.55;margin:0 0 18px}
+.upf-modal ul{text-align:left;color:#4A6A8A;font-size:.9rem;line-height:1.7;margin:0 0 18px;padding-left:20px}
+.upf-modal .btn{display:inline-block;border:none;border-radius:12px;padding:12px 22px;font-weight:800;color:#fff;background:linear-gradient(120deg,#003366,#00A79D);cursor:pointer;text-decoration:none}
+.upf-badge{width:68px;height:68px;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#fff;background:linear-gradient(135deg,#10B981,#22D3EE)}
+.upf-spin{display:inline-block;width:18px;height:18px;border-radius:50%;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;animation:upfSpin .8s linear infinite;vertical-align:-3px;margin-right:10px}
+@keyframes upfSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.upf-hero::before,.upf-hero::after{animation:none}}
+`;
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
+const rise = (i) => ({
+  initial: { opacity: 0, y: 18 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.45, delay: 0.08 * i, ease: [0.22, 1, 0.36, 1] },
+});
 
-    sectionRefs.current.forEach(ref => {
-      if (ref) observer.observe(ref);
-    });
+const dateFromKey = (key) => {
+  if (key === "immediate") return "Immediate";
+  if (key === "flexible") return "Flexible";
+  const d = new Date();
+  d.setDate(d.getDate() + parseInt(key, 10));
+  return d.toISOString().split("T")[0];
+};
 
-    return () => observer.disconnect();
-  }, []);
+function Chips({ options, value, onPick }) {
+  return (
+    <div className="upf-chips" role="radiogroup">
+      {options.map((o) => {
+        const v = typeof o === "string" ? o : o.value;
+        const label = typeof o === "string" ? o : o.label;
+        return (
+          <button key={v} type="button" role="radio" aria-checked={value === v} className={`upf-chip${value === v ? " on" : ""}`} onClick={() => onPick(v)}>
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
-  useEffect(() => {
-    const personalInfoFilled = formData.userName && formData.mobileNumber;
-    const preferencesFilled = formData.preferredLocation && formData.budgetRange && 
-                             formData.bhkSize && formData.propertyType && formData.furnishingLevel;
-    
-    if (preferencesFilled && formData.moveInDate) setCurrentStep(3);
-    else if (personalInfoFilled) setCurrentStep(2);
-    else setCurrentStep(1);
-  }, [formData]);
+export default function UserPreferenceForm() {
+  const [form, setForm] = useState(EMPTY);
+  const [timelineKey, setTimelineKey] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [done, setDone] = useState(false);
+  const [feeInfo, setFeeInfo] = useState(false);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const set = (name, value) => setForm((f) => ({ ...f, [name]: value }));
+  const onInput = (e) => set(e.target.name, e.target.value);
 
-    setValidFields(prev => ({
-      ...prev,
-      [name]: value.trim() !== ''
-    }));
-  };
+  const phoneOk = /^[6-9]\d{9}$/.test(form.mobileNumber.replace(/\D/g, "").slice(-10));
+  const personalDone = Boolean(form.userName.trim() && phoneOk);
+  const prefsDone = Boolean(form.preferredLocation.trim() && form.budgetRange.trim() && form.bhkSize && form.propertyType.trim() && form.furnishingLevel);
+  const timelineDone = Boolean(form.moveInDate);
+  const valid = personalDone && prefsDone && timelineDone;
 
-  const handleDateSelect = (dateType) => {
-    let dateValue;
-    if (dateType === 'immediate') {
-      dateValue = 'Immediate';
-    } else if (dateType === 'flexible') {
-      dateValue = 'Flexible';
-    } else {
-      const today = new Date();
-      const futureDate = new Date(today);
-      futureDate.setDate(today.getDate() + parseInt(dateType));
-      dateValue = futureDate.toISOString().split('T')[0];
-    }
-    
-    setFormData(prev => ({
-      ...prev,
-      moveInDate: dateValue
-    }));
-    setValidFields(prev => ({ ...prev, moveInDate: true }));
-  };
+  const progress = useMemo(() => {
+    const keys = ["userName", "mobileNumber", "preferredLocation", "budgetRange", "bhkSize", "propertyType", "furnishingLevel", "moveInDate"];
+    return Math.round((keys.filter((k) => String(form[k]).trim()).length / keys.length) * 100);
+  }, [form]);
 
-  const handleCustomDateSelect = (e) => {
-    const dateValue = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      moveInDate: dateValue
-    }));
-    setValidFields(prev => ({ ...prev, moveInDate: true }));
-  };
-
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    setShowFullScreenLoader(true);
-    setIsSubmitting(true);
-
+    if (!valid || submitting) return;
+    setSubmitting(true);
+    setError("");
     try {
-      const response = await fetch(`${process.env.REACT_APP_Base_API}/api/userpreferenceform`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          hasLoggedIn: false
-        }),
+      const res = await fetch(`${process.env.REACT_APP_Base_API}/api/userpreferenceform`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, hasLoggedIn: false }),
       });
-
-      if (response.ok) {
-        setShowSuccessModal(true);
-        setFormData({
-          userName: '',
-          mobileNumber: '',
-          preferredLocation: '',
-          budgetRange: '',
-          bhkSize: '',
-          propertyType: '',
-          furnishingLevel: '',
-          moveInDate: '',
-          brokerageAmount: 1499
-        });
-        setValidFields({});
-      } else {
-        console.error('Form submission failed');
-      }
-    } catch (error) {
-      console.error('Error submitting form:', error);
+      if (!res.ok) throw new Error();
+      setDone(true);
+      setForm(EMPTY);
+      setTimelineKey("");
+    } catch {
+      setError("Couldn't send your preferences. Please check your connection and try again.");
     } finally {
-      setIsSubmitting(false);
-      setShowFullScreenLoader(false);
+      setSubmitting(false);
     }
   };
 
-  const closeModal = () => {
-    setShowSuccessModal(false);
-  };
-
-  const isFormValid = () => {
-    return formData.userName && 
-           formData.mobileNumber && 
-           formData.preferredLocation && 
-           formData.budgetRange && 
-           formData.bhkSize && 
-           formData.propertyType && 
-           formData.furnishingLevel && 
-           formData.moveInDate;
-  };
-
-  const dateChips = [
-    { label: '🚀 Immediate', value: 'immediate' },
-    { label: 'Within 15 days', value: '15' },
-    { label: 'Within 30 days', value: '30' },
-    { label: '📅 Flexible', value: 'flexible' }
-  ];
-
-  const progressSteps = [
-    { number: 1, label: 'Personal Info' },
-    { number: 2, label: 'Preferences' },
-    { number: 3, label: 'Move-in Date' }
-  ];
-
-  // Professional Styles
-  const styles = {
-    container: {
-      minHeight: '100dvh',
-      padding: '12px',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'stretch',
-      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-      position: 'relative',
-      overflowX: 'hidden'
-    },
-    brandingBackground: {
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%) rotate(-15deg)',
-      fontSize: 'clamp(8rem, 20vw, 15rem)',
-      fontWeight: '900',
-      color: 'rgba(45, 55, 72, 0.03)',
-      userSelect: 'none',
-      pointerEvents: 'none',
-      whiteSpace: 'nowrap',
-      letterSpacing: '12px',
-      textTransform: 'uppercase'
-    },
-    card: {
-      background: COLORS.background,
-      borderRadius: '20px',
-      boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.15)',
-      maxWidth: '680px',
-      width: '100%',
-      border: `1px solid ${COLORS.neutralLight}`,
-      overflow: 'hidden',
-      position: 'relative',
-      zIndex: 10
-    },
-    stickyHeader: {
-      position: 'sticky',
-      top: 0,
-      background: 'rgba(255, 255, 255, 0.97)',
-      backdropFilter: 'blur(16px)',
-      padding: '24px 20px 16px 20px',
-      borderBottom: `1px solid ${COLORS.neutralLight}`,
-      zIndex: 50
-    },
-    title: {
-      color: COLORS.primaryDark,
-      fontSize: 'clamp(1.75rem, 4vw, 2.25rem)',
-      fontWeight: '700',
-      marginBottom: '8px',
-      textAlign: 'center',
-      letterSpacing: '-0.02em'
-    },
-    subtitle: {
-      color: COLORS.neutral,
-      fontSize: 'clamp(0.9rem, 2vw, 1.1rem)',
-      textAlign: 'center',
-      marginBottom: '32px',
-      lineHeight: '1.6',
-      fontWeight: '400'
-    },
-    progressContainer: {
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: '16px',
-      marginBottom: '16px'
-    },
-    progressStep: (active, completed) => ({
-      width: '44px',
-      height: '44px',
-      borderRadius: '50%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '0.875rem',
-      fontWeight: '600',
-      background: completed ? COLORS.success : active ? COLORS.secondary : COLORS.neutralLight,
-      color: completed || active ? '#FFFFFF' : COLORS.neutral,
-      border: completed ? `2px solid ${COLORS.success}` : active ? `2px solid ${COLORS.secondary}` : `2px solid ${COLORS.neutralLight}`,
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-      position: 'relative'
-    }),
-    progressLine: {
-      height: '3px',
-      width: '80px',
-      background: COLORS.neutralLight,
-      borderRadius: '2px',
-      position: 'relative',
-      overflow: 'hidden'
-    },
-    progressFill: (completed) => ({
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      height: '100%',
-      width: completed ? '100%' : '0%',
-      background: `linear-gradient(90deg, ${COLORS.secondary}, ${COLORS.accent})`,
-      transition: 'width 0.5s ease',
-      borderRadius: '2px'
-    }),
-    formContent: {
-      padding: '20px',
-      overflow: 'visible'
-    },
-    section: {
-      marginBottom: '40px',
-      opacity: 0,
-      transform: 'translateY(30px)',
-      transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)'
-    },
-    sectionHeader: {
-      background: `linear-gradient(135deg, ${COLORS.secondary}08, ${COLORS.accent}08)`,
-      padding: '20px 24px',
-      borderLeft: `4px solid ${COLORS.secondary}`,
-      borderRadius: '0 12px 12px 0',
-      marginBottom: '28px',
-      marginTop: '32px',
-      border: `1px solid ${COLORS.neutralLight}`
-    },
-    sectionTitle: {
-      color: COLORS.primaryDark,
-      fontSize: '1.25rem',
-      fontWeight: '600',
-      margin: 0,
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px'
-    },
-    sectionIcon: {
-      fontSize: '1.5rem'
-    },
-    divider: {
-      height: '1px',
-      background: `linear-gradient(90deg, transparent 0%, ${COLORS.neutralLight} 50%, transparent 100%)`,
-      margin: '40px 0',
-      border: 'none'
-    },
-    inputGroup: {
-      display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-      gap: '24px'
-    },
-    inputField: {
-      marginBottom: '28px',
-      position: 'relative'
-    },
-    inputContainer: {
-      position: 'relative'
-    },
-    input: (hasValue, isFocused) => ({
-      width: '100%',
-      height: '56px',
-      paddingLeft: '56px',
-      paddingRight: '48px',
-      border: `2px solid ${hasValue || isFocused ? COLORS.secondary : COLORS.neutralLight}`,
-      borderRadius: '12px',
-      fontSize: '1rem',
-      background: COLORS.background,
-      color: COLORS.primaryDark,
-      outline: 'none',
-      boxSizing: 'border-box',
-      transition: 'all 0.2s ease',
-      boxShadow: isFocused ? `0 0 0 3px ${COLORS.secondary}20` : 'none',
-      fontFamily: 'inherit',
-      fontWeight: '500'
-    }),
-    select: (hasValue, isFocused) => ({
-      width: '100%',
-      height: '56px',
-      paddingLeft: '56px',
-      paddingRight: '52px',
-      border: `2px solid ${hasValue || isFocused ? COLORS.secondary : COLORS.neutralLight}`,
-      borderRadius: '12px',
-      fontSize: '1rem',
-      background: COLORS.background,
-      color: hasValue ? COLORS.primaryDark : COLORS.neutral,
-      outline: 'none',
-      appearance: 'none',
-      boxSizing: 'border-box',
-      transition: 'all 0.2s ease',
-      boxShadow: isFocused ? `0 0 0 3px ${COLORS.secondary}20` : 'none',
-      fontFamily: 'inherit',
-      fontWeight: '500',
-      cursor: 'pointer'
-    }),
-    inputIcon: {
-      position: 'absolute',
-      left: '18px',
-      top: '50%',
-      transform: 'translateY(-50%)',
-      fontSize: '1.25rem',
-      zIndex: 2,
-      pointerEvents: 'none',
-      opacity: 0.7
-    },
-    floatingLabel: (hasValue, isFocused) => ({
-      position: 'absolute',
-      left: '56px',
-      top: hasValue || isFocused ? '6px' : '50%',
-      transform: hasValue || isFocused ? 'translateY(0)' : 'translateY(-50%)',
-      color: hasValue || isFocused ? COLORS.secondary : COLORS.neutral,
-      fontSize: hasValue || isFocused ? '0.75rem' : '1rem',
-      fontWeight: hasValue || isFocused ? '600' : '500',
-      background: COLORS.background,
-      padding: hasValue || isFocused ? '0 8px' : '0',
-      pointerEvents: 'none',
-      transition: 'all 0.2s ease',
-      zIndex: 2
-    }),
-    validCheckmark: (visible) => ({
-      position: 'absolute',
-      right: '18px',
-      top: '50%',
-      transform: 'translateY(-50%)',
-      color: COLORS.success,
-      fontSize: '1.125rem',
-      opacity: visible ? 1 : 0,
-      transition: 'all 0.3s ease'
-    }),
-    dropdownIcon: {
-      position: 'absolute',
-      right: '18px',
-      top: '50%',
-      transform: 'translateY(-50%)',
-      pointerEvents: 'none',
-      color: COLORS.neutral
-    },
-    dateChipsContainer: {
-      display: 'flex',
-      gap: '12px',
-      flexWrap: 'wrap',
-      marginBottom: '20px'
-    },
-    dateChip: (active) => ({
-      padding: '14px 24px',
-      border: active ? `2px solid ${COLORS.secondary}` : `2px solid ${COLORS.neutralLight}`,
-      borderRadius: '12px',
-      background: active ? COLORS.secondary : COLORS.background,
-      color: active ? '#FFFFFF' : COLORS.neutral,
-      fontSize: '0.9rem',
-      fontWeight: '500',
-      cursor: 'pointer',
-      transition: 'all 0.2s ease',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '8px',
-      minWidth: '140px',
-      justifyContent: 'center'
-    }),
-    dateInput: (hasValue) => ({
-      width: '100%',
-      height: '56px',
-      padding: '16px 20px',
-      border: `2px solid ${hasValue ? COLORS.secondary : COLORS.neutralLight}`,
-      borderRadius: '12px',
-      fontSize: '1rem',
-      background: COLORS.background,
-      color: COLORS.primaryDark,
-      outline: 'none',
-      boxSizing: 'border-box',
-      transition: 'all 0.2s ease',
-      fontFamily: 'inherit',
-      fontWeight: '500'
-    }),
-    submitBtn: (valid, submitting) => ({
-      width: '100%',
-      height: '60px',
-      background: valid && !submitting ? `linear-gradient(135deg, ${COLORS.secondary}, ${COLORS.accent})` : COLORS.neutralLight,
-      color: valid && !submitting ? '#FFFFFF' : COLORS.neutral,
-      border: 'none',
-      borderRadius: '14px',
-      fontSize: '1.1rem',
-      fontWeight: '600',
-      cursor: valid && !submitting ? 'pointer' : 'not-allowed',
-      opacity: valid && !submitting ? 1 : 0.6,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '12px',
-      marginTop: '24px',
-      transition: 'all 0.3s ease',
-      fontFamily: 'inherit',
-      letterSpacing: '-0.01em'
-    }),
-    spinner: {
-      width: '20px',
-      height: '20px',
-      border: '2px solid transparent',
-      borderTop: '2px solid #FFFFFF',
-      borderRadius: '50%',
-      animation: 'spin 1s linear infinite'
-    },
-    fullScreenLoader: {
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: COLORS.overlay,
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 2000,
-      backdropFilter: 'blur(20px)'
-    },
-    loaderContent: {
-      textAlign: 'center',
-      color: '#FFFFFF',
-      maxWidth: '400px',
-      padding: '40px'
-    },
-    loaderSpinner: {
-      width: '60px',
-      height: '60px',
-      border: '4px solid rgba(255, 255, 255, 0.2)',
-      borderTop: `4px solid ${COLORS.accent}`,
-      borderRadius: '50%',
-      animation: 'spin 1s linear infinite',
-      margin: '0 auto 24px'
-    },
-    loaderText: {
-      fontSize: '1.5rem',
-      fontWeight: '600',
-      marginBottom: '12px',
-      background: `linear-gradient(135deg, ${COLORS.accent}, ${COLORS.secondaryLight})`,
-      WebkitBackgroundClip: 'text',
-      WebkitTextFillColor: 'transparent',
-      backgroundClip: 'text'
-    },
-    loaderSubtext: {
-      color: COLORS.neutralLight,
-      fontSize: '1rem',
-      opacity: 0.8,
-      lineHeight: '1.5'
-    },
-    progressBar: {
-      width: '200px',
-      height: '4px',
-      background: 'rgba(255, 255, 255, 0.2)',
-      borderRadius: '2px',
-      marginTop: '24px',
-      overflow: 'hidden'
-    },
-    progressBarFill: {
-      height: '100%',
-      background: `linear-gradient(90deg, ${COLORS.secondary}, ${COLORS.accent})`,
-      animation: 'progress 2s ease-in-out infinite',
-      borderRadius: '2px'
-    },
-    modalOverlay: {
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: COLORS.overlay,
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000,
-      backdropFilter: 'blur(25px)',
-      padding: '20px'
-    },
-    modalContent: {
-      background: COLORS.background,
-      borderRadius: '24px',
-      padding: '48px',
-      maxWidth: '520px',
-      width: '100%',
-      textAlign: 'center',
-      boxShadow: '0 32px 64px -12px rgba(0, 0, 0, 0.2)',
-      border: `1px solid ${COLORS.neutralLight}`,
-      position: 'relative',
-      animation: 'modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
-    },
-    modalIcon: {
-      width: '80px',
-      height: '80px',
-      background: `linear-gradient(135deg, ${COLORS.success}, ${COLORS.accent})`,
-      borderRadius: '50%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      margin: '0 auto 24px',
-      fontSize: '2.5rem',
-      color: '#FFFFFF',
-      animation: 'bounce 0.6s ease-out'
-    },
-    modalTitle: {
-      color: COLORS.primaryDark,
-      fontSize: '2rem',
-      fontWeight: '700',
-      marginBottom: '16px',
-      letterSpacing: '-0.02em'
-    },
-    modalSubtitle: {
-      color: COLORS.secondary,
-      fontSize: '1.25rem',
-      fontWeight: '600',
-      marginBottom: '12px'
-    },
-    modalText: {
-      color: COLORS.neutral,
-      fontSize: '1rem',
-      lineHeight: '1.6',
-      marginBottom: '32px'
-    },
-    modalHighlight: {
-      color: COLORS.success,
-      fontWeight: '600',
-      background: `${COLORS.success}15`,
-      padding: '16px 24px',
-      borderRadius: '12px',
-      display: 'inline-block',
-      margin: '20px 0',
-      border: `1px solid ${COLORS.success}30`,
-      fontSize: '1.1rem'
-    },
-    modalButtonGroup: {
-      display: 'flex',
-      gap: '16px',
-      justifyContent: 'center',
-      flexWrap: 'wrap'
-    },
-    primaryButton: {
-      background: `linear-gradient(135deg, ${COLORS.secondary}, ${COLORS.accent})`,
-      color: '#FFFFFF',
-      border: 'none',
-      padding: '16px 32px',
-      fontSize: '1rem',
-      fontWeight: '600',
-      borderRadius: '12px',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      textDecoration: 'none',
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '8px',
-      minWidth: '160px',
-      justifyContent: 'center'
-    },
-    secondaryButton: {
-      background: 'transparent',
-      color: COLORS.neutral,
-      border: `2px solid ${COLORS.neutralLight}`,
-      padding: '14px 30px',
-      fontSize: '1rem',
-      fontWeight: '600',
-      borderRadius: '12px',
-      cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      minWidth: '160px'
-    },
-    closeButton: {
-      position: 'absolute',
-      top: '20px',
-      right: '20px',
-      background: 'none',
-      border: 'none',
-      fontSize: '1.5rem',
-      color: COLORS.neutral,
-      cursor: 'pointer',
-      width: '40px',
-      height: '40px',
-      borderRadius: '50%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      transition: 'all 0.3s ease'
-    },
-    keyframes: `
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      @keyframes modalSlideIn {
-        from {
-          opacity: 0;
-          transform: translateY(-30px) scale(0.95);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
-      }
-      @keyframes bounce {
-        0%, 20%, 53%, 80%, 100% {
-          transform: translate3d(0,0,0);
-        }
-        40%, 43% {
-          transform: translate3d(0,-10px,0);
-        }
-        70% {
-          transform: translate3d(0,-5px,0);
-        }
-        90% {
-          transform: translate3d(0,-2px,0);
-        }
-      }
-      @keyframes progress {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
-      }
-      input[type="date"]::-webkit-calendar-picker-indicator {
-        cursor: pointer;
-        filter: invert(0.4);
-      }
-      input[type="range"] {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 100%;
-        height: 6px;
-        border-radius: 3px;
-        outline: none;
-
-        background:
-          linear-gradient(
-            to right,
-            ${COLORS.secondary} 0%,
-            ${COLORS.secondary} ${((formData.brokerageAmount - 1499) / (5999 - 1499)) * 100}%,
-            ${COLORS.neutralLight} ${((formData.brokerageAmount - 1499) / (5999 - 1499)) * 100}%,
-            ${COLORS.neutralLight} 100%
-          ),
-          repeating-linear-gradient(
-            to right,
-            transparent 0%,
-            transparent calc(100% / 9 - 1px),
-            rgba(0, 0, 0, 0.15) calc(100% / 9 - 1px),
-            rgba(0, 0, 0, 0.15) calc(100% / 9)
-          );
-      }
-      input[type="range"]::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: ${COLORS.secondary};
-        cursor: pointer;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.25);
-      }
-      input[type="range"]::-moz-range-thumb {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: ${COLORS.secondary};
-        cursor: pointer;
-        box-shadow: 0 3px 10px rgba(0,0,0,0.25);
-        border: none;
-      }
-      @media (max-width: 768px) {
-        .input-group {
-          grid-template-columns: 1fr !important;
-        }
-        .modal-button-group {
-          flex-direction: column;
-        }
-        input,
-        select,
-        button {
-          font-size: 16px !important;
-        }
-      }
-    `
-  };
+  const feePct = ((form.brokerageAmount - MIN_FEE) / (MAX_FEE - MIN_FEE)) * 100;
 
   return (
-    <>
-      <style>{styles.keyframes}</style>
-      
-      {/* Full Screen Loader */}
-      {showFullScreenLoader && (
-        <div style={styles.fullScreenLoader}>
-          <div style={styles.loaderContent}>
-            <div style={styles.loaderSpinner}></div>
-            <div style={styles.loaderText}>Processing Your Preferences</div>
-            <div style={styles.loaderSubtext}>We're analyzing your requirements to find the perfect property matches...</div>
-            <div style={styles.progressBar}>
-              <div style={styles.progressBarFill}></div>
+    <div className="upf">
+      <style>{CSS}</style>
+
+      <header className="upf-hero">
+        <motion.h1 {...rise(0)}>Tell us what home you want</motion.h1>
+        <motion.p {...rise(1)}>Share a few details and our team will hand-pick verified properties in Gurgaon that match you.</motion.p>
+      </header>
+
+      <form className="upf-wrap" onSubmit={submit} noValidate>
+        <motion.div className="upf-progress" {...rise(1)}>
+          <div className="upf-steps">
+            <span className={personalDone ? "on" : ""}>1 · About you</span>
+            <span className={prefsDone ? "on" : ""}>2 · Your home</span>
+            <span className={timelineDone ? "on" : ""}>3 · Timeline</span>
+          </div>
+          <div className="upf-bar" aria-label={`${progress}% complete`}>
+            <i style={{ width: `${Math.max(progress, 4)}%` }} />
+          </div>
+        </motion.div>
+
+        {/* 1. About you */}
+        <motion.section className="upf-card" {...rise(2)}>
+          <h2><span className={`n${personalDone ? " done" : ""}`}>{personalDone ? "✓" : 1}</span>About you</h2>
+          <p className="sub">So our property expert can reach you.</p>
+          <div className="upf-grid">
+            <div className="upf-field">
+              <label htmlFor="upf-name">Full name</label>
+              <input id="upf-name" name="userName" autoComplete="name" placeholder="e.g. Rahul Sharma" value={form.userName} onChange={onInput} className={form.userName.trim() ? "ok" : ""} />
+            </div>
+            <div className="upf-field">
+              <label htmlFor="upf-phone">Mobile number</label>
+              <input id="upf-phone" name="mobileNumber" type="tel" inputMode="numeric" autoComplete="tel" maxLength={13} placeholder="10-digit mobile" value={form.mobileNumber} onChange={onInput} className={phoneOk ? "ok" : ""} />
+              {form.mobileNumber && !phoneOk && <div className="hint">Enter a valid 10-digit mobile number</div>}
             </div>
           </div>
+        </motion.section>
+
+        {/* 2. Your home */}
+        <motion.section className="upf-card" {...rise(3)}>
+          <h2><span className={`n${prefsDone ? " done" : ""}`}>{prefsDone ? "✓" : 2}</span>Your ideal home</h2>
+          <p className="sub">Pick what fits — you can type your own too.</p>
+
+          <div className="upf-field">
+            <label htmlFor="upf-loc">Preferred location</label>
+            <input id="upf-loc" name="preferredLocation" placeholder="Sector, society or area — e.g. Sector 56" value={form.preferredLocation} onChange={onInput} className={form.preferredLocation.trim() ? "ok" : ""} />
+          </div>
+
+          <div className="upf-block">
+            <label>Size</label>
+            <Chips options={BHK} value={form.bhkSize} onPick={(v) => set("bhkSize", v)} />
+          </div>
+
+          <div className="upf-block">
+            <label>Budget</label>
+            <Chips options={BUDGETS} value={form.budgetRange} onPick={(v) => set("budgetRange", v)} />
+            <div className="upf-field" style={{ marginTop: 10 }}>
+              <input name="budgetRange" aria-label="Budget" placeholder="Or type your budget, e.g. ₹35,000/month" value={form.budgetRange} onChange={onInput} className={form.budgetRange.trim() ? "ok" : ""} />
+            </div>
+          </div>
+
+          <div className="upf-block">
+            <label>Property type</label>
+            <Chips options={PROPERTY_TYPES} value={form.propertyType} onPick={(v) => set("propertyType", v)} />
+          </div>
+
+          <div className="upf-block">
+            <label>Furnishing</label>
+            <Chips options={FURNISHING} value={form.furnishingLevel} onPick={(v) => set("furnishingLevel", v)} />
+          </div>
+        </motion.section>
+
+        {/* 3. Timeline + brokerage */}
+        <motion.section className="upf-card" {...rise(4)}>
+          <h2><span className={`n${timelineDone ? " done" : ""}`}>{timelineDone ? "✓" : 3}</span>When do you want to move?</h2>
+          <p className="sub">Helps us prioritise listings available on time.</p>
+          <Chips
+            options={TIMELINE.map((t) => ({ value: t.key, label: t.label }))}
+            value={timelineKey}
+            onPick={(k) => {
+              setTimelineKey(k);
+              set("moveInDate", dateFromKey(k));
+            }}
+          />
+          <div className="upf-field upf-block">
+            <label htmlFor="upf-date">Or pick a date</label>
+            <input
+              id="upf-date"
+              type="date"
+              min={new Date().toISOString().split("T")[0]}
+              value={timelineKey === "custom" ? form.moveInDate : ""}
+              onChange={(e) => {
+                setTimelineKey(e.target.value ? "custom" : "");
+                set("moveInDate", e.target.value);
+              }}
+            />
+          </div>
+
+          <div className="upf-block">
+            <label style={{ display: "flex", alignItems: "center" }}>
+              Service fee you're comfortable with
+              <button type="button" className="upf-link" onClick={() => setFeeInfo(true)}>Why it matters</button>
+            </label>
+            <div className="upf-fee">
+              <button type="button" className="upf-step" aria-label="Decrease" onClick={() => set("brokerageAmount", Math.max(MIN_FEE, form.brokerageAmount - 500))}>−</button>
+              <b>₹{form.brokerageAmount.toLocaleString("en-IN")}</b>
+              <button type="button" className="upf-step" aria-label="Increase" onClick={() => set("brokerageAmount", Math.min(MAX_FEE, form.brokerageAmount + 500))}>+</button>
+            </div>
+            <input
+              className="upf-range"
+              type="range"
+              min={MIN_FEE}
+              max={MAX_FEE}
+              step={500}
+              value={form.brokerageAmount}
+              onChange={(e) => set("brokerageAmount", Number(e.target.value))}
+              aria-label="Service fee"
+            />
+            <div className="upf-scale"><span>₹1,499</span><span>₹5,999</span></div>
+            <div className="upf-perk">
+              {feePct >= 66 ? "Priority matching with a dedicated relationship manager." : feePct >= 33 ? "Faster responses from owners and agents." : "Standard matching. Raise it for faster, priority support."}
+            </div>
+          </div>
+        </motion.section>
+
+        <div className="upf-submit">
+          {error && <div className="upf-err">{error}</div>}
+          <button type="submit" disabled={!valid || submitting}>
+            {submitting ? (<><span className="upf-spin" />Sending your preferences…</>) : valid ? "Find my property matches" : `Complete the form · ${progress}%`}
+          </button>
         </div>
-      )}
+      </form>
 
-      {/* Success Modal */}
-      {showSuccessModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
-            <button 
-              style={styles.closeButton}
-              onClick={closeModal}
-              onMouseEnter={(e) => {
-                e.target.style.background = COLORS.neutralLight;
-                e.target.style.color = COLORS.primaryDark;
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'none';
-                e.target.style.color = COLORS.neutral;
-              }}
-            >
-              ×
-            </button>
-            
-            <div style={styles.modalIcon}>
-              ✓
-            </div>
-            
-            <h2 style={styles.modalTitle}>Preferences Saved Successfully</h2>
-            
-            <p style={styles.modalSubtitle}>Your property search is now personalized! 🎯</p>
-            
-            <p style={styles.modalText}>
-              We've carefully saved your preferences and will now match you with properties that perfectly align with your requirements.
-            </p>
-            
-            <div style={styles.modalHighlight}>
-              Ready to explore your personalized property matches?
-            </div>
-            
-            <p style={styles.modalText}>
-              Access exclusive listings, save your favorites, and receive instant notifications when new properties match your criteria.
-            </p>
-            
-            <div style={styles.modalButtonGroup} className="modal-button-group">
-              <a 
-                href="https://www.ggnhome.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                style={styles.primaryButton}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 8px 25px rgba(49, 130, 206, 0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = 'none';
-                }}
-              >
-                🌐 Visit GGN Home
-              </a>
-              
-              <button 
-                style={styles.secondaryButton}
-                onClick={closeModal}
-                onMouseEnter={(e) => {
-                  e.target.style.background = COLORS.neutral;
-                  e.target.style.color = '#FFFFFF';
-                  e.target.style.borderColor = COLORS.neutral;
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.background = 'transparent';
-                  e.target.style.color = COLORS.neutral;
-                  e.target.style.borderColor = COLORS.neutralLight;
-                }}
-              >
-                Continue Browsing
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Brokerage Info Modal */}
-      {showBrokerageInfo && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
-            <button
-              style={styles.closeButton}
-              onClick={() => setShowBrokerageInfo(false)}
-              onMouseEnter={(e) => {
-                e.target.style.background = COLORS.neutralLight;
-                e.target.style.color = COLORS.primaryDark;
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.background = 'none';
-                e.target.style.color = COLORS.neutral;
-              }}
-            >
-              ×
-            </button>
-
-            <div style={styles.modalIcon}>💡</div>
-
-            <h2 style={styles.modalTitle}>Why Brokerage Matters</h2>
-
-            <p style={styles.modalText}>
-              Setting a higher brokerage significantly increases your chances of getting the right property.
-              <br /><br />
-              <strong>Higher brokerage means:</strong>
-              <br />• Faster responses from owners & agents
-              <br />• Dedicated relationship manager support
-              <br />• More accurate and suitable options based on your requirements
-              <br />• Priority property matching
-              <br /><br />
-              Choose a higher brokerage to get priority matching and better support 🚀
-            </p>
-
-            <button
-              style={styles.primaryButton}
-              onClick={() => setShowBrokerageInfo(false)}
-              onMouseEnter={(e) => {
-                e.target.style.transform = 'translateY(-2px)';
-                e.target.style.boxShadow = '0 8px 25px rgba(49, 130, 206, 0.3)';
-              }}
-              onMouseLeave={(e) => {
-                e.target.style.transform = 'translateY(0)';
-                e.target.style.boxShadow = 'none';
-              }}
-            >
-              Got it!
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Main Form */}
-      <div style={styles.container}>
-        <div style={styles.brandingBackground}>GGN HOME</div>
-        <div style={styles.card}>
-          {/* Sticky Header */}
-          <div style={styles.stickyHeader}>
-            <h2 style={styles.title}>Property Preference Form</h2>
-            <p style={styles.subtitle}>Tell us your requirements and we'll match you with perfect properties</p>
-            
-            {/* Progress Indicator */}
-            <div style={styles.progressContainer}>
-              {progressSteps.map((step, index) => (
-                <React.Fragment key={step.number}>
-                  <div style={styles.progressStep(currentStep === step.number, currentStep > step.number)}>
-                    {currentStep > step.number ? '✓' : step.number}
-                  </div>
-                  {index < progressSteps.length - 1 && (
-                    <div style={styles.progressLine}>
-                      <div style={styles.progressFill(currentStep > step.number)}></div>
-                    </div>
-                  )}
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} style={styles.formContent}>
-            {/* Personal Information Section */}
-            <div ref={el => sectionRefs.current[0] = el} style={styles.section}>
-              <div style={styles.sectionHeader}>
-                <h3 style={styles.sectionTitle}>
-                  <span style={styles.sectionIcon}>👤</span>
-                  Personal Information
-                </h3>
-              </div>
-              
-              <div style={styles.inputGroup} className="input-group">
-                {/* Full Name */}
-                <div style={styles.inputField}>
-                  <div style={styles.inputContainer}>
-                    <span style={styles.inputIcon}>👤</span>
-                    <input
-                      type="text"
-                      id="userName"
-                      name="userName"
-                      value={formData.userName}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField('userName')}
-                      onBlur={() => setFocusedField(null)}
-                      required
-                      style={styles.input(formData.userName, focusedField === 'userName')}
-                    />
-                    <label 
-                      htmlFor="userName"
-                      style={styles.floatingLabel(formData.userName, focusedField === 'userName')}
-                    >
-                      Full Name
-                    </label>
-                    <span style={styles.validCheckmark(validFields.userName)}>
-                      ✓
-                    </span>
-                  </div>
-                </div>
-
-                {/* Mobile Number */}
-                <div style={styles.inputField}>
-                  <div style={styles.inputContainer}>
-                    <span style={styles.inputIcon}>📱</span>
-                    <input
-                      type="tel"
-                      id="mobileNumber"
-                      name="mobileNumber"
-                      value={formData.mobileNumber}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField('mobileNumber')}
-                      onBlur={() => setFocusedField(null)}
-                      required
-                      style={styles.input(formData.mobileNumber, focusedField === 'mobileNumber')}
-                    />
-                    <label 
-                      htmlFor="mobileNumber"
-                      style={styles.floatingLabel(formData.mobileNumber, focusedField === 'mobileNumber')}
-                    >
-                      Mobile Number
-                    </label>
-                    <span style={styles.validCheckmark(validFields.mobileNumber)}>
-                      ✓
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <hr style={styles.divider} />
-
-            {/* Property Preferences Section */}
-            <div ref={el => sectionRefs.current[1] = el} style={styles.section}>
-              <div style={styles.sectionHeader}>
-                <h3 style={styles.sectionTitle}>
-                  <span style={styles.sectionIcon}>🏠</span>
-                  Property Preferences
-                </h3>
-              </div>
-              
-              {/* Preferred Location */}
-              <div style={styles.inputField}>
-                <div style={styles.inputContainer}>
-                  <span style={styles.inputIcon}>📍</span>
-                  <input
-                    type="text"
-                    id="preferredLocation"
-                    name="preferredLocation"
-                    value={formData.preferredLocation}
-                    onChange={handleChange}
-                    onFocus={() => setFocusedField('preferredLocation')}
-                    onBlur={() => setFocusedField(null)}
-                    required
-                    style={styles.input(formData.preferredLocation, focusedField === 'preferredLocation')}
-                  />
-                  <label 
-                    htmlFor="preferredLocation"
-                    style={styles.floatingLabel(formData.preferredLocation, focusedField === 'preferredLocation')}
-                  >
-                    Preferred Location
-                  </label>
-                  <span style={styles.validCheckmark(validFields.preferredLocation)}>
-                    ✓
-                  </span>
-                </div>
-              </div>
-
-              <div style={styles.inputGroup} className="input-group">
-                {/* Budget Range */}
-                <div style={styles.inputField}>
-                  <div style={styles.inputContainer}>
-                    <span style={styles.inputIcon}>💰</span>
-                    <input
-                      type="text"
-                      id="budgetRange"
-                      name="budgetRange"
-                      value={formData.budgetRange}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField('budgetRange')}
-                      onBlur={() => setFocusedField(null)}
-                      required
-                      style={styles.input(formData.budgetRange, focusedField === 'budgetRange')}
-                    />
-                    <label 
-                      htmlFor="budgetRange"
-                      style={styles.floatingLabel(formData.budgetRange, focusedField === 'budgetRange')}
-                    >
-                      Budget Range (₹)
-                    </label>
-                    <span style={styles.validCheckmark(validFields.budgetRange)}>
-                      ✓
-                    </span>
-                  </div>
-                </div>
-
-                {/* BHK Size */}
-                <div style={styles.inputField}>
-                  <div style={styles.inputContainer}>
-                    <span style={styles.inputIcon}>🏠</span>
-                    <select
-                      id="bhkSize"
-                      name="bhkSize"
-                      value={formData.bhkSize}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField('bhkSize')}
-                      onBlur={() => setFocusedField(null)}
-                      required
-                      style={styles.select(formData.bhkSize, focusedField === 'bhkSize')}
-                    >
-                      <option value=""></option>
-                      <option value="1BHK">1 BHK</option>
-                      <option value="2BHK">2 BHK</option>
-                      <option value="3BHK">3 BHK</option>
-                      <option value="4BHK">4 BHK</option>
-                      <option value="4BHK+">4+ BHK</option>
-                    </select>
-                    <label 
-                      htmlFor="bhkSize"
-                      style={styles.floatingLabel(formData.bhkSize, focusedField === 'bhkSize')}
-                    >
-                      BHK Size
-                    </label>
-                    <div style={styles.dropdownIcon}>
-                      <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    {validFields.bhkSize && (
-                      <span style={{...styles.validCheckmark(validFields.bhkSize), right: '40px'}}>
-                        ✓
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div style={styles.inputGroup} className="input-group">
-                {/* Property Type */}
-                <div style={styles.inputField}>
-                  <div style={styles.inputContainer}>
-                    <span style={styles.inputIcon}>🏢</span>
-                    <input
-                      type="text"
-                      id="propertyType"
-                      name="propertyType"
-                      value={formData.propertyType}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField('propertyType')}
-                      onBlur={() => setFocusedField(null)}
-                      required
-                      style={styles.input(formData.propertyType, focusedField === 'propertyType')}
-                    />
-                    <label 
-                      htmlFor="propertyType"
-                      style={styles.floatingLabel(formData.propertyType, focusedField === 'propertyType')}
-                    >
-                      Property Type
-                    </label>
-                    <span style={styles.validCheckmark(validFields.propertyType)}>
-                      ✓
-                    </span>
-                  </div>
-                </div>
-
-                {/* Furnishing Level */}
-                <div style={styles.inputField}>
-                  <div style={styles.inputContainer}>
-                    <span style={styles.inputIcon}>🛋️</span>
-                    <select
-                      id="furnishingLevel"
-                      name="furnishingLevel"
-                      value={formData.furnishingLevel}
-                      onChange={handleChange}
-                      onFocus={() => setFocusedField('furnishingLevel')}
-                      onBlur={() => setFocusedField(null)}
-                      required
-                      style={styles.select(formData.furnishingLevel, focusedField === 'furnishingLevel')}
-                    >
-                      <option value=""></option>
-                      <option value="fully-furnished">Fully Furnished</option>
-                      <option value="semi-furnished">Semi Furnished</option>
-                      <option value="unfurnished">Unfurnished</option>
-                    </select>
-                    <label 
-                      htmlFor="furnishingLevel"
-                      style={styles.floatingLabel(formData.furnishingLevel, focusedField === 'furnishingLevel')}
-                    >
-                      Furnishing Level
-                    </label>
-                    <div style={styles.dropdownIcon}>
-                      <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    {validFields.furnishingLevel && (
-                      <span style={{...styles.validCheckmark(validFields.furnishingLevel), right: '40px'}}>
-                        ✓
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <hr style={styles.divider} />
-
-            {/* Brokerage Preference Section */}
-            <div ref={el => sectionRefs.current[2] = el} style={styles.section}>
-              <div style={styles.sectionHeader}>
-                <h3 style={styles.sectionTitle}>
-                  <span style={styles.sectionIcon}>💼</span>
-                  Brokerage Preference
-                  <button
-                    type="button"
-                    onClick={() => setShowBrokerageInfo(true)}
-                    style={{
-                      marginLeft: '10px',
-                      border: 'none',
-                      background: 'transparent',
-                      cursor: 'pointer',
-                      fontSize: '1.1rem',
-                      color: COLORS.secondary,
-                      padding: '4px 8px',
-                      borderRadius: '50%',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = COLORS.secondaryLight + '20';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = 'transparent';
-                    }}
-                  >
-                    ℹ️
-                  </button>
-                </h3>
-              </div>
-
-              <div
-                style={{
-                  border: `2px solid ${COLORS.neutralLight}`,
-                  borderRadius: '14px',
-                  padding: '20px',
-                  background: COLORS.neutralLighter
-                }}
-              >
-                <p style={{ 
-                  marginBottom: '16px', 
-                  fontWeight: 600, 
-                  color: COLORS.primaryDark,
-                  fontSize: '1rem'
-                }}>
-                  Select Brokerage Amount
-                </p>
-
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  marginBottom: '12px',
-                  fontSize: '0.875rem',
-                  color: COLORS.neutral
-                }}>
-                  <span>₹1,499</span>
-                  <span>₹5,999</span>
-                </div>
-
-                <input
-                  type="range"
-                  min="1499"
-                  max="5999"
-                  step="500"
-                  value={formData.brokerageAmount}
-                  onChange={(e) =>
-                    setFormData(prev => ({
-                      ...prev,
-                      brokerageAmount: Number(e.target.value)
-                    }))
-                  }
-                  style={{ 
-                    width: '100%', 
-                    marginBottom: '24px',
-                    cursor: 'pointer'
-                  }}
-                />
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData(prev => ({
-                        ...prev,
-                        brokerageAmount: Math.max(1499, prev.brokerageAmount - 500)
-                      }))
-                    }
-                    style={{
-                      width: '52px',
-                      height: '52px',
-                      borderRadius: '50%',
-                      border: `2px solid ${COLORS.secondary}`,
-                      background: COLORS.background,
-                      fontSize: '1.5rem',
-                      cursor: 'pointer',
-                      color: COLORS.secondary,
-                      transition: 'all 0.3s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: '300'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = COLORS.secondary;
-                      e.target.style.color = '#FFFFFF';
-                      e.target.style.transform = 'scale(1.05)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = COLORS.background;
-                      e.target.style.color = COLORS.secondary;
-                      e.target.style.transform = 'scale(1)';
-                    }}
-                  >
-                    −
-                  </button>
-
-                  <div
-                    style={{
-                      flex: 1,
-                      textAlign: 'center',
-                      padding: '16px',
-                      borderRadius: '12px',
-                      border: `2px solid ${COLORS.secondary}`,
-                      fontWeight: 700,
-                      fontSize: '1.5rem',
-                      background: COLORS.background,
-                      color: COLORS.primaryDark,
-                      boxShadow: `0 4px 12px ${COLORS.secondary}20`
-                    }}
-                  >
-                    ₹ {formData.brokerageAmount.toLocaleString('en-IN')}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setFormData(prev => ({
-                        ...prev,
-                        brokerageAmount: Math.min(5999, prev.brokerageAmount + 500)
-                      }))
-                    }
-                    style={{
-                      width: '52px',
-                      height: '52px',
-                      borderRadius: '50%',
-                      border: `2px solid ${COLORS.secondary}`,
-                      background: COLORS.background,
-                      fontSize: '1.5rem',
-                      cursor: 'pointer',
-                      color: COLORS.secondary,
-                      transition: 'all 0.3s ease',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: '300'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = COLORS.secondary;
-                      e.target.style.color = '#FFFFFF';
-                      e.target.style.transform = 'scale(1.05)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = COLORS.background;
-                      e.target.style.color = COLORS.secondary;
-                      e.target.style.transform = 'scale(1)';
-                    }}
-                  >
-                    +
-                  </button>
-                </div>
-
-                <div style={{
-                  padding: '12px 16px',
-                  background: `${COLORS.secondary}10`,
-                  borderRadius: '8px',
-                  border: `1px solid ${COLORS.secondary}30`,
-                  fontSize: '0.875rem',
-                  color: COLORS.neutral,
-                  lineHeight: '1.5'
-                }}>
-                  💡 <strong>Tip:</strong> THE HIGHER THE BROKERAGE, THE GREATER THE RANGE OF OPTIONS AVAILABLE TO YOU.
-                </div>
-              </div>
-            </div>
-
-            <hr style={styles.divider} />
-
-            {/* Move-in Date Section */}
-            <div ref={el => sectionRefs.current[3] = el} style={styles.section}>
-              <div style={styles.sectionHeader}>
-                <h3 style={styles.sectionTitle}>
-                  <span style={styles.sectionIcon}>📅</span>
-                  Move-in Timeline
-                </h3>
-              </div>
-
-              <div style={styles.dateChipsContainer}>
-                {dateChips.map((chip) => (
-                  <button
-                    key={chip.value}
-                    type="button"
-                    style={styles.dateChip(formData.moveInDate === chip.value || 
-                      (chip.value === '15' && formData.moveInDate.includes('15 days')) ||
-                      (chip.value === '30' && formData.moveInDate.includes('30 days'))
-                    )}
-                    onClick={() => handleDateSelect(chip.value)}
-                    onMouseEnter={(e) => {
-                      if (formData.moveInDate !== chip.value) {
-                        e.target.style.transform = 'translateY(-2px)';
-                        e.target.style.borderColor = COLORS.secondary;
-                        e.target.style.color = COLORS.secondary;
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (formData.moveInDate !== chip.value) {
-                        e.target.style.transform = 'translateY(0)';
-                        e.target.style.borderColor = COLORS.neutralLight;
-                        e.target.style.color = COLORS.neutral;
-                      }
-                    }}
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
-              
-              <div style={{ marginTop: '20px' }}>
-                <label style={{
-                  display: 'block',
-                  marginBottom: '8px',
-                  color: COLORS.neutral,
-                  fontSize: '0.9rem',
-                  fontWeight: '500'
-                }}>
-                  Or select a custom date:
-                </label>
-                <input
-                  type="date"
-                  value={formData.moveInDate && !['Immediate', 'Flexible'].includes(formData.moveInDate) ? formData.moveInDate : ''}
-                  onChange={handleCustomDateSelect}
-                  style={styles.dateInput(formData.moveInDate)}
-                  min={new Date().toISOString().split('T')[0]}
-                />
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              style={styles.submitBtn(isFormValid(), isSubmitting)}
-              disabled={!isFormValid() || isSubmitting}
-              onMouseEnter={(e) => {
-                if (isFormValid() && !isSubmitting) {
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 12px 30px rgba(49, 130, 206, 0.3)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (isFormValid() && !isSubmitting) {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = 'none';
-                }
-              }}
-            >
-              {isSubmitting ? (
+      <AnimatePresence>
+        {(done || feeInfo) && (
+          <motion.div className="upf-modal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setDone(false); setFeeInfo(false); }}>
+            <motion.div initial={{ scale: 0.92, y: 12 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95 }} transition={{ type: "spring", stiffness: 260, damping: 22 }} onClick={(e) => e.stopPropagation()}>
+              {done ? (
                 <>
-                  <div style={styles.spinner}></div>
-                  Processing Your Preferences...
+                  <div className="upf-badge">✓</div>
+                  <h3>Preferences saved!</h3>
+                  <p>Our team will match you with properties that fit your requirements and reach out shortly. Meanwhile, explore listings and save your favourites.</p>
+                  <a className="btn" href="https://www.ggnhome.com">Explore properties</a>
                 </>
               ) : (
-                '🚀 Find My Perfect Property Matches'
+                <>
+                  <div className="upf-badge" style={{ background: "linear-gradient(135deg,#F59E0B,#FBBF24)" }}>💡</div>
+                  <h3>Why the fee matters</h3>
+                  <ul>
+                    <li>Faster responses from owners and agents</li>
+                    <li>Dedicated relationship manager support</li>
+                    <li>More accurate options for your requirements</li>
+                    <li>Priority property matching</li>
+                  </ul>
+                  <button type="button" className="btn" onClick={() => setFeeInfo(false)}>Got it</button>
+                </>
               )}
-            </button>
-          </form>
-        </div>
-      </div>
-    </>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
-};
-
-export default UserPreferenceForm;
+}
