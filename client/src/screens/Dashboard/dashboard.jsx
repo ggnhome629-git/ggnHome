@@ -1,4 +1,5 @@
 import { motion, useScroll, useSpring } from "framer-motion";
+import CrossPromo from "../../components/promo/CrossPromo";
 import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Box, Button, CircularProgress, Container, LinearProgress, Stack, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
@@ -321,6 +322,8 @@ export default function RealEstateDashboard() {
         style={{ scaleX: scrollYProgress, transformOrigin: "0% 50%", position: "fixed", top: 0, left: 0, right: 0, height: 3, zIndex: 1400, background: "linear-gradient(90deg,#003366,#00A79D,#22D3EE)" }}
       />
 
+      <CrossPromo variant="strip" />
+
       <GiftBanner />
 
       <Suspense fallback={<Box sx={{ height: { xs: 64, md: 88 } }} />}>
@@ -501,6 +504,9 @@ export default function RealEstateDashboard() {
       <LazySection fallback={<SectionSkeleton count={4} height={200} />}>
         <PropertyCitiesComponent />
       </LazySection>
+
+      {/* Website: "Get the app" · App: "GgnHome on the web" (links set in Admin → Settings) */}
+      <CrossPromo variant="section" />
 
       <FloatingActions onOpenPreferences={goToPreferences} />
 

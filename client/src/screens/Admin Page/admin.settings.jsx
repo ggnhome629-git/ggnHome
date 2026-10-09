@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Box, Chip, Tab, Tabs, Typography, Stack } from "@mui/material";
 import { NotSetUpBanner } from "./shell/adminUi";
-import { Settings, Gift, Smartphone, Power, LinkIcon, TrendingUp, Link2, Server, Home, RefreshCw } from "lucide-react";
+import { Settings, Globe, Gift, Smartphone, Power, LinkIcon, TrendingUp, Link2, Server, Home, RefreshCw } from "lucide-react";
 
 // Lazy load the sub-pages
 const PromoCards = React.lazy(() => import("./admin.promos"));
@@ -13,11 +13,13 @@ const LinkManager = React.lazy(() => import("./admin.linkManager"));
 const ScraperControl = React.lazy(() => import("./admin.scraperControl"));
 const PropertyManager = React.lazy(() => import("./admin.propertyManager.jsx"));
 const PropertySync = React.lazy(() => import("./admin.propertySync"));
+const AppLinks = React.lazy(() => import("./admin.appLinks"));
 
 const SETTINGS_TABS = [
   { id: "scraper", label: "Scraper Control", icon: Server, component: ScraperControl },
   { id: "properties", label: "Property Manager", icon: Home, component: PropertyManager },
   { id: "propertySync", label: "Property Sync", icon: RefreshCw, component: PropertySync },
+  { id: "appLinks", label: "App & Website Links", icon: Globe, component: AppLinks },
   { id: "toggles", notSetUp: true, label: "Feature Toggles", icon: Power, component: FeatureToggles },
   { id: "promos", label: "Promo Cards", icon: Gift, component: PromoCards },
   { id: "sms", notSetUp: true, label: "SMS Devices", icon: Smartphone, component: SmsDevices },

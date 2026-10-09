@@ -524,5 +524,10 @@ router.use("/api/recommendations", recommendationsRoutes);
 // Android-app-only endpoints (push registration, "For You" feed)
 router.use("/api/app", require("./appRoutes"));
 
+// Website <-> app cross-promotion links (admin sets them in Settings).
+const appLinks = require("../routes/appLinks.routes");
+router.use("/api/app-links", appLinks.publicRouter);
+router.use("/api/admin/app-links", appLinks.adminRouter);
+
 module.exports = router;
 
