@@ -30,13 +30,13 @@ const getAgentHubDashboard = async (req, res) => {
     }
 
     // Count properties created by this agent
-    const salePropertiesCount = await SaleProperty.countDocuments({ agentUserId: agent.userId, ownerType: "Agent" });
-    const rentalPropertiesCount = await RentalProperty.countDocuments({ agentUserId: agent.userId, ownerType: "Agent" });
+    const salePropertiesCount = await SaleProperty.countDocuments(ownedPropertyFilter(agent));
+    const rentalPropertiesCount = await RentalProperty.countDocuments(ownedPropertyFilter(agent));
     const totalProperties = salePropertiesCount + rentalPropertiesCount;
 
     // Count active enquiries for agent's properties
-    const salePropertyIds = await SaleProperty.find({ agentUserId: agent.userId, ownerType: "Agent" }).select('_id');
-    const rentalPropertyIds = await RentalProperty.find({ agentUserId: agent.userId, ownerType: "Agent" }).select('_id');
+    const salePropertyIds = await SaleProperty.find(ownedPropertyFilter(agent)).select('_id');
+    const rentalPropertyIds = await RentalProperty.find(ownedPropertyFilter(agent)).select('_id');
     const allPropertyIds = [...salePropertyIds.map(p => p._id), ...rentalPropertyIds.map(p => p._id)];
 
     const enquiries = await EnquirySchema.find({ propertyId: { $in: allPropertyIds } });
@@ -44,12 +44,12 @@ const getAgentHubDashboard = async (req, res) => {
     const newEnquiries = enquiries.filter(e => !e.responded).length;
 
     // Recent properties (last 5)
-    const recentSaleProperties = await SaleProperty.find({ agentUserId: agent.userId, ownerType: "Agent" })
+    const recentSaleProperties = await SaleProperty.find(ownedPropertyFilter(agent))
       .sort({ createdAt: -1 })
       .limit(5)
       .select('_id title price Sector images createdAt');
 
-    const recentRentalProperties = await RentalProperty.find({ agentUserId: agent.userId, ownerType: "Agent" })
+    const recentRentalProperties = await RentalProperty.find(ownedPropertyFilter(agent))
       .sort({ createdAt: -1 })
       .limit(5)
       .select('_id title monthlyRent Sector images createdAt');
@@ -99,7 +99,7 @@ const getAgentProperties = async (req, res) => {
       return res.status(404).json({ message: "Partner not found" });
     }
 
-    const baseFilter = { agentUserId: agent.userId, ownerType: "Agent" };
+    const baseFilter = ownedPropertyFilter(agent);
 
     let saleProperties = [];
     let rentalProperties = [];
@@ -181,8 +181,8 @@ const getAgentLeads = async (req, res) => {
     }
 
     // Get all property IDs for this agent
-    const salePropertyIds = await SaleProperty.find({ agentUserId: agent.userId, ownerType: "Agent" }).select('_id');
-    const rentalPropertyIds = await RentalProperty.find({ agentUserId: agent.userId, ownerType: "Agent" }).select('_id');
+    const salePropertyIds = await SaleProperty.find(ownedPropertyFilter(agent)).select('_id');
+    const rentalPropertyIds = await RentalProperty.find(ownedPropertyFilter(agent)).select('_id');
     const allPropertyIds = [...salePropertyIds.map(p => p._id), ...rentalPropertyIds.map(p => p._id)];
 
     if (allPropertyIds.length === 0) {
