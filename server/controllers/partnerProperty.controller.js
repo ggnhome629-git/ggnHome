@@ -42,7 +42,6 @@ async function createPartnerProperty(req, res) {
     if (!/^(?:\+?91)?[6-9]\d{9}$/.test(ownerMobile)) {
       return res.status(400).json({ message: 'Enter a valid 10-digit owner mobile number.' });
     }
-    }
     if (!Number(price) || Number(price) <= 0 || !Number(area) || Number(area) <= 0) {
       return res.status(400).json({ message: 'A valid price and property area are required.' });
     }
