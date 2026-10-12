@@ -39,8 +39,8 @@ async function registerPartner(req, res) {
       if (agent.roleType !== "Partner") {
         return res.status(409).json({ message: "This mobile number already belongs to an Agent account. Please contact support to convert it to Partner." });
       }
-      if (agent.status === "suspended") {
-        return res.status(403).json({ message: "This partner account is suspended. Please contact support." });
+      if (agent.status !== "active") {
+        return res.status(403).json({ message: agent.status === "suspended" ? "This partner account is suspended. Please contact support." : "This partner account is awaiting activation." });
       }
       if (!agent.userId) {
         agent.userId = user._id;
