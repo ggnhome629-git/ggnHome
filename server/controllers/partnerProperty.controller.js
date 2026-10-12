@@ -20,7 +20,7 @@ async function createPartnerProperty(req, res) {
     const purpose = ['rent', 'rental'].includes(purposeValue) ? 'rental' : ['sale', 'sell'].includes(purposeValue) ? 'sale' : '';
     const title = body.title;
     const propertyType = body.propertyType;
-    const mobile = body.mobile || body.partnerMobile || body.ownerMobile;
+    const ownerMobile = String(body.ownerMobile || body.mobile || "").replace(/[\\s-]/g, "");
     const address = body.address || body.location;
     const sector = body.sector || body.Sector;
     const price = purpose === 'rental' ? (body.monthlyRent || body.price) : body.price;
@@ -77,7 +77,11 @@ async function createPartnerProperty(req, res) {
       Sector: String(sector).trim().slice(0, 120),
       address: String(address).trim().slice(0, 500),
       location: String(address).trim().slice(0, 500),
-      ownernumber: String(mobile).trim().slice(0, 20),
+      ownernumber: ownerMobile.slice(0, 20),
+      partnerAgentId: agent._id,
+      partnerName: String(agent.name || '').trim().slice(0, 120),
+      partnerMobile: String(agent.mobileNumber || '').trim().slice(0, 20),
+      partnerEmail: String(agent.email || '').trim().slice(0, 160).toLowerCase(),
       ownerType: 'Agent',
       agentUserId: agent.userId,
       bedrooms: numberOrUndefined(bedrooms),
