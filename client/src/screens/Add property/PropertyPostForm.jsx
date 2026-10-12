@@ -294,7 +294,7 @@ export default function PropertyPostForm({
 
   const goTo = (target) => {
     if (mode === "partner") {
-      const partnerTarget = target === STEP.photos ? 0 : target === STEP.review ? 2 : Math.min(1, Math.max(0, target));
+      const partnerTarget = target === STEP.photos ? 0 : target === STEP.review ? 2 : 1;
       if (partnerTarget !== step) {
         setErrors({});
         setStep(partnerTarget);
