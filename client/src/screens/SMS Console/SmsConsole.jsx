@@ -288,8 +288,8 @@ function GgnhomeTab({ data, reload, notify }) {
   const s = data.ggnhome.settings;
   const [form, setForm] = useState(null);
   useEffect(() => {
-    setForm({ mode: s.mode, dailyLimit: s.dailyLimit ?? s.effective.dailyLimit, hourlyLimit: s.hourlyLimit ?? s.effective.hourlyLimit, gapMinSec: s.gapMinSec ?? s.effective.gapMinSec, gapMaxSec: s.gapMaxSec ?? s.effective.gapMaxSec });
-  }, [s.mode, s.dailyLimit, s.hourlyLimit, s.gapMinSec, s.gapMaxSec, s.effective]);
+    setForm({ showOtpOnAndroid: !!s.showOtpOnAndroid, mode: s.mode, dailyLimit: s.dailyLimit ?? s.effective.dailyLimit, hourlyLimit: s.hourlyLimit ?? s.effective.hourlyLimit, gapMinSec: s.gapMinSec ?? s.effective.gapMinSec, gapMaxSec: s.gapMaxSec ?? s.effective.gapMaxSec });
+  }, [s.showOtpOnAndroid, s.mode, s.dailyLimit, s.hourlyLimit, s.gapMinSec, s.gapMaxSec, s.effective]);
   if (!form) return null;
   const save = async () => {
     try {
@@ -303,7 +303,7 @@ function GgnhomeTab({ data, reload, notify }) {
   const eff = s.effective;
   return (
     <Stack spacing={2}>
-      <Typography color="text.secondary">Login OTPs for the ggnHome website and app are sent from these phones, straight away at any hour.</Typography>
+      <Typography color="text.secondary">The Android app is display-only and never sends SMS. Enable OTP viewing here to show recent login OTPs in the Android app.</Typography>
       <Paper sx={{ p: 2.5 }}>
         <Stack spacing={2}>
           <Stack direction="row" spacing={2} alignItems="center">
