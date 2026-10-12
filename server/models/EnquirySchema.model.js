@@ -8,6 +8,11 @@ const EnquirySchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   userEmail: { type: String, required: true },
   userMobile: { type: String, required: true },
+  customerName: { type: String, trim: true, default: "Customer" },
+  ownerName: { type: String, trim: true, default: "" },
+  sourcePortal: { type: String, trim: true },
+  sourceUrl: { type: String, trim: true },
+  enquiryFor: { type: String, enum: ["Owner", "Agent", "Partner", "Admin"], default: "Admin" },
   message: { type: String, default: "" },
   brokerage: {
     type: Number,
