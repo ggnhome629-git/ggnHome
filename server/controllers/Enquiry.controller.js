@@ -100,7 +100,7 @@ const createEnquiry = async (req, res) => {
       propertyType,
       agentUserId: agentUserId || null,
       ownerUserId: ownerUserId || null,
-      propertyAddress: property.address || property.title || "N/A",
+      propertyAddress: property.address || property.location || property.Sector || property.title || "N/A",
       propertyPrice:
         (propertyType === "rental"
           ? property.monthlyRent
