@@ -121,7 +121,7 @@ export default function AdminPropertyManager() {
   };
 
   const exportCsv = () => {
-    const lines = [["Title", "Type", "Price", "Location", "BHK", "Source", "Partner", "Partner mobile", "Owner name", "Owner mobile", "Status", "Added"], ...rows.map((r) => ['"' + (r.title || "").replace(/"/g, '""') + '"', r.listingType, r.price, '"' + (r.location || "") + '"', r.bhk, r.source, '"' + (r.partnerName || "") + '"', r.partnerMobile || "", '"' + (r.ownerName || "").replace(/"/g, '""') + '"', r.ownerMobile || "", r.isActive ? "Live" : "Pending", new Date(r.createdAt).toLocaleDateString()])];
+    const lines = [["Title", "Type", "Price", "Location", "BHK", "Source", "Partner", "Partner mobile", "Owner name", "Owner mobile", "Status", "Added"], ...rows.map((r) => ['"' + (r.title || "").replace(/"/g, '""') + '"', r.listingType, r.price, '"' + (r.location || "") + '"', r.bhk, sourceLabel(r), '"' + (r.partnerName || "") + '"', r.partnerMobile || "", '"' + (r.ownerName || "").replace(/"/g, '""') + '"', r.ownerMobile || "", r.isActive ? "Live" : "Pending", new Date(r.createdAt).toLocaleDateString()])];
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([lines.map((l) => l.join(",")).join("\n")], { type: "text/csv" }));
     a.download = `properties-${new Date().toISOString().slice(0, 10)}.csv`;
