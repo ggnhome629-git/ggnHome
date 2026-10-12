@@ -105,6 +105,11 @@ const PARTNER_AMENITIES = [
   { key: "park", label: "Park / garden", query: /park|garden|playground/i },
   { key: "mall", label: "Shopping mall", query: /mall|shopping centre|department store/i },
 ];
+const PARTNER_STEPS = [
+  { key: "photos", label: "Photos", heading: "Add Property Photos", hint: "Add a front photo without the house number, plus rooms, kitchen and bathroom." },
+  { key: "details", label: "Property Details", heading: "Tell Us The Main Details", hint: "Choose simple options and fill only the important details." },
+  { key: "review", label: "Review & Publish", heading: "Review Your Listing", hint: "Check the details once before publishing." },
+];
 const HEADER_BADGES = {
   owner: [
     { icon: Wallet, label: "Free Listing" },
@@ -205,7 +210,7 @@ export default function PropertyPostForm({
     const purpose = /^sale|sell$/i.test(q || "") ? "Sale" : /^rent$/i.test(q || "") ? "Rent" : "";
     return { ...INITIAL, purpose, partnerRequired: mode === "partner" };
   });
-  const [step, setStep] = useState(initialDraft?.step ?? 0);
+  const [step, setStep] = useState(() => mode === "partner" ? (initialDraft?.step >= 4 ? 0 : initialDraft?.step >= 1 ? 1 : 0) : (initialDraft?.step ?? 0));
   const [reached, setReached] = useState(initialDraft?.reached ?? 0);
   const [restored, setRestored] = useState(Boolean(initialDraft));
   const [photos, setPhotos] = useState([]);
@@ -288,6 +293,15 @@ export default function PropertyPostForm({
   };
 
   const goTo = (target) => {
+    if (mode === "partner") {
+      const partnerTarget = target === STEP.photos ? 0 : target === STEP.review ? 2 : Math.min(1, Math.max(0, target));
+      if (partnerTarget !== step) {
+        setErrors({});
+        setStep(partnerTarget);
+        scrollToTop();
+      }
+      return;
+    }
     if (target === step) return;
     if (target > reached) {
       const bad = firstInvalidStep(f, target - 1);
@@ -314,6 +328,40 @@ export default function PropertyPostForm({
   };
 
   const next = () => {
+    if (mode === "partner") {
+      if (step === 0) {
+        if (!photos.some((photo) => photo.category === "front")) {
+          setPartnerPhotoError("Please mark at least one photo as Front / Exterior before continuing.");
+          return;
+        }
+        setPartnerPhotoError("");
+        setErrors({});
+        setStep(1);
+        setReached((r) => Math.max(r, 1));
+        scrollToTop();
+        return;
+      }
+      if (step === 1) {
+        const ordered = [STEP.basics, STEP.location, STEP.profile, STEP.price];
+        for (const validationStep of ordered) {
+          const errs = validateStep(validationStep, f);
+          if (Object.keys(errs).length) {
+            showErrors(errs);
+            scrollToTop();
+            return;
+          }
+        }
+        setErrors({});
+        setStep(2);
+        setReached(2);
+        scrollToTop();
+        return;
+      }
+      if (step === 2) {
+        submit();
+        return;
+      }
+    }
     if (mode === "partner" && step === STEP.photos && !photos.some((photo) => photo.category === "front")) {
       setPartnerPhotoError("Please mark at least one photo as Front / Exterior before continuing.");
       return;
@@ -329,6 +377,12 @@ export default function PropertyPostForm({
     scrollToTop();
   };
   const back = () => {
+    if (mode === "partner") {
+      setErrors({});
+      setStep((s) => Math.max(0, s - 1));
+      scrollToTop();
+      return;
+    }
     setErrors({});
     setStep((s) => Math.max(0, s - 1));
     scrollToTop();
@@ -362,7 +416,7 @@ export default function PropertyPostForm({
     }
     const bad = firstInvalidStep(f);
     if (bad !== -1) {
-      setStep(bad);
+      setStep(mode === "partner" ? 1 : bad);
       showErrors(validateStep(bad, f));
       return;
     }
@@ -994,9 +1048,24 @@ export default function PropertyPostForm({
     </>
   );
 
-  const content = [stepBasics, stepLocation, stepProfile, stepPrice, stepPhotos, stepReview][step];
+  const partnerDetails = (
+    <>
+      {stepBasics}
+      {stepLocation}
+      {stepProfile}
+      {stepPrice}
+    </>
+  );
+  const content = mode === "partner"
+    ? [stepPhotos, partnerDetails, stepReview][step]
+    : [stepBasics, stepLocation, stepProfile, stepPrice, stepPhotos, stepReview][step];
   const hasErrors = Object.values(errors).some(Boolean);
-  const steps = STEPS.map((s, i) => ({ ...s, complete: i < STEP.review && !Object.keys(validateStep(i, f)).length }));
+  const steps = (mode === "partner" ? PARTNER_STEPS : STEPS).map((s, i) => ({
+    ...s,
+    complete: mode === "partner"
+      ? (i === 0 ? photos.some((photo) => photo.category === "front") : i === 1 ? firstInvalidStep(f) === -1 : false)
+      : i < STEP.review && !Object.keys(validateStep(i, f)).length,
+  }));
 
   const savedProperty = saved && (saved.property || saved);
   const openSaved = () => {
@@ -1021,8 +1090,10 @@ export default function PropertyPostForm({
         missing={missing}
         onBack={back}
         onNext={next}
-        nextLabel={step === STEP.review ? "Post Property" : step === STEP.photos ? "Preview Listing" : "Continue"}
-        nextIcon={step === STEP.review ? Send : undefined}
+        nextLabel={mode === "partner"
+          ? (step === 0 ? "Continue to Details" : step === 1 ? "Review Listing" : "Publish Property")
+          : (step === STEP.review ? "Post Property" : step === STEP.photos ? "Preview Listing" : "Continue")}
+        nextIcon={(mode === "partner" ? step === 2 : step === STEP.review) ? Send : undefined}
         loading={submitting}
         notice={
           <>
