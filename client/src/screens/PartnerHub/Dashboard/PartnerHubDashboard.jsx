@@ -72,7 +72,7 @@ const PartnerHubDashboard = () => {
     return (
       <Container maxWidth="xl" sx={{ py: { xs: 2.5, md: 4 } }}>
         <Skeleton variant="rounded" height={210} sx={{ borderRadius: 5, mb: 3 }} />
-        <Grid container spacing={2}>{[1, 2, 3, 4].map((n) => <Grid item xs={12} sm={6} lg={3} key={n}><Skeleton variant="rounded" height={116} /></Grid>)}</Grid>
+        <Grid container spacing={2}>{[1, 2, 3, 4].map((n) => <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={n}><Skeleton variant="rounded" height={116} /></Grid>)}</Grid>
         <Skeleton variant="text" width={220} height={44} sx={{ mt: 4 }} />
         <Grid container spacing={2}>{[1, 2, 3, 4].map((n) => <Grid item xs={12} sm={6} lg={3} key={n}><Skeleton variant="rounded" height={150} /></Grid>)}</Grid>
       </Container>
@@ -111,7 +111,7 @@ const PartnerHubDashboard = () => {
 
       <Grid container spacing={2} sx={{ mb: 4 }}>
         {stats.map(({ label, value, note, icon: Icon, tint, color }) => (
-          <Grid item xs={12} sm={6} lg={3} key={label}>
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={label}>
             <Card elevation={0} sx={{ height: "100%", border: "1px solid #e7edf3", borderRadius: "18px", bgcolor: "#fff", transition: "transform .2s ease, box-shadow .2s ease", "&:hover": { transform: "translateY(-3px)", boxShadow: "0 12px 26px rgba(16,42,67,.07)" } }}>
               <CardContent sx={{ p: 2.4, "&:last-child": { pb: 2.4 } }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -136,7 +136,7 @@ const PartnerHubDashboard = () => {
       </Stack>
       <Grid container spacing={2} sx={{ mb: 4 }}>
         {actions.map(({ title, description, icon: Icon, color, bg, path }) => (
-          <Grid item xs={12} sm={6} lg={3} key={title}>
+          <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={title}>
             <Card onClick={() => navigate(path)} elevation={0} sx={{ height: "100%", cursor: "pointer", border: "1px solid #e7edf3", borderRadius: "18px", transition: "all .2s ease", "&:hover": { borderColor: "#b7dcd6", transform: "translateY(-3px)", boxShadow: "0 12px 26px rgba(16,42,67,.07)" } }}>
               <CardContent sx={{ p: 2.3, "&:last-child": { pb: 2.3 } }}>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
@@ -169,7 +169,7 @@ const PartnerHubDashboard = () => {
         ) : (
           <Grid container spacing={2}>
             {allRecent.map((property) => (
-              <Grid item xs={12} sm={6} lg={4} key={property._id}>
+              <Grid size={{ xs: 12, sm: 6, lg: 4 }} key={property._id}>
                 <Card elevation={0} onClick={() => navigate(`/partner/properties/${property._id}`)} sx={{ display: "flex", height: "100%", overflow: "hidden", border: "1px solid #edf1f5", borderRadius: "14px", cursor: "pointer", "&:hover": { bgcolor: "#fbfdfd" } }}>
                   <Box sx={{ width: 112, minHeight: 120, flexShrink: 0, bgcolor: "#edf2f7", backgroundImage: property.images?.[0] ? `url(${property.images[0]})` : "none", backgroundSize: "cover", backgroundPosition: "center", display: "grid", placeItems: "center" }}>
                     {!property.images?.[0] && <Home size={25} color="#a0aec0" />}
