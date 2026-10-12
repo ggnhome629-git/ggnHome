@@ -1020,7 +1020,7 @@ export default function PropertyPostForm({
         <Typography sx={{ fontWeight: 800, color: "primary.main", mb: 3, display: "flex", alignItems: "center", gap: 2 }}>
           <ClipboardCheck size={18} /> Listing Check
         </Typography>
-        <ReviewChecks checks={checks} onJump={goTo} />
+        <ReviewChecks checks={checks} onJump={mode === "partner" ? (target) => goTo(target === STEP.photos ? 0 : 1) : goTo} />
       </Box>
 
       <Box id="field-declaration" sx={{ mt: 6, p: 4, borderRadius: `${radii.md}px`, backgroundColor: err("declaration") ? "#FEF2F2" : "#F4F7F9" }}>
