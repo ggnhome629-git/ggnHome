@@ -90,6 +90,8 @@ const {
   updateAgentProfile
 } = require("../controllers/partnerHub.controller.js");
 const { createPartnerProperty } = require("../controllers/partnerProperty.controller");
+const { registerPartner } = require("../controllers/partnerAuth.controller");
+const { getPartnerEnquiries } = require("../controllers/Enquiry.controller.js");
 const { createAdminPartnerSession } = require("../controllers/adminPartnerSession.controller");
 
 // Helper middleware to restrict access to admins only
@@ -504,13 +506,14 @@ router.use("/api/admin/property-sync", propertySyncRoutes);
 router.post("/api/admin/partner-session", verifyToken, checkAdminEmail, createAdminPartnerSession);
 
 // All routes protected by verifyAgentToken
+router.post("/api/partner/register", verifyToken, registerPartner);
 router.get("/api/partner/dashboard", verifyAgentToken, getAgentHubDashboard);
 router.get("/api/partner/properties", verifyAgentToken, getAgentProperties);
 router.post("/api/partner/properties", verifyAgentToken, upload.array("images", 18), createPartnerProperty);
 router.get("/api/partner/leads", verifyAgentToken, getAgentLeads);
 router.get("/api/partner/leads/preferences", verifyAgentToken, listPreferenceForms);
 router.get("/api/partner/leads/searches", verifyAgentToken, getPartnerSearchLeads);
-router.get("/api/partner/enquiries", verifyAgentToken, getEnquiries);
+router.get("/api/partner/enquiries", verifyAgentToken, getPartnerEnquiries);
 router.patch("/api/partner/leads/:enquiryId/status", verifyAgentToken, updateLeadStatus);
 router.get("/api/partner/profile", verifyAgentToken, getAgentProfile);
 router.patch("/api/partner/profile", verifyAgentToken, updateAgentProfile);
