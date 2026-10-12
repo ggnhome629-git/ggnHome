@@ -1,4 +1,6 @@
 const Agent = require("../models/Agent.model");
+const SaleProperty = require("../models/SaleProperty.model");
+const RentalProperty = require("../models/Rentalproperty.model");
 
 function isLocalHost(host) {
   const h = String(host || "").split(":")[0];
@@ -28,7 +30,28 @@ async function issueAgentSession(req, res, user) {
 
   if (!agent.userId) agent.userId = user._id;
   const status = String(agent.status || "pending").toLowerCase();
-  const roleType = agent.roleType === "Partner" ? "Partner" : "Agent";
+  let roleType = agent.roleType === "Partner" ? "Partner" : "Agent";
+
+  // Existing PartnerHub accounts were historically stored as Agents. Promote
+  // accounts that already own Partner-attributed listings when they OTP-login.
+  if (roleType !== "Partner" && agent.userId) {
+    const legacyPartnerFilter = {
+      $or: [
+        { partnerAgentId: agent._id },
+        { agentUserId: agent.userId, ownerType: "Agent", "ranking.source": "Partner" },
+      ],
+    };
+    const [salePartnerListing, rentalPartnerListing] = await Promise.all([
+      SaleProperty.exists(legacyPartnerFilter),
+      RentalProperty.exists(legacyPartnerFilter),
+    ]);
+    if (salePartnerListing || rentalPartnerListing) {
+      roleType = "Partner";
+      agent.roleType = "Partner";
+      await agent.save();
+    }
+  }
+
   const summary = { status, name: agent.name, agentCode: agent.agentCode, role: roleType };
   if (status !== "active") {
     await agent.save();
