@@ -77,6 +77,11 @@ totalArea: {
   defaultpropertytype: { type: String, default: "sale", immutable: true },
   ownernumber: { type: String },
   ownerType: { type: String, enum: ["Owner", "Agent" , "Admin"], default: "Owner" },
+  // Partner attribution and fixed partner contact for listings submitted through PartnerHub.
+  partnerAgentId: { type: mongoose.Schema.Types.ObjectId, ref: "Agent", index: true },
+  partnerName: { type: String, trim: true },
+  partnerMobile: { type: String, trim: true },
+  partnerEmail: { type: String, trim: true, lowercase: true },
 
   // Scraped-source tracking (only set for scraped listings)
   sourcePortal: { type: String, enum: ["nobroker", "99acres"] },
