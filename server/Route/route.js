@@ -9,7 +9,7 @@ const { getPublicFeatureToggles, getAdminFeatureToggles, updateAdminFeatureToggl
 
 const multer = require("multer");
 const upload = require("../middleware/multer");
-const { verifyToken, verifyTokenOptional , verifyAgentToken , verifyPartnerAccess , verifyAgentTokenOptional , verifyTokenOrAgent } = require("../middleware/auth");
+const { verifyToken, verifyTokenOptional , verifyAgentToken , verifyAgentRole , verifyPartnerAccess , verifyAgentTokenOptional , verifyTokenOrAgent } = require("../middleware/auth");
 const {
   otpRequestLimiter,
   otpRequestIpLimiter,
@@ -448,26 +448,26 @@ router.post("/api/agent/login/session", verifyToken, async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 });
-router.post("/agent/set-recovery-email", verifyAgentToken, setAgentRecoveryEmail);
-router.get("/agent/me", verifyAgentToken, agentDetails);
-router.get("/api/agent/me", verifyAgentToken, agentDetails);
-router.get("/api/agent/dashboard", verifyTokenOptional, verifyAgentToken, getAgentDashboard);
+router.post("/agent/set-recovery-email", verifyAgentToken, verifyAgentRole, setAgentRecoveryEmail);
+router.get("/agent/me", verifyAgentToken, verifyAgentRole, agentDetails);
+router.get("/api/agent/me", verifyAgentToken, verifyAgentRole, agentDetails);
+router.get("/api/agent/dashboard", verifyTokenOptional, verifyAgentToken, verifyAgentRole, getAgentDashboard);
 router.post(
   "/api/agent/update-sectors",
   verifyTokenOptional,
-  verifyAgentToken,
+  verifyAgentToken, verifyAgentRole,
   updateAgentPreferredSectors
 );
 // Reveal lead mobile number after acceptance
 router.post(
   "/api/agent/leadinfo",
 
-  verifyAgentToken,
+  verifyAgentToken, verifyAgentRole,
   revealLeadMobileNumber
 );
 router.post(
   "/api/Agent/addsaleproperties",
-verifyAgentToken,
+verifyAgentToken, verifyAgentRole,
   upload.fields([
     { name: "images", maxCount: 8 },
     { name: "panoFiles", maxCount: 6 },
@@ -476,7 +476,7 @@ verifyAgentToken,
 );
 router.post(
   "/api/agent/addrentproperties",
-verifyAgentToken,
+verifyAgentToken, verifyAgentRole,
   upload.fields([
     { name: "images", maxCount: 8 },
     { name: "panoFiles", maxCount: 6 },
@@ -484,12 +484,12 @@ verifyAgentToken,
   createRentalPropertyAgent
 );
 
-router.get("/api/agent/propertyEnquiries",  verifyAgentToken, getAgentEnquiries);
+router.get("/api/agent/propertyEnquiries",  verifyAgentToken, verifyAgentRole, getAgentEnquiries);
 // 👁️ Unlock enquiry contact details (Agent)
 router.post(
   "/api/agent/enquiries/:enquiryId/unlock",
 
-  verifyAgentToken,
+  verifyAgentToken, verifyAgentRole,
   unlockEnquiryContact
 );
 
