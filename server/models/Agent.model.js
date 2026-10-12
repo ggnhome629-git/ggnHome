@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 
 const AgentSchema = new mongoose.Schema({
   // --- Personal Information ---
-  name: { type: String, required: true },
+  name: { type: String, default: "Partner", trim: true },
   email: { type: String },
   mobileNumber: { type: String, required: true , unique: true },
   profilePhoto: { type: String },     // URL
@@ -13,15 +13,14 @@ const AgentSchema = new mongoose.Schema({
 
   // --- Access / Login ---
   agentCode: { type: String, required: true, unique: true },
+  // Distinguishes PartnerHub accounts from traditional agent accounts.
+  roleType: { type: String, enum: ["Agent", "Partner"], default: "Agent", index: true },
   otp: { type: String },
   otpExpiry: { type: Date },
   isVerified: { type: Boolean, default: false },
   status: { type: String, enum: ["pending", "active", "suspended"], default: "pending" },
   lastLoginAt: { type: Date },
-  dob: {
-  type: Date,
-  required: true
-},
+  dob: { type: Date },
 
   // --- Professional Information ---
   agentType: {
@@ -138,7 +137,7 @@ AgentSchema.methods.getAccessToken = function () {
     {
       agentId: this._id,
       userId: this.userId,
-      role: "Agent"
+      role: this.roleType === "Partner" ? "Partner" : "Agent"
     },
     secret,
     { expiresIn }
