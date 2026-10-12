@@ -156,7 +156,8 @@ class GatewayService : Service() {
         val notification = Notification.Builder(this, channelId)
             .setContentTitle("GGN Home login OTP")
             .setContentText("$otp · phone ending ${phone.takeLast(4)}")
-            .setStyle(Notification.BigTextStyle().bigText("OTP: $otp\\nFor phone ending ${phone.takeLast(4)}"))
+            .setVisibility(Notification.VISIBILITY_PRIVATE)
+            .setStyle(Notification.BigTextStyle().bigText("OTP: $otp\nFor phone ending ${phone.takeLast(4)}"))
             .setSmallIcon(android.R.drawable.stat_notify_chat)
             .setAutoCancel(true)
             .setContentIntent(PendingIntent.getActivity(
