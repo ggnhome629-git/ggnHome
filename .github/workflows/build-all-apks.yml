@@ -1,4 +1,4 @@
-name: Build and distribute all Android APKs
+name: Build and publish all Android APKs
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -20,10 +20,6 @@ jobs:
       SMS_KEY: ${{ secrets.SMS_KEY }}
       SMS_GGNHOME_URL: ${{ secrets.SMS_GGNHOME_URL }}
       SMS_SHINE_URL: ${{ secrets.SMS_SHINE_URL }}
-      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-      FIREBASE_APP_ID_GGNHOME: ${{ secrets.FIREBASE_APP_ID_GGNHOME }}
-      FIREBASE_APP_ID_PARTNER: ${{ secrets.FIREBASE_APP_ID_PARTNER }}
-      FIREBASE_APP_ID_SMS: ${{ secrets.FIREBASE_APP_ID }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -98,6 +94,7 @@ jobs:
           manifest = manifest.replace(/\s*<intent-filter android:autoVerify="true">[\s\S]*?<\/intent-filter>/, '');
           fs.writeFileSync(manifestPath, manifest);
           NODE
+          npx cap sync android
 
       - name: Build GgnHome-Partner APK
         working-directory: partner-build/android
@@ -114,47 +111,26 @@ jobs:
           mkdir -p ../dist-apks
           cp app/build/outputs/apk/release/app-release.apk ../dist-apks/sms-service.apk
 
-      # The SMS APK embeds SMS_KEY. Keep it out of GitHub artifacts and distribute
-      # only through Firebase App Distribution. If SMS_KEY is missing, Gradle's
-      # legacy test123 fallback may build a test APK; Firebase steps below remain gated
-      # on the configured Firebase credentials.
-      - name: Upload GgnHome APKs as GitHub Actions artifact
-        if: always()
+      - name: Upload all APKs as GitHub Actions artifact
         uses: actions/upload-artifact@v4
         with:
           name: ggnHome-android-apks
-          path: |
-            dist-apks/GgnHome.apk
-            dist-apks/GgnHome-Partner.apk
+          path: dist-apks/*.apk
           if-no-files-found: error
           retention-days: 30
 
-      - name: Distribute GgnHome APK through Firebase App Distribution
-        if: ${{ success() && env.FIREBASE_SERVICE_ACCOUNT != '' && env.FIREBASE_APP_ID_GGNHOME != '' && hashFiles('dist-apks/GgnHome.apk') != '' }}
-        uses: wzieba/Firebase-Distribution-Github-Action@v1
+      - name: Publish APKs as GitHub Release assets
+        uses: softprops/action-gh-release@v2
         with:
-          appId: ${{ env.FIREBASE_APP_ID_GGNHOME }}
-          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          testers: tanushchawla16@gmail.com
-          file: dist-apks/GgnHome.apk
-          releaseNotes: "GgnHome build from ${{ github.sha }}"
-
-      - name: Distribute GgnHome-Partner APK through Firebase App Distribution
-        if: ${{ success() && env.FIREBASE_SERVICE_ACCOUNT != '' && env.FIREBASE_APP_ID_PARTNER != '' && hashFiles('dist-apks/GgnHome-Partner.apk') != '' }}
-        uses: wzieba/Firebase-Distribution-Github-Action@v1
-        with:
-          appId: ${{ env.FIREBASE_APP_ID_PARTNER }}
-          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          testers: tanushchawla16@gmail.com
-          file: dist-apks/GgnHome-Partner.apk
-          releaseNotes: "GgnHome-Partner build from ${{ github.sha }}"
-
-      - name: Distribute SMS Service APK through Firebase App Distribution
-        if: ${{ success() && env.FIREBASE_SERVICE_ACCOUNT != '' && env.FIREBASE_APP_ID_SMS != '' && hashFiles('dist-apks/sms-service.apk') != '' }}
-        uses: wzieba/Firebase-Distribution-Github-Action@v1
-        with:
-          appId: ${{ env.FIREBASE_APP_ID_SMS }}
-          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          testers: tanushchawla16@gmail.com
-          file: dist-apks/sms-service.apk
-          releaseNotes: "SMS Service build from ${{ github.sha }}"
+          tag_name: latest-apks
+          name: Latest Android APKs
+          body: |
+            Automatically built APKs for GgnHome, GgnHome-Partner, and SMS Service.
+            These assets are replaced whenever this workflow runs successfully.
+          make_latest: true
+          files: |
+            dist-apks/GgnHome.apk
+            dist-apks/GgnHome-Partner.apk
+            dist-apks/sms-service.apk
+          overwrite_files: true
+          fail_on_unmatched_files: true
