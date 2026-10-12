@@ -5,6 +5,7 @@ import {
   Grid,
   Card,
   CardContent,
+  Paper,
   Typography,
   Button,
   Stack,
@@ -91,11 +92,16 @@ const PartnerHubProperties = () => {
         height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        transition: 'all 0.3s ease',
+        transition: 'all 0.22s ease',
         cursor: 'pointer',
+        border: '1px solid #e7edf3',
+        borderRadius: '18px',
+        overflow: 'hidden',
+        boxShadow: '0 2px 8px rgba(16,42,67,.025)',
         '&:hover': {
-          boxShadow: '0 10px 30px rgba(0,0,0,0.12)',
-          transform: 'translateY(-4px)',
+          borderColor: '#b7dcd6',
+          boxShadow: '0 14px 28px rgba(16,42,67,.09)',
+          transform: 'translateY(-3px)',
         },
       }}
       onClick={() => navigate(`/property/${property._id}`)}
@@ -103,7 +109,7 @@ const PartnerHubProperties = () => {
       <Box
         sx={{
           width: '100%',
-          height: 200,
+          height: 210,
           backgroundColor: '#f3f4f6',
           backgroundImage: property.images?.[0] ? `url(${property.images[0]})` : 'none',
           backgroundSize: 'cover',
@@ -181,9 +187,9 @@ const PartnerHubProperties = () => {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
-      <Box sx={{ mb: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box sx={{ mb: 3.5, display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'space-between', alignItems: 'center' }}>
         <Box>
-          <Typography variant="h4" sx={{ fontWeight: 700, color: '#0f172a', mb: 1 }}>
+          <Typography variant="h4" sx={{ fontWeight: 850, letterSpacing: '-.8px', color: '#102a43', mb: 1 }}>
             My Properties
           </Typography>
           <Typography variant="body2" sx={{ color: '#6b7280' }}>
@@ -195,11 +201,13 @@ const PartnerHubProperties = () => {
           startIcon={<Plus size={20} />}
           onClick={() => navigate('/partner/properties/add')}
           sx={{
-            backgroundColor: '#3b82f6',
-            fontWeight: 600,
+            backgroundColor: '#0f766e',
+            fontWeight: 800,
             textTransform: 'none',
-            py: 1.5,
-            px: 3,
+            py: 1.35,
+            px: 2.5,
+            boxShadow: 'none',
+            '&:hover': { backgroundColor: '#115e59', boxShadow: 'none' },
           }}
         >
           Add Property
@@ -207,7 +215,7 @@ const PartnerHubProperties = () => {
       </Box>
 
       {/* Filters */}
-      <Box sx={{ mb: 4, display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }, gap: 2 }}>
+      <Paper elevation={0} sx={{ mb: 3, p: { xs: 1.5, sm: 2 }, display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))", md: "minmax(240px, 1.5fr) 1fr 1fr" }, gap: 1.5, border: "1px solid #e7edf3", borderRadius: "16px", bgcolor: "#fff" }}>
         <TextField
           placeholder="Search properties..."
           size="small"
@@ -261,7 +269,7 @@ const PartnerHubProperties = () => {
           <MenuItem value="active">Active</MenuItem>
           <MenuItem value="pending">Pending</MenuItem>
         </TextField>
-      </Box>
+      </Paper>
 
       {/* Properties Grid */}
       {loading ? (
