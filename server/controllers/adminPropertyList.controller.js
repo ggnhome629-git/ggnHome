@@ -48,14 +48,21 @@ const listAdminProperties = async (req, res) => {
 
     const filter = {};
     if (source) filter.source = String(source);
-    if (partnerAdded === "true") filter.partnerAgentId = { $exists: true, $ne: null };
-    if (partnerAgentId && mongoose.isValidObjectId(partnerAgentId)) filter.partnerAgentId = new mongoose.Types.ObjectId(partnerAgentId);
+    if (partnerAdded === "true") {
+      filter.$and = [...(filter.$and || []), { $or: [{ partnerAgentId: { $exists: true, $ne: null } }, { "ranking.source": "Partner" }] }];
+    }
+    if (partnerAgentId && mongoose.isValidObjectId(partnerAgentId)) {
+      const partner = await Agent.findById(partnerAgentId).select("userId").lean();
+      const partnerClauses = [{ partnerAgentId: new mongoose.Types.ObjectId(partnerAgentId) }];
+      if (partner?.userId) partnerClauses.push({ agentUserId: partner.userId, ownerType: "Agent", "ranking.source": "Partner" });
+      filter.$and = [...(filter.$and || []), { $or: partnerClauses }];
+    }
     if (status) filter.status = String(status);
     if (origin === "scraped") filter.sourcePortal = { $exists: true, $ne: null };
     if (origin === "own") filter.sourcePortal = null;
     if (state === "active") filter.isActive = true;
     if (state === "inactive") filter.isActive = false;
-    if (approval === "pending") filter.$and = [{ $or: [{ isPostedNew: true }, { isEdited: true }] }];
+    if (approval === "pending") filter.$and = [...(filter.$and || []), { $or: [{ isPostedNew: true }, { isEdited: true }] }];
     if (search) {
       const rx = new RegExp(escapeRegex(search), "i");
       filter.$or = [{ title: rx }, { Sector: rx }, { address: rx }];
