@@ -352,6 +352,7 @@ export function buildFormData(f, photos, panoramas) {
     if (!isPlot(f)) put("propertyAge", f.propertyAge);
   }
 
+  if (photos.some((p) => p.category)) form.append("imageCategories", JSON.stringify(photos.map((p) => p.category || "other")));
   photos.forEach((p) => p.file && form.append("images", p.file));
 
   (panoramas || [])
