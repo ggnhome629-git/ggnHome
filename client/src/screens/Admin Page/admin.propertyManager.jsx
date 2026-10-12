@@ -18,6 +18,7 @@ const TABS = [
   { key: "all", label: "All properties", query: {} },
   { key: "scraped", label: "Scraped approvals", query: { origin: "scraped", approval: "pending" }, bulkOrigin: "scraped" },
   { key: "own", label: "Owner / agent approvals", query: { origin: "own", approval: "pending" }, bulkOrigin: "own" },
+  { key: "partner", label: "Partner-added properties", query: { partnerAdded: "true" } },
 ];
 
 const thumb = (r) => {
@@ -25,7 +26,7 @@ const thumb = (r) => {
   return (first && (first.url || first)) || "";
 };
 const statusLabel = (r) => (r.isActive ? "Live" : r.isPending ? (r.isEdited ? "Edited – review" : "New – review") : "Not live");
-const sourceLabel = (r) => (r.origin === "scraped" ? (r.source === "nobroker" ? "NoBroker" : "99acres") : r.ownerType === "Agent" ? "Agent" : "Owner");
+const sourceLabel = (r) => (r.partnerAgentId ? "Partner-added" : r.origin === "scraped" ? (r.source === "nobroker" ? "NoBroker" : "99acres") : r.ownerType === "Agent" ? "Agent" : "Owner");
 
 const money = (r) => (r.price ? `₹${Number(r.price).toLocaleString("en-IN")}${r.listingType === "rent" ? "/mo" : ""}` : "—");
 
@@ -43,6 +44,8 @@ export default function AdminPropertyManager() {
   const [state, setState] = useState("all");
   const [selected, setSelected] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [partners, setPartners] = useState([]);
+  const [partnerFilter, setPartnerFilter] = useState("");
 
   const current = TABS.find((t) => t.key === tab);
 
@@ -65,6 +68,7 @@ export default function AdminPropertyManager() {
       const q = new URLSearchParams({ page, limit: PER_PAGE, ...current.query });
       if (debounced) q.set("search", debounced);
       if (state !== "all") q.set("state", state);
+      if (tab === "partner" && partnerFilter) q.set("partnerAgentId", partnerFilter);
       const res = await fetch(`${API}/api/admin/properties?${q}`, { headers: authHeaders(), credentials: "include" });
       const data = await res.json();
       if (data.success) { setRows(data.data || []); setTotal(data.meta?.total || 0); }
@@ -74,11 +78,20 @@ export default function AdminPropertyManager() {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, debounced, state, current]);
+  }, [page, debounced, state, current, partnerFilter, tab]);
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { loadCounts(); }, [loadCounts]);
-  useEffect(() => { setSelected([]); setPage(1); }, [tab, state]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API}/api/admin/properties/partners`, { headers: authHeaders(), credentials: "include" })
+      .then((res) => res.json())
+      .then((data) => { if (!cancelled && data.success) setPartners(data.partners || []); })
+      .catch((e) => console.error("Could not load partner filter options", e));
+    return () => { cancelled = true; };
+  }, []);
+  useEffect(() => { setSelected([]); setPage(1); if (tab !== "partner") setPartnerFilter(""); }, [tab, state]);
 
   const refresh = () => { load(); loadCounts(); };
 
@@ -151,6 +164,7 @@ export default function AdminPropertyManager() {
           <Tab value="all" label="All properties" />
           <Tab value="scraped" label={`Scraped approvals${counts ? ` (${counts.pendingScraped})` : ""}`} />
           <Tab value="own" label={`Owner / agent approvals${counts ? ` (${counts.pendingOwn})` : ""}`} />
+          <Tab value="partner" label="Partner-added properties" />
         </Tabs>
 
         <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }} sx={{ p: 3 }}>
@@ -210,7 +224,7 @@ export default function AdminPropertyManager() {
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography sx={{ fontWeight: 700, fontSize: "0.9rem", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{r.title || "Untitled"}</Typography>
                   <Typography sx={{ fontWeight: 800, color: "#003366", fontSize: "0.95rem" }}>{money(r)}{r.bhk ? ` · ${/bhk/i.test(r.bhk) ? r.bhk : `${r.bhk} BHK`}` : ""}</Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.location || "—"} · {new Date(r.createdAt).toLocaleDateString()}</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.location || "—"} · {new Date(r.createdAt).toLocaleDateString()}</Typography>\n                  {tab === "partner" && <Typography variant="caption" sx={{ display: "block", color: "text.secondary", mt: 0.5 }}>Partner: {r.partnerName || "—"}{r.partnerMobile ? ` · ${r.partnerMobile}` : ""}<br />Owner mobile: {r.ownerMobile || "—"}</Typography>}
                   <Stack direction="row" spacing={0.75} sx={{ my: 1, flexWrap: "wrap", rowGap: 0.75 }}>
                     <Chip size="small" label={sourceLabel(r)} sx={r.origin === "scraped" ? { bgcolor: "rgba(245,158,11,0.15)", color: "#B45309", fontWeight: 700 } : { bgcolor: "rgba(0,167,157,0.14)", color: "#00857D", fontWeight: 700 }} />
                     <Chip size="small" variant="outlined" color={r.isActive ? "success" : r.isPending ? "warning" : "default"} label={statusLabel(r)} />
@@ -235,7 +249,7 @@ export default function AdminPropertyManager() {
                       <Checkbox size="small" checked={allSelected} onChange={() => setSelected(allSelected ? [] : pageIds)} />
                     </th>
                   )}
-                  <th>Property</th><th>Location</th><th>Price</th><th>BHK</th><th>Source</th><th>Status</th>
+                  <th>Property</th><th>Location</th><th>Price</th><th>BHK</th><th>Source</th>{tab === "partner" && <><th>Partner / Contact</th><th>Owner mobile</th></>}<th>Status</th>
                   <th className="admin-table-align-center">Actions</th>
                 </tr>
               </thead>
