@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Button, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { motion } from "framer-motion";
-import { Heart, ImageIcon, MapPin, Phone, Share2, ExternalLink } from "lucide-react";
+import { Heart, ImageIcon, MapPin, Phone, Share2 } from "lucide-react";
 import CardPhotos from "./CardPhotos";
 import { radii, elevationShadows } from "../../theme/theme";
 
