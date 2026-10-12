@@ -44,9 +44,12 @@ jobs:
         with:
           gradle-version: "8.9"
 
-      - name: Install GgnHome Capacitor dependencies
+      - name: Install and sync GgnHome Capacitor dependencies
         working-directory: mobile
-        run: npm install --no-audit --no-fund
+        run: |
+          npm install --no-audit --no-fund
+          mkdir -p www
+          npx cap sync android
 
       - name: Build GgnHome APK
         working-directory: mobile/android
@@ -62,6 +65,8 @@ jobs:
           cp -R mobile partner-build
           cd partner-build
           npm install --no-audit --no-fund
+          mkdir -p www
+          npx cap sync android
           node <<'NODE'
           const fs = require('fs');
           const configPath = 'capacitor.config.json';
@@ -109,8 +114,10 @@ jobs:
           mkdir -p ../dist-apks
           cp app/build/outputs/apk/release/app-release.apk ../dist-apks/sms-service.apk
 
-      # The SMS APK embeds SMS_KEY. Keep it out of public-repository artifacts and
-      # distribute it only through Firebase App Distribution to the named tester.
+      # The SMS APK embeds SMS_KEY. Keep it out of GitHub artifacts and distribute
+      # only through Firebase App Distribution. If SMS_KEY is missing, Gradle's
+      # legacy test123 fallback may build a test APK; Firebase steps below remain gated
+      # on the configured Firebase credentials.
       - name: Upload GgnHome APKs as GitHub Actions artifact
         if: always()
         uses: actions/upload-artifact@v4
