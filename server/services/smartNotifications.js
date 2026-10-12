@@ -48,8 +48,8 @@ async function runSmartNotifications({ dryRun = false, max = 300 } = {}) {
 
   const cutoff = new Date(Date.now() - WEEK);
   const devices = await DeviceToken.find({
-    generalPushes: true,
-    $or: [{ lastGeneralPushAt: null }, { lastGeneralPushAt: { $lt: cutoff } }],
+    $or: [{ generalPushes: true }, { personalPushes: true }],
+    $and: [{ $or: [{ lastGeneralPushAt: null }, { lastGeneralPushAt: { $lt: cutoff } }] }],
   }).sort({ lastGeneralPushAt: 1, createdAt: 1 }).limit(Math.min(Math.max(Number(max) || 300, 1), 1000)).lean();
 
   if (dryRun) {
@@ -69,6 +69,7 @@ async function runSmartNotifications({ dryRun = false, max = 300 } = {}) {
   let failed = 0;
   let propertyMatches = 0;
   let general = 0;
+  const inboxWritten = new Set();
 
   for (const device of devices) {
     try {
@@ -79,6 +80,7 @@ async function runSmartNotifications({ dryRun = false, max = 300 } = {}) {
         if (rec.personalised) property = rec.sections?.[0]?.items?.[0] || null;
       }
 
+      if (!property && !device.generalPushes) continue;
       const template = chooseTemplate(property ? "property_match" : "general", `${device._id}:${new Date().toISOString().slice(0, 10)}`);
       const message = render(template, property);
       const result = await push.sendToTokens([device.token], {
@@ -98,7 +100,7 @@ async function runSmartNotifications({ dryRun = false, max = 300 } = {}) {
         sent += result.sent;
         if (property) propertyMatches += 1;
         else general += 1;
-        if (device.userId) {
+        if (device.userId && !inboxWritten.has(String(device.userId))) {
           await Notification.create({
             userId: device.userId,
             type: property ? "property_match" : "general_update",
@@ -107,6 +109,7 @@ async function runSmartNotifications({ dryRun = false, max = 300 } = {}) {
             link: message.link,
             channel: "push",
           });
+          inboxWritten.add(String(device.userId));
         }
         await DeviceToken.updateOne({ _id: device._id }, {
           $set: {
