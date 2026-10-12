@@ -16,7 +16,7 @@ async function getAppDownloads(req, res) {
     const stored = await AppDownload.find({ key: { $in: DEFAULTS.map(x => x.key) } }).lean();
     const byKey = new Map(stored.map(x => [x.key, x]));
     const isAdminRequest = String(req.path || "").startsWith("/api/admin/");
-    const publicApiBase = String(process.env.PUBLIC_API_BASE_URL || (req.protocol + "://" + req.get("host"))).replace(/\\/+$/, "");
+    const publicApiBase = String(process.env.PUBLIC_API_BASE_URL || (req.protocol + "://" + req.get("host"))).replace(/\/+$/, "");
     return res.json(DEFAULTS.map(item => {
       const row = byKey.get(item.key);
       const directPartnerUrl = publicApiBase + "/api/app-downloads/partner.apk";
