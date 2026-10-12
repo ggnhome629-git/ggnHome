@@ -97,6 +97,14 @@ const COPY = {
     success: "The property has been saved. You can review and manage it from the admin property manager.",
   },
 };
+const PARTNER_AMENITIES = [
+  { key: "market", label: "Nearest market", query: /market|supermarket|grocery|convenience/i },
+  { key: "metro", label: "Metro station", query: /metro|subway/i },
+  { key: "hospital", label: "Hospital / clinic", query: /hospital|clinic/i },
+  { key: "school", label: "School", query: /school|college|university/i },
+  { key: "park", label: "Park / garden", query: /park|garden|playground/i },
+  { key: "mall", label: "Shopping mall", query: /mall|shopping centre|department store/i },
+];
 const HEADER_BADGES = {
   owner: [
     { icon: Wallet, label: "Free Listing" },
