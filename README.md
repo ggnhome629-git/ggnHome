@@ -1,1316 +1,649 @@
-# ggnHome - Real Estate Platform
+# GgnHome — Real Estate Discovery & Lead Platform
 
-A modern, full-stack real estate platform designed to simplify property discovery, management, and communication between renters, buyers, owners, and administrators. Built with React, Node.js, and MongoDB, ggnHome provides an AI-assisted property recommendation system (ARIA), comprehensive analytics, payment processing, and flatmate matching.
+GgnHome is a full-stack real-estate platform for discovering rental and sale properties, collecting buyer/tenant requirements, managing property inventory, and helping the team and approved partners follow up with relevant enquiries.
+
+The platform combines **structured and natural-language-assisted property search**, the ARIA rental/sale preference experience, property recommendations and ranking, user search activity, AI Assistant conversations, and a PartnerHub lead workspace. AI-assisted search activity and submitted preferences can be surfaced to authorized partners as potential leads; this is lead capture and workflow support, not a guarantee that every search is a qualified or contactable lead.
+
+> **Current product scope**
+>
+> - **In scope:** public property discovery, user accounts/preferences, property detail and engagement, admin inventory and operations, AI-assisted search/assistant experiences, customer requirement capture, and the separate PartnerHub portal.
+> - **Flatmates:** the backend models and endpoints exist, but the primary Flatmates page routes are currently commented out in `client/src/App.js`. Treat the end-user Flatmates journey as unavailable until those routes are intentionally re-enabled and tested.
+> - **Legacy Agent portal:** legacy Agent code and routes remain in the repository, but they should not be treated as a current supported product flow.
+> - **Monetization:** this README does not claim an active monetization/agent-business feature. Payment-related code remains in the repository, but the existence of code alone does not mean the business flow is currently live.
 
 ---
 
-## Table of Contents
+## Contents
 
-- [Project Overview](#project-overview)
-- [Tech Stack](#tech-stack)
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Configuration](#configuration)
-- [Dependencies](#dependencies)
-- [API Endpoints](#api-endpoints)
-- [Contribution Guide](#contribution-guide)
-- [Deployment](#deployment)
+- [What GgnHome does](#what-ggnhome-does)
+- [Core user journeys](#core-user-journeys)
+- [AI-assisted search and lead capture](#ai-assisted-search-and-lead-capture)
+- [Roles and portals](#roles-and-portals)
+- [Repository layout](#repository-layout)
+- [Architecture and technology](#architecture-and-technology)
+- [Local development](#local-development)
+- [Environment configuration](#environment-configuration)
+- [Main feature areas](#main-feature-areas)
+- [API organization](#api-organization)
+- [Security and privacy](#security-and-privacy)
+- [Testing and CI](#testing-and-ci)
+- [Deployment notes](#deployment-notes)
 - [Troubleshooting](#troubleshooting)
-- [Security](#security)
-- [License](#license)
+- [Known limitations and status notes](#known-limitations-and-status-notes)
 
 ---
 
-## Project Overview
+## What GgnHome does
 
-**ggnHome** is a comprehensive real estate management platform that connects property seekers, owners, and agents. The platform features:
+### Property discovery
 
-- **AI-Powered Property Matching (ARIA)**: Intelligent recommendations based on user preferences
-- **Multi-Role Support**: Separate interfaces for users, owners, agents, and admins
-- **Real-Time Analytics**: Dashboard insights for properties, users, and revenue
-- **Payment Integration**: Secure payment processing and management
-- **Flatmate Matching**: Find compatible roommates with preference matching
-- **Background Synchronization**: Automatic data sync with NoBroker listings
+- Browse available rental and sale inventory.
+- Search by location/sector, free text, property type, configuration and supported filters.
+- View property details and images.
+- Save preferences and revisit search activity where the account flow supports it.
+- Use ranking/recommendation features to help prioritize relevant properties.
+- Track property engagement such as views, saves, ratings and time spent where those events are recorded.
 
-The application is structured as a monorepo with separate frontend (React) and backend (Express.js) directories, enabling independent development and deployment.
+### Requirement capture and follow-up
+
+- Collect rental or sale requirements through the AI Assistant / ARIA experiences and preference forms.
+- Store customer search activity and submitted property preferences.
+- Present AI Assistant search activity and submitted preference-form records in the PartnerHub Leads workspace.
+- Review enquiries and update supported lead/enquiry statuses from authorized partner screens.
+- Keep customer contact data within authenticated workflows and apply server-side role/access checks.
+
+### Property and platform operations
+
+- Provide an administrative portal for property/user operations, review and status controls, feature toggles, dashboard preferences, API/service usage and application-download settings.
+- Support property image upload/storage through the configured media provider.
+- Run background and scheduled jobs present in the repository, including property synchronization and notification-related jobs where configured.
+- Expose health/status endpoints used by the backend and hosting environment.
 
 ---
 
-## Tech Stack
+## Core user journeys
 
-### Frontend
-- **Framework**: React 19.2.0 with React Router 7.9.3
-- **Build Tool**: Vite
-- **UI Components**: Material-UI (MUI) 7.3.4, Lucide React Icons
-- **Styling**: Emotion (CSS-in-JS), TailwindCSS
-- **State Management**: React Hooks, Axios for API calls
-- **Animations**: Framer Motion 12.23.24
-- **Charts**: Recharts 3.3.0
-- **Maps**: Leaflet 1.9.4
-- **Testing**: React Testing Library 16.3.0
-- **Utilities**: React Toastify, React QR Code, React Helmet
+### 1. Property seeker
+
+1. Open the website and browse rental or sale properties.
+2. Search using a sector/location, property keywords and available filters.
+3. Open a property detail page and review its published information.
+4. Use the AI Assistant / ARIA experience to express requirements or explore suitable properties.
+5. Sign in where required to save preferences, use account features or submit authenticated requests.
+
+### 2. AI-assisted requirement capture
+
+1. A visitor or signed-in user searches for property or interacts with an assistant/preference form.
+2. The application records supported search history or customer requirement data.
+3. Authorized partner users can review AI Assistant search leads and preference-form leads in PartnerHub.
+4. A partner can follow up using the available lead/enquiry workflow and update supported statuses.
+
+Search events are **signals of interest**, not automatically verified buyer intent. Contact availability depends on what the user submitted, the account relationship, and the relevant access rules.
+
+### 3. Property owner / inventory submission
+
+Property creation and management flows exist in the repository, with user/owner endpoints and administrative review controls. Availability of individual entry points depends on current route registration, account role and feature configuration. Test create, edit, publish, pause and delete flows against a non-production database before relying on them operationally.
+
+### 4. Administrator
+
+1. Sign in using an account authorized for admin access.
+2. Use the admin dashboard to review inventory, user/platform activity and supported operational queues.
+3. Manage feature visibility, per-admin dashboard preferences, application-download URLs and partner allowlisting.
+4. Use privileged operations only through the server-protected admin APIs.
+
+Hiding a dashboard tile is a display preference; it is not a global lock on the underlying API. The backend must enforce authorization for every privileged operation.
+
+### 5. PartnerHub
+
+1. A GgnHome administrator adds the partner's mobile number to the partner-access allowlist.
+2. The partner opens the dedicated PartnerHub web app and signs in with the allowed mobile number using OTP verification.
+3. The partner can use the authorized dashboard, property, lead, enquiry and profile sections.
+4. The Leads area displays AI Assistant search activity and submitted user-preference records where available.
+5. The partner can access the app-download area configured by the administrator.
+
+Self-service partner registration is intentionally disabled by the backend. Partners should be added by an administrator before login.
+
+### 6. Flatmates
+
+Flatmates listing models and APIs exist, including listing creation, search, details, management and enquiry handlers. However, the primary page routes are commented out in the current React app. This means the presence of those components or endpoints must not be interpreted as a complete, live end-user journey. Re-enable only after route, privacy, approval, media-upload and enquiry flows have been tested end-to-end.
+
+---
+
+## AI-assisted search and lead capture
+
+AI-assisted discovery and lead capture are important parts of GgnHome.
+
+### Search assistance
+
+The current search code supports natural-language-like query parsing and structured search constraints, including patterns such as:
+
+- `2 BHK in Sector 46`
+- `S46` or `sector-46`
+- A location/sector plus additional property keywords
+
+The search controller normalizes sector and BHK expressions and combines them with property filters and relevance ordering. Advanced search code supports filters such as price, bedrooms/bathrooms, furnishing, property type, parking, amenities, sort order and pagination where those fields are available in the request/model.
+
+The repository also contains ARIA rental/sale preference experiences, an AI Assistant/chat experience, user preference storage and a price-prediction controller that calls a separate model service for supported Delhi/Gurgaon inputs. Exact behavior depends on the corresponding UI, route, model and environment configuration; do not assume every assistant screen is enabled in production.
+
+### Lead sources surfaced in PartnerHub
+
+The PartnerHub Leads page reads two principal sources:
+
+1. **AI Assistant search leads** — records from customer property-search activity, with the query and available linked user/contact details.
+2. **User Preference Form leads** — submitted customer requirements such as preferred location, budget range, BHK/property type, furnishing, move-in date and status.
+
+The PartnerHub UI labels these sources separately and supports pagination and refresh. Actual lead availability depends on users submitting searches/forms and on the backend successfully recording the events.
+
+### Important distinctions
+
+- Search history is not the same as an explicit enquiry.
+- A preference form is stronger intent than an anonymous search but still requires appropriate follow-up.
+- Contact fields should be shown only to authorized roles and only when the underlying consent/visibility policy permits them.
+- Do not describe the system as automatically generating, qualifying or guaranteeing leads unless a verified implementation explicitly does so.
+- AI-assisted recommendations are decision support; users should verify property availability, details and terms.
+
+---
+
+## Roles and portals
+
+| Surface | Purpose | Access notes |
+|---|---|---|
+| Public website | Browse published properties, use available search and assistant entry points | Public reads are limited to published data |
+| User account | OTP/password authentication, preferences, search/account features and authenticated requests | Requires valid user session for protected operations |
+| Admin portal | Inventory/platform administration, usage screens, feature toggles, dashboard preferences, app downloads and partner access | Admin APIs must enforce server-side admin authorization |
+| PartnerHub | Partner dashboard, assigned/authorized inventory, leads, enquiries, profile and downloads | Partner mobile number must be allowlisted by an admin; partner APIs validate access |
+| Legacy Agent code | Historical/legacy agent functionality still present in the repository | Not documented as a current supported product journey |
+| Flatmates modules | Listing/search/detail/enquiry backend and UI components | Main React page routes are currently disabled/commented out |
+
+PartnerHub is a separate app in `partner-portal/`; it is not the same thing as the legacy Agent portal.
+
+---
+
+## Repository layout
+
+The repository is a monorepo with separate website, backend, partner portal, mobile-related and utility projects.
+
+```text
+ggnHome/
+├── client/                         # Main React website (Create React App)
+│   ├── public/
+│   └── src/
+│       ├── components/             # Shared UI
+│       ├── Context/                # Authentication and app context
+│       ├── screens/                # User, search, admin, AI, partner and other screens
+│       ├── hooks/                  # Shared React hooks
+│       └── ...
+├── server/                         # Express API
+│   ├── controllers/                # Request/business logic
+│   ├── models/                     # Mongoose models
+│   ├── Route/route.js              # Main route registration
+│   ├── routes/                     # Mounted route modules
+│   ├── middleware/                 # Authentication, rate limits and request middleware
+│   ├── config/                     # Database, cache and file/media handling
+│   ├── services/                   # Recommendation and service logic
+│   ├── cron/                       # Scheduled work
+│   ├── jobs/                       # Background jobs where present
+│   └── index.js                    # Backend entry point
+├── partner-portal/                 # Separate PartnerHub React/Vite app
+├── mobile/                         # Mobile application/source project
+├── sms-gateway-app/                # SMS gateway companion application
+├── scraper/                        # Scraping/synchronization utilities
+├── Images/                         # Project visual assets
+├── SECURITY_AUDIT.md               # Existing security-audit notes (verify against current code)
+├── GGNHOME_DEEP_AUDIT_REPORT.md    # Source-level audit and prioritized findings
+├── package.json                    # Root scripts
+└── README.md
+```
+
+Folder contents evolve; use the current tree as the source of truth rather than relying on old file counts in documentation.
+
+---
+
+## Architecture and technology
+
+### Main website
+
+- React with Create React App / `react-scripts`
+- React Router
+- Material UI, Emotion, Lucide React and other UI libraries
+- Axios/fetch for API communication
+- Recharts for dashboard visualizations
+- Leaflet where map-based UI is used
+- React Testing Library and Jest dependencies
 
 ### Backend
-- **Runtime**: Node.js
-- **Framework**: Express.js 5.1.0
-- **Database**: MongoDB with Mongoose 8.19.1 ORM
-- **Authentication**: JWT (JSON Web Tokens)
-- **Password Hashing**: Bcrypt 6.0.0
-- **File Uploads**: Multer 2.0.2, Sharp 0.34.5
-- **Cloud Storage**: Cloudinary 2.7.0
-- **Email Service**: Nodemailer 7.0.6, Brevo (Sendinblue) SDK
-- **Caching**: Redis (optional, via ioredis 5.4.1)
-- **Task Scheduling**: node-cron 4.6.0
-- **Validation**: express-validator 7.3.1
-- **Data Export**: XLSX 0.18.5
-- **Utilities**: Axios 1.12.2, dotenv 17.2.3, cookie-parser 1.4.7
 
-### DevTools
-- **Development Server**: Nodemon 3.1.10 (backend), React Scripts 5.0.1 (frontend)
-- **Testing**: Jest, React Testing Library
-- **Version Control**: Git
+- Node.js and Express
+- MongoDB with Mongoose
+- JWT-based authentication and role/access middleware
+- Multer for multipart uploads
+- Cloudinary integration with image processing via Sharp
+- Email/notification integrations through configured service providers
+- Optional Redis/cache components and in-memory/local fallback code where configured
+- `node-cron` and job/cron modules for scheduled tasks
+- Helmet and express-rate-limit middleware
 
----
+### PartnerHub
 
-## Features
+- Separate React/Vite application under `partner-portal/`
+- Communicates with the GgnHome backend through a configured API base URL
+- Uses server-validated partner access rather than allowing unrestricted self-registration
 
-### User Features
-- **Property Browsing**: Browse rental and sale properties with filters
-- **AI-Powered Recommendations (ARIA)**: Get personalized property suggestions
-- **Favorites Management**: Save and track favorite properties
-- **Property Analytics**: View engagement metrics (views, saves, ratings)
-- **Search History**: Maintain and revisit previous searches
-- **Callback Requests**: Request property owner callbacks
-- **Flatmate Matching**: Find compatible roommates based on preferences
-- **Price Prediction**: AI-assisted property price estimation
+### AI/model services
 
-### Owner/Agent Features
-- **Property Management**: Post, edit, and manage rental and sale properties
-- **Analytics Dashboard**: Track property engagement and performance
-- **Lead Management**: View and manage user inquiries
-- **Payment Processing**: Handle subscription payments
-- **Revenue Tracking**: Monitor income from properties
-- **Service Requests**: Track maintenance and support requests
-- **Preferred Sectors**: Set availability in specific areas/sectors
+- Structured query parsing and property-search ranking in the backend
+- ARIA rental/sale preference handling
+- AI Assistant/chat controllers and data models
+- Price prediction controller that calls a separately hosted model API for supported city inputs
 
-### Admin Features
-- **User Management**: Manage all users (renters, owners, admins)
-- **Property Management**: Approve, reject, or modify all properties
-- **Payment Approval**: Review and approve/reject payment transactions
-- **Comprehensive Analytics Dashboard**:
-  - Total users breakdown (renters, owners, admins)
-  - Revenue statistics and trends
-  - Active vs inactive user metrics
-  - Property engagement analytics
-  - Search trends and popular properties
-  - Monthly user growth tracking
-  - Lead conversion metrics
-- **Reward System**: Manage rewards and track claims
-- **Service Requests**: Review customer support tickets
-- **Account Usage Tracking**: Monitor API and service usage
-- **Role Management**: Assign and modify user roles
+The exact deployed services, model endpoints and enabled features must be configured in the target environment. No API key or model secret belongs in client-side code.
 
 ---
 
-## Project Structure
-
-```
-ggnHome/
-├── server/                              # Express.js backend
-│   ├── controllers/                     # Route handlers (26 files)
-│   │   ├── login.controller.js
-│   │   ├── userdetails.controller.js
-│   │   ├── admin.controller.js
-│   │   ├── admin.agent.controller.js
-│   │   ├── payment.controller.js
-│   │   ├── Rentalproperty.controller.js
-│   │   ├── Saleproperty.controller.js
-│   │   ├── Searchproperties.controller.js
-│   │   ├── PropertyAnalysis.controller.js
-│   │   ├── agentDashboard.controller.js
-│   │   ├── Flatmates.controller.js
-│   │   ├── ChatBot.controller.js
-│   │   ├── aimodel.controller.js
-│   │   └── ... (other controllers)
-│   ├── models/                          # MongoDB schemas (18 models)
-│   │   ├── user.model.js
-│   │   ├── Rentalproperty.model.js
-│   │   ├── SaleProperty.model.js
-│   │   ├── Agent.model.js
-│   │   ├── Payment.model.js
-│   │   ├── PropertyAnalysis.model.js
-│   │   ├── Flatmates.model.js
-│   │   ├── Rewards.model.js
-│   │   └── ... (other models)
-│   ├── Route/
-│   │   └── route.js                     # All API endpoint definitions
-│   ├── middleware/
-│   │   ├── auth.js                      # JWT authentication
-│   │   └── multer.js                    # File upload configuration
-│   ├── config/
-│   │   ├── db.js                        # MongoDB connection
-│   │   ├── cache.js                     # Redis cache setup
-│   │   └── FileHandling.js
-│   ├── cron/
-│   │   └── nobrokerSyncCron.js          # Background property sync
-│   ├── scripts/
-│   │   └── nobrokerSync.js              # NoBroker sync logic
-│   ├── utils/                           # Utility functions
-│   ├── package.json
-│   ├── index.js                         # Server entry point
-│   └── seedProperties.js
-│
-├── client/                              # React frontend
-│   ├── src/
-│   │   ├── components/                  # Reusable components
-│   │   ├── pages/                       # Page components
-│   │   ├── hooks/                       # Custom React hooks
-│   │   ├── utils/                       # Utility functions
-│   │   └── main.jsx
-│   ├── public/                          # Static assets
-│   ├── package.json
-│   └── ... (build config files)
-│
-├── Images/                              # Logo, cards, advertisements
-│   ├── Logo/
-│   ├── Card/
-│   └── Ad's/
-│
-├── README.md                            # This file
-├── SECURITY_AUDIT.md                    # Security findings
-├── Colorpallet.txt                      # UI color palette
-├── Cloudinary Details.docx              # Cloud storage config
-├── package.json                         # Root package config
-├── .gitignore
-└── .gitattributes
-```
-
-### Key Folders Explained
-
-| Folder | Purpose |
-|--------|---------|
-| `controllers/` | Business logic for API endpoints |
-| `models/` | Database schemas and data validation |
-| `Route/` | API route definitions and middleware application |
-| `middleware/` | Authentication, file uploads, CORS |
-| `config/` | Database, cache, and external service configuration |
-| `cron/` | Scheduled background tasks |
-| `client/src/components/` | React components for UI |
-
----
-
-## Installation
+## Local development
 
 ### Prerequisites
 
-- **Node.js** v16+ and npm v8+ (or yarn)
-- **MongoDB** (local or MongoDB Atlas)
-- **Redis** (optional, for caching)
-- **Cloudinary Account** (for image uploads)
-- **Git**
+- A Node.js version compatible with the lockfiles and installed dependencies
+- npm
+- MongoDB local instance or a MongoDB-compatible hosted database
+- Environment values for the services you want to exercise
+- Optional service credentials for media upload, email/OTP delivery, maps and AI/model integrations
 
-### Step 1: Clone the Repository
+Use the Node version selected by the repository's current deployment/CI configuration where available. Do not assume all external integrations work without credentials.
+
+### 1. Clone
 
 ```bash
 git clone https://github.com/ggnhome629-git/ggnHome.git
 cd ggnHome
 ```
 
-### Step 2: Install Server Dependencies
+### 2. Install dependencies
+
+From the repository root:
 
 ```bash
-cd server
-npm install
+npm run install:all
 ```
 
-### Step 3: Install Client Dependencies
+This root script installs the main client and server dependencies. Install the PartnerHub dependencies separately when working on that portal:
 
 ```bash
-cd ../client
+cd partner-portal
 npm install
+cd ..
 ```
 
-### Step 4: Configure Environment Variables
+Other subprojects such as `mobile/`, `scraper/` and `sms-gateway-app/` have their own dependencies and instructions.
 
-Create `.env` files in both server and client directories with the following variables:
+### 3. Configure the backend
 
-#### Server `.env` (`server/.env`)
+Create `server/.env` locally. Do not commit secrets.
+
+Example baseline (only set values for services you have configured):
 
 ```env
-# Server Configuration
-PORT=5000
 NODE_ENV=development
+PORT=5000
 
 # Database
-MONGO_URI=mongodb://localhost:27017/ggn-home
-# OR MongoDB Atlas: mongodb+srv://username:password@cluster.mongodb.net/dbname
+MONGO_URI=mongodb://127.0.0.1:27017/ggnhome
 
-# Authentication
-JWT_SECRET=your_jwt_secret_key_here
-JWT_EXPIRE=7d
-AGENT_JWT_SECRET=your_agent_jwt_secret_here
+# Authentication — use strong, unique random values
+JWT_SECRET=replace_with_a_long_random_secret
+ACCESS_TOKEN_SECRET=replace_with_a_different_long_random_secret
+ACCESS_TOKEN_AGENT_SECRET=replace_with_another_long_random_secret
 
-# Cloudinary (Image Upload)
-CLOUDINARY_NAME=your_cloudinary_name
-CLOUDINARY_API_KEY=your_cloudinary_api_key
-CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+# Admin authorization
+ADMIN_EMAIL=admin@example.com
 
-# Email Service (Brevo/Sendinblue)
-BREVO_API_KEY=your_brevo_api_key
+# Media upload (Cloudinary)
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 
-# Redis Cache (Optional)
-REDIS_URI=redis://localhost:6379
-# Leave empty to disable caching
-
-# CORS Configuration
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:4173
-
-# Map Integration (LocationIQ)
-LOCATION_IQ_API_KEY=your_locationiq_api_key
-
-# Payment Gateway (Optional)
-RAZORPAY_KEY_ID=your_razorpay_key
-RAZORPAY_KEY_SECRET=your_razorpay_secret
-
-# Admin Email
-ADMIN_EMAIL=admin@ggn-home.com
+# Configure only when used by the deployed code:
+BREVO_API_KEY=
+LOCATIONIQ_API_KEY=
+GNEWS_API_KEY=
+REDIS_URL=
 ```
 
-#### Client `.env` (`client/.env`)
+Environment variable names must match the current code and deployment settings exactly. The example is not a complete list of every optional integration; inspect the relevant controller/config module when enabling a feature.
+
+**Never expose `LOCATIONIQ_API_KEY` or any other private provider credential through an unauthenticated endpoint or a React environment variable.** The legacy `/api/locationqapi` endpoint is retired and no longer returns the key. If a map UI needs geocoding, implement a server-side proxy or use a provider-supported, domain-restricted public token.
+
+### 4. Configure the main client
+
+Create `client/.env` and set the API base variable used by the main website's API helper. Confirm the exact variable name in the current client source before deployment; do not assume Vite's `VITE_*` convention because the main website uses Create React App.
+
+Example if the client API helper is configured to read this variable:
 
 ```env
-# API Configuration
-VITE_BACKEND_URL=http://localhost:5000
+REACT_APP_Base_API=http://localhost:5000
 ```
 
-### Step 5: Start the Application
+Restart the development server after changing client environment variables.
 
-#### Terminal 1 - Backend
+### 5. Start the backend
 
 ```bash
-cd server
+npm run server:dev
+```
+
+The current server package's `start` script uses Nodemon and starts `server/index.js`. Confirm the startup log and database connection before using the app.
+
+### 6. Start the main website
+
+In a second terminal:
+
+```bash
+npm run client:start
+```
+
+Create React App normally serves the website at `http://localhost:3000`.
+
+### 7. Start PartnerHub separately
+
+```bash
+cd partner-portal
+cp .env.example .env
+```
+
+Set `VITE_API_BASE` to the backend origin, then run:
+
+```bash
 npm run dev
 ```
 
-The backend will start on `http://localhost:5000` (or the port specified in `.env`).
+Create a production build with:
 
-#### Terminal 2 - Frontend
+```bash
+npm run build
+```
+
+PartnerHub uses Vite and is separate from the main Create React App client.
+
+---
+
+## Environment configuration
+
+| Variable / configuration | Used for | Notes |
+|---|---|---|
+| `MONGO_URI` | MongoDB connection | Required for persisted accounts, inventory and lead records |
+| `JWT_SECRET` / `ACCESS_TOKEN_SECRET` | User/session token verification depending on auth path | Use strong unique secrets; never commit them |
+| `ACCESS_TOKEN_AGENT_SECRET` | Agent-token verification where legacy agent auth is used | Keep separate from user signing secrets |
+| `ADMIN_EMAIL` | Admin email authorization checks in current middleware | Must match the intended administrator account |
+| Cloudinary credentials | Image/file upload | Configure only in the server environment |
+| `BREVO_API_KEY` and other notification configuration | Email/OTP/notification delivery where wired | Verify sender/domain/provider setup |
+| `LOCATIONIQ_API_KEY` | Server-side geocoding integration | Private; do not return to browsers |
+| `GNEWS_API_KEY` | News integration | Optional for the news feature |
+| `REDIS_URL` / cache configuration | Optional caching/rate-limit support where enabled | Verify the exact key used by the selected config module |
+| `VITE_API_BASE` | PartnerHub API origin | Client-visible API base URL, not a secret |
+| Main client API base variable | Main website API origin | Confirm current client helper; Create React App uses `REACT_APP_*` variables |
+
+This table covers the main integration groups rather than every environment variable referenced by every legacy module. Review `server/config/`, `server/middleware/` and the relevant controller before deploying a feature.
+
+---
+
+## Main feature areas
+
+### Property inventory and discovery
+
+- Rental and sale inventory endpoints and detail views
+- Location/sector and free-text search
+- Structured filters, pagination and sorting where supported
+- Property image upload/storage
+- Public listing and status controls
+- Property ranking/recommendation modules
+- Search history and supported property engagement events
+
+### User accounts and preferences
+
+- OTP-based login and password/session endpoints
+- User details/profile and preferences
+- ARIA rental/sale preference records
+- Search history and property engagement data
+- Callback/enquiry and support flows where enabled
+
+### AI Assistant and prediction
+
+- AI Assistant/chat screens and backend controllers
+- Search query normalization for sector and BHK patterns
+- Rental/sale requirement capture
+- Preference form storage
+- Partner-visible AI Assistant search activity
+- A property price prediction endpoint that calls an external model service for supported Delhi/Gurgaon input formats
+
+### Admin operations
+
+- User and property administration
+- Property approval/status/ranking operations where registered
+- Payment/status administration code present in the repository
+- Feature-toggle administration
+- Per-admin dashboard visibility preferences
+- Service/API usage pages
+- Partner allowlisting and admin PartnerHub session bootstrap
+- Application download URL management
+- Scraper and property-sync administrative route modules
+
+Availability and authorization must be confirmed against the current route registration and deployment. A component existing in the tree does not mean it is accessible in the current website.
+
+### PartnerHub operations
+
+- Partner dashboard
+- Partner property listing/creation where authorized
+- Lead and enquiry views
+- AI Assistant search-lead records
+- User preference-form leads
+- Lead/enquiry status update routes
+- Partner profile
+- Admin-configured app downloads
+
+### Supporting modules
+
+- Property scraper/sync code
+- SMS gateway companion app
+- News integration
+- Service/support request code
+- Scheduled tasks and notification-related jobs
+- Mobile app/source code
+
+Supporting modules may be dormant, separately deployed or environment-dependent; verify before treating them as live production functionality.
+
+---
+
+## API organization
+
+The main Express router is `server/Route/route.js`; additional endpoints are mounted from files under `server/routes/`.
+
+The API is grouped broadly as follows:
+
+| Area | Purpose |
+|---|---|
+| Authentication | OTP request/verification, password login, session/profile and logout |
+| User/profile | User details, preferences, dashboard and account-owned property data |
+| Property reads | Active inventory, property details and rental/sale-specific reads |
+| Search | Free-text/structured property search, sector suggestions, search history and advanced search modules |
+| AI/assistant | Chat/assistant responses, ARIA preferences and supported price-prediction calls |
+| Property analysis | Views, saves, engagement, ratings and user/property metrics |
+| Admin | Inventory/user operations, payments/status, feature toggles, usage and dashboard preferences |
+| PartnerHub | Partner dashboard, properties, leads, searches, enquiries, profile and app downloads |
+| Flatmates | Listing create/search/detail/update/delete, views and enquiry handlers; primary UI routes currently disabled |
+| App downloads | Public configured downloads and admin URL management |
+| Scraper/property sync | Admin route modules for supported sync operations |
+| News/support | News and service/enquiry endpoints where enabled |
+
+Use the current `server/Route/route.js` and mounted route modules as the authoritative endpoint list. This README intentionally avoids reproducing a stale endpoint-by-endpoint table; exact HTTP methods, validation and middleware can change independently of this overview.
+
+---
+
+## Security and privacy
+
+Security controls visible in the current source include JWT/auth middleware, role/access checks, Helmet, rate-limiting middleware and OTP expiry/attempt limits. These controls must be maintained and tested as routes evolve.
+
+### Rules for contributors
+
+- Never commit API keys, database credentials, signing secrets or real user data.
+- Keep private provider keys on the server. The legacy LocationIQ key-return endpoint is retired and must not be reintroduced.
+- Apply authentication **and authorization** to every protected read/write. A valid login alone does not grant access to another user's private data.
+- Public search/detail endpoints must return only published, approved data.
+- Expose customer phone/email only under an explicit and enforced contact-sharing policy.
+- Validate IDs, query parameters, request bodies, uploaded files and status transitions.
+- Limit and deduplicate public analytics events that can otherwise be inflated by repeated requests.
+- Do not treat hidden frontend buttons/routes as a substitute for backend authorization.
+- Use non-production fixtures when testing approvals, contact visibility, payment state and partner access.
+
+### Security audit
+
+See [`GGNHOME_DEEP_AUDIT_REPORT.md`](./GGNHOME_DEEP_AUDIT_REPORT.md) for the source-level audit, prioritized findings and items still requiring runtime verification. `SECURITY_AUDIT.md` is historical and may contain entries that no longer match current source; re-verify each claim before relying on it.
+
+---
+
+## Testing and CI
+
+### Main client
+
+The main client package defines:
 
 ```bash
 cd client
-npm start
-# OR with Vite:
-npm run dev
-```
-
-The frontend will start on `http://localhost:3000` (React Scripts) or `http://localhost:5173` (Vite).
-
----
-
-## Usage
-
-### Accessing the Application
-
-**Frontend**: Open `http://localhost:3000` in your browser
-
-### User Workflows
-
-#### 1. **Register and Login**
-- Navigate to the signup page
-- Enter mobile number to receive OTP
-- Verify OTP and set password
-- Or use existing account to login
-
-#### 2. **Browse Properties**
-- Go to "Browse Properties"
-- Filter by type (rental/sale), location, price, etc.
-- View detailed property information
-- Save favorite properties
-
-#### 3. **Use AI Recommendations (ARIA)**
-- Complete your preferences in the preferences section
-- ARIA will recommend properties based on your profile
-
-#### 4. **Post a Property (Owners)**
-- Login as property owner
-- Navigate to "Post Property"
-- Fill rental or sale property details
-- Upload property images
-- Submit for admin approval
-
-#### 5. **Payment Management**
-- Owners can initiate subscription payments
-- Admins can review and approve payments
-- Payment status is tracked in dashboard
-
-#### 6. **Flatmate Matching**
-- Create or search flatmate listings
-- Filter by preferences (location, budget, lifestyle)
-- Send/receive flatmate inquiries
-
-### Admin Dashboard
-- Access admin panel (requires admin role)
-- View analytics and metrics
-- Manage users and properties
-- Process payments and requests
-
----
-
-## Configuration
-
-### Database Connection
-
-**MongoDB Local:**
-```env
-MONGO_URI=mongodb://localhost:27017/ggn-home
-```
-
-**MongoDB Atlas:**
-```env
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/dbname?retryWrites=true&w=majority
-```
-
-### Caching (Redis)
-
-**Enable Caching:**
-```env
-REDIS_URI=redis://localhost:6379
-```
-
-Property listings are cached with:
-- Card projections for list endpoints (~350 bytes per listing)
-- Short TTL (time-to-live)
-- Automatic invalidation on write operations
-
-**Recommended Redis Settings:**
-- `maxmemory-policy`: `allkeys-lru`
-- `maxmemory`: 30 MB (or appropriate for plan)
-
-### Email Configuration
-
-Uses Brevo (Sendinblue) for email notifications:
-```env
-BREVO_API_KEY=your_api_key
-```
-
-Emails include:
-- OTP verification
-- Password reset links
-- Callback notifications
-- Payment confirmations
-
-### Image Upload Configuration
-
-Images are stored on Cloudinary. Configuration in `server/config/FileHandling.js`.
-
-**Max file sizes and allowed types:**
-- Images: JPG, PNG, WebP
-- Optimized via Sharp before upload
-
-### Rate Limiting
-
-**Status**: Not implemented (Security risk - see SECURITY section)
-
-Recommended: Add express-rate-limit middleware
-
-### Session Management
-
-- JWT tokens stored in cookies (secure, httpOnly in production)
-- Token expiry: configurable (default 7 days)
-- Separate tokens for users and agents
-
----
-
-## Dependencies
-
-### Backend Key Dependencies
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| express | ^5.1.0 | Web framework |
-| mongoose | ^8.19.1 | MongoDB ORM |
-| jsonwebtoken | ^9.0.2 | Authentication |
-| bcryptjs | ^3.0.3 | Password hashing |
-| multer | ^2.0.2 | File uploads |
-| axios | ^1.12.2 | HTTP client |
-| ioredis | ^5.4.1 | Redis client |
-| node-cron | ^4.6.0 | Task scheduling |
-| nodemailer | ^7.0.6 | Email sending |
-| sharp | ^0.34.5 | Image optimization |
-| cloudinary | ^2.7.0 | Cloud storage |
-| dotenv | ^17.2.3 | Environment variables |
-
-### Frontend Key Dependencies
-
-| Package | Version | Purpose |
-|---------|---------|---------|
-| react | ^19.2.0 | UI library |
-| react-router-dom | ^7.9.3 | Routing |
-| @mui/material | ^7.3.4 | Component library |
-| axios | ^1.13.1 | API calls |
-| framer-motion | ^12.23.24 | Animations |
-| recharts | ^3.3.0 | Data visualization |
-| leaflet | ^1.9.4 | Maps |
-| react-toastify | ^11.0.5 | Notifications |
-
-### View Package Files
-
-- Backend: `/tmp/ggnHome/server/package.json`
-- Frontend: `/tmp/ggnHome/client/package.json`
-
----
-
-## API Endpoints
-
-### Authentication Routes
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/auth/requestOtp` | Request OTP for login | No |
-| POST | `/api/auth/verifyOtp` | Verify OTP | No |
-| POST | `/api/auth/login` | Login with password | No |
-| POST | `/api/auth/setPassword` | Set password after OTP | Yes |
-| POST | `/api/auth/logout` | Logout user | Yes |
-
-### User Routes
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/user/details` | Get user profile | Yes |
-| PUT | `/api/user/details` | Update user profile | Yes |
-| GET | `/api/user/preferences` | Get ARIA preferences | Yes |
-| POST | `/api/user/preferences` | Save ARIA preferences | Yes |
-| GET | `/api/user/searchHistory` | Get search history | Yes |
-| GET | `/api/user/rewards` | Get rewards status | Yes |
-
-### Property Routes
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/property/rental` | Get rental properties | No |
-| GET | `/api/property/rental/:id` | Get rental property details | No |
-| POST | `/api/property/rental` | Create rental property | Yes |
-| PUT | `/api/property/rental/:id` | Update rental property | Yes |
-| DELETE | `/api/property/rental/:id` | Delete rental property | Yes |
-| GET | `/api/property/sale` | Get sale properties | No |
-| POST | `/api/property/sale` | Create sale property | Yes |
-| GET | `/api/property/analysis/:id` | Get property analytics | No |
-
-### Search Routes
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/search` | Search properties | No |
-| GET | `/api/search/suggestions` | Get location suggestions | No |
-| GET | `/api/search/sectors` | Get sector suggestions | No |
-
-### Admin Routes
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/admin/overview` | Dashboard overview | Admin |
-| GET | `/api/admin/users` | List all users | Admin |
-| GET | `/api/admin/payments` | List all payments | Admin |
-| PUT | `/api/admin/payment/:id` | Approve/reject payment | Admin |
-| GET | `/api/admin/callback-requests` | Get callback requests | Admin |
-| PUT | `/api/admin/user/:id/role` | Change user role | Admin |
-
-### Payment Routes
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/payment/initiate` | Initiate payment | Yes |
-| POST | `/api/payment/verify` | Verify payment | Yes |
-| GET | `/api/payment/history` | Get payment history | Yes |
-
-### Flatmate Routes
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| GET | `/api/flatmate/listings` | Get flatmate listings | No |
-| POST | `/api/flatmate/listings` | Create flatmate listing | Yes |
-| GET | `/api/flatmate/listings/:id` | Get listing details | No |
-| POST | `/api/flatmate/enquiry` | Send flatmate inquiry | Yes |
-
-### Chat/AI Routes
-
-| Method | Endpoint | Description | Auth |
-|--------|----------|-------------|------|
-| POST | `/api/chat/message` | Send chat message to bot | Yes |
-| GET | `/api/chat/initial-questions` | Get starting questions | No |
-| POST | `/api/ai/price-predict` | Predict property price | No |
-
-For complete endpoint documentation, see `server/Route/route.js`.
-
----
-
-## Contribution Guide
-
-### Code of Conduct
-
-- Be respectful and inclusive
-- Provide constructive feedback
-- Test your changes thoroughly
-- Follow the existing code style
-
-### Getting Started with Contribution
-
-1. **Fork the Repository**
-   ```bash
-   # Click "Fork" on GitHub
-   ```
-
-2. **Clone Your Fork**
-   ```bash
-   git clone https://github.com/YOUR_USERNAME/ggnHome.git
-   cd ggnHome
-   ```
-
-3. **Create a Feature Branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   # or for bug fixes:
-   git checkout -b bugfix/issue-description
-   ```
-
-4. **Follow Naming Conventions**
-   - Feature branches: `feature/descriptive-name`
-   - Bug fixes: `bugfix/issue-description`
-   - Hotfixes: `hotfix/critical-issue`
-
-### Development Workflow
-
-1. **Create .env files** as described in Installation section
-2. **Start both servers** (backend and frontend)
-3. **Make your changes**
-4. **Test locally**
-   - Manual testing in browser
-   - Use Postman for API testing
-   - Run existing tests: `npm test`
-
-5. **Commit with Clear Messages**
-   ```bash
-   git commit -m "feat: Add flatmate preference matching"
-   git commit -m "fix: Resolve payment approval bug"
-   ```
-
-6. **Push to Your Fork**
-   ```bash
-   git push origin feature/your-feature-name
-   ```
-
-7. **Create a Pull Request**
-   - Write a clear description
-   - Reference any related issues
-   - Wait for review
-
-### Code Style Guidelines
-
-- **JavaScript**: Use ES6+ syntax
-- **Comments**: Add comments for complex logic
-- **Variables**: Use camelCase for variables and functions
-- **Constants**: Use UPPER_SNAKE_CASE
-- **Components (React)**: Use PascalCase
-- **Imports**: Organize imports at the top of files
-- **Async/Await**: Prefer async/await over .then() chains
-
-### Testing
-
-```bash
-# Backend
-cd server
 npm test
-
-# Frontend
-cd client
-npm test
+npm run build
 ```
 
-### Submitting Issues
+React Scripts may run tests in watch mode locally; use the appropriate CI/non-watch invocation when needed.
 
-1. Check existing issues first
-2. Use descriptive titles
-3. Include:
-   - Environment details
-   - Steps to reproduce
-   - Expected vs actual behavior
-   - Screenshots if applicable
+### Backend and root scripts
+
+The root `package.json` declares scripts for general tests, API tests, Playwright E2E, security checks and load tests. Some referenced configuration/script paths were not present in the source-tree audit, and `server/package.json` currently has an empty `test` script. Verify those scripts before treating them as runnable or as evidence of coverage.
+
+Do not claim the entire test suite passes unless it has been run against the current commit in a clean environment.
+
+### Suggested pre-release checks
+
+- [ ] Main client production build completes
+- [ ] Backend starts with the intended environment and database
+- [ ] Anonymous, user, admin and partner access boundaries tested
+- [ ] Public search returns published/active listings only
+- [ ] Contact fields obey listing/user privacy settings
+- [ ] OTP delivery, expiry, attempt limits and logout/session expiry tested
+- [ ] AI Assistant search and preference submission are stored as expected
+- [ ] PartnerHub displays only authorized lead and contact records
+- [ ] Upload failure, file validation and cleanup paths tested
+- [ ] Main and PartnerHub responsive layouts checked
+- [ ] CI workflows run for the exact release commit
+- [ ] Production deployment commit verified
 
 ---
 
-## Deployment
+## Deployment notes
 
-### Frontend Deployment (Vercel/Netlify)
+The repository contains separate build targets for the main client, backend, PartnerHub and supporting projects. Configure each target according to the hosting platform's root directory, build command, start command, SPA fallback and environment-variable settings.
 
-**With Vercel:**
-```bash
-npm i -g vercel
-vercel
-```
+### Main website
 
-**With Netlify:**
-1. Push code to GitHub
-2. Connect repository in Netlify dashboard
-3. Set build command: `npm run build`
-4. Set publish directory: `build`
-5. Add environment variables
+- Root directory: `client/` if deploying the main client independently.
+- Build command: `npm run build` inside `client/` (Create React App).
+- Publish directory: `build/`.
+- Configure the client API base URL for the backend origin.
+- Configure SPA fallback so direct navigation/refresh on client-side routes works.
 
-**Environment Variables in Netlify:**
-```env
-VITE_BACKEND_URL=https://your-backend-url.com
-```
+### Backend
 
-### Backend Deployment (Render/Railway)
+- Root directory: `server/` for an independently deployed backend.
+- Entry point: `index.js`.
+- Set database, auth, media, notification and other required environment variables in the hosting dashboard.
+- Ensure HTTPS, CORS origins, trusted proxy settings and rate-limit behavior match the deployment.
+- Confirm the deployed commit/branch using the hosting provider or backend health/commit metadata; GitHub `main` alone does not prove what is running in production.
 
-**With Render:**
-1. Connect GitHub repository
-2. Set build command: `npm install`
-3. Set start command: `npm start`
-4. Add environment variables
-5. Deploy
+### PartnerHub
 
-**With Railway:**
-```bash
-railway link
-railway up
-```
+- Root directory: `partner-portal/`.
+- Build command: `npm run build`.
+- Publish directory: `dist/`.
+- Set `VITE_API_BASE` to the backend origin.
+- Configure SPA fallback and ensure the admin-managed APK URLs point to actual downloadable binary files.
 
-**Add Environment Variables:**
-```env
-MONGO_URI=your_mongodb_atlas_uri
-JWT_SECRET=your_jwt_secret
-PORT=5000
-NODE_ENV=production
-# ... other variables
-```
+### Release caution
 
-### Database Deployment
-
-**MongoDB Atlas (Recommended):**
-1. Create account at https://www.mongodb.com/cloud/atlas
-2. Create a cluster
-3. Get connection string
-4. Add to `MONGO_URI` in backend .env
-
-**Redis Deployment:**
-- Redis Cloud (https://redis.com/try-free/)
-- Heroku Redis (free tier available)
-- Add URL to `REDIS_URI` in backend .env
-
-### Production Checklist
-
-- [ ] All environment variables set
-- [ ] JWT secrets are strong and unique
-- [ ] CORS origins configured correctly
-- [ ] Database backups enabled
-- [ ] HTTPS/SSL enabled
-- [ ] Security headers configured
-- [ ] Rate limiting implemented
-- [ ] Error logging set up
-- [ ] Monitoring and alerts configured
-- [ ] CDN configured (CloudFlare recommended)
-
-### CI/CD Pipeline
-
-Create `.github/workflows/deploy.yml` for automated testing and deployment:
-
-```yaml
-name: Deploy
-
-on:
-  push:
-    branches: [main, develop]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - run: cd server && npm install && npm test
-      - run: cd client && npm install && npm test
-```
+No hosting-provider configuration should be inferred from this README. Validate the actual hosting dashboard, secrets, build logs and health endpoint before declaring a release live. Do not enable a dormant feature solely by deploying its existing source files.
 
 ---
 
 ## Troubleshooting
 
-### Common Issues and Solutions
+### Backend cannot connect to MongoDB
 
-#### 1. MongoDB Connection Fails
+- Verify `MONGO_URI`, network access, database credentials and provider allowlists.
+- Check the backend startup logs.
+- Use a non-production database for migrations and tests.
 
-**Error**: `MongoNetworkError: connect ECONNREFUSED`
+### OTP or email delivery does not work
 
-**Solution**:
-```bash
-# Start MongoDB locally
-mongod
+- Verify the configured provider key, sender/domain, template/settings and provider account limits.
+- Check server logs and rate-limit responses.
+- Never log OTPs or credentials in production.
 
-# OR verify MongoDB Atlas connection string
-# Check username, password, network access in MongoDB Atlas
-```
+### Images fail to upload
 
-#### 2. CORS Errors
+- Verify server-side media credentials, file-size limits, MIME/type validation and provider status.
+- Check whether the request reports a partial upload failure.
+- Ensure temporary files are cleaned up.
 
-**Error**: `Access to XMLHttpRequest blocked by CORS policy`
+### Main client calls the wrong backend
 
-**Solution**:
-```env
-# In server/.env, add your frontend URL:
-ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,https://yourdomain.com
-```
+- Check the API base variable used by the current client source.
+- Restart the development server after editing `.env`.
+- Inspect browser network requests and CORS configuration.
 
-#### 3. Cloudinary Upload Fails
+### PartnerHub login or leads do not load
 
-**Error**: `Cloudinary authentication failed`
+- Confirm the mobile number was allowlisted by an administrator.
+- Confirm OTP verification and partner token issuance.
+- Check `VITE_API_BASE`, browser network responses and backend authorization logs.
+- Confirm that search/preference events exist; an empty lead table can be a valid empty state.
 
-**Solution**:
-```env
-# Verify credentials in server/.env:
-CLOUDINARY_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-```
+### Flatmates pages show a missing route
 
-Check credentials at https://cloudinary.com/console
-
-#### 4. JWT Token Issues
-
-**Error**: `Invalid token` or `Token expired`
-
-**Solution**:
-- Clear cookies/localStorage
-- Log in again
-- Check `JWT_EXPIRE` in server/.env
-- Ensure `JWT_SECRET` is set
-
-#### 5. Port Already in Use
-
-**Error**: `Error: listen EADDRINUSE :::5000`
-
-**Solution**:
-```bash
-# On Linux/Mac:
-lsof -i :5000
-kill -9 <PID>
-
-# On Windows:
-netstat -ano | findstr :5000
-taskkill /PID <PID> /F
-
-# Or change port in .env:
-PORT=5001
-```
-
-#### 6. Redis Connection Issues
-
-**Error**: `Redis connection refused`
-
-**Solution**:
-- Ensure Redis is running: `redis-cli ping`
-- Or disable caching by removing `REDIS_URI` from .env
-- Redis is optional; app works without it
-
-#### 7. Package Installation Fails
-
-**Solution**:
-```bash
-# Clear npm cache
-npm cache clean --force
-
-# Remove node_modules and reinstall
-rm -rf node_modules package-lock.json
-npm install
-```
-
-#### 8. Build Fails
-
-**Frontend**:
-```bash
-cd client
-npm run build  # Check for errors
-```
-
-**Backend**: No build step, but verify:
-```bash
-cd server
-node index.js  # Test if it starts
-```
-
-### Getting Help
-
-1. Check existing GitHub issues
-2. Review SECURITY_AUDIT.md for known issues
-3. Check server logs: `npm run dev` outputs logs
-4. Use browser DevTools for frontend issues
-5. Test API endpoints with Postman
+The main Flatmates page routes are currently commented out in `client/src/App.js`. This is a known source state, not necessarily a hosting problem. Do not workaround it by exposing private APIs; restore the intended route and authorization design before calling the feature live.
 
 ---
 
-## Security
+## Known limitations and status notes
 
-### Current Security Status
-
-**Important**: This project has known security vulnerabilities. See `SECURITY_AUDIT.md` for details.
-
-### Known Issues (OPEN)
-
-- **CRITICAL (C-1)**: Unauthenticated password set → account takeover
-- **CRITICAL (C-2)**: Upload filename not sanitized → arbitrary file write
-- **HIGH (H-1)**: Admin property creation reachable without auth
-- **HIGH (H-2)**: No rate limiting anywhere
-- **HIGH (H-3)**: Admin sign-in code never expires
-- **HIGH (H-4)**: Third-party API key returned to anonymous callers
-
-See `SECURITY_AUDIT.md` for complete list and remediation guidance.
-
-### Security Best Practices
-
-1. **Environment Variables**
-   - Never commit .env files
-   - Use strong, unique secrets
-   - Rotate secrets regularly
-
-2. **Authentication**
-   - Always verify tokens server-side
-   - Use HTTPS/SSL in production
-   - Implement rate limiting
-   - Add password strength requirements
-
-3. **Database**
-   - Enable MongoDB authentication
-   - Use network ACLs
-   - Regular backups
-   - Never expose connection strings
-
-4. **File Uploads**
-   - Validate file types
-   - Set size limits
-   - Scan for malware (optional)
-   - Store outside webroot
-
-5. **API Security**
-   - Validate all inputs
-   - Use HTTPS
-   - Implement CORS correctly
-   - Add security headers (Helmet.js)
-
-6. **Dependency Management**
-   - Keep dependencies updated
-   - Use `npm audit` regularly
-   - Monitor for vulnerabilities
-
-### Security Audit
-
-Refer to `SECURITY_AUDIT.md` for:
-- Detailed vulnerability descriptions
-- Affected code locations
-- Remediation steps
-- Priority levels
+- The main Flatmates UI routes are currently disabled/commented out even though related UI components and API handlers remain.
+- Legacy Agent functionality remains in the repository but is not described as a current supported flow.
+- AI Assistant search activity and preference-form submissions can be surfaced to partners; this does not guarantee contactability or lead qualification.
+- Payment, scraping, mobile, SMS gateway and scheduled-job code can require separate configuration and runtime validation.
+- Some root test scripts reference paths that were not found during source-tree inspection; verify before relying on them.
+- A source audit cannot establish visual correctness, live deployment status, external provider health or end-to-end success without runtime testing.
 
 ---
 
-## License
+## Contributing
 
-This project is licensed under the **MIT License**.
+1. Create a focused feature/fix branch.
+2. Confirm the behavior and relevant route/controller/model before changing a flow.
+3. Preserve server-side authorization and privacy rules.
+4. Add or update tests for the affected controller and user journey.
+5. Run the applicable build/tests in a clean environment.
+6. Document environment variables and feature availability accurately.
+7. Submit a pull request describing the change, risks and verification performed.
 
-```
-MIT License
+Use clear commit messages such as:
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+```text
+fix: enforce published listing visibility
+fix: respect flatmate contact-sharing preferences
+security: retire public provider-key endpoint
+docs: update project overview and setup
 ```
 
-See LICENSE file for full text.
-
 ---
 
-## Credits
-
-**Developed by**: ggnHome Team  
-**Project**: Real Estate Platform with AI-Assisted Recommendations  
-**Built with**: React, Node.js, MongoDB, Express.js
-
----
-
-## Contact & Support
-
-- **GitHub**: https://github.com/ggnhome629-git/ggnHome
-- **Issues**: Report bugs and feature requests via GitHub Issues
-- **Email**: admin@ggn-home.com
-
----
-
-## Roadmap
-
-### Planned Features
-- Advanced property filters (furnished, pet-friendly, etc.)
-- Video property tours
-- Mobile app (React Native)
-- Virtual property viewing (360° tour)
-- Enhanced AI recommendations with ML
-- Social features (property reviews, ratings)
-- Integration with more property scrapers
-- Analytics API for property insights
-
-### In Progress
-- Flatmate preference matching improvements
-- Payment gateway integration enhancements
-- Admin dashboard UI improvements
-- Security vulnerability fixes
-
-### Work Items / Backlog
-
-#### Phase 1: Core Architecture - Dual Property Source System
-
-**1. Dual Property Source Support** 
-   - **Description**: Make the system support both affiliate properties and our own database properties
-   - **Scope**: 
-     - Implement data model to differentiate between affiliate and owned properties
-     - Add `source` field to property models (affiliate/owned)
-     - Update property search and filtering logic to handle both sources
-     - Implement separate analytics tracking for each property source
-   - **Status**: Pending
-   - **Priority**: CRITICAL
-
-**2. Affiliate Property Display - External URLs**
-   - **Description**: Display URLs of affiliate listings from NoBroker, 99acres, or other property portals
-   - **Scope**:
-     - Add `externalUrl` field to affiliate property schema
-     - Display clickable link to original listing on property detail page
-     - Track which portal property came from (NoBroker/99acres/etc)
-   - **Status**: Pending
-   - **Priority**: HIGH
-
-**3. Own Database Property Management**
-   - **Description**: Full property management for properties posted directly by owners
-   - **Scope**:
-     - Display owner contact number and email
-     - Link property to owner account
-     - Implement commission setting per property
-     - Allow owner to update property details
-     - Track owner information separately from property data
-   - **Status**: Pending
-   - **Priority**: HIGH
-
-**4. Agent Property Posting & Lead Distribution**
-   - **Description**: Allow agents to post properties and distribute leads to both agent and admin
-   - **Scope**:
-     - Create agent property posting endpoint
-     - Implement lead notification system (agent + admin)
-     - Track which agent posted each property
-     - Agent dashboard to view their properties and leads
-     - Admin visibility of all agent-posted properties
-   - **Status**: Pending
-   - **Priority**: HIGH
-
-**5. Affiliate Property Management Panel**
-   - **Description**: Admin interface to manage all affiliate properties with toggle controls
-   - **Scope**:
-     - Assign unique ID to each affiliate property
-     - Create admin dashboard for affiliate property management
-     - Implement toggle button to enable/disable property visibility
-     - Show affiliate property source (NoBroker, 99acres, etc)
-     - Bulk action capability for multiple affiliate properties
-   - **Status**: Pending
-   - **Priority**: HIGH
-
-**6. Affiliate Property Web Scraping - Initial Load**
-   - **Description**: One-time scraping of ~100 properties from affiliate portals
-   - **Already in place**: Source fields on both property models (`sourcePortal`, `sourceListingId`, `sourceUrl`, `sourceStatus`, `sourceCheckedAt`, `sourceRemovalFlaggedAt`) and an index on `sourcePortal` + `sourceListingId`
-   - **Scope (remaining)**:
-     - Bulk import script for the initial ~100 listings (import method to be decided)
-     - Scraper for 99acres listings (only NoBroker exists today)
-     - Assign affiliate IDs and metadata
-     - Log all imported properties with timestamps
-   - **Status**: Partially done (data model ready, import and 99acres pending)
-   - **Priority**: CRITICAL
-
-**7. Affiliate Property Web Scraping - Weekly Recurring**
-   - **Description**: Weekly verification that affiliate properties are still live on original portals
-   - **Already in place**: NoBroker sync (`server/scripts/nobrokerSync.js`) that checks each listing's live status, a two-stage removal confirmation (12h apart), a circuit breaker against blocking, and a cron (`server/cron/nobrokerSyncCron.js`) running daily at 3:30 AM IST
-   - **Scope (remaining)**:
-     - Change schedule from daily to every Friday (schedule to be finalised; make it configurable via env)
-     - Add a `ScraperLog` model and save a record for every run (portal, start/end, summary, errors, breaker status)
-     - Admin UI to view scraper logs and the latest run summary
-     - Manual "run now" endpoint for admins
-     - Alert admin when the circuit breaker trips
-     - Extend sync to Sale properties and to 99acres
-   - **Status**: Partially done (NoBroker rental sync running; logging, admin UI, schedule change pending)
-   - **Priority**: HIGH
-
-**8. Non-Affiliate Properties - No Redirect Option**
-   - **Description**: Prevent redirect on own properties; affiliate properties only redirect via affiliate link
-   - **Scope**:
-     - Remove contact/commission options on affiliate properties
-     - Display "View on [Portal]" button instead for affiliate listings
-     - Own properties show direct owner contact
-     - Implement affiliate tracking/commission logic
-   - **Status**: Pending
-   - **Priority**: HIGH
-
-#### Phase 2: Admin Panel Enhancement - Role-Based Access Control
-
-**9. Normal Admin Panel Implementation**
-   - **Description**: Create role-based admin panel with restricted feature visibility
-   - **Scope**:
-     - Create new "normal_admin" user role
-     - Build separate admin interface for normal admins
-     - Normal admin can only add/manage own properties
-     - Restrict features based on role
-     - Create feature visibility configuration system
-   - **Status**: Pending
-   - **Priority**: HIGH
-
-**10. Super Admin Feature Control**
-   - **Description**: Super admin controls which features are visible to normal admins
-   - **Scope**:
-     - Create feature visibility matrix
-     - Super admin dashboard to toggle features for normal admins
-     - Features: Add Property, Property Manager, Calling Requests, Analytics, etc
-     - Persist feature visibility settings per admin
-     - API endpoints to get available features per admin role
-   - **Status**: Pending
-   - **Priority**: HIGH
-
-**11. Normal Admin Property Management**
-   - **Description**: Normal admins can add and view only their own properties
-   - **Scope**:
-     - Dashboard showing normal admin's added properties
-     - Property add/edit/delete endpoints (own properties only)
-     - View all details and metrics for own properties
-     - Cannot see or modify other admins' properties
-     - Activity logs for audit trail
-   - **Status**: Pending
-   - **Priority**: HIGH
-
-**12. Super Admin Feature Management Interface**
-   - **Description**: Granular control of features available to normal admins
-   - **Scope**:
-     - Features list: All Properties, Property Manager, Calling Requests, Analytics Dashboard, Rewards, Service Requests, etc
-     - Toggle interface for each feature per admin
-     - Batch feature assignment
-     - Feature access audit logs
-   - **Status**: Pending
-   - **Priority**: MEDIUM
-
-#### Phase 3: UI/UX Improvements
-
-**13. Dashboard UI Redesign**
-   - **Description**: Fix loose ends and improve dashboard layout
-   - **Scope**:
-     - Refactor dashboard layout structure
-     - Fix responsive design issues
-     - Improve card layouts and spacing
-     - Better visual hierarchy
-     - Consistent with design system
-   - **Status**: Pending
-   - **Priority**: CRITICAL
-
-**14. Search Page UI Redesign**
-   - **Description**: Fix and enhance search page interface
-   - **Scope**:
-     - Improve filter layout and usability
-     - Better property card display
-     - Enhanced sorting options
-     - Mobile-friendly design
-   - **Status**: Pending
-   - **Priority**: CRITICAL
-
-**15. Property Detail Page UI Redesign**
-   - **Description**: Standardize property view page (no affiliate indicators)
-   - **Scope**:
-     - Unified UI for both affiliate and own properties
-     - Remove affiliate/own property visual distinction
-     - Improve image gallery
-     - Better contact information display
-     - Responsive design for all devices
-   - **Status**: Pending
-   - **Priority**: CRITICAL
-
-**16. Search Page - Property Count & Pagination Display**
-   - **Description**: Show total property count and pagination information
-   - **Scope**:
-     - Display total properties found for sector
-     - Show current page number
-     - Show total number of pages
-     - "Showing X to Y of Z properties" indicator
-     - Better pagination controls
-   - **Status**: Pending
-   - **Priority**: MEDIUM
-
-**17. Dashboard - Rewards/Gift Banner**
-   - **Description**: Add banner promoting gift/reward program (up to ₹1000)
-   - **Scope**:
-     - Create attractive rewards banner component
-     - Display on dashboard prominently
-     - Link to rewards details page
-     - Show user's current reward balance
-     - Responsive design for all devices
-   - **Status**: Pending
-   - **Priority**: MEDIUM
-
-**18. Dashboard - Multi-Device Responsive Design**
-   - **Description**: Optimize dashboard for phone, tablet, and laptop
-   - **Scope**:
-     - Mobile layout (< 640px)
-     - Tablet layout (640px - 1024px)
-     - Desktop layout (> 1024px)
-     - Touch-friendly controls on mobile
-     - Optimize card layouts per device
-     - Test on multiple devices/screen sizes
-   - **Status**: Pending
-   - **Priority**: HIGH
-
-#### Phase 4: Performance & User Experience
-
-**19. Page Load Performance Optimization**
-   - **Description**: Implement fast loading and loading indicators across app
-   - **Scope**:
-     - Add skeleton loaders on property pages
-     - Implement lazy loading for images
-     - Optimize API response times
-     - Cache frequently accessed data
-     - Add page transition loading indicators
-     - Monitor performance metrics
-   - **Status**: Pending
-   - **Priority**: HIGH
-
-**20. Post-Login Property Redirect**
-   - **Description**: Redirect user back to same property after login
-   - **Scope**:
-     - Store property ID before login redirect
-     - After successful login, redirect to property (not dashboard)
-     - Improve user experience for unauthenticated property views
-     - Maintain redirect state across redirects
-   - **Status**: Pending
-   - **Priority**: MEDIUM
-
-**21. Global Loading Screens**
-   - **Description**: Implement consistent loading indicators throughout app
-   - **Scope**:
-     - Create loading skeleton components
-     - Add loading spinners for async operations
-     - Loading screen on page transitions
-     - Loading indicators for modals/dialogs
-     - Loading indicators for data fetches
-   - **Status**: Pending
-   - **Priority**: MEDIUM
-
-#### Phase 5: Mobile App Development
-
-**22. React Native Mobile App**
-   - **Description**: Build React Native app matching website functionality
-   - **Scope**:
-     - Replicate all website features in React Native
-     - iOS and Android compatibility
-     - Native performance optimizations
-     - Offline support where applicable
-     - Push notifications
-     - Platform-specific UI patterns
-   - **Status**: BLOCKED (Waiting for website UI finalization)
-   - **Priority**: MEDIUM
-   - **Dependencies**: Phase 3 (UI improvements) must be completed first
-
-#### Phase 6: Additional Affiliate Work (from production review)
-
-**23. Affiliate Properties Admin Page**
-   - **Description**: Dedicated admin page to manage affiliate listings (today admins can only toggle active per property)
-   - **Scope**:
-     - `GET /api/admin/affiliate-properties` with filters (`sourcePortal`, `sourceStatus`) and pagination
-     - Stats endpoint: totals per portal, active vs inactive
-     - Columns: title, portal, original URL, status, last checked, toggle
-     - Bulk enable/disable
-   - **Status**: Pending
-   - **Priority**: HIGH
-
-**24. Affiliate Search Filter & Source Info in API**
-   - **Description**: Let search and property APIs expose and filter by source
-   - **Scope**:
-     - `sourcePortal` / own-vs-affiliate filter in search endpoints
-     - Return `sourcePortal` and `sourceUrl` in property responses (UI must still look identical for both types)
-   - **Status**: Pending
-   - **Priority**: MEDIUM
-
-**25. Commission Field on Own Properties**
-   - **Description**: Neither property model has a commission field yet
-   - **Scope**:
-     - Add `commission` and `commissionType` (percentage/fixed) to Rental and Sale models
-     - Settable by admin/owner; never shown or set on affiliate listings
-   - **Status**: Pending
-   - **Priority**: HIGH
-
-**26. Normal Admin Role in User Model**
-   - **Description**: `user.model.js` role enum is only `renter, owner, admin, Agent`
-   - **Scope**:
-     - Add normal-admin role/level and per-admin feature permissions
-     - `checkAdminFeature(featureKey)` middleware replacing the single `checkAdminEmail` check on admin routes
-   - **Status**: Pending
-   - **Priority**: HIGH
-
-#### Phase 7: Production Readiness
-
-**27. Security Hardening** (see `SECURITY_AUDIT.md`)
-   - Rate limiting on all endpoints (express-rate-limit)
-   - Helmet security headers
-   - Fix open CRITICAL/HIGH findings (C-1, C-2, H-1 to H-4)
-   - Sanitize upload filenames; validate file types and sizes
-
-**28. Monitoring & Logging**
-   - Centralized structured logging and error tracking (e.g. Sentry)
-   - Request logging middleware (the current debug middleware in `server/index.js` is empty)
-   - Health check and uptime monitoring; scraper failure alerts
-
-**29. CI/CD & Testing**
-   - GitHub Actions workflow to run backend and frontend tests and build
-   - Staging environment mirroring production; documented rollback procedure
-
-**30. Database & Infrastructure**
-   - MongoDB authentication, network ACLs, automated backups
-   - Redis caching enabled in production
-   - Environment variable documentation and secrets rotation
-
-#### Open Questions
-- Scraper schedule: Friday only, or keep daily plus a Friday full check?
-- How to run the initial ~100 property import (script, CSV, or one-off scraper run)?
-- Commission model: fixed amount or percentage? Any affiliate revenue share?
-- How many admin role levels are needed beyond super admin and normal admin?
-
----
-
-**Last Updated**: September 2026  
-**Status**: Active Development  
-**Maintainers**: ggnHome Team
-
-
----
-
-## GgnHome-Partner standalone web app
-
-The independent React + Vite app lives in `partner-portal/`.
-
-```bash
-cd partner-portal
-npm install
-cp .env.example .env
-# Set VITE_API_BASE to the deployed ggnHome backend origin.
-npm run dev
-npm run build
-```
-
-Deploy `partner-portal/dist` as a separate static site with SPA fallback enabled. It reuses the GgnHome logo from `https://www.ggnhome.com/Logo2.jpg`.
-
-### App downloads
-
-The admin page at `/admin/app-downloads` manages the HTTPS URLs shown in the Partner portal's App Downloads section. The GgnHome, GgnHome-Partner and sms-service APK files still need to be uploaded as actual binaries before direct download links can be published.
+**Repository:** [ggnhome629-git/ggnHome](https://github.com/ggnhome629-git/ggnHome)  
+**Backend entry point:** `server/index.js`  
+**Main client:** `client/`  
+**PartnerHub:** `partner-portal/`
