@@ -390,7 +390,7 @@ export default function PropertyPostForm({
                 name: item.name,
                 distance: item.distance,
                 source: item.source,
-                edited: item.source === "locationiq",
+                edited: Boolean(item.edited),
               }))));
           }
           Object.entries(extraFormFields || {}).forEach(([k, v]) => form.append(k, v));
