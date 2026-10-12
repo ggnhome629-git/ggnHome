@@ -873,6 +873,7 @@ export default function PropertyPostForm({
               ["Sector", f.Sector],
               [rent ? "Address" : "Full address", f.address],
               ...(askOwnerContact ? [["Owner mobile", f.ownerMobile]] : []),
+              ...(mode === "partner" ? [["Contact mobile", f.partnerMobile]] : []),
             ]}
           />
           <SummaryBlock
