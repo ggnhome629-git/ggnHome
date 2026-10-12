@@ -82,10 +82,15 @@ export default function PartnerAuthPage() {
       if (!userToken) throw new Error("Verified, but no login token was returned. Please try again.");
 
       localStorage.setItem("accessToken", userToken);
-      if (data.agentAccessToken && data.agent?.role === "Partner") {
-        localStorage.setItem("partnerAccessToken", data.agentAccessToken);
-        navigate("/partner/dashboard", { replace: true });
-        return;
+      if (data.agent?.role === "Partner") {
+        if (data.agent.status !== "active") {
+          throw new Error(data.agent.status === "suspended" ? "This partner account is suspended. Contact ggnHome support." : "Your partner account is awaiting activation. Please contact ggnHome support.");
+        }
+        if (data.agentAccessToken) {
+          localStorage.setItem("partnerAccessToken", data.agentAccessToken);
+          navigate("/partner/dashboard", { replace: true });
+          return;
+        }
       }
       if (data.agent && data.agent.role === "Agent") {
         throw new Error("This mobile number is registered as an Agent, not a Partner. Contact ggnHome support to change the account role.");
