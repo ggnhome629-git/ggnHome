@@ -32,6 +32,19 @@ function toE164(mobileNumber) {
 async function sendSms(mobileNumber, message, kind = "otp") {
   if (!isSmsConfigured()) throw new Error("SMS gateway is not configured");
 
+  // OFF means preview-only: do not send through a SIM or a third-party provider.
+  // OTP text is available only through the authenticated SMS Service console and expires with the queue TTL.
+  const SmsSetting = require("../models/SmsSetting.model");
+  const setting = await SmsSetting.findOne({ key: "ggnhome" }).lean();
+  if (setting && setting.enabled === false) {
+    const SmsQueue = require("../models/SmsQueue.model");
+    const SmsLog = require("../models/SmsLog.model");
+    const phoneNumber = toE164(mobileNumber);
+    const queued = await SmsQueue.create({ phoneNumber, message, kind, status: "preview", assignedDevice: null });
+    await SmsLog.create({ queueId: String(queued._id), phoneNumber, kind, status: "preview" }).catch(() => {});
+    return { ...queued.toObject(), preview: true };
+  }
+
   if (!useThirdParty()) {
     const SmsQueue = require("../models/SmsQueue.model");
     const { pickDevice } = require("../controllers/smsGateway.controller");
@@ -39,7 +52,7 @@ async function sendSms(mobileNumber, message, kind = "otp") {
     const assignedDevice = await pickDevice();
     const SmsLog = require("../models/SmsLog.model");
     const phoneNumber = toE164(mobileNumber);
-    const queued = await SmsQueue.create({ phoneNumber, message, assignedDevice });
+    const queued = await SmsQueue.create({ phoneNumber, message, kind, assignedDevice });
     await SmsLog.create({ queueId: String(queued._id), phoneNumber, kind, assignedDevice }).catch(() => {});
     return queued;
   }
