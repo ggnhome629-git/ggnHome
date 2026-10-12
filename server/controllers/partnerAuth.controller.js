@@ -26,8 +26,8 @@ async function nextPartnerCode() {
 async function registerPartner(req, res) {
   try {
     const user = req.user;
-    if (!user || !user.mobileNumber || !user.isVerified) {
-      return res.status(401).json({ message: "Verify your mobile number with OTP before registering." });
+    if (!user || !user.mobileNumber || !user.isVerified || !user.otpVerifiedAt || Date.now() - new Date(user.otpVerifiedAt).getTime() > 10 * 60 * 1000) {
+      return res.status(401).json({ message: "Verify your mobile number with OTP within the last 10 minutes before registering." });
     }
     const mobileNumber = normalizeMobile(user.mobileNumber);
     if (!/^[6-9]\d{9}$/.test(mobileNumber)) {
