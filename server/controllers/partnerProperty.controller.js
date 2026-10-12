@@ -36,8 +36,12 @@ async function createPartnerProperty(req, res) {
     const latitude = body.latitude;
     const longitude = body.longitude;
     if (!purpose) return res.status(400).json({ message: 'Choose rent or sale.' });
-    if (!String(mobile || '').trim() || !String(address || '').trim() || !String(sector || '').trim()) {
-      return res.status(400).json({ message: 'Mobile number, address and sector/locality are required.' });
+    if (!ownerMobile || !String(address || '').trim() || !String(sector || '').trim()) {
+      return res.status(400).json({ message: 'Owner mobile number, address and sector/locality are required.' });
+    }
+    if (!/^(?:\+?91)?[6-9]\d{9}$/.test(ownerMobile)) {
+      return res.status(400).json({ message: 'Enter a valid 10-digit owner mobile number.' });
+    }
     }
     if (!Number(price) || Number(price) <= 0 || !Number(area) || Number(area) <= 0) {
       return res.status(400).json({ message: 'A valid price and property area are required.' });
