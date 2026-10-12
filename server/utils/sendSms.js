@@ -32,41 +32,18 @@ function toE164(mobileNumber) {
 async function sendSms(mobileNumber, message, kind = "otp") {
   if (!isSmsConfigured()) throw new Error("SMS gateway is not configured");
 
-  // OFF means preview-only: do not send through a SIM or a third-party provider.
-  // OTP text is available only through the authenticated SMS Service console and expires with the queue TTL.
+  // Display-only Android OTP viewer: never send SMS from the Android app or a third-party gateway.
   const SmsSetting = require("../models/SmsSetting.model");
   const setting = await SmsSetting.findOne({ key: "ggnhome" }).lean();
-  if (setting && setting.enabled === false) {
-    const SmsQueue = require("../models/SmsQueue.model");
-    const SmsLog = require("../models/SmsLog.model");
-    const phoneNumber = toE164(mobileNumber);
-    const queued = await SmsQueue.create({ phoneNumber, message, kind, status: "preview", assignedDevice: null });
-    await SmsLog.create({ queueId: String(queued._id), phoneNumber, kind, status: "preview" }).catch(() => {});
-    return { ...queued.toObject(), preview: true };
+  if (!setting || setting.showOtpOnAndroid !== true) {
+    throw new Error("OTP display is disabled by admin");
   }
-
-  if (!useThirdParty()) {
-    const SmsQueue = require("../models/SmsQueue.model");
-    const { pickDevice } = require("../controllers/smsGateway.controller");
-    // Random online phone, so no single SIM carries all the traffic.
-    const assignedDevice = await pickDevice();
-    const SmsLog = require("../models/SmsLog.model");
-    const phoneNumber = toE164(mobileNumber);
-    const queued = await SmsQueue.create({ phoneNumber, message, kind, assignedDevice });
-    await SmsLog.create({ queueId: String(queued._id), phoneNumber, kind, assignedDevice }).catch(() => {});
-    return queued;
-  }
-
-  const baseUrl = (process.env.SMS_GATEWAY_URL || "https://api.sms-gate.app/3rdparty/v1").replace(/\/+$/, "");
-  const res = await axios.post(
-    `${baseUrl}/messages`,
-    { message, phoneNumbers: [toE164(mobileNumber)] },
-    {
-      auth: { username: process.env.SMS_GATEWAY_USER, password: process.env.SMS_GATEWAY_PASSWORD },
-      timeout: 10000,
-    }
-  );
-  return res.data;
+  const SmsQueue = require("../models/SmsQueue.model");
+  const SmsLog = require("../models/SmsLog.model");
+  const phoneNumber = toE164(mobileNumber);
+  const queued = await SmsQueue.create({ phoneNumber, message, kind, status: "preview", assignedDevice: null });
+  await SmsLog.create({ queueId: String(queued._id), phoneNumber, kind, status: "preview" }).catch(() => {});
+  return { ...queued.toObject(), preview: true };
 }
 
 // The SMS people receive: "Hi, KQMX is code for your app."
