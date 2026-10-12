@@ -69,6 +69,23 @@ const RentalpropertySchema = new mongoose.Schema(
 
     // Image upload
     images: [{ type: String }],
+  imageCategories: [{
+    url: { type: String, required: true },
+    category: { type: String, default: "other" },
+  }],
+  latitude: { type: Number, min: -90, max: 90 },
+  longitude: { type: Number, min: -180, max: 180 },
+  cornerPosition: { type: String, enum: ["corner", "middle", "not_sure"], default: "not_sure" },
+  nearbyAmenities: [{
+    category: { type: String, required: true },
+    name: { type: String },
+    distanceMeters: { type: Number, min: 0 },
+    distanceUnit: { type: String, default: "m" },
+    source: { type: String, enum: ["locationiq", "partner"], default: "partner" },
+    edited: { type: Boolean, default: false },
+    latitude: { type: Number },
+    longitude: { type: Number },
+  }],
     // 360° panoramic scenes for this property
     panoramas: [
       {
