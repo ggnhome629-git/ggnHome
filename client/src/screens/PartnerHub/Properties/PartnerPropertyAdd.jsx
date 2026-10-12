@@ -104,17 +104,17 @@ export default function PartnerPropertyAdd() {
             <ToggleButton value="rental">For rent</ToggleButton><ToggleButton value="sale">For sale</ToggleButton>
           </ToggleButtonGroup>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}><TextField fullWidth select label="Property type" value={form.propertyType} onChange={change("propertyType")} sx={fieldSx}>{["apartment","house","villa","builder-floor","studio","plot","condo","townhouse"].map(v=><MenuItem key={v} value={v}>{v.replace("-"," ").replace(/^./,c=>c.toUpperCase())}</MenuItem>)}</TextField></Grid>
-            <Grid item xs={12} sm={6}><TextField fullWidth label="Listing title (optional)" value={form.title} onChange={change("title")} placeholder="e.g. Spacious 2 BHK near metro" sx={fieldSx}/></Grid>
-            <Grid item xs={12} sm={6}><TextField required fullWidth label={purpose==="rental"?"Monthly rent (₹)":"Sale price (₹)"} type="number" inputProps={{min:1}} value={form.price} onChange={change("price")} sx={fieldSx}/></Grid>
-            <Grid item xs={12} sm={6}><TextField required fullWidth label="Contact mobile number" value={form.mobile} onChange={change("mobile")} sx={fieldSx}/></Grid>
+            <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth select label="Property type" value={form.propertyType} onChange={change("propertyType")} sx={fieldSx}>{["apartment","house","villa","builder-floor","studio","plot","condo","townhouse"].map(v=><MenuItem key={v} value={v}>{v.replace("-"," ").replace(/^./,c=>c.toUpperCase())}</MenuItem>)}</TextField></Grid>
+            <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth label="Listing title (optional)" value={form.title} onChange={change("title")} placeholder="e.g. Spacious 2 BHK near metro" sx={fieldSx}/></Grid>
+            <Grid size={{ xs: 12, sm: 6 }}><TextField required fullWidth label={purpose==="rental"?"Monthly rent (₹)":"Sale price (₹)"} type="number" inputProps={{min:1}} value={form.price} onChange={change("price")} sx={fieldSx}/></Grid>
+            <Grid size={{ xs: 12, sm: 6 }}><TextField required fullWidth label="Contact mobile number" value={form.mobile} onChange={change("mobile")} sx={fieldSx}/></Grid>
           </Grid>
         </CardContent></Card>
         <Card variant="outlined" sx={{borderRadius:3}}><CardContent sx={{p:{xs:2,md:3}}}>
           <Typography variant="h6" fontWeight={750} mb={2}>2. Location</Typography>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}><TextField required fullWidth label="Sector / locality" value={form.sector} onChange={change("sector")} sx={fieldSx}/></Grid>
-            <Grid item xs={12}><TextField required fullWidth multiline minRows={2} label="Full property address" value={form.address} onChange={change("address")} sx={fieldSx}/></Grid>
+            <Grid size={{ xs: 12, sm: 6 }}><TextField required fullWidth label="Sector / locality" value={form.sector} onChange={change("sector")} sx={fieldSx}/></Grid>
+            <Grid size={{ xs: 12 }}><TextField required fullWidth multiline minRows={2} label="Full property address" value={form.address} onChange={change("address")} sx={fieldSx}/></Grid>
           </Grid>
           <Button onClick={detectAmenities} disabled={finding} startIcon={<MapPin size={17}/>} variant="outlined" sx={{mt:2,textTransform:"none"}}>{finding?"Finding nearby places…":"Auto-detect nearby amenities"}</Button>
           <Typography variant="caption" display="block" color="text.secondary" sx={{mt:1}}>Detected places are suggestions. Distances are approximate straight-line metres and can be edited.</Typography>
@@ -128,11 +128,11 @@ export default function PartnerPropertyAdd() {
         <Card variant="outlined" sx={{borderRadius:3}}><CardContent sx={{p:{xs:2,md:3}}}>
           <Typography variant="h6" fontWeight={750} mb={2}>3. Property details</Typography>
           <Grid container spacing={2}>
-            {[["bedrooms","Bedrooms / BHK"],["bathrooms","Bathrooms"],["area","Area (sq ft)"],["floor","Floor number"],["totalFloors","Total floors"]].map(([key,label])=><Grid item xs={6} sm={key==="area"?12:6} key={key}><TextField fullWidth label={label} type="number" inputProps={{min:0}} value={form[key]} onChange={change(key)} sx={fieldSx}/></Grid>)}
-            <Grid item xs={12} sm={6}><TextField fullWidth select label="Furnishing" value={form.furnishing} onChange={change("furnishing")} sx={fieldSx}>{["unfurnished","semi-furnished","furnished"].map(v=><MenuItem key={v} value={v}>{v.replace("-"," ")}</MenuItem>)}</TextField></Grid>
-            <Grid item xs={12} sm={6}><TextField fullWidth select label="Position" value={form.cornerPosition} onChange={change("cornerPosition")} sx={fieldSx}>{[["corner","Corner"],["middle","Middle"],["not_sure","Not sure"]].map(([v,l])=><MenuItem key={v} value={v}>{l}</MenuItem>)}</TextField></Grid>
-            {purpose==="rental"&&<Grid item xs={12} sm={6}><TextField fullWidth select label="Pet policy" value={form.petPolicy} onChange={change("petPolicy")} sx={fieldSx}>{[["allowed","Pets allowed"],["not-allowed","Pets not allowed"],["not_sure","Not sure"]].map(([v,l])=><MenuItem key={v} value={v}>{l}</MenuItem>)}</TextField></Grid>}
-            <Grid item xs={12} sm={6}><TextField fullWidth label="Parking (optional)" value={form.parking} onChange={change("parking")} sx={fieldSx}/></Grid>
+            {[["bedrooms","Bedrooms / BHK"],["bathrooms","Bathrooms"],["area","Area (sq ft)"],["floor","Floor number"],["totalFloors","Total floors"]].map(([key,label])=><Grid size={{ xs: 6, sm: key==="area" ? 12 : 6 }} key={key}><TextField fullWidth label={label} type="number" inputProps={{min:0}} value={form[key]} onChange={change(key)} sx={fieldSx}/></Grid>)}
+            <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth select label="Furnishing" value={form.furnishing} onChange={change("furnishing")} sx={fieldSx}>{["unfurnished","semi-furnished","furnished"].map(v=><MenuItem key={v} value={v}>{v.replace("-"," ")}</MenuItem>)}</TextField></Grid>
+            <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth select label="Position" value={form.cornerPosition} onChange={change("cornerPosition")} sx={fieldSx}>{[["corner","Corner"],["middle","Middle"],["not_sure","Not sure"]].map(([v,l])=><MenuItem key={v} value={v}>{l}</MenuItem>)}</TextField></Grid>
+            {purpose==="rental"&&<Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth select label="Pet policy" value={form.petPolicy} onChange={change("petPolicy")} sx={fieldSx}>{[["allowed","Pets allowed"],["not-allowed","Pets not allowed"],["not_sure","Not sure"]].map(([v,l])=><MenuItem key={v} value={v}>{l}</MenuItem>)}</TextField></Grid>}
+            <Grid size={{ xs: 12, sm: 6 }}><TextField fullWidth label="Parking (optional)" value={form.parking} onChange={change("parking")} sx={fieldSx}/></Grid>
           </Grid>
         </CardContent></Card>
         <Card variant="outlined" sx={{borderRadius:3}}><CardContent sx={{p:{xs:2,md:3}}}>
