@@ -80,6 +80,14 @@ const COPY = {
     declaration: "I confirm these details are accurate and I'm authorised by the owner to list this property.",
     success: "Your listing has been saved. Track its status and enquiries from My Properties.",
   },
+  partner: {
+    eyebrow: "PartnerHub · Add Property",
+    titles: { Sale: "List A Property For Sale", Rent: "List A Property For Rent", "": "Add A Property" },
+    done: "Property Published!",
+    subtitle: "Add a property using the same guided listing flow. Your listing is published immediately after submission.",
+    declaration: "I confirm these details are accurate and I am authorised to publish this property on ggnHome.",
+    success: "Your property is published. You can manage it and track enquiries from PartnerHub.",
+  },
   admin: {
     eyebrow: "Admin · Add Property",
     titles: { Sale: "Add A Property For Sale", Rent: "Add A Property For Rent", "": "Add A Property" },
@@ -89,6 +97,14 @@ const COPY = {
     success: "The property has been saved. You can review and manage it from the admin property manager.",
   },
 };
+const PARTNER_AMENITIES = [
+  { key: "market", label: "Nearest market", query: /market|supermarket|grocery|convenience/i },
+  { key: "metro", label: "Metro station", query: /metro|subway/i },
+  { key: "hospital", label: "Hospital / clinic", query: /hospital|clinic/i },
+  { key: "school", label: "School", query: /school|college|university/i },
+  { key: "park", label: "Park / garden", query: /park|garden|playground/i },
+  { key: "mall", label: "Shopping mall", query: /mall|shopping centre|department store/i },
+];
 const HEADER_BADGES = {
   owner: [
     { icon: Wallet, label: "Free Listing" },
@@ -99,6 +115,11 @@ const HEADER_BADGES = {
     { icon: Wallet, label: "No Listing Fee" },
     { icon: Eye, label: "Live Preview" },
     { icon: PencilLine, label: "Edit Anytime" },
+  ],
+  partner: [
+    { icon: Wallet, label: "Partner Listing" },
+    { icon: Eye, label: "Live Preview" },
+    { icon: CheckCircle2, label: "Publish Immediately" },
   ],
   admin: [
     { icon: Eye, label: "Live Preview" },
@@ -179,16 +200,20 @@ export default function PropertyPostForm({
 
   const initialDraft = useRef(readDraft(draftKey)).current;
   const [f, setF] = useState(() => {
-    if (initialDraft) return { ...INITIAL, ...initialDraft.f };
+    if (initialDraft) return { ...INITIAL, ...initialDraft.f, partnerRequired: mode === "partner" };
     const q = new URLSearchParams(location.search).get("purpose");
     const purpose = /^sale|sell$/i.test(q || "") ? "Sale" : /^rent$/i.test(q || "") ? "Rent" : "";
-    return { ...INITIAL, purpose };
+    return { ...INITIAL, purpose, partnerRequired: mode === "partner" };
   });
   const [step, setStep] = useState(initialDraft?.step ?? 0);
   const [reached, setReached] = useState(initialDraft?.reached ?? 0);
   const [restored, setRestored] = useState(Boolean(initialDraft));
   const [photos, setPhotos] = useState([]);
   const [panoramas, setPanoramas] = useState([]);
+  const [nearbyAmenities, setNearbyAmenities] = useState(() => PARTNER_AMENITIES.map((a) => ({ category: a.key, label: a.label, name: "", distance: "", source: "partner", edited: false })));
+  const [findingAmenities, setFindingAmenities] = useState(false);
+  const [amenityMessage, setAmenityMessage] = useState("");
+  const [partnerPhotoError, setPartnerPhotoError] = useState("");
   const [panoOpen, setPanoOpen] = useState(false);
   const [errors, setErrors] = useState({});
   const [declared, setDeclared] = useState(false);
@@ -220,6 +245,48 @@ export default function PropertyPostForm({
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
+  const detectPartnerAmenities = async () => {
+    if (!f.Sector.trim() && !f.address.trim()) {
+      setAmenityMessage("Enter a sector or address first.");
+      return;
+    }
+    setFindingAmenities(true);
+    setAmenityMessage("");
+    try {
+      const base = process.env.REACT_APP_Base_API;
+      const keyResponse = await fetch(`${base}/api/locationqapi`);
+      const keyData = await keyResponse.json();
+      if (!keyResponse.ok || !keyData.apiKey) throw new Error("Location service unavailable. You can enter nearby places manually.");
+      const query = [f.address, f.Sector, "Gurugram, Haryana, India"].filter(Boolean).join(", ");
+      const geoResponse = await fetch(`https://us1.locationiq.com/v1/search.php?key=${encodeURIComponent(keyData.apiKey)}&q=${encodeURIComponent(query)}&format=json&limit=1`);
+      const geo = await geoResponse.json();
+      if (!geoResponse.ok || !geo?.[0]) throw new Error("Address not found. Add a more complete address.");
+      const lat = Number(geo[0].lat);
+      const lon = Number(geo[0].lon);
+      const nearResponse = await fetch(`https://us1.locationiq.com/v1/nearby.php?key=${encodeURIComponent(keyData.apiKey)}&lat=${lat}&lon=${lon}&tag=amenity,shop,leisure,railway,public_transport,healthcare,education&radius=3000&format=json`);
+      const places = await nearResponse.json();
+      if (!nearResponse.ok || !Array.isArray(places)) throw new Error("Nearby lookup failed. You can enter amenities manually.");
+      const rad = (n) => n * Math.PI / 180;
+      const distance = (p) => {
+        const dLat = rad(Number(p.lat) - lat);
+        const dLon = rad(Number(p.lon) - lon);
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat)) * Math.cos(rad(Number(p.lat))) * Math.sin(dLon / 2) ** 2;
+        return Math.round(6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+      };
+      setNearbyAmenities((prev) => prev.map((item) => {
+        const rule = PARTNER_AMENITIES.find((a) => a.key === item.category);
+        const match = places.filter((p) => p.lat && p.lon && rule.query.test(`${p.name || ""} ${p.type || ""} ${p.class || ""}`)).sort((a, b) => distance(a) - distance(b))[0];
+        return match ? { ...item, name: match.name || item.label, distance: String(distance(match)), source: "locationiq", edited: false } : item;
+      }));
+      setF((prev) => ({ ...prev, partnerLatitude: String(lat), partnerLongitude: String(lon) }));
+      setAmenityMessage("Suggestions loaded. Review and edit them; distances are straight-line estimates.");
+    } catch (error) {
+      setAmenityMessage(error.message || "Could not detect nearby places.");
+    } finally {
+      setFindingAmenities(false);
+    }
+  };
+
   const goTo = (target) => {
     if (target === step) return;
     if (target > reached) {
@@ -247,6 +314,11 @@ export default function PropertyPostForm({
   };
 
   const next = () => {
+    if (mode === "partner" && step === STEP.photos && !photos.some((photo) => photo.category === "front")) {
+      setPartnerPhotoError("Please mark at least one photo as Front / Exterior before continuing.");
+      return;
+    }
+    setPartnerPhotoError("");
     const errs = validateStep(step, f);
     if (Object.keys(errs).length) return showErrors(errs);
     if (step === STEP.review) return submit();
@@ -268,9 +340,12 @@ export default function PropertyPostForm({
     } catch (e) {
       // ignore
     }
-    setF({ ...INITIAL });
+    setF({ ...INITIAL, partnerRequired: mode === "partner" });
     setPhotos([]);
     setPanoramas([]);
+    setNearbyAmenities(PARTNER_AMENITIES.map((a) => ({ category: a.key, label: a.label, name: "", distance: "", source: "partner", edited: false })));
+    setAmenityMessage("");
+    setPartnerPhotoError("");
     setStep(0);
     setReached(0);
     setErrors({});
@@ -279,6 +354,12 @@ export default function PropertyPostForm({
 
   async function submit() {
     if (submitting) return;
+    if (mode === "partner" && !photos.some((photo) => photo.category === "front")) {
+      setPartnerPhotoError("Please mark at least one photo as Front / Exterior before continuing.");
+      setStep(STEP.photos);
+      scrollToTop();
+      return;
+    }
     const bad = firstInvalidStep(f);
     if (bad !== -1) {
       setStep(bad);
@@ -297,6 +378,21 @@ export default function PropertyPostForm({
         method: "POST",
         body: (() => {
           const form = buildFormData(f, photos, panoramas);
+          if (mode === "partner") {
+            form.append("mobile", String(f.partnerMobile || "").replace(/[\s-]/g, ""));
+            form.append("cornerPosition", f.cornerPosition || "not_sure");
+            if (f.partnerLatitude) form.append("latitude", f.partnerLatitude);
+            if (f.partnerLongitude) form.append("longitude", f.partnerLongitude);
+            form.append("amenities", JSON.stringify(nearbyAmenities
+              .filter((item) => item.name.trim() || item.distance !== "")
+              .map((item) => ({
+                category: item.category,
+                name: item.name,
+                distance: item.distance,
+                source: item.source,
+                edited: Boolean(item.edited),
+              }))));
+          }
           Object.entries(extraFormFields || {}).forEach(([k, v]) => form.append(k, v));
           return form;
         })(),
@@ -415,6 +511,48 @@ export default function PropertyPostForm({
           />
         </FormSection>
       )}
+      {mode === "partner" && (
+        <>
+          <FormSection title="Contact Mobile Number" required error={err("partnerMobile")} id="field-partnerMobile" hint="Used by ggnHome to contact you about this listing.">
+            <TextField
+              fullWidth
+              value={f.partnerMobile || ""}
+              onChange={onInput("partnerMobile")}
+              placeholder="10-digit mobile number"
+              error={Boolean(err("partnerMobile"))}
+              helperText={err("partnerMobile") || " "}
+              InputProps={{ startAdornment: <InputAdornment position="start">+91</InputAdornment> }}
+              inputProps={{ inputMode: "tel", maxLength: 14 }}
+              sx={{ maxWidth: 420 }}
+            />
+          </FormSection>
+          <FormSection title="Nearby Amenities" hint="Auto-detect suggestions around this address, then edit names and distances as needed.">
+            <Button variant="outlined" onClick={detectPartnerAmenities} disabled={findingAmenities} startIcon={<MapPin size={16} />} sx={{ mb: 2, fontWeight: 700 }}>
+              {findingAmenities ? "Finding nearby places…" : "Auto-detect nearby places"}
+            </Button>
+            {amenityMessage && <Alert severity="info" sx={{ mb: 2 }}>{amenityMessage}</Alert>}
+            <Stack spacing={2}>
+              {nearbyAmenities.map((item, index) => (
+                <Stack key={item.category} direction={{ xs: "column", sm: "row" }} spacing={2}>
+                  <TextField
+                    fullWidth
+                    label={item.label}
+                    value={item.name}
+                    onChange={(e) => setNearbyAmenities((prev) => prev.map((a, i) => i === index ? { ...a, name: e.target.value, source: "partner", edited: true } : a))}
+                  />
+                  <TextField
+                    label="Distance (m)"
+                    type="number"
+                    value={item.distance}
+                    onChange={(e) => setNearbyAmenities((prev) => prev.map((a, i) => i === index ? { ...a, distance: e.target.value, source: "partner", edited: true } : a))}
+                    sx={{ minWidth: { xs: "100%", sm: 160 } }}
+                  />
+                </Stack>
+              ))}
+            </Stack>
+          </FormSection>
+        </>
+      )}
     </>
   );
 
@@ -459,6 +597,18 @@ export default function PropertyPostForm({
       <FormSection title="Parking">
         <ChoiceChips ariaLabel="Parking" options={PARKING} value={f.parking} onChange={set("parking")} />
       </FormSection>
+      {mode === "partner" && (
+        <>
+          <FormSection title="Position in the building">
+            <ChoiceChips ariaLabel="Position" options={[{ value: "corner", label: "Corner" }, { value: "middle", label: "Middle" }, { value: "not_sure", label: "Not sure" }]} value={f.cornerPosition || "not_sure"} onChange={set("cornerPosition")} />
+          </FormSection>
+          {rent && (
+            <FormSection title="Pet Policy">
+              <ChoiceChips ariaLabel="Pet policy" options={[{ value: "allowed", label: "Pets allowed" }, { value: "not-allowed", label: "Pets not allowed" }, { value: "not_sure", label: "Not sure" }]} value={f.petPolicy || "not_sure"} onChange={set("petPolicy")} />
+            </FormSection>
+          )}
+        </>
+      )}
       {!isPlot(f) && (
         <FormSection title="Features & Amenities" hint="Tick everything that's included">
           <ChoiceChips multiple size="sm" ariaLabel="Features" options={FEATURES} value={f.appliances} onChange={set("appliances")} />
@@ -687,11 +837,14 @@ export default function PropertyPostForm({
     <>
       <PhotoUploader
         value={photos}
-        onChange={setPhotos}
+        onChange={(nextPhotos) => { setPhotos(nextPhotos); setPartnerPhotoError(""); }}
+        categoryMode={mode === "partner"}
         max={8}
-        privacyNotice="For your safety, please don't upload photos that show the front of your house or your house number. Photos of rooms, kitchen, bathrooms and the view work best."
-        tips={["Shoot in daylight with lights on", "Hold the phone horizontally and capture whole rooms", "The first photo is the cover — pick your best one"]}
+        privacyNotice={mode === "partner" ? "Include a clear front / exterior photo, plus photos of rooms, kitchen and bathrooms. Avoid showing people or private documents." : "For your safety, please don't upload photos that show the front of your house or your house number. Photos of rooms, kitchen, bathrooms and the view work best."}
+        tips={mode === "partner" ? ["Choose a category for each photo", "Include front / exterior, living room, bedrooms, kitchen and bathrooms", "Use bright, clear photos taken in daylight"] : ["Shoot in daylight with lights on", "Hold the phone horizontally and capture whole rooms", "The first photo is the cover — pick your best one"]}
       />
+      {partnerPhotoError && <Alert severity="error" sx={{ mt: 2 }}>{partnerPhotoError}</Alert>}
+      {mode !== "partner" && (
       <Box sx={{ mt: 6, p: 5, borderRadius: `${radii.md}px`, border: "1.5px dashed #A9C7E6", backgroundColor: "#F7FBFF" }}>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={3} justifyContent="space-between" alignItems={{ sm: "center" }}>
           <Box>
@@ -705,6 +858,7 @@ export default function PropertyPostForm({
           </Button>
         </Stack>
       </Box>
+      )}
     </>
   );
 
@@ -730,8 +884,16 @@ export default function PropertyPostForm({
               ["Sector", f.Sector],
               [rent ? "Address" : "Full address", f.address],
               ...(askOwnerContact ? [["Owner mobile", f.ownerMobile]] : []),
+              ...(mode === "partner" ? [["Contact mobile", f.partnerMobile]] : []),
             ]}
           />
+          {mode === "partner" && (
+            <SummaryBlock
+              title="Nearby Amenities"
+              onEdit={() => goTo(STEP.location)}
+              rows={nearbyAmenities.map((item) => [item.label, item.name ? `${item.name}${item.distance ? ` · approx. ${item.distance} m` : ""}` : ""])}
+            />
+          )}
           <SummaryBlock
             title="Property Profile"
             onEdit={() => goTo(STEP.profile)}

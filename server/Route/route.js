@@ -87,6 +87,7 @@ const {
   getAgentProfile,
   updateAgentProfile
 } = require("../controllers/partnerHub.controller.js");
+const { createPartnerProperty } = require("../controllers/partnerProperty.controller");
 
 // Helper middleware to restrict access to admins only
 const checkAdminEmail = async (req, res, next) => {
@@ -494,6 +495,7 @@ router.use("/api/admin/property-sync", propertySyncRoutes);
 // All routes protected by verifyAgentToken
 router.get("/api/partner/dashboard", verifyAgentToken, getAgentHubDashboard);
 router.get("/api/partner/properties", verifyAgentToken, getAgentProperties);
+router.post("/api/partner/properties", verifyAgentToken, upload.array("images", 18), createPartnerProperty);
 router.get("/api/partner/leads", verifyAgentToken, getAgentLeads);
 router.patch("/api/partner/leads/:enquiryId/status", verifyAgentToken, updateLeadStatus);
 router.get("/api/partner/profile", verifyAgentToken, getAgentProfile);

@@ -75,6 +75,8 @@ export const INITIAL = {
   title: "",
   description: "",
   ownerMobile: "",
+  partnerMobile: "",
+  cornerPosition: "not_sure",
   // Admin-only rental extras (the admin form has always collected these).
   layoutFeatures: "",
   outdoorSpace: "",
@@ -199,6 +201,8 @@ export function validateStep(step, f) {
     if (containsContactInfo(f.address)) e.address = "Please remove phone numbers / emails from the address";
     // Admin-only field; owners and agents never see it so it stays empty.
     if (f.ownerMobile && !/^(?:\+?91)?[6-9]\d{9}$/.test(String(f.ownerMobile).replace(/[\s-]/g, ""))) e.ownerMobile = "Enter a valid 10-digit mobile number";
+    if (f.partnerMobile && !/^(?:\+?91)?[6-9]\d{9}$/.test(String(f.partnerMobile).replace(/[\s-]/g, ""))) e.partnerMobile = "Enter a valid 10-digit mobile number";
+    if (f.partnerRequired && !String(f.partnerMobile || "").trim()) e.partnerMobile = "Enter the contact mobile number";
   }
   if (step === STEP.profile) {
     if (hasRooms(f) && !f.bhk) e.bhk = "Pick the number of bedrooms";
@@ -348,6 +352,7 @@ export function buildFormData(f, photos, panoramas) {
     if (!isPlot(f)) put("propertyAge", f.propertyAge);
   }
 
+  if (photos.some((p) => p.category)) form.append("imageCategories", JSON.stringify(photos.map((p) => p.category || "other")));
   photos.forEach((p) => p.file && form.append("images", p.file));
 
   (panoramas || [])

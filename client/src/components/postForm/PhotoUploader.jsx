@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Alert, Box, Button, ButtonBase, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Stack, Tooltip, Typography } from "@mui/material";
+import { Alert, Box, Button, ButtonBase, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, MenuItem, Stack, TextField, Tooltip, Typography } from "@mui/material";
 import { AnimatePresence, motion } from "framer-motion";
 import { ImagePlus, Star, Trash2, UploadCloud } from "lucide-react";
 import { radii } from "../../theme/theme";
@@ -11,7 +11,7 @@ const MAX_BYTES = 5 * 1024 * 1024;
  * value: [{ id, file, url }]. Files are checked here (type, 5 MB, max count)
  * so nothing invalid ever reaches the upload.
  */
-export default function PhotoUploader({ value, onChange, max = 8, privacyNotice, tips }) {
+export default function PhotoUploader({ value, onChange, max = 8, privacyNotice, tips, categoryMode = false }) {
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [problems, setProblems] = useState([]);
@@ -27,7 +27,12 @@ export default function PhotoUploader({ value, onChange, max = 8, privacyNotice,
       if (!/^image\//.test(f.type)) issues.push(`${f.name}: not an image`);
       else if (f.size > MAX_BYTES) issues.push(`${f.name}: larger than 5 MB`);
       else if (accepted.length >= room) issues.push(`${f.name}: only ${max} photos allowed`);
-      else accepted.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, file: f, url: URL.createObjectURL(f) });
+      else accepted.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file: f,
+        url: URL.createObjectURL(f),
+        ...(categoryMode ? { category: value.length === 0 && accepted.length === 0 ? "front" : "other" } : {}),
+      });
     });
     setProblems(issues);
     if (accepted.length) onChange([...value, ...accepted]);
@@ -121,6 +126,25 @@ export default function PhotoUploader({ value, onChange, max = 8, privacyNotice,
                 sx={{ position: "relative", aspectRatio: "4 / 3", borderRadius: `${radii.md}px`, overflow: "hidden", border: "1px solid", borderColor: i === 0 ? "secondary.main" : "divider" }}
               >
                 <img src={p.url} alt={`Upload ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                {categoryMode && (
+                  <TextField
+                    select
+                    size="small"
+                    aria-label={`Photo category ${i + 1}`}
+                    value={p.category || "other"}
+                    onChange={(e) => onChange(value.map((photo) => photo.id === p.id ? { ...photo, category: e.target.value } : photo))}
+                    sx={{ position: "absolute", left: 6, right: 6, bottom: 6, backgroundColor: "rgba(255,255,255,0.96)", borderRadius: 1, "& .MuiInputBase-root": { fontSize: 12 } }}
+                  >
+                    {[
+                      ["front", "Front / Exterior"],
+                      ["living", "Living room"],
+                      ["bedroom", "Bedroom"],
+                      ["kitchen", "Kitchen"],
+                      ["bathroom", "Bathroom"],
+                      ["other", "Other"],
+                    ].map(([v, label]) => <MenuItem key={v} value={v}>{label}</MenuItem>)}
+                  </TextField>
+                )}
                 {i === 0 ? (
                   <Box sx={{ position: "absolute", left: 8, top: 8, px: 2, py: 0.5, borderRadius: 999, backgroundColor: "secondary.main", color: "#fff", fontSize: 11, fontWeight: 800 }}>Cover</Box>
                 ) : (
