@@ -54,7 +54,7 @@ export default function PartnerHubEnquiries() {
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 800, color: "#0f172a" }}>All Enquiries</Typography>
           <Typography variant="body2" sx={{ color: "#64748b", mt: 0.5 }}>
-            Enquiries for properties you added. Owner/source-platform details are kept out of the partner view.
+            All property enquiries received on ggnHome. Source platforms and source URLs are hidden in the partner view.
           </Typography>
         </Box>
         <Stack direction="row" spacing={1}>
