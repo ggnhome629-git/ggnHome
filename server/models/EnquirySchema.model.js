@@ -5,7 +5,7 @@ const EnquirySchema = new mongoose.Schema({
   propertyType: { type: String, enum: ["rental", "sale"], required: true }, // track which model
   propertyAddress: { type: String, required: true }, // store essential info
   propertyPrice: { type: Number, required: true },   // store essential info
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   userEmail: { type: String, default: "" },
   userMobile: { type: String, required: true },
   customerName: { type: String, trim: true, default: "Customer" },
