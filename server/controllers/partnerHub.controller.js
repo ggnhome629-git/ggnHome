@@ -6,12 +6,14 @@ const SaleProperty = require('../models/SaleProperty.model');
 const RentalProperty = require('../models/Rentalproperty.model');
 const EnquirySchema = require('../models/EnquirySchema.model');
 
-const ownedPropertyFilter = (agent) => agent.roleType === "Partner"
-  ? { $or: [
-      { partnerAgentId: agent._id },
-      { agentUserId: agent.userId, ownerType: "Agent", "ranking.source": "Partner" },
-    ] }
-  : { agentUserId: agent.userId, ownerType: "Agent" };
+const ownedPropertyFilter = (agent) => ({
+  $or: [
+    { partnerAgentId: agent._id },
+    ...(agent.roleType === "Partner"
+      ? [{ agentUserId: agent.userId, ownerType: "Agent", "ranking.source": "Partner" }]
+      : [{ agentUserId: agent.userId, ownerType: "Agent" }]),
+  ],
+});
 
 /**
  * PartnerHub Dashboard — main entry point
