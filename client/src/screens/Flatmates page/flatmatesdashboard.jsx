@@ -23,7 +23,6 @@ import {
   KeyRound,
   MapPin,
   MessageCircle,
-  PlusSquare,
   Search,
   ShieldCheck,
   Sofa,
@@ -35,6 +34,7 @@ import FlatmateCard from "./FlatmateCard";
 import useFlatmateBookmarks from "./useFlatmateBookmarks";
 import { StaggerContainer, StaggerItem } from "../../components/motion";
 import { radii } from "../../theme/theme";
+import { PostRoomIcon } from "../../components/ui/PostActionIcon";
 
 const TopNavigationBar = React.lazy(() => import("../Dashboard/TopNavigationBar"));
 const Footer = React.lazy(() => import("../Dashboard/Footer"));
@@ -59,7 +59,7 @@ const QUICK_LINKS = [
   { label: "Under ₹15K", icon: IndianRupee, to: "/flatmatessearch?maxBudget=15000" },
   { label: "Furnished", icon: Sofa, to: "/flatmatessearch?furnished=true" },
   { label: "Move in now", icon: KeyRound, to: () => `/flatmatessearch?moveInBy=${today()}` },
-  { label: "List your room", icon: PlusSquare, to: "/flatmateslistingform", auth: true },
+  { label: "List your room", icon: PostRoomIcon, to: "/flatmateslistingform", auth: true },
   { label: "My listings", icon: ClipboardList, to: "/flatmatesmylistings", auth: true },
   { label: "Saved rooms", icon: Heart, to: "/savedproperties?tab=rooms", auth: true },
 ];
