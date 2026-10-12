@@ -456,6 +456,7 @@ export default function PropertyPostForm({
           const form = buildFormData(f, photos, panoramas);
           if (mode === "partner") {
             form.append("mobile", String(f.ownerMobile || "").replace(/[\s-]/g, ""));
+            form.append("ownerName", String(f.ownerName || "").trim());
             form.append("cornerPosition", f.cornerPosition || "not_sure");
             if (f.partnerLatitude) form.append("latitude", f.partnerLatitude);
             if (f.partnerLongitude) form.append("longitude", f.partnerLongitude);
