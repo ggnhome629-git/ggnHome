@@ -314,6 +314,11 @@ export default function PropertyPostForm({
   };
 
   const next = () => {
+    if (mode === "partner" && step === STEP.photos && !photos.some((photo) => photo.category === "front")) {
+      setPartnerPhotoError("Please mark at least one photo as Front / Exterior before continuing.");
+      return;
+    }
+    setPartnerPhotoError("");
     const errs = validateStep(step, f);
     if (Object.keys(errs).length) return showErrors(errs);
     if (step === STEP.review) return submit();
