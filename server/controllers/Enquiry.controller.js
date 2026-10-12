@@ -15,16 +15,11 @@ const { debouncedRankingCalculation } = require("../hooks/propertyRankingHook");
 // ------------------------------
 const createEnquiry = async (req, res) => {
   const { propertyId, message, brokerage } = req.body;
-  const user = req.user;
+  const user = req.user || null;
+  const submittedName = String(req.body.customerName || req.body.name || user?.name || user?.fullName || "").trim().slice(0, 120);
+  const submittedMobile = String(req.body.customerMobile || req.body.phone || user?.mobileNumber || "").replace(/\\D/g, "").slice(-10);
 
   try {
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized"
-      });
-    }
-
     if (
       typeof brokerage !== "number" ||
       brokerage < 1499 ||
@@ -34,6 +29,10 @@ const createEnquiry = async (req, res) => {
         success: false,
         message: "Invalid brokerage amount"
       });
+    }
+
+    if (!submittedName || !/^[6-9]\\d{9}$/.test(submittedMobile)) {
+      return res.status(400).json({ success: false, message: "Customer name and a valid 10-digit mobile number are required." });
     }
 
     // 1️⃣ Try rental first
@@ -106,10 +105,10 @@ const createEnquiry = async (req, res) => {
         (propertyType === "rental"
           ? property.monthlyRent
           : property.price) || 0,
-      userId: user._id,
-      userEmail: user.email || "",
-      userMobile: user.mobileNumber || "N/A",
-      customerName: user.name || user.fullName || "Customer",
+      userId: user?._id || null,
+      userEmail: user?.email || String(req.body.customerEmail || "").trim().slice(0, 180),
+      userMobile: submittedMobile,
+      customerName: submittedName,
       ownerName,
       sourcePortal: property.sourcePortal || undefined,
       sourceUrl: property.sourcePortal ? (property.sourceUrl || undefined) : undefined,
