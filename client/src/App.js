@@ -58,7 +58,6 @@ const FlatmateDiscovery = lazy(() => import("./screens/Flatmates page/flatmatess
 const CreateFlatmateListing = lazy(() => import("./screens/Flatmates page/flatematespost"));
 const FlatmatesListings = lazy(() => import("./screens/Flatmates page/flatmatesListings"));
 const FlatmateSearchPropertyModal = lazy(() => import("./screens/Flatmates page/flatmatesearchpropertymodal")); 
-const AgentRegistration = lazy(() => import("./screens/Agent Page/Register Page/AgentRegister"));
 const AgentLogin = lazy(() => import("./screens/Agent Page/Login Page/AgentLogin"));
 const AgentDashboard = lazy(() => import("./screens/Agent Page/Dashboard/AgentDashboard"));
 const AgentManagement = lazy(() => import("./screens/Admin Page/admin.AgentsManagement"));
@@ -72,6 +71,7 @@ const AgentProtectedRoute = lazy(() => import("./screens/Agent Page/Protected Ro
 const CustomerSupportPageAgent = lazy(() => import("./screens/Agent Page/Customer Support/Customersupport"));
 const ProtectedRoutes = lazy(() => import("./screens/Protected Routes/protectedroutes"));
 const AgentRegistrationAdmin = lazy(() => import("./screens/Admin Page/Admin.AgentRegister"));
+const AdminPartnerAccess = lazy(() => import("./screens/Admin Page/Admin.PartnerAccess"));
 const AdminLayout = lazy(() => import("./screens/Admin Page/shell/AdminLayout"));
 const AdminPayments = lazy(() => import("./screens/Admin Page/admin.properties"));
 const FeatureTogglesAdmin = lazy(() => import("./screens/Admin Page/admin.featureToggles"));
@@ -204,7 +204,7 @@ function App() {
       {/* <Route path="/flatmatesdashboard" element={<FlatmatesDashboard />} /> */}
       {/* <Route path="/flatmatessearch" element={<FlatmateDiscovery />} /> */}
       {/* <Route path="/flatmatesearchpropertymodal/:id" element={<FlatmateSearchPropertyModal />} /> */}
-      <Route path="/agent/register" element={<AgentRegistration />} />
+      <Route path="/agent/register" element={<Navigate replace to="/admin/agent-registration" />} />
       <Route path="/agent/login" element={<AgentLogin />} />
 
       {/* PartnerHub public mobile + OTP authentication. */}
@@ -258,6 +258,7 @@ function App() {
         <Route path="/admin/sms-devices" element={<Navigate replace to="/admin/Landingpage" />} />
         <Route path="/admin/promos" element={<AdminProtectedRoute element={<AdminPromos />} />} />
         <Route path="/admin/agent-registration" element={<AdminProtectedRoute element={<AgentRegistrationAdmin />} />} />
+        <Route path="/admin/partner-access" element={<AdminProtectedRoute element={<AdminPartnerAccess />} />} />
         {/* Renamed/legacy paths keep working (spec U10/U11) */}
         <Route path="/admin/all-properties" element={<Navigate replace to="/admin/rewardsproperties" />} />
         <Route path="/admin/propertymanager-old" element={<Navigate replace to="/admin/propertymanager" />} />

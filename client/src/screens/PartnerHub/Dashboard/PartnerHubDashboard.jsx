@@ -4,7 +4,7 @@ import {
   Stack, Typography,
 } from "@mui/material";
 import {
-  ArrowRight, BarChart3, Building2, CheckCircle2, ChevronRight, Home,
+  ArrowRight, BarChart3, Building2, CheckCircle2, ChevronRight, Download, Home,
   MessageSquare, Search, Sparkles, TrendingUp, Users,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -101,10 +101,17 @@ const PartnerHubDashboard = () => {
               Your property business, leads and customer enquiries — all in one clear workspace.
             </Typography>
           </Box>
-          <Button onClick={() => navigate("/partner/properties/add")} variant="contained" startIcon={<PostPropertyIcon size={18} />}
-            sx={{ flexShrink: 0, px: 2.4, py: 1.35, bgcolor: "#fff", color: "#0f766e", borderRadius: "12px", fontWeight: 850, "&:hover": { bgcolor: "#eafffa" } }}>
-            Add property
-          </Button>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.2} sx={{ flexShrink: 0, width: { xs: "100%", sm: "auto" } }}>
+            <Button onClick={() => navigate("/partner/properties/add")} variant="contained" startIcon={<PostPropertyIcon size={18} />}
+              sx={{ px: 2.4, py: 1.35, bgcolor: "#fff", color: "#0f766e", borderRadius: "12px", fontWeight: 850, "&:hover": { bgcolor: "#eafffa" } }}>
+              Add property
+            </Button>
+            <Button component="a" href={(process.env.REACT_APP_Base_API || "") + "/api/app-downloads/partner.apk"} download
+              startIcon={<Download size={17} />}
+              sx={{ px: 2.2, py: 1.3, color: "#fff", border: "1px solid rgba(255,255,255,.55)", borderRadius: "12px", fontWeight: 800, "&:hover": { bgcolor: "rgba(255,255,255,.10)" } }}>
+              Download Partner APK
+            </Button>
+          </Stack>
         </Stack>
       </Box>
 

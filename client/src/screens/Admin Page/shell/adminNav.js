@@ -14,6 +14,7 @@ import {
   PhoneCall,
   UserPlus,
   Users,
+  ShieldCheck,
   Wrench,
 } from "lucide-react";
 import { PostPropertyIcon } from "../../../components/ui/PostActionIcon";
@@ -59,6 +60,7 @@ export const ADMIN_NAV = [
       { id: "users", label: "Users", route: "/admin/UserManagement", icon: Users },
       { id: "agents", label: "Agents", route: "/admin/agentsmanagement", icon: Users },
       { id: "register-agent", label: "Register Agent", route: "/admin/agent-registration", icon: UserPlus },
+      { id: "partner-access", label: "Register Partner", route: "/admin/partner-access", icon: ShieldCheck },
     ],
   },
   {

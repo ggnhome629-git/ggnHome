@@ -6,7 +6,9 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/user.model.js");
 const { getPublicFeatureToggles, getAdminFeatureToggles, updateAdminFeatureToggles } = require("../controllers/featureToggle.controller");
-const { getAppDownloads, updateAppDownloads } = require("../controllers/appDownload.controller");
+const { getAppDownloads, updateAppDownloads, downloadPartnerApk } = require("../controllers/appDownload.controller");
+const { registerPartnerAccess, listPartnerAccess } = require("../controllers/adminPartnerAccess.controller");
+const { getDashboardPreferences, updateDashboardPreferences } = require("../controllers/adminDashboardPreferences.controller");
 
 const multer = require("multer");
 const upload = require("../middleware/multer");
@@ -91,7 +93,6 @@ const {
   updateAgentProfile
 } = require("../controllers/partnerHub.controller.js");
 const { createPartnerProperty } = require("../controllers/partnerProperty.controller");
-const { registerPartner } = require("../controllers/partnerAuth.controller");
 const { getPartnerEnquiries } = require("../controllers/Enquiry.controller.js");
 const { createAdminPartnerSession } = require("../controllers/adminPartnerSession.controller");
 
@@ -125,6 +126,11 @@ router.put("/api/admin/feature-toggles", verifyToken, checkAdminEmail, updateAdm
 router.get("/api/app-downloads", getAppDownloads);
 router.get("/api/admin/app-downloads", verifyToken, checkAdminEmail, getAppDownloads);
 router.put("/api/admin/app-downloads", verifyToken, checkAdminEmail, updateAppDownloads);
+router.get("/api/app-downloads/partner.apk", downloadPartnerApk);
+router.get("/api/admin/dashboard-tools", verifyToken, checkAdminEmail, getDashboardPreferences);
+router.put("/api/admin/dashboard-tools", verifyToken, checkAdminEmail, updateDashboardPreferences);
+router.get("/api/admin/partners/access", verifyToken, checkAdminEmail, listPartnerAccess);
+router.post("/api/admin/partners/access", verifyToken, checkAdminEmail, registerPartnerAccess);
 
 router.get("/api/users", verifyToken, checkAdminEmail, async (req, res) => {
   try {
@@ -422,8 +428,8 @@ router.post('/flatmateenquiry',verifyToken,flatmateEnquiry);
 router.get("/api/agent/unique-code", verifyToken, checkAdminEmail, getUniqueAgentCode);
 router.post(
   "/api/agent/register",
-  verifyTokenOptional,
-  
+  verifyToken,
+  checkAdminEmail,
   upload.fields([
     { name: "profilePhoto", maxCount: 1 },
     { name: "idProof", maxCount: 3 },
@@ -510,7 +516,7 @@ router.use("/api/admin/property-sync", propertySyncRoutes);
 router.post("/api/admin/partner-session", verifyToken, checkAdminEmail, createAdminPartnerSession);
 
 // All routes protected by verifyAgentToken
-router.post("/api/partner/register", verifyToken, registerPartner);
+router.post("/api/partner/register", (req, res) => res.status(410).json({ message: "Partner access must be registered by a GgnHome administrator. Ask the administrator to add your mobile number, then sign in with OTP." }));
 router.get("/api/partner/dashboard", verifyAgentToken, verifyPartnerAccess, getAgentHubDashboard);
 router.get("/api/partner/properties", verifyAgentToken, verifyPartnerAccess, getAgentProperties);
 router.post("/api/partner/properties", verifyAgentToken, verifyPartnerAccess, upload.array("images", 18), createPartnerProperty);
