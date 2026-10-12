@@ -16,9 +16,9 @@ import {
   Home,
   Settings,
   HelpCircle,
-  PlusSquare,
 } from "lucide-react";
 import SideMenuBar from "./SideMenu";
+import { PostPropertyIcon, PostRoomIcon } from "../../components/ui/PostActionIcon";
 import Location from "./Location";
 
 const TopNavigationBar = ({  navItems = [] }) => {
@@ -725,8 +725,10 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
             </button>
           )} */}
 
-          {/* Post Property Button */}
+          {/* Post Property / Room Button */}
           <button
+            aria-label={isFlatmatesRoute ? "Post a room" : "Post a property"}
+            title={isFlatmatesRoute ? "Post a room" : "Post a property"}
             style={{
               ...commonButtonStyle,
               marginLeft: isSmallScreen ? "4px" : "8px",
@@ -744,10 +746,10 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
             onClick={goToPost}
           >
             {density === "icon" ? (
-              <Square size={18} color="#FFFFFF" />
+              {isFlatmatesRoute ? <PostRoomIcon size={18} color="#FFFFFF" /> : <PostPropertyIcon size={18} color="#FFFFFF" />}
             ) : (
               <>
-                <PlusSquare size={16} />
+                {isFlatmatesRoute ? <PostRoomIcon size={16} /> : <PostPropertyIcon size={16} />}
                 <span>{density === "compact" ? "Post" : isFlatmatesRoute ? "Post room" : "Post property"}</span>
                 {density === "full" && (
                   <span
