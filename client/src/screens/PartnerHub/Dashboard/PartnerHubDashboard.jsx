@@ -206,6 +206,23 @@ const PartnerHubDashboard = () => {
               View Leads
             </Button>
           </Grid>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <Button
+              variant="outlined"
+              onClick={() => navigate('/partner/enquiries')}
+              fullWidth
+              sx={{
+                borderColor: '#64748b',
+                color: '#334155',
+                fontWeight: 600,
+                py: 1.5,
+                textTransform: 'none',
+                borderRadius: '8px',
+              }}
+            >
+              All Enquiries
+            </Button>
+          </Grid>
         </Grid>
       </Box>
 
