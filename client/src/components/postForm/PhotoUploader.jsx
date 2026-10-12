@@ -27,7 +27,12 @@ export default function PhotoUploader({ value, onChange, max = 8, privacyNotice,
       if (!/^image\//.test(f.type)) issues.push(`${f.name}: not an image`);
       else if (f.size > MAX_BYTES) issues.push(`${f.name}: larger than 5 MB`);
       else if (accepted.length >= room) issues.push(`${f.name}: only ${max} photos allowed`);
-      else accepted.push({ id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, file: f, url: URL.createObjectURL(f) });
+      else accepted.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file: f,
+        url: URL.createObjectURL(f),
+        ...(categoryMode ? { category: value.length === 0 && accepted.length === 0 ? "front" : "other" } : {}),
+      });
     });
     setProblems(issues);
     if (accepted.length) onChange([...value, ...accepted]);
