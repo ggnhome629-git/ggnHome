@@ -1,0 +1,149 @@
+name: Build and distribute all Android APKs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/build-all-apks.yml"
+      - "mobile/**"
+      - "sms-gateway-app/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build GgnHome, Partner and SMS APKs
+    runs-on: ubuntu-latest
+    env:
+      SMS_KEY: ${{ secrets.SMS_KEY }}
+      SMS_GGNHOME_URL: ${{ secrets.SMS_GGNHOME_URL }}
+      SMS_SHINE_URL: ${{ secrets.SMS_SHINE_URL }}
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      FIREBASE_APP_ID_GGNHOME: ${{ secrets.FIREBASE_APP_ID_GGNHOME }}
+      FIREBASE_APP_ID_PARTNER: ${{ secrets.FIREBASE_APP_ID_PARTNER }}
+      FIREBASE_APP_ID_SMS: ${{ secrets.FIREBASE_APP_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Set up Gradle for SMS Service
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+
+      - name: Install GgnHome Capacitor dependencies
+        working-directory: mobile
+        run: npm install --no-audit --no-fund
+
+      - name: Build GgnHome APK
+        working-directory: mobile/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon
+          mkdir -p ../../dist-apks
+          cp app/build/outputs/apk/debug/app-debug.apk ../../dist-apks/GgnHome.apk
+
+      - name: Prepare GgnHome-Partner Android wrapper
+        run: |
+          rm -rf partner-build
+          cp -R mobile partner-build
+          cd partner-build
+          npm install --no-audit --no-fund
+          node <<'NODE'
+          const fs = require('fs');
+          const configPath = 'capacitor.config.json';
+          const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+          config.appId = 'com.tanush.ggnhomepartner';
+          config.appName = 'GgnHome-Partner';
+          config.server = {
+            ...(config.server || {}),
+            url: 'https://www.ggnhome.com/partner/dashboard',
+            cleartext: false,
+            androidScheme: 'https',
+            allowNavigation: ['www.ggnhome.com', 'ggnhome.com', 'ggnhome.onrender.com']
+          };
+          fs.writeFileSync(configPath, JSON.stringify(config, null, 2) + '\n');
+
+          const gradlePath = 'android/app/build.gradle';
+          let gradle = fs.readFileSync(gradlePath, 'utf8');
+          gradle = gradle.replaceAll('com.tanush.ggnhome', 'com.tanush.ggnhomepartner');
+          fs.writeFileSync(gradlePath, gradle);
+
+          const stringsPath = 'android/app/src/main/res/values/strings.xml';
+          let strings = fs.readFileSync(stringsPath, 'utf8');
+          strings = strings.replaceAll('GgnHome', 'GgnHome-Partner')
+                           .replaceAll('com.tanush.ggnhome', 'com.tanush.ggnhomepartner');
+          fs.writeFileSync(stringsPath, strings);
+
+          const manifestPath = 'android/app/src/main/AndroidManifest.xml';
+          let manifest = fs.readFileSync(manifestPath, 'utf8');
+          manifest = manifest.replace(/\s*<intent-filter android:autoVerify="true">[\s\S]*?<\/intent-filter>/, '');
+          fs.writeFileSync(manifestPath, manifest);
+          NODE
+
+      - name: Build GgnHome-Partner APK
+        working-directory: partner-build/android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleDebug --no-daemon
+          mkdir -p ../../dist-apks
+          cp app/build/outputs/apk/debug/app-debug.apk ../../dist-apks/GgnHome-Partner.apk
+
+      - name: Build SMS Service APK
+        working-directory: sms-gateway-app
+        run: |
+          gradle assembleRelease --no-daemon
+          mkdir -p ../dist-apks
+          cp app/build/outputs/apk/release/sms-service.apk ../dist-apks/sms-service.apk
+
+      - name: Upload all APKs as GitHub Actions artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ggnHome-android-apks
+          path: dist-apks/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Distribute GgnHome APK through Firebase App Distribution
+        if: ${{ success() && env.FIREBASE_SERVICE_ACCOUNT != '' && env.FIREBASE_APP_ID_GGNHOME != '' && hashFiles('dist-apks/GgnHome.apk') != '' }}
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ env.FIREBASE_APP_ID_GGNHOME }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          testers: tanushchawla16@gmail.com
+          file: dist-apks/GgnHome.apk
+          releaseNotes: "GgnHome build from ${{ github.sha }}"
+
+      - name: Distribute GgnHome-Partner APK through Firebase App Distribution
+        if: ${{ success() && env.FIREBASE_SERVICE_ACCOUNT != '' && env.FIREBASE_APP_ID_PARTNER != '' && hashFiles('dist-apks/GgnHome-Partner.apk') != '' }}
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ env.FIREBASE_APP_ID_PARTNER }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          testers: tanushchawla16@gmail.com
+          file: dist-apks/GgnHome-Partner.apk
+          releaseNotes: "GgnHome-Partner build from ${{ github.sha }}"
+
+      - name: Distribute SMS Service APK through Firebase App Distribution
+        if: ${{ success() && env.FIREBASE_SERVICE_ACCOUNT != '' && env.FIREBASE_APP_ID_SMS != '' && hashFiles('dist-apks/sms-service.apk') != '' }}
+        uses: wzieba/Firebase-Distribution-Github-Action@v1
+        with:
+          appId: ${{ env.FIREBASE_APP_ID_SMS }}
+          serviceCredentialsFileContent: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          testers: tanushchawla16@gmail.com
+          file: dist-apks/sms-service.apk
+          releaseNotes: "SMS Service build from ${{ github.sha }}"
