@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, ButtonBase, Container, Stack, Typography } from "@mui/material";
-import { Building2, Castle, Heart, IndianRupee, KeyRound, PlusSquare, Sparkles, User } from "lucide-react";
+import { Building2, Castle, Heart, IndianRupee, KeyRound, Sparkles, User } from "lucide-react";
+import { PostPropertyIcon } from "../../components/ui/PostActionIcon";
 import { useNavigate } from "react-router-dom";
 
 const LINKS = [
@@ -11,7 +12,7 @@ const LINKS = [
   { label: "New this week", icon: Sparkles, to: "/search?listedWithin=7&sort=newest" },
   { label: "By owner", icon: User, to: "/search?postedBy=Owner" },
   { label: "Saved homes", icon: Heart, to: "/savedproperties" },
-  { label: "Post property", icon: PlusSquare, to: "/add-property" },
+  { label: "Post property", icon: PostPropertyIcon, to: "/add-property" },
 ];
 
 /** Flipkart-style one-tap shortcuts straight into the most common searches. */

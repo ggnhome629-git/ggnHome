@@ -16,9 +16,9 @@ import {
   Home,
   Settings,
   HelpCircle,
-  PlusSquare,
 } from "lucide-react";
 import SideMenuBar from "./SideMenu";
+import { PostPropertyIcon, PostRoomIcon } from "../../components/ui/PostActionIcon";
 import Location from "./Location";
 
 const TopNavigationBar = ({  navItems = [] }) => {
@@ -626,11 +626,29 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
             overflow: "hidden",
           }}
         >
-          {navItems.slice(0, 3).map((item, idx) => (
+          {navItems.slice(0, 3).map((item, idx) => {
+            const normalized = String(item).toLowerCase();
+            const target = normalized.includes("buyer")
+              ? "/search?type=sale"
+              : normalized.includes("tenant")
+              ? "/search?type=rent"
+              : normalized.includes("owner")
+              ? "/add-property"
+              : normalized.includes("dealer") || normalized.includes("builder")
+              ? "/partner/login"
+              : normalized.includes("insight")
+              ? "/#news"
+              : "/";
+            return (
             <a
               key={idx}
-              href="/"
-              onClick={(e) => e.preventDefault()}
+              href={target}
+              onClick={(e) => {
+                e.preventDefault();
+                if (normalized.includes("owner")) goToPost();
+                else if (target === "/#news") window.location.href = target;
+                else navigate(target);
+              }}
               style={{
                 color: "#FFFFFF",
                 textDecoration: "none",
@@ -656,7 +674,8 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
             >
               {item}
             </a>
-          ))}
+            );
+          })}
         </div>
 
         {/* Right Section */}
@@ -725,8 +744,10 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
             </button>
           )} */}
 
-          {/* Post Property Button */}
+          {/* Post Property / Room Button */}
           <button
+            aria-label={isFlatmatesRoute ? "Post a room" : "Post a property"}
+            title={isFlatmatesRoute ? "Post a room" : "Post a property"}
             style={{
               ...commonButtonStyle,
               marginLeft: isSmallScreen ? "4px" : "8px",
@@ -744,10 +765,10 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
             onClick={goToPost}
           >
             {density === "icon" ? (
-              <Square size={18} color="#FFFFFF" />
+              isFlatmatesRoute ? <PostRoomIcon size={18} color="#FFFFFF" /> : <PostPropertyIcon size={18} color="#FFFFFF" />
             ) : (
               <>
-                <PlusSquare size={16} />
+                {isFlatmatesRoute ? <PostRoomIcon size={16} /> : <PostPropertyIcon size={16} />}
                 <span>{density === "compact" ? "Post" : isFlatmatesRoute ? "Post room" : "Post property"}</span>
                 {density === "full" && (
                   <span

@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, ButtonBase, Typography } from "@mui/material";
-import { Heart, Home, PlusSquare, Search, Sparkles, User } from "lucide-react";
+import { Heart, Home, Search, Sparkles, User } from "lucide-react";
+import { PostPropertyIcon } from "../../components/ui/PostActionIcon";
 import { isNativeApp } from "../../utils/nativeApp";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -29,7 +30,7 @@ export default function MobileBottomNav({ user, onSearch }) {
     // The app swaps "Post" for the personalised feed; posting stays on the Account page / website.
     isNativeApp()
       ? { label: "For you", icon: Sparkles, active: pathname === "/app/for-you", onClick: () => navigate("/app/for-you") }
-      : { label: "Post", icon: PlusSquare, onClick: () => navigate(user ? "/add-property" : "/login") },
+      : { label: "Post", icon: PostPropertyIcon, active: pathname.startsWith("/add-property"), onClick: () => navigate(user ? "/add-property" : "/login", user ? undefined : { state: { from: "/add-property" } }) },
     { label: user ? "Account" : "Login", icon: User, onClick: () => navigate(user ? "/my-properties" : "/login") },
   ];
 

@@ -210,7 +210,7 @@ function App() {
       {/* PartnerHub public mobile + OTP authentication. */}
       <Route path="/partner/login" element={<PartnerAuthPage />} />
       <Route path="/partner/register" element={<PartnerAuthPage />} />
-      {/* PartnerHub routes share one responsive shell and navigation system. */
+      {/* PartnerHub routes share one responsive shell and navigation system. */}
       <Route path="/partner/dashboard" element={<PartnerHubProtectedRoute element={<PartnerHubLayout><PartnerHubDashboard /></PartnerHubLayout>} />} />
       <Route path="/partner/properties" element={<PartnerHubProtectedRoute element={<PartnerHubLayout><PartnerHubProperties /></PartnerHubLayout>} />} />
       <Route path="/partner/properties/add" element={<PartnerHubProtectedRoute element={<PartnerHubLayout><PartnerPropertyAdd /></PartnerHubLayout>} />} />

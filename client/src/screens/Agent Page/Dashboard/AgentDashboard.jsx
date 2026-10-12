@@ -16,7 +16,6 @@ import {
   Typography,
 } from "@mui/material";
 import {
-  Plus,
   Home,
   TrendingUp,
   Clock,
@@ -46,6 +45,7 @@ import {
 import QRCode from "react-qr-code";
 import { toJpeg } from "html-to-image";
 import { useNavigate } from "react-router-dom";
+import { PostPropertyIcon } from "../../../components/ui/PostActionIcon";
 import TopNavigationBar from "../Top Navigation Bar/AgentTopNavigationBar";
 import { AnimatedNumber, StaggerContainer, StaggerItem } from "../../../components/motion";
 import { radii } from "../../../theme/theme";
@@ -505,7 +505,7 @@ const AgentDashboard = () => {
                     variant="contained"
                     color="secondary"
                     size="large"
-                    startIcon={<Plus size={18} />}
+                    startIcon={<PostPropertyIcon size={18} />}
                     disabled={isInactive}
                     onClick={() => navigate("/agent/add-property")}
                     sx={{ borderRadius: 999, fontWeight: 800, px: 6, boxShadow: "0 8px 20px rgba(0,167,157,0.35)", "&.Mui-disabled": { backgroundColor: "rgba(255,255,255,0.25)", color: "rgba(255,255,255,0.7)" } }}
