@@ -71,7 +71,7 @@ class GatewayService : Service() {
         )
         val notification = Notification.Builder(this, channelId)
             .setContentTitle("SMS Service running")
-            .setContentText("Sending messages from this SIM in the background")
+            .setContentText("Waiting for admin-enabled login OTPs")
             .setSmallIcon(android.R.drawable.stat_notify_chat)
             .setOngoing(true)
             .setContentIntent(
