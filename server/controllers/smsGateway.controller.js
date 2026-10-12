@@ -179,6 +179,23 @@ exports.claimNext = async (req, res) => {
   }
 };
 
+// Display-only Android OTP viewer. Never returns OTPs unless enabled in the authenticated web console.
+exports.otpPreview = async (req, res) => {
+  try {
+    const setting = await SmsSetting.findOne({ key: "ggnhome" }).lean();
+    if (!setting || setting.showOtpOnAndroid !== true) return res.json({ enabled: false, messages: [] });
+    const messages = await SmsQueue.find({
+      status: "preview", kind: "otp",
+      createdAt: { $gt: new Date(Date.now() - MAX_AGE_MS) },
+    }).select("phoneNumber message createdAt").sort({ createdAt: -1 }).limit(20).lean();
+    res.json({ enabled: true, messages: messages.map(m => ({
+      id: String(m._id), phoneNumber: m.phoneNumber, otp: (String(m.message).match(/\\b([A-Z0-9]{4,8})\\b/) || [])[1] || m.message, createdAt: m.createdAt
+    })) });
+  } catch (e) {
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 // Read-only status line for the app's screen.
 exports.status = async (req, res) => {
   try {
