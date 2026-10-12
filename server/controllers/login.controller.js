@@ -408,6 +408,7 @@ exports.verifyOtp = async (req, res) => {
     // }
 
     user.isVerified = true;
+    user.otpVerifiedAt = new Date();
     // clear one-time OTP fields (single use, all roles)
     user.otp = null;
     user.otpExpiry = null;
