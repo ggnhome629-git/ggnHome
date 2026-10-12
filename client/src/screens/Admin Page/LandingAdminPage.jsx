@@ -66,17 +66,57 @@ const AdminLandingPage = () => {
     fetchUser();
   }, []);
 
+  // Dashboard tool locks: applied instantly, saved to the server, and cached
+  // in this browser so they still show if the server is briefly unreachable.
+  const TOOLS_CACHE_KEY = "ggn:adminHiddenTools";
+  const hiddenRef = useRef([]);
+  const saveSeq = useRef(0);
+  const readCache = () => {
+    try {
+      const v = JSON.parse(localStorage.getItem(TOOLS_CACHE_KEY) || "[]");
+      return Array.isArray(v) ? v.filter((r) => typeof r === "string") : [];
+    } catch (_) {
+      return [];
+    }
+  };
+  const applyHidden = (list) => {
+    hiddenRef.current = list;
+    setHiddenRoutes(list);
+    try {
+      localStorage.setItem(TOOLS_CACHE_KEY, JSON.stringify(list));
+    } catch (_) {
+      // storage blocked — server copy still applies
+    }
+  };
+  const authHeaders = (json) => {
+    const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+    return { ...(json ? { "Content-Type": "application/json" } : {}), ...(token ? { Authorization: "Bearer " + token } : {}) };
+  };
+  const readJson = async (response) => {
+    try {
+      return await response.json();
+    } catch (_) {
+      return null;
+    }
+  };
+  const toolsErrorFor = (response, data, fallback) => {
+    if (response.status === 401 || response.status === 403) return "Your admin session has expired — sign in again to lock or unlock tools.";
+    if (response.status === 404) return "The server hasn't been updated with tool locks yet. Your changes are kept in this browser until it is.";
+    return (data && data.message) || fallback;
+  };
+
   useEffect(() => {
+    const cached = readCache();
+    if (cached.length) applyHidden(cached);
     const loadDashboardTools = async () => {
       try {
-        const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
         const response = await fetch((process.env.REACT_APP_Base_API || "") + "/api/admin/dashboard-tools", {
           credentials: "include",
-          headers: token ? { Authorization: "Bearer " + token } : {},
+          headers: authHeaders(false),
         });
-        const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.message || "Could not load dashboard preferences.");
-        setHiddenRoutes(Array.isArray(data.hiddenRoutes) ? data.hiddenRoutes : []);
+        const data = await readJson(response);
+        if (!response.ok || !data || !data.success) throw new Error(toolsErrorFor(response, data, "Could not load dashboard preferences."));
+        applyHidden(Array.isArray(data.hiddenRoutes) ? data.hiddenRoutes : []);
       } catch (error) {
         setToolsError(error.message || "Could not load dashboard preferences.");
       } finally {
@@ -84,29 +124,36 @@ const AdminLandingPage = () => {
       }
     };
     loadDashboardTools();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const toggleToolVisibility = async (route) => {
-    const next = hiddenRoutes.includes(route)
-      ? hiddenRoutes.filter((item) => item !== route)
-      : [...hiddenRoutes, route];
+    const previous = hiddenRef.current;
+    const next = previous.includes(route) ? previous.filter((item) => item !== route) : [...previous, route];
+    applyHidden(next); // instant — no waiting on the network
+    const seq = ++saveSeq.current;
     setToolsSaving(true);
     setToolsError("");
     try {
-      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
       const response = await fetch((process.env.REACT_APP_Base_API || "") + "/api/admin/dashboard-tools", {
         method: "PUT",
         credentials: "include",
-        headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) },
+        headers: authHeaders(true),
         body: JSON.stringify({ hiddenRoutes: next }),
       });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || "Could not save dashboard preferences.");
-      setHiddenRoutes(data.hiddenRoutes || next);
+      const data = await readJson(response);
+      if (response.status === 404) {
+        // Older server without tool locks: keep the local copy.
+        setToolsError(toolsErrorFor(response, data));
+        return;
+      }
+      if (!response.ok || !data || !data.success) throw new Error(toolsErrorFor(response, data, "Could not save dashboard preferences."));
+      if (seq === saveSeq.current) applyHidden(Array.isArray(data.hiddenRoutes) ? data.hiddenRoutes : next);
     } catch (error) {
+      if (seq === saveSeq.current) applyHidden(previous); // roll back the optimistic change
       setToolsError(error.message || "Could not save dashboard preferences.");
     } finally {
-      setToolsSaving(false);
+      if (seq === saveSeq.current) setToolsSaving(false);
     }
   };
 
@@ -300,7 +347,7 @@ const AdminLandingPage = () => {
                         <ArrowRight size={16} />
                         <Tooltip title="Hide this tool from the main dashboard">
                           <span>
-                            <IconButton size="small" disabled={toolsSaving || toolsLoading} aria-label={"Hide " + link.label + " from dashboard"} onClick={(e) => { e.stopPropagation(); toggleToolVisibility(link.route); }} onKeyDown={(e) => e.stopPropagation()} sx={{ ml: 0.5, mr: -0.5, color: '#64748b' }}>
+                            <IconButton size="small" disabled={toolsLoading} aria-label={"Hide " + link.label + " from dashboard"} onClick={(e) => { e.stopPropagation(); toggleToolVisibility(link.route); }} onKeyDown={(e) => e.stopPropagation()} sx={{ ml: 0.5, mr: -0.5, color: '#64748b' }}>
                               <LockKeyhole size={15} />
                             </IconButton>
                           </span>
@@ -333,7 +380,7 @@ const AdminLandingPage = () => {
                     <Typography variant="caption" color="text.secondary">{tool.groupTitle}</Typography>
                   </Box>
                   <Tooltip title="Restore to main dashboard">
-                    <span><IconButton size="small" disabled={toolsSaving} aria-label={"Restore " + tool.label + " to dashboard"} onClick={() => toggleToolVisibility(tool.route)} sx={{ color: '#0f766e', border: '1px solid #b8dcd6', borderRadius: 2 }}>
+                    <span><IconButton size="small" aria-label={"Restore " + tool.label + " to dashboard"} onClick={() => toggleToolVisibility(tool.route)} sx={{ color: '#0f766e', border: '1px solid #b8dcd6', borderRadius: 2 }}>
                       <Unlock size={16} />
                     </IconButton></span>
                   </Tooltip>

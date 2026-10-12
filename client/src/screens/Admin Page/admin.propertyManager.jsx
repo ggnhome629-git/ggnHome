@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { Box, Button, Card, Checkbox, Chip, Grid, IconButton, InputAdornment, MenuItem, Pagination, Select, Stack, Tab, Tabs, TextField, Tooltip, Typography } from "@mui/material";
 import { CheckCheck, Check, Download, Eye, Home, Pencil, RefreshCw, Search, Trash2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -27,8 +27,8 @@ const thumb = (r) => {
 };
 const statusLabel = (r) => (r.isActive ? "Live" : r.isPending ? (r.isEdited ? "Edited – review" : "New – review") : "Not live");
 const sourceLabel = (r) => {
-  if (r.partnerAgentId || r.ownerType === "Partner" || r.rankingSource === "Partner") return "Partner-added";
   if (r.origin === "scraped") return r.source === "nobroker" ? "NoBroker" : "99acres";
+  if (r.partnerAgentId || r.ownerType === "Partner" || r.rankingSource === "Partner") return "Partner-added";
   return r.ownerType === "Agent" ? "Agent" : "Owner";
 };
 
@@ -66,7 +66,12 @@ export default function AdminPropertyManager() {
     } catch (e) { console.error(e); }
   }, []);
 
+  // Only the newest request may update the table: switching tabs while the
+  // slower "All properties" request is still in flight must not overwrite the
+  // Partner-added list with scraped listings.
+  const loadSeq = useRef(0);
   const load = useCallback(async () => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     try {
       const q = new URLSearchParams({ page, limit: PER_PAGE, ...current.query });
@@ -75,11 +80,12 @@ export default function AdminPropertyManager() {
       if (tab === "partner" && partnerFilter) q.set("partnerAgentId", partnerFilter);
       const res = await fetch(`${API}/api/admin/properties?${q}`, { headers: authHeaders(), credentials: "include" });
       const data = await res.json();
+      if (seq !== loadSeq.current) return; // a newer tab/filter request superseded this one
       if (data.success) { setRows(data.data || []); setTotal(data.meta?.total || 0); }
     } catch (e) {
-      notify("Error loading properties", "error");
+      if (seq === loadSeq.current) notify("Error loading properties", "error");
     } finally {
-      setLoading(false);
+      if (seq === loadSeq.current) setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, debounced, state, current, partnerFilter, tab]);
@@ -282,7 +288,7 @@ export default function AdminPropertyManager() {
                     <td>{money(r)}</td>
                     <td>{r.bhk || "—"}</td>
                     <td>
-                      <Chip size="small" label={(r.partnerAgentId || r.ownerType === "Partner" || r.rankingSource === "Partner") ? "Partner-added" : r.origin === "scraped" ? (r.source === "nobroker" ? "NoBroker" : "99acres") : r.ownerType === "Partner" ? "Partner" : r.ownerType === "Agent" ? "Agent" : "Owner"}
+                      <Chip size="small" label={sourceLabel(r)}
                         sx={r.origin === "scraped" ? { bgcolor: "rgba(245,158,11,0.15)", color: "#B45309", fontWeight: 700 } : { bgcolor: "rgba(0,167,157,0.14)", color: "#00857D", fontWeight: 700 }} />
                     </td>
                     {tab === "partner" && <><td><Typography sx={{ fontWeight: 600 }}>{r.partnerName || "—"}</Typography><Typography variant="caption" color="text.secondary">{r.partnerMobile || "—"}{r.partnerEmail ? ` · ${r.partnerEmail}` : ""}</Typography></td><td>{r.ownerName || "—"}</td><td>{r.ownerMobile || "—"}</td></>}

@@ -51,8 +51,12 @@ const listAdminProperties = async (req, res) => {
 
     const filter = {};
     if (source) filter.source = String(source);
+    if (partnerAdded === "true" || (partnerAgentId && mongoose.isValidObjectId(partnerAgentId))) {
+      // Partner listings are never scraped ones, whatever their ranking fields say.
+      filter.$and = [...(filter.$and || []), { sourcePortal: null }];
+    }
     if (partnerAdded === "true") {
-      filter.$and = [...(filter.$and || []), { $or: [{ partnerAgentId: { $exists: true, $ne: null } }, { "ranking.source": "Partner" }] }];
+      filter.$and = [...(filter.$and || []), { $or: [{ partnerAgentId: { $exists: true, $ne: null } }, { ownerType: "Partner" }, { "ranking.source": "Partner" }] }];
     }
     if (partnerAgentId && mongoose.isValidObjectId(partnerAgentId)) {
       const partner = await Agent.findById(partnerAgentId).select("userId").lean();
