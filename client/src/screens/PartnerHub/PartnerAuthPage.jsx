@@ -65,7 +65,7 @@ export default function PartnerAuthPage() {
   async function verifyOtp() {
     setError(""); setNotice("");
     if (!/^\d{4,8}$/.test(otp.trim())) {
-      setError("Enter the OTP you received.");
+      setError("Enter the 4-letter OTP you received.");
       return;
     }
     setBusy(true);
@@ -74,7 +74,7 @@ export default function PartnerAuthPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ mobileNumber: normalizedMobile, otp: otp.trim() }),
+        body: JSON.stringify({ mobileNumber: normalizedMobile, otp: otp.trim().toUpperCase() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "OTP verification failed.");
@@ -150,8 +150,8 @@ export default function PartnerAuthPage() {
                   onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
                   disabled={busy || Boolean(verifiedToken)}
                   fullWidth
-                  inputProps={{ inputMode: "numeric", maxLength: 8 }}
-                  placeholder="Enter OTP"
+                  inputProps={{ maxLength: 4, style: { textTransform: "uppercase", letterSpacing: 8, fontWeight: 800 } }}
+                  placeholder="e.g. KQMX"
                 />
                 {!verifiedToken && <Button variant="contained" size="large" disabled={busy} onClick={verifyOtp} sx={{ py: 1.4, bgcolor: "#0f766e", fontWeight: 800, textTransform: "none" }}>{busy ? "Verifying…" : "Verify OTP"}</Button>}
                 {canRegister && verifiedToken && (
