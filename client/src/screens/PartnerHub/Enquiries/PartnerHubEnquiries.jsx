@@ -54,7 +54,7 @@ export default function PartnerHubEnquiries() {
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 800, color: "#0f172a" }}>All Enquiries</Typography>
           <Typography variant="body2" sx={{ color: "#64748b", mt: 0.5 }}>
-            Every property enquiry received on ggnHome, matching the admin enquiries list — not only enquiries filtered to your listings.
+            Enquiries for properties you added. Owner/source-platform details are kept out of the partner view.
           </Typography>
         </Box>
         <Stack direction="row" spacing={1}>
@@ -78,19 +78,19 @@ export default function PartnerHubEnquiries() {
         <Table>
           <TableHead sx={{ bgcolor: "#f8fafc" }}>
             <TableRow>
-              {["Customer", "Contact", "Property / Address", "Type & Price", "Message", "Received"].map((label) => (
+              {["Customer", "Contact", "Property / Address", "Owner", "Type & Price", "Message", "Received"].map((label) => (
                 <TableCell key={label} sx={{ fontWeight: 800, whiteSpace: "nowrap" }}>{label}</TableCell>
               ))}
             </TableRow>
           </TableHead>
           <TableBody>
             {loading
-              ? Array.from({ length: 5 }).map((_, i) => <TableRow key={i}>{Array.from({ length: 6 }).map((__, j) => <TableCell key={j}><Skeleton /></TableCell>)}</TableRow>)
+              ? Array.from({ length: 5 }).map((_, i) => <TableRow key={i}>{Array.from({ length: 7 }).map((__, j) => <TableCell key={j}><Skeleton /></TableCell>)}</TableRow>)
               : items.length === 0
-                ? <TableRow><TableCell colSpan={6} align="center" sx={{ py: 6 }}><Typography color="text.secondary">No enquiries found.</Typography></TableCell></TableRow>
+                ? <TableRow><TableCell colSpan={7} align="center" sx={{ py: 6 }}><Typography color="text.secondary">No enquiries found.</Typography></TableCell></TableRow>
                 : items.map((item) => (
                   <TableRow key={item._id} hover>
-                    <TableCell sx={{ fontWeight: 700 }}>{item.user?.name || item.userName || "Customer"}</TableCell>
+                    <TableCell sx={{ fontWeight: 700 }}>{item.customerName || item.user?.name || item.userName || "Customer"}</TableCell>
                     <TableCell>
                       <Typography variant="body2">{item.userMobile || "—"}</Typography>
                       <Typography variant="caption" color="text.secondary">{item.userEmail || "—"}</Typography>
@@ -99,6 +99,7 @@ export default function PartnerHubEnquiries() {
                       <Typography variant="body2" sx={{ fontWeight: 700 }}>{item.property?.title || item.propertyAddress || "Property enquiry"}</Typography>
                       <Typography variant="caption" color="text.secondary">{item.property?.Sector || item.propertyAddress || "Address not available"}</Typography>
                     </TableCell>
+                    <TableCell sx={{ minWidth: 160 }}>{item.ownerName || "No owner of this property present."}</TableCell>
                     <TableCell>
                       <Stack alignItems="flex-start" spacing={0.75}>
                         <Chip size="small" label={item.propertyType === "rental" ? "Rent" : "Sale"} />
