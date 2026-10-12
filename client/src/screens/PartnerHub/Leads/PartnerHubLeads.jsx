@@ -9,6 +9,8 @@ import { useNavigate } from "react-router-dom";
 export default function PartnerHubLeads() {
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
+  const [searches, setSearches] = useState([]);
+  const [searchMeta, setSearchMeta] = useState({ total: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
@@ -32,6 +34,15 @@ export default function PartnerHubLeads() {
       const payload = await response.json();
       setLeads(payload.data || []);
       setMeta({ total: payload.meta?.total || 0, totalPages: payload.meta?.totalPages || 1 });
+
+      const searchResponse = await fetch(
+        `${process.env.REACT_APP_Base_API}/api/partner/leads/searches?page=${page}&limit=${limit}`,
+        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, credentials: "include" }
+      );
+      if (!searchResponse.ok) throw new Error("Could not load AI Assistant search leads.");
+      const searchPayload = await searchResponse.json();
+      setSearches(searchPayload.data || []);
+      setSearchMeta({ total: searchPayload.meta?.total || 0 });
     } catch (err) {
       setError(err.message || "Could not load leads.");
     } finally {
@@ -87,6 +98,38 @@ export default function PartnerHubLeads() {
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+      <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>AI Assistant Search Leads ({searchMeta.total})</Typography>
+      <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3, mb: 4 }}>
+        <Table>
+          <TableHead sx={{ bgcolor: "#f8fafc" }}>
+            <TableRow>
+              {["Search query", "Customer", "Contact", "Searched on"].map((label) => (
+                <TableCell key={label} sx={{ fontWeight: 800, whiteSpace: "nowrap" }}>{label}</TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading
+              ? Array.from({ length: 3 }).map((_, i) => <TableRow key={i}>{Array.from({ length: 4 }).map((__, j) => <TableCell key={j}><Skeleton /></TableCell>)}</TableRow>)
+              : searches.length === 0
+                ? <TableRow><TableCell colSpan={4} align="center" sx={{ py: 4 }}><Typography color="text.secondary">No AI Assistant searches recorded yet.</Typography></TableCell></TableRow>
+                : searches.map((item) => (
+                  <TableRow key={item._id} hover>
+                    <TableCell sx={{ fontWeight: 700 }}>{item.query || "—"}</TableCell>
+                    <TableCell>{item.user?.name || "Guest / unavailable"}</TableCell>
+                    <TableCell>
+                      <Typography variant="body2">{item.user?.mobileNumber || "—"}</Typography>
+                      <Typography variant="caption" color="text.secondary">{item.user?.email || ""}</Typography>
+                    </TableCell>
+                    <TableCell sx={{ whiteSpace: "nowrap" }}>{item.createdAt ? new Date(item.createdAt).toLocaleString("en-IN") : "—"}</TableCell>
+                  </TableRow>
+                ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>User Preference Form Leads ({meta.total})</Typography>
       <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}>
         <Table>
           <TableHead sx={{ bgcolor: "#f8fafc" }}>
