@@ -87,6 +87,7 @@ const {
   getAgentProfile,
   updateAgentProfile
 } = require("../controllers/partnerHub.controller.js");
+const { createPartnerProperty } = require("../controllers/partnerProperty.controller");
 
 // Helper middleware to restrict access to admins only
 const checkAdminEmail = async (req, res, next) => {
