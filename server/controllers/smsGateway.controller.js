@@ -184,13 +184,13 @@ exports.otpPreview = async (req, res) => {
   try {
     const deviceId = String(req.headers["x-device-id"] || "").slice(0, 64);
     if (!deviceId) return res.status(400).json({ message: "X-Device-Id header required" });
-    await SmsDevice.findOneAndUpdate(
+    const device = await SmsDevice.findOneAndUpdate(
       { deviceId },
       { $set: { lastSeen: new Date(), ready: true, appVersion: String(req.headers["x-app-version"] || "").slice(0, 20) }, $setOnInsert: { name: String(req.headers["x-device-name"] || "Android OTP Viewer").slice(0, 60) } },
       { upsert: true, new: true }
     );
     const setting = await SmsSetting.findOne({ key: "ggnhome" }).lean();
-    if (!setting || setting.showOtpOnAndroid !== true) return res.json({ enabled: false, messages: [] });
+    if (!setting || setting.showOtpOnAndroid !== true || !device.enabled) return res.json({ enabled: false, messages: [] });
     const messages = await SmsQueue.find({ status: "preview", kind: "otp", createdAt: { $gt: new Date(Date.now() - MAX_AGE_MS) } })
       .select("phoneNumber message createdAt").sort({ createdAt: -1 }).limit(20).lean();
     res.json({ enabled: true, messages: messages.map(m => ({
