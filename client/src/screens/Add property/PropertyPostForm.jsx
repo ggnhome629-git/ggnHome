@@ -276,7 +276,7 @@ export default function PropertyPostForm({
       setNearbyAmenities((prev) => prev.map((item) => {
         const rule = PARTNER_AMENITIES.find((a) => a.key === item.category);
         const match = places.filter((p) => p.lat && p.lon && rule.query.test(`${p.name || ""} ${p.type || ""} ${p.class || ""}`)).sort((a, b) => distance(a) - distance(b))[0];
-        return match ? { ...item, name: match.name || item.label, distance: String(distance(match)), source: "locationiq" } : item;
+        return match ? { ...item, name: match.name || item.label, distance: String(distance(match)), source: "locationiq", edited: false } : item;
       }));
       setF((prev) => ({ ...prev, partnerLatitude: String(lat), partnerLongitude: String(lon) }));
       setAmenityMessage("Suggestions loaded. Review and edit them; distances are straight-line estimates.");
