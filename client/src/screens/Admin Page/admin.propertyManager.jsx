@@ -117,7 +117,7 @@ export default function AdminPropertyManager() {
   };
 
   const exportCsv = () => {
-    const lines = [["Title", "Type", "Price", "Location", "BHK", "Source", "Partner", "Partner mobile", "Owner mobile", "Status", "Added"], ...rows.map((r) => ['"' + (r.title || "").replace(/"/g, '""') + '"', r.listingType, r.price, '"' + (r.location || "") + '"', r.bhk, r.source, '"' + (r.partnerName || "") + '"', r.partnerMobile || "", r.ownerMobile || "", r.isActive ? "Live" : "Pending", new Date(r.createdAt).toLocaleDateString()])];
+    const lines = [["Title", "Type", "Price", "Location", "BHK", "Source", "Partner", "Partner mobile", "Owner name", "Owner mobile", "Status", "Added"], ...rows.map((r) => ['"' + (r.title || "").replace(/"/g, '""') + '"', r.listingType, r.price, '"' + (r.location || "") + '"', r.bhk, r.source, '"' + (r.partnerName || "") + '"', r.partnerMobile || "", r.ownerMobile || "", r.isActive ? "Live" : "Pending", new Date(r.createdAt).toLocaleDateString()])];
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([lines.map((l) => l.join(",")).join("\n")], { type: "text/csv" }));
     a.download = `properties-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -256,7 +256,7 @@ export default function AdminPropertyManager() {
                       <Checkbox size="small" checked={allSelected} onChange={() => setSelected(allSelected ? [] : pageIds)} />
                     </th>
                   )}
-                  <th>Property</th><th>Location</th><th>Price</th><th>BHK</th><th>Source</th>{tab === "partner" && <><th>Partner / Contact</th><th>Owner mobile</th></>}<th>Status</th>
+                  <th>Property</th><th>Location</th><th>Price</th><th>BHK</th><th>Source</th>{tab === "partner" && <><th>Partner / Contact</th><th>Owner name</th><th>Owner mobile</th></>}<th>Status</th>
                   <th className="admin-table-align-center">Actions</th>
                 </tr>
               </thead>
@@ -281,7 +281,7 @@ export default function AdminPropertyManager() {
                       <Chip size="small" label={r.partnerAgentId ? "Partner-added" : r.origin === "scraped" ? (r.source === "nobroker" ? "NoBroker" : "99acres") : r.ownerType === "Agent" ? "Agent" : "Owner"}
                         sx={r.origin === "scraped" ? { bgcolor: "rgba(245,158,11,0.15)", color: "#B45309", fontWeight: 700 } : { bgcolor: "rgba(0,167,157,0.14)", color: "#00857D", fontWeight: 700 }} />
                     </td>
-                    {tab === "partner" && <><td><Typography sx={{ fontWeight: 600 }}>{r.partnerName || "—"}</Typography><Typography variant="caption" color="text.secondary">{r.partnerMobile || "—"}{r.partnerEmail ? ` · ${r.partnerEmail}` : ""}</Typography></td><td>{r.ownerMobile || "—"}</td></>}
+                    {tab === "partner" && <><td><Typography sx={{ fontWeight: 600 }}>{r.partnerName || "—"}</Typography><Typography variant="caption" color="text.secondary">{r.partnerMobile || "—"}{r.partnerEmail ? ` · ${r.partnerEmail}` : ""}</Typography></td><td>{r.ownerName || "—"}</td><td>{r.ownerMobile || "—"}</td></>}
                     <td>
                       <Chip size="small" variant="outlined" color={r.isActive ? "success" : r.isPending ? "warning" : "default"}
                         label={r.isActive ? "Live" : r.isPending ? (r.isEdited ? "Edited – review" : "New – review") : "Not live"} />
