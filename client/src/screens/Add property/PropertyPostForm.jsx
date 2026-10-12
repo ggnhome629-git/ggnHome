@@ -225,6 +225,28 @@ export default function PropertyPostForm({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [saved, setSaved] = useState(null);
+  const [partnerContact, setPartnerContact] = useState(null);
+
+  useEffect(() => {
+    if (mode !== "partner") return undefined;
+    let cancelled = false;
+    const partnerToken = localStorage.getItem("partnerAccessToken") || token;
+    fetch(`${process.env.REACT_APP_Base_API}/api/partner/profile`, {
+      headers: partnerToken ? { Authorization: `Bearer ${partnerToken}` } : {},
+      credentials: "include",
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Could not load partner contact details");
+        return res.json();
+      })
+      .then((data) => {
+        if (!cancelled) setPartnerContact(data.agent || data);
+      })
+      .catch((error) => {
+        if (!cancelled) setSubmitError(error.message || "Could not load partner contact details.");
+      });
+    return () => { cancelled = true; };
+  }, [mode, token]);
 
   // Autosave everything except files (browsers can't store those).
   useEffect(() => {
@@ -551,8 +573,8 @@ export default function PropertyPostForm({
           inputProps={{ maxLength: 200 }}
         />
       </FormSection>
-      {askOwnerContact && (
-        <FormSection title="Owner's Mobile Number" hint="Kept private — used by the ggnHome team to reach the owner" id="field-ownerMobile">
+      {(askOwnerContact || mode === "partner") && (
+        <FormSection title={mode === "partner" ? "Property Owner’s Mobile Number" : "Owner’s Mobile Number"} required={mode === "partner"} hint={mode === "partner" ? "Enter the number of the owner whose property you are listing. Your own partner contact is shown separately below." : "Kept private — used by the ggnHome team to reach the owner"} id="field-ownerMobile">
           <TextField
             value={f.ownerMobile}
             onChange={onInput("ownerMobile")}
@@ -567,19 +589,16 @@ export default function PropertyPostForm({
       )}
       {mode === "partner" && (
         <>
-          <FormSection title="Contact Mobile Number" required error={err("partnerMobile")} id="field-partnerMobile" hint="Used by ggnHome to contact you about this listing.">
-            <TextField
-              fullWidth
-              value={f.partnerMobile || ""}
-              onChange={onInput("partnerMobile")}
-              placeholder="10-digit mobile number"
-              error={Boolean(err("partnerMobile"))}
-              helperText={err("partnerMobile") || " "}
-              InputProps={{ startAdornment: <InputAdornment position="start">+91</InputAdornment> }}
-              inputProps={{ inputMode: "tel", maxLength: 14 }}
-              sx={{ maxWidth: 420 }}
-            />
-          </FormSection>
+          <Box sx={{ mb: 2, p: 2.5, border: "1px solid", borderColor: "divider", borderRadius: `${radii.md}px`, bgcolor: "rgba(15,118,110,0.035)" }}>
+            <Typography sx={{ fontWeight: 800, mb: 0.5, color: "primary.main" }}>Your Partner Contact Details</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>These details come from the account you are logged in with and are attached to every property you add. They cannot be changed on an individual listing.</Typography>
+            <Stack spacing={1}>
+              <Typography variant="body2"><strong>Name:</strong> {partnerContact?.name || "Loading partner profile…"}</Typography>
+              <Typography variant="body2"><strong>Mobile:</strong> {partnerContact?.mobileNumber || "—"}</Typography>
+              <Typography variant="body2"><strong>Email:</strong> {partnerContact?.email || "—"}</Typography>
+              {partnerContact?.agencyName && <Typography variant="body2"><strong>Agency:</strong> {partnerContact.agencyName}</Typography>}
+            </Stack>
+          </Box>
           <Accordion defaultExpanded={false} disableGutters elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: `${radii.md}px !important`, "&:before": { display: "none" }, mb: 2 }}>
             <AccordionSummary expandIcon={<ChevronDown size={18} />}>
               <Typography sx={{ fontWeight: 700, color: "primary.main" }}>Nearby places (optional)</Typography>
