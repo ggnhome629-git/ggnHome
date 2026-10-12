@@ -26,7 +26,7 @@ const thumb = (r) => {
   return (first && (first.url || first)) || "";
 };
 const statusLabel = (r) => (r.isActive ? "Live" : r.isPending ? (r.isEdited ? "Edited – review" : "New – review") : "Not live");
-const sourceLabel = (r) => (r.partnerAgentId ? "Partner-added" : r.origin === "scraped" ? (r.source === "nobroker" ? "NoBroker" : "99acres") : r.ownerType === "Agent" ? "Agent" : "Owner");
+const sourceLabel = (r) => (r.partnerAgentId ? "Partner-added" : r.origin === "scraped" ? (r.source === "nobroker" ? "NoBroker" : "99acres") : r.ownerType === "Partner" ? "Partner" : r.ownerType === "Agent" ? "Agent" : "Owner");
 
 const money = (r) => (r.price ? `₹${Number(r.price).toLocaleString("en-IN")}${r.listingType === "rent" ? "/mo" : ""}` : "—");
 
