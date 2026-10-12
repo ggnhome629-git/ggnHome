@@ -87,6 +87,7 @@ const PartnerHubDashboard = lazy(() => import("./screens/PartnerHub/Dashboard/Pa
 const PartnerHubProperties = lazy(() => import("./screens/PartnerHub/Properties/PartnerHubProperties"));
 const PartnerPropertyAdd = lazy(() => import("./screens/PartnerHub/Properties/PartnerPropertyAdd"));
 const PartnerHubLeads = lazy(() => import("./screens/PartnerHub/Leads/PartnerHubLeads"));
+const PartnerHubEnquiries = lazy(() => import("./screens/PartnerHub/Enquiries/PartnerHubEnquiries"));
 const PartnerHubProfile = lazy(() => import("./screens/PartnerHub/Profile/PartnerHubProfile"));
 const PartnerHubProtectedRoute = lazy(() => import("./screens/PartnerHub/PartnerHubProtectedRoute"));
 
@@ -208,6 +209,7 @@ function App() {
       <Route path="/partner/properties" element={<PartnerHubProtectedRoute element={<PartnerHubProperties />} />} />
       <Route path="/partner/properties/add" element={<PartnerHubProtectedRoute element={<PartnerPropertyAdd />} />} />
       <Route path="/partner/leads" element={<PartnerHubProtectedRoute element={<PartnerHubLeads />} />} />
+      <Route path="/partner/enquiries" element={<PartnerHubProtectedRoute element={<PartnerHubEnquiries />} />} />
       <Route path="/partner/profile" element={<PartnerHubProtectedRoute element={<PartnerHubProfile />} />} />
 
       {/* <Route element={<AgentProtectedRoute />}>
