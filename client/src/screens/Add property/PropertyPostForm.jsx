@@ -244,6 +244,48 @@ export default function PropertyPostForm({
 
   const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
+  const detectPartnerAmenities = async () => {
+    if (!f.Sector.trim() && !f.address.trim()) {
+      setAmenityMessage("Enter a sector or address first.");
+      return;
+    }
+    setFindingAmenities(true);
+    setAmenityMessage("");
+    try {
+      const base = process.env.REACT_APP_Base_API;
+      const keyResponse = await fetch(`${base}/api/locationqapi`);
+      const keyData = await keyResponse.json();
+      if (!keyResponse.ok || !keyData.apiKey) throw new Error("Location service unavailable. You can enter nearby places manually.");
+      const query = [f.address, f.Sector, "Gurugram, Haryana, India"].filter(Boolean).join(", ");
+      const geoResponse = await fetch(`https://us1.locationiq.com/v1/search.php?key=${encodeURIComponent(keyData.apiKey)}&q=${encodeURIComponent(query)}&format=json&limit=1`);
+      const geo = await geoResponse.json();
+      if (!geoResponse.ok || !geo?.[0]) throw new Error("Address not found. Add a more complete address.");
+      const lat = Number(geo[0].lat);
+      const lon = Number(geo[0].lon);
+      const nearResponse = await fetch(`https://us1.locationiq.com/v1/nearby.php?key=${encodeURIComponent(keyData.apiKey)}&lat=${lat}&lon=${lon}&tag=amenity,shop,leisure,railway,public_transport,healthcare,education&radius=3000&format=json`);
+      const places = await nearResponse.json();
+      if (!nearResponse.ok || !Array.isArray(places)) throw new Error("Nearby lookup failed. You can enter amenities manually.");
+      const rad = (n) => n * Math.PI / 180;
+      const distance = (p) => {
+        const dLat = rad(Number(p.lat) - lat);
+        const dLon = rad(Number(p.lon) - lon);
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat)) * Math.cos(rad(Number(p.lat))) * Math.sin(dLon / 2) ** 2;
+        return Math.round(6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+      };
+      setNearbyAmenities((prev) => prev.map((item) => {
+        const rule = PARTNER_AMENITIES.find((a) => a.key === item.category);
+        const match = places.filter((p) => p.lat && p.lon && rule.query.test(`${p.name || ""} ${p.type || ""} ${p.class || ""}`)).sort((a, b) => distance(a) - distance(b))[0];
+        return match ? { ...item, name: match.name || item.label, distance: String(distance(match)), source: "locationiq" } : item;
+      }));
+      setF((prev) => ({ ...prev, partnerLatitude: String(lat), partnerLongitude: String(lon) }));
+      setAmenityMessage("Suggestions loaded. Review and edit them; distances are straight-line estimates.");
+    } catch (error) {
+      setAmenityMessage(error.message || "Could not detect nearby places.");
+    } finally {
+      setFindingAmenities(false);
+    }
+  };
+
   const goTo = (target) => {
     if (target === step) return;
     if (target > reached) {
