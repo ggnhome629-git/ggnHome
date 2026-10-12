@@ -76,9 +76,10 @@ totalArea: {
   cloudinaryFolder: { type: String },
   defaultpropertytype: { type: String, default: "sale", immutable: true },
   ownernumber: { type: String },
-  ownerType: { type: String, enum: ["Owner", "Agent" , "Admin"], default: "Owner" },
+  ownerType: { type: String, enum: ["Owner", "Agent", "Partner", "Admin"], default: "Owner" },
   // Partner attribution and fixed partner contact for listings submitted through PartnerHub.
   partnerAgentId: { type: mongoose.Schema.Types.ObjectId, ref: "Agent", index: true },
+  ownerName: { type: String, trim: true },
   partnerName: { type: String, trim: true },
   partnerMobile: { type: String, trim: true },
   partnerEmail: { type: String, trim: true, lowercase: true },
@@ -105,7 +106,7 @@ totalArea: {
   type: mongoose.Schema.Types.ObjectId,
   ref: "User",
   required: function () {
-    return this.ownerType === "Agent" || this.ownerType === "admin";
+    return this.ownerType === "Agent" || this.ownerType === "Partner" || this.ownerType === "admin";
   },
   index: true
 },
