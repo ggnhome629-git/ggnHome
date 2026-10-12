@@ -58,7 +58,6 @@ const FlatmateDiscovery = lazy(() => import("./screens/Flatmates page/flatmatess
 const CreateFlatmateListing = lazy(() => import("./screens/Flatmates page/flatematespost"));
 const FlatmatesListings = lazy(() => import("./screens/Flatmates page/flatmatesListings"));
 const FlatmateSearchPropertyModal = lazy(() => import("./screens/Flatmates page/flatmatesearchpropertymodal")); 
-const AgentRegistration = lazy(() => import("./screens/Agent Page/Register Page/AgentRegister"));
 const AgentLogin = lazy(() => import("./screens/Agent Page/Login Page/AgentLogin"));
 const AgentDashboard = lazy(() => import("./screens/Agent Page/Dashboard/AgentDashboard"));
 const AgentManagement = lazy(() => import("./screens/Admin Page/admin.AgentsManagement"));
@@ -205,7 +204,7 @@ function App() {
       {/* <Route path="/flatmatesdashboard" element={<FlatmatesDashboard />} /> */}
       {/* <Route path="/flatmatessearch" element={<FlatmateDiscovery />} /> */}
       {/* <Route path="/flatmatesearchpropertymodal/:id" element={<FlatmateSearchPropertyModal />} /> */}
-      <Route path="/agent/register" element={<AgentRegistration />} />
+      <Route path="/agent/register" element={<Navigate replace to="/admin/agent-registration" />} />
       <Route path="/agent/login" element={<AgentLogin />} />
 
       {/* PartnerHub public mobile + OTP authentication. */}
