@@ -11,7 +11,7 @@ const ownedPropertyFilter = (agent) => agent.roleType === "Partner"
       { partnerAgentId: agent._id },
       { agentUserId: agent.userId, ownerType: "Agent", "ranking.source": "Partner" },
     ] }
-  : ownedPropertyFilter(agent);
+  : { agentUserId: agent.userId, ownerType: "Agent" };
 
 /**
  * PartnerHub Dashboard — main entry point
