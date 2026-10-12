@@ -7,6 +7,23 @@
 
 > **Important scope statement:** This is a source-level deep audit of the highest-risk shared paths and representative flows, with a repository-wide inventory pass. It is **not a complete runtime audit of every page**. Runtime API calls, real database behavior, APK launches, desktop/tablet/mobile visual QA, and end-to-end journeys require a safe test deployment and credentials. Those checks are marked blocked/not run rather than passed. The report uses the current source as evidence and does not treat an old audit document as ground truth.
 
+## Follow-up remediation status (12 October 2026)
+
+The three high-severity findings listed in this report were fixed in later commits on `main`. Treat the original finding text below as the state at the audit baseline commit (`137208246d9ac3aeae6a5193f9b14f9e9a488d7a`), not as a claim that those exact defects remain present in the latest source.
+
+| Original finding | Latest code change | Current source-level status |
+|---|---|---|
+| GH-001 — Public LocationIQ API key response | `server/controllers/mapintegration.js` now returns HTTP 410 with a retirement message and never returns the key. | Fixed in source; runtime/client map integration still needs validation. |
+| GH-002 — Flatmates search could bypass active filter | `searchListings` now always applies `isActive: true` and `isPostedNew: false`; client-supplied `onlyActive=false` is ignored. | Fixed in source; verify with seeded published/unpublished records. |
+| GH-003 — Flatmates detail exposed owner contact without consent | `flatmateListingDetails` validates the ID, returns 404 for inactive or pending listings, and only includes email/mobile when the corresponding `contactMethods` flag is true. | Fixed in source; verify with role/contact-preference test cases. |
+
+Relevant commits:
+- LocationIQ endpoint retirement: `a12bc021db5870eb7366f9592d0f81239ac42361`
+- Flatmates visibility and contact-consent guards: `ed7e25037007060ef1b1745084a604a3cc7c641f`
+- README rewrite: `7404ec06d673f68487308d1670143b36245dec57`
+
+These changes have been checked by fetching the resulting files from `main`. The audit environment did not execute a database-backed integration suite, so the fixes are source-verified, not yet runtime-verified. The remaining findings and all blocked checks below should be re-evaluated against the latest source before release.
+
 ## A. Executive summary
 
 ### Overall assessment
