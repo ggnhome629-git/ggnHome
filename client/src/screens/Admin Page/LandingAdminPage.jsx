@@ -300,7 +300,7 @@ const AdminLandingPage = () => {
                         <ArrowRight size={16} />
                         <Tooltip title="Hide this tool from the main dashboard">
                           <span>
-                            <IconButton size="small" disabled={toolsSaving || toolsLoading} aria-label={"Hide " + link.label + " from dashboard"} onClick={(e) => { e.stopPropagation(); toggleToolVisibility(link.route); }} sx={{ ml: 0.5, mr: -0.5, color: '#64748b' }}>
+                            <IconButton size="small" disabled={toolsSaving || toolsLoading} aria-label={"Hide " + link.label + " from dashboard"} onClick={(e) => { e.stopPropagation(); toggleToolVisibility(link.route); }} onKeyDown={(e) => e.stopPropagation()} sx={{ ml: 0.5, mr: -0.5, color: '#64748b' }}>
                               <LockKeyhole size={15} />
                             </IconButton>
                           </span>
