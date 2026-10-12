@@ -16,6 +16,7 @@ import {
   Users,
   Wrench,
 } from "lucide-react";
+import { PostPropertyIcon } from "../../../components/ui/PostActionIcon";
 
 /**
  * One source of truth for admin navigation (PART 4 of the admin upgrade
@@ -47,7 +48,7 @@ export const ADMIN_NAV = [
     items: [
       { id: "properties", label: "Property Manager", route: "/admin/propertymanager", icon: Building2 },
       { id: "browse", label: "All Properties", route: "/admin/rewardsproperties", icon: Home },
-      { id: "add-property", label: "Add Property", route: "/admin/add-property", icon: Building2 },
+      { id: "add-property", label: "Add Property", route: "/admin/add-property", icon: PostPropertyIcon },
       { id: "partner-workspace", label: "Partner Workspace", route: "/partner/dashboard", icon: UserPlus },
     ],
   },
