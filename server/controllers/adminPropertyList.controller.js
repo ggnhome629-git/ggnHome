@@ -123,7 +123,7 @@ const countBoth = async (filter) => {
 /** GET /api/admin/properties/partners — partners available for Property Manager filtering. */
 const listPartnerPropertyPartners = async (req, res) => {
   try {
-    const agents = await Agent.find({ status: { $ne: "suspended" } })
+    const agents = await Agent.find({ status: { $ne: "suspended" }, $or: [{ roleType: "Partner" }, { roleType: { $exists: false } }] })
       .select("_id name mobileNumber email agencyName status")
       .sort({ name: 1 })
       .lean();
