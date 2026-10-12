@@ -10,6 +10,7 @@ const { apiLimiter } = require("./middleware/rateLimit");
 const { startNoBrokerSyncCron, startReminderCron } = require("./cron/nobrokerSyncCron");
 const { startRankingScheduler } = require("./jobs/rankingScheduler");
 const { startPopularPushScheduler, runPopularPush, runPersonalPush } = require("./jobs/popularPush");
+const { startSmartNotificationScheduler, runSmartNotifications } = require("./services/smartNotifications");
 const redisCache = require("./utils/redisCache");
 const { configureMongoose, enableQueryProfiling } = require("./config/dbOptimization");
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
@@ -115,6 +116,19 @@ app.get("/api/cron/popular-push", async (req, res) => {
   }
 });
 
+// Smart push trigger: property-matched notifications or useful general updates.
+app.get("/api/cron/smart-push", async (req, res) => {
+  const secret = req.query.secret || req.headers["x-cron-secret"];
+  if (!process.env.CRON_SECRET || !secret || secret !== process.env.CRON_SECRET) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  try {
+    res.json(await runSmartNotifications({ max: Number(req.query.max) || 300 }));
+  } catch (err) {
+    res.status(500).json({ error: "Smart notification campaign failed" });
+  }
+});
+
 // Property sync cron trigger endpoint
 app.get("/api/cron/property-sync-trigger", (req, res) => {
   const secret = req.query.secret || req.headers['x-cron-secret'];
@@ -165,6 +179,7 @@ if (require.main === module) {
   if (process.env.DISABLE_CRON !== "true") {
     try {
       startPopularPushScheduler();
+      startSmartNotificationScheduler();
     } catch (error) {
       console.error('⚠️ Warning: Failed to start push scheduler:', error.message);
     }
