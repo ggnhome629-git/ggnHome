@@ -2,6 +2,7 @@ const Agent = require('../models/Agent.model');
 const SaleProperty = require('../models/SaleProperty.model');
 const RentalProperty = require('../models/Rentalproperty.model');
 const { uploadWithFallback } = require('../config/FileHandling');
+const { sanitizeNearbyAmenities, sanitizeCornerPosition } = require('../config/propertyParameters');
 
 const numberOrUndefined = value => value === '' || value == null ? undefined : Number(value);
 const parseJsonArray = value => {
@@ -52,16 +53,7 @@ async function createPartnerProperty(req, res) {
     if (!files.some((file, i) => categories[i] === 'front')) return res.status(400).json({ message: 'Add at least one front/exterior photo.' });
     if (floor !== '' && totalFloors !== '' && Number(floor) > Number(totalFloors)) return res.status(400).json({ message: 'Floor number cannot exceed total floors.' });
 
-    const amenities = parseJsonArray(req.body.amenities).map(item => ({
-      category: String(item.category || '').slice(0, 40),
-      name: String(item.name || '').slice(0, 160),
-      distanceMeters: Number.isFinite(Number(item.distance)) && item.distance !== null && item.distance !== '' ? Math.max(0, Number(item.distance)) : undefined,
-      distanceUnit: 'm',
-      source: item.source === 'locationiq' ? 'locationiq' : 'partner',
-      edited: Boolean(item.edited),
-      latitude: numberOrUndefined(item.latitude),
-      longitude: numberOrUndefined(item.longitude),
-    })).filter(item => item.category && (item.name || item.distanceMeters !== undefined));
+    const amenities = sanitizeNearbyAmenities(req.body.amenities);
 
     const images = [];
     let cloudinaryAccountIndex = null;
@@ -102,7 +94,7 @@ async function createPartnerProperty(req, res) {
       latitude: numberOrUndefined(latitude),
       longitude: numberOrUndefined(longitude),
       nearbyAmenities: amenities,
-      cornerPosition: ['corner', 'middle', 'not_sure'].includes(cornerPosition) ? cornerPosition : 'not_sure',
+      cornerPosition: sanitizeCornerPosition(cornerPosition),
       cloudinaryAccountIndex,
       isActive: true,
       isPostedNew: false,

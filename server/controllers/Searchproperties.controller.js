@@ -7,6 +7,8 @@ const SaleProperty = require("../models/SaleProperty.model");
 const SearchHistory = require("../models/SearchHistory.model");
 const UserPreferencesARIA = require("../models/UserPreferencesARIA.model");
 const PropertyAnalysis = require("../models/PropertyAnalysis.model");
+const { NEARBY_PARAMETERS } = require("../config/propertyParameters");
+const NEARBY_DEFAULT_METERS = Object.fromEntries(NEARBY_PARAMETERS.map((p) => [p.key, p.defaultMeters]));
 
 // ===============================
 // 🛠️ Helper Utilities (internal-only, no API contract change)
@@ -152,6 +154,18 @@ const buildFilterObject = ({ parsed, extras = {} }) => {
     const d = new Date(extras.moveInBy);
     if (!Number.isNaN(d.getTime())) and.push({ moveInDate: { $lte: d } });
   }
+  // Seven property parameters: "near=metro,park" keeps listings with a
+  // verified distance within that parameter's default radius; "position" is
+  // corner / middle.
+  if (extras.near) {
+    const wanted = String(extras.near).split(',').map((k) => k.trim().toLowerCase()).filter((k) => NEARBY_DEFAULT_METERS[k]);
+    [...new Set(wanted)].slice(0, 6).forEach((key) => {
+      and.push({ nearbyAmenities: { $elemMatch: { category: key, distanceMeters: { $lte: NEARBY_DEFAULT_METERS[key] } } } });
+    });
+  }
+  if (extras.position === 'corner' || extras.position === 'middle') {
+    and.push({ cornerPosition: extras.position });
+  }
 
   if (and.length) filter.$and = and;
   return filter;
@@ -200,6 +214,8 @@ exports.searchProperties = async (req, res) => {
         postedBy: req.query.postedBy,
         listedWithin: req.query.listedWithin,
         withPhotos: req.query.withPhotos,
+        near: req.query.near,
+        position: req.query.position,
       },
     });
 

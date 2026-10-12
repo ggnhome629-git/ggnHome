@@ -48,6 +48,7 @@ import {
   NearbyPlacesSection,
   OverviewSection,
   PriceSection,
+  PropertyParametersSection,
   SaleSpecificSection,
 } from "./sections/ContentSections";
 
@@ -398,6 +399,7 @@ export default function PropertyDetailPage({ type }) {
               <DescriptionSection description={property.description} />
               <HighlightsSection highlights={property.highlights} />
               <AmenitiesSection amenities={property.amenities} />
+              <PropertyParametersSection nearbyAmenities={property.nearbyAmenities} cornerPosition={property.cornerPosition} />
               <NearbyPlacesSection places={property.nearbyPlaces} />
               <ConnectivitySection connectivity={property.connectivity} />
 

@@ -16,6 +16,14 @@ import QuickLinks from "./QuickLinks";
 import RecentlyViewed from "../Property View/sections/RecentlyViewed";
 import { getRecentlyViewed } from "../../utils/propertyAnalytics";
 import FloatingActions from "./FloatingActions";
+import AiLaunchButton from "../../components/aiConsultant/AiLaunchButton";
+import { consultantApi } from "../../components/aiConsultant/consultantApi";
+
+// Code-split: the consultant (and its styles) only download when it opens.
+const AiConsultant = React.lazy(() => import("../../components/aiConsultant/AiConsultant"));
+// Opens by itself once per browser session, after the launch intro finishes.
+const AI_AUTO_OPEN_KEY = "ggn:aiConsultantAutoOpened";
+const AI_AUTO_OPEN_DELAY_MS = 2600;
 
 // Lazy imports — everything below the hero streams in as the user scrolls.
 const Footer = React.lazy(() => import("./Footer"));
@@ -85,7 +93,30 @@ export default function RealEstateDashboard() {
   const [areaError, setAreaError] = useState(false);
 
   const areaLoadingRef = useRef(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiMounted, setAiMounted] = useState(false);
   const [recentlyViewed] = useState(() => getRecentlyViewed().slice(0, 8));
+
+  // ------------------------------------------------------- AI consultant --
+
+  const openAi = useCallback((source = "manual") => {
+    setAiMounted(true);
+    setAiOpen(true);
+    consultantApi.metric(source === "auto" ? "opened_auto" : "opened_manual");
+  }, []);
+
+  useEffect(() => {
+    let seen = false;
+    try {
+      seen = Boolean(sessionStorage.getItem(AI_AUTO_OPEN_KEY));
+      if (!seen) sessionStorage.setItem(AI_AUTO_OPEN_KEY, "1");
+    } catch (_) {
+      seen = true; // storage blocked: don't risk re-opening on every visit
+    }
+    if (seen) return undefined;
+    const t = setTimeout(() => openAi("auto"), AI_AUTO_OPEN_DELAY_MS);
+    return () => clearTimeout(t);
+  }, [openAi]);
 
   // ---------------------------------------------------------------- search --
 
@@ -312,6 +343,14 @@ export default function RealEstateDashboard() {
     }, 350);
   };
 
+  const closeAi = (reason) => {
+    setAiOpen(false);
+    if (reason === "manual") {
+      consultantApi.metric("closed_manual_search");
+      focusSearch();
+    }
+  };
+
   return (
     <Box className="dash-live" sx={{ backgroundColor: "background.paper", overflowX: "clip" }}>
       <DashboardSeo />
@@ -356,6 +395,7 @@ export default function RealEstateDashboard() {
         suggestions={areaSuggestions}
         searching={isSearching}
         onOpenPreferences={goToPreferences}
+        onOpenAi={() => openAi("hero")}
       />
 
       {/* Sticky search bar on scroll - disabled
@@ -509,6 +549,13 @@ export default function RealEstateDashboard() {
       <CrossPromo variant="section" />
 
       <FloatingActions onOpenPreferences={goToPreferences} />
+
+      {!aiOpen && <AiLaunchButton floating onClick={() => openAi("fab")} />}
+      {aiMounted && (
+        <Suspense fallback={null}>
+          <AiConsultant open={aiOpen} onClose={closeAi} />
+        </Suspense>
+      )}
 
       <Suspense fallback={null}>
         <Footer user={user} />

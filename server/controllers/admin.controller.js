@@ -1,4 +1,5 @@
 const { escapeRegex } = require('../utils/escapeRegex');
+const { parametersFromBody } = require("../config/propertyParameters");
 const Payment = require('../models/Payment.model');
 const { saleProfileFields } = require("../utils/saleProfile");
 const mongoose = require('mongoose');
@@ -1367,8 +1368,10 @@ const updatePropertyAdmin = async (req, res) => {
       images: mergedImages,
       panoramas: mergedPanos,
       cloudinaryFolder: folderArg,
-      cloudinaryAccountIndex: stickyAccountIndex
+      cloudinaryAccountIndex: stickyAccountIndex,
+      ...parametersFromBody(req.body),
     };
+    delete updatePayload.amenities;
 
     // If Sector present: preserve named societies containing 'DLF', otherwise try to normalize numeric sector
     if (updatePayload.Sector && typeof updatePayload.Sector === 'string') {
@@ -1861,6 +1864,7 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
     // ------------------------------
     // Create new RentalProperty document and save
     // ------------------------------
+    Object.assign(propertyData, parametersFromBody(req.body));
     const Rentalproperty = new RentalProperty(propertyData);
     const savedProperty = await Rentalproperty.save();
 
@@ -2075,6 +2079,7 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
       bathrooms,
       location,
       ...saleProfileFields(req.body),
+      ...parametersFromBody(req.body),
       images,
       panoramas: panoramas.length ? panoramas : undefined,
       ownernumber: ownerCandidateSale ? String(ownerCandidateSale).trim() : undefined,

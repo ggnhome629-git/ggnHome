@@ -1,5 +1,6 @@
 // server/controllers/agentDashboard.controller.js
 const mongoose = require('mongoose');
+const { parametersFromBody } = require("../config/propertyParameters");
 const { saleProfileFields } = require("../utils/saleProfile");
 const { stripProtectedFields } = require("../utils/protectedFields");
 const { escapeRegex } = require("../utils/escapeRegex");
@@ -304,6 +305,7 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
     // ------------------------------
     // Create new RentalProperty document and save
     // ------------------------------
+    Object.assign(propertyData, parametersFromBody(req.body));
     const Rentalproperty = new RentalProperty(propertyData);
     const savedProperty = await Rentalproperty.save();
 
@@ -538,6 +540,7 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
       bathrooms,
       location,
       ...saleProfileFields(req.body),
+      ...parametersFromBody(req.body),
       images,
       panoramas: panoramas.length ? panoramas : undefined,
 

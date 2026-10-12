@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import AiLaunchButton from "../../components/aiConsultant/AiLaunchButton";
 import {
   Box,
   Button,
@@ -71,6 +72,7 @@ export default function HeroSearch({
   suggestions = [],
   searching = false,
   onOpenPreferences,
+  onOpenAi,
 }) {
   const [open, setOpen] = useState(false);
   const [highlighted, setHighlighted] = useState(-1);
@@ -480,6 +482,12 @@ export default function HeroSearch({
                   >
                     {searching ? "Searching" : "Search"}
                   </Button>
+
+                  {onOpenAi && (
+                    <Box sx={{ display: { xs: "none", md: "block" }, flexShrink: 0 }}>
+                      <AiLaunchButton onClick={onOpenAi} label="Ask AI" />
+                    </Box>
+                  )}
 
                   <Tooltip title="Tell us what you want — we'll match it">
                     <Button

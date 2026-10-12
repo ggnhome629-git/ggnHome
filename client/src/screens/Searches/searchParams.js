@@ -13,6 +13,8 @@ export const FILTER_KEYS = [
   "postedBy",
   "listedWithin",
   "withPhotos",
+  "near",
+  "position",
 ];
 
 export const PROPERTY_TYPE_OPTIONS = [
@@ -86,5 +88,10 @@ export function activeFilterChips(filters) {
   if (filters.postedBy) chips.push({ keys: ["postedBy"], label: `By ${filters.postedBy.toLowerCase()}` });
   if (filters.listedWithin) chips.push({ keys: ["listedWithin"], label: labelFor(LISTED_WITHIN_OPTIONS, filters.listedWithin) });
   if (filters.withPhotos) chips.push({ keys: ["withPhotos"], label: "With photos" });
+  if (filters.near) {
+    const names = { market: "Market", metro: "Metro", hospital: "Hospital", school: "School", park: "Park", mall: "Mall" };
+    chips.push({ keys: ["near"], label: `Near ${String(filters.near).split(",").map((k) => names[k] || k).join(", ")}` });
+  }
+  if (filters.position) chips.push({ keys: ["position"], label: filters.position === "corner" ? "Corner" : "Middle" });
   return chips;
 }

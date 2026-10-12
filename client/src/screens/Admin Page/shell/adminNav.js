@@ -1,4 +1,5 @@
 import {
+  Bot,
   Building2,
   Settings,
   ClipboardList,
@@ -67,6 +68,7 @@ export const ADMIN_NAV = [
     group: "Leads",
     color: "#10B981",
     items: [
+      { id: "ai-leads", label: "AI Consultant Leads", route: "/admin/ai-leads", icon: Bot },
       { id: "enquiries", label: "Enquiries", route: "/admin/enquiries", icon: MessageSquare },
       { id: "callbacks", label: "Callback Requests", route: "/admin/callback", icon: PhoneCall },
       { id: "preferences", label: "Preference Forms", route: "/admin/userpreferenceformresponses", icon: ClipboardList },

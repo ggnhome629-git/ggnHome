@@ -2,6 +2,7 @@
 // Handles image uploads via Cloudinary, sector normalization, and property activation state.
 
 const multer = require("multer");
+const { parametersFromBody } = require("../config/propertyParameters");
 const { saleProfileFields } = require("../utils/saleProfile");
 const upload = multer({ dest: "uploads/" });
 const { uploadWithFallback } = require("../config/FileHandling");
@@ -224,6 +225,7 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
       bathrooms,
       location,
       ...profile,
+      ...parametersFromBody(req.body),
       images,
       panoramas: panoramas.length ? panoramas : undefined,
       ownerId,

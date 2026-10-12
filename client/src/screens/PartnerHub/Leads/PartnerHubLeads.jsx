@@ -5,6 +5,7 @@ import {
 } from "@mui/material";
 import { RefreshCw, Search, Users, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import PartnerAiLeads from "./PartnerAiLeads";
 
 export default function PartnerHubLeads() {
   const navigate = useNavigate();
@@ -73,6 +74,8 @@ export default function PartnerHubLeads() {
           </Button>
         </Stack>
       </Stack>
+
+      <PartnerAiLeads />
 
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" }, gap: 2, mb: 3 }}>
         <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>

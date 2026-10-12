@@ -1,0 +1,5837 @@
+{
+  "version": "1.0.0",
+  "meta": {
+    "product": "GgnHome AI Property Consultant",
+    "market": "Gurgaon / Gurugram, Haryana, India",
+    "description": "Single source of truth for every question, follow-up, clarification, chip, intent pattern, vocabulary item and response template used by the rule-based consultant. The optional LLM only helps interpret free text; it never replaces anything in this file.",
+    "templateVariables": [
+      "{location}",
+      "{budget}",
+      "{bhk}",
+      "{mode}",
+      "{param}",
+      "{distance}",
+      "{count}",
+      "{name}",
+      "{value}",
+      "{field}",
+      "{limit}",
+      "{leadRef}",
+      "{sector}",
+      "{type}",
+      "{index}"
+    ],
+    "variantSelection": "Each prompt holds several variants per language. The engine rotates through them by turn number so a conversation never repeats the same sentence twice in a row.",
+    "languages": [
+      "en",
+      "hinglish",
+      "hi"
+    ]
+  },
+  "languages": {
+    "en": {
+      "label": "English",
+      "speechLang": "en-IN",
+      "chip": "English"
+    },
+    "hinglish": {
+      "label": "Hinglish",
+      "speechLang": "en-IN",
+      "chip": "Hinglish"
+    },
+    "hi": {
+      "label": "हिन्दी",
+      "speechLang": "hi-IN",
+      "chip": "हिन्दी"
+    }
+  },
+  "parameters": {
+    "market": {
+      "kind": "distance",
+      "icon": "ShoppingBasket",
+      "color": "#F59E0B",
+      "defaultMeters": 1000,
+      "label": {
+        "en": "Market",
+        "hinglish": "Market",
+        "hi": "बाज़ार"
+      },
+      "longLabel": {
+        "en": "Nearest market",
+        "hinglish": "Paas ka market",
+        "hi": "नज़दीकी बाज़ार"
+      },
+      "synonyms": [
+        "market",
+        "markets",
+        "local market",
+        "sabzi mandi",
+        "sabji mandi",
+        "mandi",
+        "bazaar",
+        "bazar",
+        "baazar",
+        "grocery",
+        "kirana",
+        "supermarket",
+        "super market",
+        "convenience store",
+        "shops",
+        "shopping nearby",
+        "dukaan",
+        "dukan",
+        "बाज़ार",
+        "बाजार",
+        "मार्केट",
+        "दुकान",
+        "मंडी",
+        "किराना"
+      ],
+      "distanceAsk": {
+        "en": [
+          "How close should the market be?",
+          "What's the farthest you'd go for daily groceries?",
+          "Pick a comfortable distance to the nearest market."
+        ],
+        "hinglish": [
+          "Market kitna paas hona chahiye?",
+          "Daily saaman ke liye market kitni door tak chalega?",
+          "Market ki distance choose kijiye."
+        ],
+        "hi": [
+          "बाज़ार कितनी दूरी पर होना चाहिए?",
+          "रोज़ के सामान के लिए बाज़ार कितनी दूर तक ठीक रहेगा?",
+          "नज़दीकी बाज़ार की दूरी चुनिए।"
+        ]
+      },
+      "distanceChips": [
+        {
+          "meters": 300,
+          "label": {
+            "en": "Walking (300 m)",
+            "hinglish": "Walking (300 m)",
+            "hi": "पैदल (300 मी)"
+          }
+        },
+        {
+          "meters": 500,
+          "label": {
+            "en": "Within 500 m",
+            "hinglish": "500 m tak",
+            "hi": "500 मी तक"
+          }
+        },
+        {
+          "meters": 1000,
+          "label": {
+            "en": "Within 1 km",
+            "hinglish": "1 km tak",
+            "hi": "1 किमी तक"
+          }
+        },
+        {
+          "meters": 2000,
+          "label": {
+            "en": "Within 2 km",
+            "hinglish": "2 km tak",
+            "hi": "2 किमी तक"
+          }
+        }
+      ],
+      "why": {
+        "en": "Daily groceries, vegetables and pharmacies usually sit in the local market.",
+        "hinglish": "Roz ka sabzi, kirana aur dawai local market se hi aata hai.",
+        "hi": "रोज़ की सब्ज़ी, किराना और दवाइयाँ अक्सर लोकल बाज़ार से ही आती हैं।"
+      }
+    },
+    "metro": {
+      "kind": "distance",
+      "icon": "TrainFront",
+      "color": "#0EA5E9",
+      "defaultMeters": 1500,
+      "label": {
+        "en": "Metro",
+        "hinglish": "Metro",
+        "hi": "मेट्रो"
+      },
+      "longLabel": {
+        "en": "Metro station",
+        "hinglish": "Metro station",
+        "hi": "मेट्रो स्टेशन"
+      },
+      "synonyms": [
+        "metro",
+        "metro station",
+        "rapid metro",
+        "yellow line",
+        "subway",
+        "train station",
+        "metro connectivity",
+        "near metro",
+        "close to metro",
+        "metro ke paas",
+        "metro paas",
+        "मेट्रो",
+        "मेट्रो स्टेशन"
+      ],
+      "distanceAsk": {
+        "en": [
+          "How far from a metro station is okay?",
+          "What's your ideal distance to the metro?",
+          "Should the metro be walkable or is a short auto ride fine?"
+        ],
+        "hinglish": [
+          "Metro station kitni door tak theek hai?",
+          "Metro se ideal distance kya honi chahiye?",
+          "Metro walking distance pe chahiye ya chhota auto ride bhi chalega?"
+        ],
+        "hi": [
+          "मेट्रो स्टेशन कितनी दूरी तक ठीक है?",
+          "मेट्रो से आदर्श दूरी कितनी होनी चाहिए?",
+          "मेट्रो पैदल दूरी पर चाहिए या छोटी ऑटो सवारी भी चलेगी?"
+        ]
+      },
+      "distanceChips": [
+        {
+          "meters": 500,
+          "label": {
+            "en": "Walking (500 m)",
+            "hinglish": "Walking (500 m)",
+            "hi": "पैदल (500 मी)"
+          }
+        },
+        {
+          "meters": 1000,
+          "label": {
+            "en": "Within 1 km",
+            "hinglish": "1 km tak",
+            "hi": "1 किमी तक"
+          }
+        },
+        {
+          "meters": 2000,
+          "label": {
+            "en": "Within 2 km",
+            "hinglish": "2 km tak",
+            "hi": "2 किमी तक"
+          }
+        },
+        {
+          "meters": 3000,
+          "label": {
+            "en": "Short auto ride (3 km)",
+            "hinglish": "Auto ride (3 km)",
+            "hi": "ऑटो से (3 किमी)"
+          }
+        }
+      ],
+      "why": {
+        "en": "Metro access cuts commute time to Cyber City, Delhi and the airport line.",
+        "hinglish": "Metro paas ho to Cyber City aur Delhi ka commute kaafi easy ho jata hai.",
+        "hi": "मेट्रो पास हो तो साइबर सिटी और दिल्ली आना-जाना आसान हो जाता है।"
+      }
+    },
+    "hospital": {
+      "kind": "distance",
+      "icon": "HeartPulse",
+      "color": "#EF4444",
+      "defaultMeters": 2000,
+      "label": {
+        "en": "Hospital",
+        "hinglish": "Hospital",
+        "hi": "अस्पताल"
+      },
+      "longLabel": {
+        "en": "Hospital / clinic",
+        "hinglish": "Hospital / clinic",
+        "hi": "अस्पताल / क्लिनिक"
+      },
+      "synonyms": [
+        "hospital",
+        "hospitals",
+        "clinic",
+        "nursing home",
+        "medical",
+        "medical facility",
+        "doctor",
+        "healthcare",
+        "emergency",
+        "aspatal",
+        "aspataal",
+        "dawakhana",
+        "अस्पताल",
+        "हॉस्पिटल",
+        "क्लिनिक",
+        "डॉक्टर"
+      ],
+      "distanceAsk": {
+        "en": [
+          "How close should a hospital or clinic be?",
+          "For emergencies, what's the maximum distance to a hospital you'd accept?",
+          "Pick a distance for the nearest hospital or clinic."
+        ],
+        "hinglish": [
+          "Hospital ya clinic kitna paas hona chahiye?",
+          "Emergency ke liye hospital zyada se zyada kitni door chalega?",
+          "Hospital ki distance choose kijiye."
+        ],
+        "hi": [
+          "अस्पताल या क्लिनिक कितना पास होना चाहिए?",
+          "इमरजेंसी के लिए अस्पताल अधिकतम कितनी दूर चलेगा?",
+          "नज़दीकी अस्पताल की दूरी चुनिए।"
+        ]
+      },
+      "distanceChips": [
+        {
+          "meters": 1000,
+          "label": {
+            "en": "Within 1 km",
+            "hinglish": "1 km tak",
+            "hi": "1 किमी तक"
+          }
+        },
+        {
+          "meters": 2000,
+          "label": {
+            "en": "Within 2 km",
+            "hinglish": "2 km tak",
+            "hi": "2 किमी तक"
+          }
+        },
+        {
+          "meters": 3000,
+          "label": {
+            "en": "Within 3 km",
+            "hinglish": "3 km tak",
+            "hi": "3 किमी तक"
+          }
+        },
+        {
+          "meters": 5000,
+          "label": {
+            "en": "Within 5 km",
+            "hinglish": "5 km tak",
+            "hi": "5 किमी तक"
+          }
+        }
+      ],
+      "why": {
+        "en": "Families with elders or kids usually want quick access to emergency care.",
+        "hinglish": "Bade-buzurg ya bachche hon to hospital paas hona zaroori hota hai.",
+        "hi": "घर में बुज़ुर्ग या बच्चे हों तो अस्पताल पास होना ज़रूरी होता है।"
+      }
+    },
+    "school": {
+      "kind": "distance",
+      "icon": "GraduationCap",
+      "color": "#2563EB",
+      "defaultMeters": 2000,
+      "label": {
+        "en": "School",
+        "hinglish": "School",
+        "hi": "स्कूल"
+      },
+      "longLabel": {
+        "en": "School",
+        "hinglish": "School",
+        "hi": "स्कूल"
+      },
+      "synonyms": [
+        "school",
+        "schools",
+        "kids school",
+        "children school",
+        "play school",
+        "playschool",
+        "preschool",
+        "daycare",
+        "college",
+        "coaching",
+        "vidyalaya",
+        "bachon ka school",
+        "स्कूल",
+        "विद्यालय",
+        "कॉलेज"
+      ],
+      "distanceAsk": {
+        "en": [
+          "How far can the school be?",
+          "What's an acceptable school-run distance for you?",
+          "Pick a distance to the nearest school."
+        ],
+        "hinglish": [
+          "School kitni door tak chalega?",
+          "Bachon ke school ki distance kitni theek rahegi?",
+          "School ki distance choose kijiye."
+        ],
+        "hi": [
+          "स्कूल कितनी दूरी तक ठीक रहेगा?",
+          "बच्चों के स्कूल की दूरी कितनी ठीक रहेगी?",
+          "नज़दीकी स्कूल की दूरी चुनिए।"
+        ]
+      },
+      "distanceChips": [
+        {
+          "meters": 1000,
+          "label": {
+            "en": "Within 1 km",
+            "hinglish": "1 km tak",
+            "hi": "1 किमी तक"
+          }
+        },
+        {
+          "meters": 2000,
+          "label": {
+            "en": "Within 2 km",
+            "hinglish": "2 km tak",
+            "hi": "2 किमी तक"
+          }
+        },
+        {
+          "meters": 3000,
+          "label": {
+            "en": "Within 3 km",
+            "hinglish": "3 km tak",
+            "hi": "3 किमी तक"
+          }
+        },
+        {
+          "meters": 5000,
+          "label": {
+            "en": "School bus is fine (5 km)",
+            "hinglish": "School bus chalega (5 km)",
+            "hi": "स्कूल बस चलेगी (5 किमी)"
+          }
+        }
+      ],
+      "why": {
+        "en": "A short school run saves families an hour a day.",
+        "hinglish": "School paas ho to roz ka ek ghanta bach jata hai.",
+        "hi": "स्कूल पास हो तो रोज़ का एक घंटा बच जाता है।"
+      }
+    },
+    "park": {
+      "kind": "distance",
+      "icon": "Trees",
+      "color": "#10B981",
+      "defaultMeters": 500,
+      "label": {
+        "en": "Park",
+        "hinglish": "Park",
+        "hi": "पार्क"
+      },
+      "longLabel": {
+        "en": "Park / garden",
+        "hinglish": "Park / garden",
+        "hi": "पार्क / बगीचा"
+      },
+      "synonyms": [
+        "park",
+        "parks",
+        "park facing",
+        "park-facing",
+        "facing park",
+        "garden",
+        "green area",
+        "greenery",
+        "playground",
+        "walking track",
+        "jogging track",
+        "green belt",
+        "lawn",
+        "bagicha",
+        "baag",
+        "पार्क",
+        "बगीचा",
+        "हरियाली"
+      ],
+      "distanceAsk": {
+        "en": [
+          "How close should a park be? Park-facing homes are within about 100 m.",
+          "Do you want a park-facing home or is a park within a short walk enough?",
+          "Pick a distance to the nearest park."
+        ],
+        "hinglish": [
+          "Park kitna paas hona chahiye? Park-facing ghar lagbhag 100 m mein hote hain.",
+          "Park-facing chahiye ya thodi walking distance pe park bhi chalega?",
+          "Park ki distance choose kijiye."
+        ],
+        "hi": [
+          "पार्क कितना पास होना चाहिए? पार्क-फेसिंग घर लगभग 100 मी के अंदर होते हैं।",
+          "पार्क-फेसिंग घर चाहिए या थोड़ी पैदल दूरी पर पार्क भी चलेगा?",
+          "नज़दीकी पार्क की दूरी चुनिए।"
+        ]
+      },
+      "distanceChips": [
+        {
+          "meters": 100,
+          "label": {
+            "en": "Park-facing (100 m)",
+            "hinglish": "Park-facing (100 m)",
+            "hi": "पार्क-फेसिंग (100 मी)"
+          }
+        },
+        {
+          "meters": 300,
+          "label": {
+            "en": "Within 300 m",
+            "hinglish": "300 m tak",
+            "hi": "300 मी तक"
+          }
+        },
+        {
+          "meters": 500,
+          "label": {
+            "en": "Within 500 m",
+            "hinglish": "500 m tak",
+            "hi": "500 मी तक"
+          }
+        },
+        {
+          "meters": 1000,
+          "label": {
+            "en": "Within 1 km",
+            "hinglish": "1 km tak",
+            "hi": "1 किमी तक"
+          }
+        }
+      ],
+      "why": {
+        "en": "Morning walks, kids' play and fresh air — park-facing homes also hold resale value well.",
+        "hinglish": "Morning walk, bachon ka khel aur fresh hawa — park-facing ghar ki resale value bhi achhi rehti hai.",
+        "hi": "सुबह की सैर, बच्चों का खेल और ताज़ी हवा — पार्क-फेसिंग घर की रीसेल वैल्यू भी अच्छी रहती है।"
+      }
+    },
+    "mall": {
+      "kind": "distance",
+      "icon": "ShoppingBag",
+      "color": "#A855F7",
+      "defaultMeters": 3000,
+      "label": {
+        "en": "Mall",
+        "hinglish": "Mall",
+        "hi": "मॉल"
+      },
+      "longLabel": {
+        "en": "Shopping mall",
+        "hinglish": "Shopping mall",
+        "hi": "शॉपिंग मॉल"
+      },
+      "synonyms": [
+        "mall",
+        "malls",
+        "shopping mall",
+        "shopping centre",
+        "shopping center",
+        "multiplex",
+        "cinema",
+        "movie hall",
+        "food court",
+        "high street",
+        "मॉल",
+        "शॉपिंग मॉल",
+        "सिनेमा"
+      ],
+      "distanceAsk": {
+        "en": [
+          "How far can a shopping mall be?",
+          "What's a comfortable distance to a mall for weekends?",
+          "Pick a distance to the nearest mall."
+        ],
+        "hinglish": [
+          "Mall kitni door tak chalega?",
+          "Weekend ke liye mall kitni distance pe theek hai?",
+          "Mall ki distance choose kijiye."
+        ],
+        "hi": [
+          "मॉल कितनी दूरी तक ठीक है?",
+          "वीकेंड के लिए मॉल कितनी दूरी पर ठीक रहेगा?",
+          "नज़दीकी मॉल की दूरी चुनिए।"
+        ]
+      },
+      "distanceChips": [
+        {
+          "meters": 1000,
+          "label": {
+            "en": "Within 1 km",
+            "hinglish": "1 km tak",
+            "hi": "1 किमी तक"
+          }
+        },
+        {
+          "meters": 2000,
+          "label": {
+            "en": "Within 2 km",
+            "hinglish": "2 km tak",
+            "hi": "2 किमी तक"
+          }
+        },
+        {
+          "meters": 3000,
+          "label": {
+            "en": "Within 3 km",
+            "hinglish": "3 km tak",
+            "hi": "3 किमी तक"
+          }
+        },
+        {
+          "meters": 5000,
+          "label": {
+            "en": "Within 5 km",
+            "hinglish": "5 km tak",
+            "hi": "5 किमी तक"
+          }
+        }
+      ],
+      "why": {
+        "en": "Malls bring groceries, movies, dining and banking under one roof.",
+        "hinglish": "Mall mein grocery, movie, khana aur bank sab ek jagah mil jata hai.",
+        "hi": "मॉल में किराना, फ़िल्म, खाना और बैंक सब एक जगह मिल जाता है।"
+      }
+    },
+    "corner": {
+      "kind": "position",
+      "icon": "LayoutGrid",
+      "color": "#14B8A6",
+      "label": {
+        "en": "Corner / middle",
+        "hinglish": "Corner / middle",
+        "hi": "कॉर्नर / बीच"
+      },
+      "longLabel": {
+        "en": "Corner or middle position",
+        "hinglish": "Corner ya beech wala",
+        "hi": "कोने वाला या बीच वाला"
+      },
+      "values": {
+        "corner": {
+          "en": "Corner",
+          "hinglish": "Corner",
+          "hi": "कॉर्नर"
+        },
+        "middle": {
+          "en": "Middle",
+          "hinglish": "Beech wala",
+          "hi": "बीच वाला"
+        },
+        "any": {
+          "en": "No preference",
+          "hinglish": "Koi bhi chalega",
+          "hi": "कोई भी चलेगा"
+        }
+      },
+      "synonyms": {
+        "corner": [
+          "corner",
+          "corner house",
+          "corner plot",
+          "corner flat",
+          "corner unit",
+          "corner property",
+          "end unit",
+          "two side open",
+          "2 side open",
+          "do side open",
+          "kone wala",
+          "kona",
+          "konewala",
+          "कॉर्नर",
+          "कोने वाला",
+          "कोना"
+        ],
+        "middle": [
+          "middle",
+          "mid",
+          "in between",
+          "between houses",
+          "inside lane",
+          "beech wala",
+          "beech mein",
+          "beechwala",
+          "bich wala",
+          "बीच वाला",
+          "बीच में"
+        ],
+        "any": [
+          "doesn't matter",
+          "does not matter",
+          "no preference",
+          "any position",
+          "either",
+          "koi bhi",
+          "kuch bhi",
+          "farak nahi",
+          "fark nahi padta",
+          "कोई भी",
+          "फ़र्क नहीं"
+        ]
+      },
+      "why": {
+        "en": "Corner homes get more light, ventilation and often two open sides; middle homes are usually quieter and a little cheaper.",
+        "hinglish": "Corner ghar mein light aur hawa zyada aati hai, middle wale ghar thode shaant aur sasta hote hain.",
+        "hi": "कॉर्नर घर में रोशनी और हवा ज़्यादा आती है; बीच वाले घर आमतौर पर शांत और थोड़े सस्ते होते हैं।"
+      }
+    }
+  },
+  "flows": {
+    "rent": [
+      "mode",
+      "location",
+      "budget",
+      "bhk",
+      "propertyType",
+      "furnishing",
+      "moveIn",
+      "occupancy",
+      "priorities",
+      "distances",
+      "corner"
+    ],
+    "sale": [
+      "mode",
+      "location",
+      "budget",
+      "bhk",
+      "propertyType",
+      "area",
+      "possession",
+      "purpose",
+      "priorities",
+      "distances",
+      "corner"
+    ],
+    "contact": [
+      "name",
+      "phone",
+      "email",
+      "review"
+    ],
+    "requiredBeforeSearch": [
+      "mode",
+      "location",
+      "budget"
+    ],
+    "notes": [
+      "A slot already answered (in any earlier message) is never asked again.",
+      "A skipped optional slot is not asked again unless the user brings it up.",
+      "bhk is skipped automatically when propertyType is plot.",
+      "distances expands into one follow-up per parameter the user picked in priorities.",
+      "The user may say 'show results' at any point once requiredBeforeSearch is satisfied."
+    ]
+  },
+  "slots": {
+    "mode": {
+      "required": true,
+      "appliesTo": [
+        "rent",
+        "sale"
+      ],
+      "label": {
+        "en": "Looking to",
+        "hinglish": "Requirement",
+        "hi": "ज़रूरत"
+      },
+      "ask": {
+        "en": [
+          "Are you looking to rent a home or buy one?",
+          "First things first — rent or buy?",
+          "Shall we find you a place to rent, or a home to buy?"
+        ],
+        "hinglish": [
+          "Aap ghar rent pe lena chahte hain ya khareedna?",
+          "Sabse pehle — rent ya buy?",
+          "Kiraye ka ghar dhoondhein ya khareedne ke liye?"
+        ],
+        "hi": [
+          "आप घर किराये पर लेना चाहते हैं या ख़रीदना?",
+          "सबसे पहले — किराया या ख़रीद?",
+          "किराये का घर ढूँढें या ख़रीदने के लिए?"
+        ]
+      },
+      "askAgain": {
+        "en": [
+          "Sorry, I didn't catch that. Is it rent or buy?",
+          "Just tell me 'rent' or 'buy' and we'll begin."
+        ],
+        "hinglish": [
+          "Maaf kijiye, samajh nahi aaya. Rent ya buy?",
+          "Bas 'rent' ya 'buy' boliye, shuru karte hain."
+        ],
+        "hi": [
+          "माफ़ कीजिए, समझ नहीं आया। किराया या ख़रीद?",
+          "बस 'किराया' या 'ख़रीद' बोलिए, शुरू करते हैं।"
+        ]
+      },
+      "hint": {
+        "en": "You can also say everything at once, e.g. “2 BHK for rent in Sector 57 under 30k near metro”.",
+        "hinglish": "Aap ek saath bhi bol sakte hain, jaise “Sector 57 mein 30k tak 2 BHK rent pe, metro ke paas”.",
+        "hi": "आप सब एक साथ भी बोल सकते हैं, जैसे “सेक्टर 57 में 30 हज़ार तक 2 BHK किराये पर, मेट्रो के पास”।"
+      },
+      "chips": [
+        {
+          "value": "rent",
+          "label": {
+            "en": "🔑 Rent a home",
+            "hinglish": "🔑 Rent pe lena hai",
+            "hi": "🔑 किराये पर"
+          }
+        },
+        {
+          "value": "buy",
+          "label": {
+            "en": "🏡 Buy a home",
+            "hinglish": "🏡 Khareedna hai",
+            "hi": "🏡 ख़रीदना है"
+          }
+        }
+      ],
+      "ack": {
+        "rent": {
+          "en": [
+            "Great — let's find you a rental.",
+            "Perfect, a rental it is."
+          ],
+          "hinglish": [
+            "Badhiya — rent ka ghar dhoondhte hain.",
+            "Perfect, rent pe dekhte hain."
+          ],
+          "hi": [
+            "बढ़िया — किराये का घर ढूँढते हैं।",
+            "ठीक है, किराये पर देखते हैं।"
+          ]
+        },
+        "sale": {
+          "en": [
+            "Exciting — let's find a home to buy.",
+            "Great, we'll look at homes for sale."
+          ],
+          "hinglish": [
+            "Wah — khareedne ke liye ghar dhoondhte hain.",
+            "Badhiya, sale wali properties dekhte hain."
+          ],
+          "hi": [
+            "बहुत बढ़िया — ख़रीदने के लिए घर ढूँढते हैं।",
+            "ठीक है, बिक्री वाली प्रॉपर्टी देखते हैं।"
+          ]
+        }
+      },
+      "examples": [
+        "rent",
+        "I want to buy",
+        "kiraye pe chahiye",
+        "flat lena hai rent pe",
+        "ghar kharidna hai",
+        "किराये पर",
+        "lease",
+        "purchase",
+        "investment ke liye"
+      ]
+    },
+    "location": {
+      "required": true,
+      "appliesTo": [
+        "rent",
+        "sale"
+      ],
+      "label": {
+        "en": "Location",
+        "hinglish": "Location",
+        "hi": "लोकेशन"
+      },
+      "ask": {
+        "en": [
+          "Which sector or area in Gurgaon do you prefer? You can name more than one.",
+          "Where in Gurgaon would you like to live? A sector number or locality works.",
+          "Which part of Gurgaon — any sectors or localities in mind?"
+        ],
+        "hinglish": [
+          "Gurgaon mein kaunsa sector ya area pasand hai? Ek se zyada bhi bata sakte hain.",
+          "Gurgaon mein kahan rehna chahenge? Sector number ya locality bataiye.",
+          "Gurgaon ka kaunsa hissa — koi sector ya area dimaag mein hai?"
+        ],
+        "hi": [
+          "गुड़गाँव में कौन-सा सेक्टर या इलाका पसंद है? एक से ज़्यादा भी बता सकते हैं।",
+          "गुड़गाँव में कहाँ रहना चाहेंगे? सेक्टर नंबर या इलाका बताइए।",
+          "गुड़गाँव का कौन-सा हिस्सा — कोई सेक्टर या इलाका सोचा है?"
+        ]
+      },
+      "askAgain": {
+        "en": [
+          "I couldn't place that location. Try a sector number like “Sector 57” or a locality like “Sohna Road”.",
+          "Which sector is that? For example: Sector 46, DLF Phase 4, Golf Course Road."
+        ],
+        "hinglish": [
+          "Ye location samajh nahi aayi. “Sector 57” ya “Sohna Road” jaisa bataiye.",
+          "Kaunsa sector? Jaise Sector 46, DLF Phase 4, Golf Course Road."
+        ],
+        "hi": [
+          "यह लोकेशन समझ नहीं आई। “सेक्टर 57” या “सोहना रोड” जैसा बताइए।",
+          "कौन-सा सेक्टर? जैसे सेक्टर 46, DLF फ़ेज़ 4, गोल्फ़ कोर्स रोड।"
+        ]
+      },
+      "hint": {
+        "en": "Say “anywhere” if you're open to all of Gurgaon.",
+        "hinglish": "Agar poora Gurgaon chalega to “kahin bhi” boliye.",
+        "hi": "अगर पूरा गुड़गाँव चलेगा तो “कहीं भी” बोलिए।"
+      },
+      "chips": {
+        "rent": [
+          {
+            "value": "Sector 57",
+            "label": {
+              "en": "Sector 57",
+              "hinglish": "Sector 57",
+              "hi": "सेक्टर 57"
+            }
+          },
+          {
+            "value": "Sohna Road",
+            "label": {
+              "en": "Sohna Road",
+              "hinglish": "Sohna Road",
+              "hi": "सोहना रोड"
+            }
+          },
+          {
+            "value": "Golf Course Road",
+            "label": {
+              "en": "Golf Course Road",
+              "hinglish": "Golf Course Road",
+              "hi": "गोल्फ़ कोर्स रोड"
+            }
+          },
+          {
+            "value": "DLF Phase 4",
+            "label": {
+              "en": "DLF Phase 4",
+              "hinglish": "DLF Phase 4",
+              "hi": "DLF फ़ेज़ 4"
+            }
+          },
+          {
+            "value": "Sushant Lok",
+            "label": {
+              "en": "Sushant Lok",
+              "hinglish": "Sushant Lok",
+              "hi": "सुशांत लोक"
+            }
+          },
+          {
+            "value": "anywhere",
+            "label": {
+              "en": "Anywhere in Gurgaon",
+              "hinglish": "Kahin bhi",
+              "hi": "कहीं भी"
+            }
+          }
+        ],
+        "sale": [
+          {
+            "value": "Golf Course Extension Road",
+            "label": {
+              "en": "Golf Course Ext. Road",
+              "hinglish": "Golf Course Ext. Road",
+              "hi": "गोल्फ़ कोर्स एक्सटेंशन"
+            }
+          },
+          {
+            "value": "Dwarka Expressway",
+            "label": {
+              "en": "Dwarka Expressway",
+              "hinglish": "Dwarka Expressway",
+              "hi": "द्वारका एक्सप्रेसवे"
+            }
+          },
+          {
+            "value": "New Gurgaon",
+            "label": {
+              "en": "New Gurgaon",
+              "hinglish": "New Gurgaon",
+              "hi": "न्यू गुड़गाँव"
+            }
+          },
+          {
+            "value": "Sohna Road",
+            "label": {
+              "en": "Sohna Road",
+              "hinglish": "Sohna Road",
+              "hi": "सोहना रोड"
+            }
+          },
+          {
+            "value": "Sector 65",
+            "label": {
+              "en": "Sector 65",
+              "hinglish": "Sector 65",
+              "hi": "सेक्टर 65"
+            }
+          },
+          {
+            "value": "anywhere",
+            "label": {
+              "en": "Anywhere in Gurgaon",
+              "hinglish": "Kahin bhi",
+              "hi": "कहीं भी"
+            }
+          }
+        ]
+      },
+      "ack": {
+        "en": [
+          "{location} — good choice.",
+          "Noted: {location}.",
+          "{location}, got it."
+        ],
+        "hinglish": [
+          "{location} — achhi choice hai.",
+          "Note kar liya: {location}.",
+          "{location}, theek hai."
+        ],
+        "hi": [
+          "{location} — अच्छा चुनाव है।",
+          "नोट कर लिया: {location}।",
+          "{location}, ठीक है।"
+        ]
+      },
+      "anywhereAck": {
+        "en": [
+          "Open to all of Gurgaon — I'll rank by your other preferences."
+        ],
+        "hinglish": [
+          "Poora Gurgaon — baaki preferences se rank karunga."
+        ],
+        "hi": [
+          "पूरा गुड़गाँव — बाकी पसंद के हिसाब से रैंक करूँगा।"
+        ]
+      },
+      "followUps": [
+        {
+          "id": "location.strict",
+          "when": {
+            "locationCount": 1,
+            "notAnywhere": true
+          },
+          "ask": {
+            "en": [
+              "Should I stick strictly to {location}, or include nearby areas if there's a better match?"
+            ],
+            "hinglish": [
+              "Sirf {location} mein dekhun, ya paas ke area bhi chalenge agar better match mile?"
+            ],
+            "hi": [
+              "सिर्फ़ {location} में देखूँ, या बेहतर मिलान हो तो आस-पास के इलाके भी चलेंगे?"
+            ]
+          },
+          "chips": [
+            {
+              "value": "only this area",
+              "label": {
+                "en": "Only {location}",
+                "hinglish": "Sirf {location}",
+                "hi": "सिर्फ़ {location}"
+              }
+            },
+            {
+              "value": "nearby is fine",
+              "label": {
+                "en": "Nearby is fine",
+                "hinglish": "Paas wale bhi chalenge",
+                "hi": "आस-पास भी चलेगा"
+              }
+            }
+          ],
+          "optional": true
+        }
+      ],
+      "clarify": {
+        "sectorOutOfRange": {
+          "en": [
+            "Gurgaon sectors run from 1 to about 115. Did you mean another number?"
+          ],
+          "hinglish": [
+            "Gurgaon ke sectors 1 se lagbhag 115 tak hain. Koi aur number?"
+          ],
+          "hi": [
+            "गुड़गाँव के सेक्टर 1 से लगभग 115 तक हैं। कोई और नंबर?"
+          ]
+        },
+        "tooMany": {
+          "en": [
+            "That's a lot of areas — I'll use the first {limit}. You can change them any time."
+          ],
+          "hinglish": [
+            "Kaafi saare areas hain — pehle {limit} use karunga. Baad mein badal sakte hain."
+          ],
+          "hi": [
+            "काफ़ी इलाके हैं — पहले {limit} इस्तेमाल करूँगा। बाद में बदल सकते हैं।"
+          ]
+        }
+      },
+      "examples": [
+        "sector 57",
+        "sec-46 or 47",
+        "s 56",
+        "DLF phase 4",
+        "near golf course road",
+        "sohna road ke paas",
+        "सेक्टर 49",
+        "anywhere",
+        "kahin bhi chalega",
+        "sushant lok 1",
+        "south city 2",
+        "nirvana country"
+      ]
+    },
+    "budget": {
+      "required": true,
+      "appliesTo": [
+        "rent",
+        "sale"
+      ],
+      "label": {
+        "en": "Budget",
+        "hinglish": "Budget",
+        "hi": "बजट"
+      },
+      "ask": {
+        "rent": {
+          "en": [
+            "What's your maximum monthly rent?",
+            "How much rent per month are you comfortable with?",
+            "What monthly budget should I work with?"
+          ],
+          "hinglish": [
+            "Maximum monthly rent kitna hai?",
+            "Mahine ka kitna rent chalega?",
+            "Monthly budget kitna rakhein?"
+          ],
+          "hi": [
+            "महीने का अधिकतम किराया कितना है?",
+            "हर महीने कितना किराया ठीक रहेगा?",
+            "मासिक बजट कितना रखें?"
+          ]
+        },
+        "sale": {
+          "en": [
+            "What's your purchase budget?",
+            "How much are you planning to spend on the home?",
+            "What budget range should I search in?"
+          ],
+          "hinglish": [
+            "Purchase budget kitna hai?",
+            "Ghar pe kitna kharch karne ka plan hai?",
+            "Kis budget range mein dhoondhun?"
+          ],
+          "hi": [
+            "ख़रीद का बजट कितना है?",
+            "घर पर कितना ख़र्च करने का प्लान है?",
+            "किस बजट रेंज में ढूँढूँ?"
+          ]
+        }
+      },
+      "askAgain": {
+        "en": [
+          "I didn't get the amount. Try “25k”, “₹40,000” or “80 lakh”.",
+          "Could you give the budget as a number? e.g. “under 30k” or “1.2 crore”."
+        ],
+        "hinglish": [
+          "Amount samajh nahi aaya. “25k”, “40 hazaar” ya “80 lakh” jaisa bataiye.",
+          "Budget number mein bataiye, jaise “30k tak” ya “1.2 crore”."
+        ],
+        "hi": [
+          "राशि समझ नहीं आई। “25 हज़ार”, “40,000” या “80 लाख” जैसा बताइए।",
+          "बजट संख्या में बताइए, जैसे “30 हज़ार तक” या “1.2 करोड़”।"
+        ]
+      },
+      "hint": {
+        "rent": {
+          "en": "Ranges work too: “20–25k”.",
+          "hinglish": "Range bhi chalegi: “20-25k”.",
+          "hi": "रेंज भी चलेगी: “20-25 हज़ार”।"
+        },
+        "sale": {
+          "en": "Ranges work too: “70 lakh to 1 crore”.",
+          "hinglish": "Range bhi chalegi: “70 lakh se 1 crore”.",
+          "hi": "रेंज भी चलेगी: “70 लाख से 1 करोड़”।"
+        }
+      },
+      "chips": {
+        "rent": [
+          {
+            "value": "under 15k",
+            "label": {
+              "en": "Under ₹15k",
+              "hinglish": "15k tak",
+              "hi": "₹15 हज़ार तक"
+            }
+          },
+          {
+            "value": "under 25k",
+            "label": {
+              "en": "Under ₹25k",
+              "hinglish": "25k tak",
+              "hi": "₹25 हज़ार तक"
+            }
+          },
+          {
+            "value": "under 40k",
+            "label": {
+              "en": "Under ₹40k",
+              "hinglish": "40k tak",
+              "hi": "₹40 हज़ार तक"
+            }
+          },
+          {
+            "value": "under 60k",
+            "label": {
+              "en": "Under ₹60k",
+              "hinglish": "60k tak",
+              "hi": "₹60 हज़ार तक"
+            }
+          },
+          {
+            "value": "under 1 lakh",
+            "label": {
+              "en": "Under ₹1 lakh",
+              "hinglish": "1 lakh tak",
+              "hi": "₹1 लाख तक"
+            }
+          },
+          {
+            "value": "budget is flexible",
+            "label": {
+              "en": "Flexible",
+              "hinglish": "Flexible hai",
+              "hi": "लचीला है"
+            }
+          }
+        ],
+        "sale": [
+          {
+            "value": "under 50 lakh",
+            "label": {
+              "en": "Under ₹50 L",
+              "hinglish": "50 lakh tak",
+              "hi": "₹50 लाख तक"
+            }
+          },
+          {
+            "value": "under 1 crore",
+            "label": {
+              "en": "Under ₹1 Cr",
+              "hinglish": "1 crore tak",
+              "hi": "₹1 करोड़ तक"
+            }
+          },
+          {
+            "value": "under 2 crore",
+            "label": {
+              "en": "Under ₹2 Cr",
+              "hinglish": "2 crore tak",
+              "hi": "₹2 करोड़ तक"
+            }
+          },
+          {
+            "value": "under 4 crore",
+            "label": {
+              "en": "Under ₹4 Cr",
+              "hinglish": "4 crore tak",
+              "hi": "₹4 करोड़ तक"
+            }
+          },
+          {
+            "value": "above 4 crore",
+            "label": {
+              "en": "₹4 Cr+",
+              "hinglish": "4 crore se upar",
+              "hi": "₹4 करोड़ से ऊपर"
+            }
+          },
+          {
+            "value": "budget is flexible",
+            "label": {
+              "en": "Flexible",
+              "hinglish": "Flexible hai",
+              "hi": "लचीला है"
+            }
+          }
+        ]
+      },
+      "ack": {
+        "en": [
+          "Budget set to {budget}.",
+          "Okay, {budget}.",
+          "{budget} — noted."
+        ],
+        "hinglish": [
+          "Budget {budget} set kar diya.",
+          "Theek hai, {budget}.",
+          "{budget} — note kar liya."
+        ],
+        "hi": [
+          "बजट {budget} रख दिया।",
+          "ठीक है, {budget}।",
+          "{budget} — नोट कर लिया।"
+        ]
+      },
+      "followUps": [
+        {
+          "id": "budget.strict",
+          "when": {
+            "budgetApprox": false,
+            "hasMax": true
+          },
+          "ask": {
+            "en": [
+              "Is {budget} a hard limit, or can I show something slightly above if it's a much better fit?"
+            ],
+            "hinglish": [
+              "{budget} pakki limit hai, ya thoda upar bhi dikha doon agar bahut achha match ho?"
+            ],
+            "hi": [
+              "{budget} पक्की सीमा है, या बहुत अच्छा मिलान हो तो थोड़ा ऊपर भी दिखा दूँ?"
+            ]
+          },
+          "chips": [
+            {
+              "value": "strict budget",
+              "label": {
+                "en": "Hard limit",
+                "hinglish": "Pakki limit",
+                "hi": "पक्की सीमा"
+              }
+            },
+            {
+              "value": "slightly above is ok",
+              "label": {
+                "en": "Up to 10% more is ok",
+                "hinglish": "10% upar chalega",
+                "hi": "10% ऊपर चलेगा"
+              }
+            }
+          ],
+          "optional": true
+        }
+      ],
+      "clarify": {
+        "bareNumberRent": {
+          "en": [
+            "Just to confirm — ₹{value} per month?"
+          ],
+          "hinglish": [
+            "Confirm kar loon — ₹{value} mahina?"
+          ],
+          "hi": [
+            "पुष्टि कर लूँ — ₹{value} प्रति माह?"
+          ]
+        },
+        "bareNumberSale": {
+          "en": [
+            "Just to confirm — ₹{value}?"
+          ],
+          "hinglish": [
+            "Confirm kar loon — ₹{value}?"
+          ],
+          "hi": [
+            "पुष्टि कर लूँ — ₹{value}?"
+          ]
+        },
+        "rentLooksLikeSale": {
+          "en": [
+            "₹{value} a month is unusually high for rent. Did you mean to buy instead?"
+          ],
+          "hinglish": [
+            "₹{value} mahina rent ke liye kaafi zyada hai. Kya aap khareedna chahte hain?"
+          ],
+          "hi": [
+            "₹{value} महीना किराये के लिए बहुत ज़्यादा है। क्या आप ख़रीदना चाहते हैं?"
+          ]
+        },
+        "saleLooksLikeRent": {
+          "en": [
+            "₹{value} looks like a monthly rent. Did you mean to rent instead?"
+          ],
+          "hinglish": [
+            "₹{value} to monthly rent jaisa lagta hai. Kya aap rent pe lena chahte hain?"
+          ],
+          "hi": [
+            "₹{value} मासिक किराये जैसा लगता है। क्या आप किराये पर लेना चाहते हैं?"
+          ]
+        },
+        "rangeInverted": {
+          "en": [
+            "I've swapped those so the lower amount comes first: {budget}."
+          ],
+          "hinglish": [
+            "Maine order theek kar diya: {budget}."
+          ],
+          "hi": [
+            "मैंने क्रम ठीक कर दिया: {budget}।"
+          ]
+        }
+      },
+      "examples": [
+        "25k",
+        "under 30000",
+        "20-25k",
+        "₹40,000",
+        "max 35 thousand",
+        "30 hazaar tak",
+        "1.2 lakh per month",
+        "80 lakh",
+        "1.5 cr",
+        "between 70 lakh and 1 crore",
+        "around 2 crore",
+        "lagbhag 90 lakh",
+        "budget flexible",
+        "पच्चीस हज़ार",
+        "डेढ़ करोड़"
+      ]
+    },
+    "bhk": {
+      "required": false,
+      "appliesTo": [
+        "rent",
+        "sale"
+      ],
+      "label": {
+        "en": "Configuration",
+        "hinglish": "BHK",
+        "hi": "BHK"
+      },
+      "ask": {
+        "en": [
+          "How many bedrooms do you need?",
+          "Which configuration — 1, 2, 3 BHK or more?",
+          "How many BHK are you looking for?"
+        ],
+        "hinglish": [
+          "Kitne bedroom chahiye?",
+          "Kaunsa configuration — 1, 2, 3 BHK ya zyada?",
+          "Kitne BHK ka ghar chahiye?"
+        ],
+        "hi": [
+          "कितने बेडरूम चाहिए?",
+          "कौन-सा कॉन्फ़िगरेशन — 1, 2, 3 BHK या ज़्यादा?",
+          "कितने BHK का घर चाहिए?"
+        ]
+      },
+      "askAgain": {
+        "en": [
+          "Please tell me the number of bedrooms, e.g. “2 BHK” or “2 or 3 BHK”."
+        ],
+        "hinglish": [
+          "Bedroom ki ginti bataiye, jaise “2 BHK” ya “2 ya 3 BHK”."
+        ],
+        "hi": [
+          "बेडरूम की संख्या बताइए, जैसे “2 BHK” या “2 या 3 BHK”।"
+        ]
+      },
+      "chips": [
+        {
+          "value": "1 RK",
+          "label": {
+            "en": "1 RK / Studio",
+            "hinglish": "1 RK / Studio",
+            "hi": "1 RK / स्टूडियो"
+          }
+        },
+        {
+          "value": "1 BHK",
+          "label": {
+            "en": "1 BHK",
+            "hinglish": "1 BHK",
+            "hi": "1 BHK"
+          }
+        },
+        {
+          "value": "2 BHK",
+          "label": {
+            "en": "2 BHK",
+            "hinglish": "2 BHK",
+            "hi": "2 BHK"
+          }
+        },
+        {
+          "value": "3 BHK",
+          "label": {
+            "en": "3 BHK",
+            "hinglish": "3 BHK",
+            "hi": "3 BHK"
+          }
+        },
+        {
+          "value": "4 BHK",
+          "label": {
+            "en": "4 BHK",
+            "hinglish": "4 BHK",
+            "hi": "4 BHK"
+          }
+        },
+        {
+          "value": "5 BHK",
+          "label": {
+            "en": "5+ BHK",
+            "hinglish": "5+ BHK",
+            "hi": "5+ BHK"
+          }
+        },
+        {
+          "value": "any bhk",
+          "label": {
+            "en": "Any",
+            "hinglish": "Koi bhi",
+            "hi": "कोई भी"
+          }
+        }
+      ],
+      "ack": {
+        "en": [
+          "{bhk} — noted.",
+          "Looking for {bhk}.",
+          "{bhk}, perfect."
+        ],
+        "hinglish": [
+          "{bhk} — note kar liya.",
+          "{bhk} dhoondhte hain.",
+          "{bhk}, perfect."
+        ],
+        "hi": [
+          "{bhk} — नोट कर लिया।",
+          "{bhk} ढूँढते हैं।",
+          "{bhk}, बढ़िया।"
+        ]
+      },
+      "followUps": [
+        {
+          "id": "bhk.familySize",
+          "when": {
+            "bhkMin": 3,
+            "mode": "rent",
+            "occupancyMissing": true
+          },
+          "ask": {
+            "en": [
+              "Is this for a family? It helps me filter homes that allow families vs bachelors."
+            ],
+            "hinglish": [
+              "Kya ye family ke liye hai? Isse family/bachelor wale ghar filter ho jaate hain."
+            ],
+            "hi": [
+              "क्या यह परिवार के लिए है? इससे परिवार/बैचलर वाले घर छाँटने में मदद मिलती है।"
+            ]
+          },
+          "optional": true
+        }
+      ],
+      "examples": [
+        "2bhk",
+        "two bedroom",
+        "do bhk",
+        "teen bhk",
+        "2 or 3 bhk",
+        "3+ bhk",
+        "1rk",
+        "studio",
+        "single room",
+        "any",
+        "दो BHK",
+        "तीन बेडरूम"
+      ]
+    },
+    "propertyType": {
+      "required": false,
+      "appliesTo": [
+        "rent",
+        "sale"
+      ],
+      "label": {
+        "en": "Property type",
+        "hinglish": "Property type",
+        "hi": "प्रॉपर्टी का प्रकार"
+      },
+      "ask": {
+        "en": [
+          "Any preferred property type — apartment, builder floor, independent house or villa?",
+          "What kind of home — society flat, builder floor, house or villa?",
+          "Do you have a property type in mind?"
+        ],
+        "hinglish": [
+          "Kaunsa property type — apartment, builder floor, independent house ya villa?",
+          "Society flat, builder floor, kothi ya villa — kya pasand hai?",
+          "Koi property type socha hai?"
+        ],
+        "hi": [
+          "कौन-सा प्रॉपर्टी प्रकार — अपार्टमेंट, बिल्डर फ़्लोर, स्वतंत्र मकान या विला?",
+          "सोसाइटी फ़्लैट, बिल्डर फ़्लोर, कोठी या विला — क्या पसंद है?",
+          "कोई प्रॉपर्टी प्रकार सोचा है?"
+        ]
+      },
+      "askAgain": {
+        "en": [
+          "Pick one of the options, or say “any”."
+        ],
+        "hinglish": [
+          "Koi option choose kijiye, ya “koi bhi” boliye."
+        ],
+        "hi": [
+          "कोई विकल्प चुनिए, या “कोई भी” बोलिए।"
+        ]
+      },
+      "chips": {
+        "rent": [
+          {
+            "value": "apartment",
+            "label": {
+              "en": "🏢 Apartment",
+              "hinglish": "🏢 Apartment",
+              "hi": "🏢 अपार्टमेंट"
+            }
+          },
+          {
+            "value": "builder floor",
+            "label": {
+              "en": "🏘️ Builder floor",
+              "hinglish": "🏘️ Builder floor",
+              "hi": "🏘️ बिल्डर फ़्लोर"
+            }
+          },
+          {
+            "value": "independent house",
+            "label": {
+              "en": "🏠 Independent house",
+              "hinglish": "🏠 Kothi / house",
+              "hi": "🏠 स्वतंत्र मकान"
+            }
+          },
+          {
+            "value": "villa",
+            "label": {
+              "en": "🏰 Villa",
+              "hinglish": "🏰 Villa",
+              "hi": "🏰 विला"
+            }
+          },
+          {
+            "value": "studio",
+            "label": {
+              "en": "Studio",
+              "hinglish": "Studio",
+              "hi": "स्टूडियो"
+            }
+          },
+          {
+            "value": "any type",
+            "label": {
+              "en": "Any",
+              "hinglish": "Koi bhi",
+              "hi": "कोई भी"
+            }
+          }
+        ],
+        "sale": [
+          {
+            "value": "apartment",
+            "label": {
+              "en": "🏢 Apartment",
+              "hinglish": "🏢 Apartment",
+              "hi": "🏢 अपार्टमेंट"
+            }
+          },
+          {
+            "value": "builder floor",
+            "label": {
+              "en": "🏘️ Builder floor",
+              "hinglish": "🏘️ Builder floor",
+              "hi": "🏘️ बिल्डर फ़्लोर"
+            }
+          },
+          {
+            "value": "independent house",
+            "label": {
+              "en": "🏠 Independent house",
+              "hinglish": "🏠 Kothi / house",
+              "hi": "🏠 स्वतंत्र मकान"
+            }
+          },
+          {
+            "value": "villa",
+            "label": {
+              "en": "🏰 Villa",
+              "hinglish": "🏰 Villa",
+              "hi": "🏰 विला"
+            }
+          },
+          {
+            "value": "plot",
+            "label": {
+              "en": "📐 Plot",
+              "hinglish": "📐 Plot",
+              "hi": "📐 प्लॉट"
+            }
+          },
+          {
+            "value": "any type",
+            "label": {
+              "en": "Any",
+              "hinglish": "Koi bhi",
+              "hi": "कोई भी"
+            }
+          }
+        ]
+      },
+      "ack": {
+        "en": [
+          "{type} — got it.",
+          "Noted, {type}."
+        ],
+        "hinglish": [
+          "{type} — theek hai.",
+          "Note kiya, {type}."
+        ],
+        "hi": [
+          "{type} — ठीक है।",
+          "नोट किया, {type}।"
+        ]
+      },
+      "examples": [
+        "flat",
+        "society flat",
+        "builder floor",
+        "independent floor",
+        "kothi",
+        "independent house",
+        "villa",
+        "plot",
+        "penthouse",
+        "studio apartment",
+        "कोठी",
+        "फ़्लैट"
+      ]
+    },
+    "furnishing": {
+      "required": false,
+      "appliesTo": [
+        "rent"
+      ],
+      "label": {
+        "en": "Furnishing",
+        "hinglish": "Furnishing",
+        "hi": "फ़र्निशिंग"
+      },
+      "ask": {
+        "en": [
+          "Furnished, semi-furnished or unfurnished?",
+          "Do you need the home furnished?",
+          "What furnishing do you prefer?"
+        ],
+        "hinglish": [
+          "Furnished, semi-furnished ya unfurnished?",
+          "Ghar furnished chahiye?",
+          "Furnishing kaisi chahiye?"
+        ],
+        "hi": [
+          "फ़र्निश्ड, सेमी-फ़र्निश्ड या अनफ़र्निश्ड?",
+          "क्या घर फ़र्निश्ड चाहिए?",
+          "फ़र्निशिंग कैसी चाहिए?"
+        ]
+      },
+      "askAgain": {
+        "en": [
+          "Choose furnished, semi-furnished, unfurnished — or “any”."
+        ],
+        "hinglish": [
+          "Furnished, semi-furnished, unfurnished — ya “koi bhi” boliye."
+        ],
+        "hi": [
+          "फ़र्निश्ड, सेमी-फ़र्निश्ड, अनफ़र्निश्ड — या “कोई भी” बोलिए।"
+        ]
+      },
+      "hint": {
+        "en": "Semi-furnished usually means wardrobes, fans, lights and a modular kitchen.",
+        "hinglish": "Semi-furnished mein aam taur pe wardrobe, pankhe, lights aur modular kitchen hota hai.",
+        "hi": "सेमी-फ़र्निश्ड में आमतौर पर अलमारी, पंखे, लाइटें और मॉड्यूलर किचन होता है।"
+      },
+      "chips": [
+        {
+          "value": "fully furnished",
+          "label": {
+            "en": "🛋️ Fully furnished",
+            "hinglish": "🛋️ Fully furnished",
+            "hi": "🛋️ पूरा फ़र्निश्ड"
+          }
+        },
+        {
+          "value": "semi furnished",
+          "label": {
+            "en": "Semi-furnished",
+            "hinglish": "Semi-furnished",
+            "hi": "सेमी-फ़र्निश्ड"
+          }
+        },
+        {
+          "value": "unfurnished",
+          "label": {
+            "en": "Unfurnished",
+            "hinglish": "Unfurnished / khali",
+            "hi": "अनफ़र्निश्ड"
+          }
+        },
+        {
+          "value": "any furnishing",
+          "label": {
+            "en": "Any",
+            "hinglish": "Koi bhi",
+            "hi": "कोई भी"
+          }
+        }
+      ],
+      "ack": {
+        "en": [
+          "{value} — noted.",
+          "Okay, {value}."
+        ],
+        "hinglish": [
+          "{value} — theek hai.",
+          "Okay, {value}."
+        ],
+        "hi": [
+          "{value} — ठीक है।",
+          "ठीक, {value}।"
+        ]
+      },
+      "examples": [
+        "furnished",
+        "fully furnished",
+        "semi",
+        "semi furnished chalega",
+        "unfurnished",
+        "bare shell",
+        "khali flat",
+        "any furnished flat",
+        "फ़र्निश्ड"
+      ]
+    },
+    "moveIn": {
+      "required": false,
+      "appliesTo": [
+        "rent"
+      ],
+      "label": {
+        "en": "Move-in",
+        "hinglish": "Shift kab",
+        "hi": "शिफ़्ट कब"
+      },
+      "ask": {
+        "en": [
+          "When would you like to move in?",
+          "What's your move-in timeline?",
+          "How soon do you need the place?"
+        ],
+        "hinglish": [
+          "Kab tak shift karna hai?",
+          "Move-in timeline kya hai?",
+          "Ghar kab tak chahiye?"
+        ],
+        "hi": [
+          "कब तक शिफ़्ट करना है?",
+          "शिफ़्ट होने की समय-सीमा क्या है?",
+          "घर कब तक चाहिए?"
+        ]
+      },
+      "chips": [
+        {
+          "value": "immediately",
+          "label": {
+            "en": "⚡ Immediately",
+            "hinglish": "⚡ Turant",
+            "hi": "⚡ तुरंत"
+          }
+        },
+        {
+          "value": "within 15 days",
+          "label": {
+            "en": "Within 15 days",
+            "hinglish": "15 din mein",
+            "hi": "15 दिन में"
+          }
+        },
+        {
+          "value": "next month",
+          "label": {
+            "en": "Next month",
+            "hinglish": "Agle mahine",
+            "hi": "अगले महीने"
+          }
+        },
+        {
+          "value": "in 2 months",
+          "label": {
+            "en": "In 1–2 months",
+            "hinglish": "1-2 mahine mein",
+            "hi": "1-2 महीने में"
+          }
+        },
+        {
+          "value": "just exploring",
+          "label": {
+            "en": "Just exploring",
+            "hinglish": "Abhi dekh rahe hain",
+            "hi": "अभी देख रहे हैं"
+          }
+        }
+      ],
+      "ack": {
+        "en": [
+          "Move-in: {value}.",
+          "{value} — noted."
+        ],
+        "hinglish": [
+          "Shift: {value}.",
+          "{value} — note kar liya."
+        ],
+        "hi": [
+          "शिफ़्ट: {value}।",
+          "{value} — नोट कर लिया।"
+        ]
+      },
+      "examples": [
+        "asap",
+        "right away",
+        "turant",
+        "abhi",
+        "next week",
+        "1st november",
+        "by 15th",
+        "in 2 weeks",
+        "agle mahine",
+        "do mahine baad",
+        "तुरंत",
+        "अगले महीने"
+      ]
+    },
+    "occupancy": {
+      "required": false,
+      "appliesTo": [
+        "rent"
+      ],
+      "label": {
+        "en": "Who's moving in",
+        "hinglish": "Kaun rahega",
+        "hi": "कौन रहेगा"
+      },
+      "ask": {
+        "en": [
+          "Who will be living there — family, bachelors, a couple or working professionals?",
+          "Who's moving in? Owners in Gurgaon often have a preference.",
+          "Is it for a family, bachelors or a company lease?"
+        ],
+        "hinglish": [
+          "Ghar mein kaun rahega — family, bachelors, couple ya working professionals?",
+          "Kaun shift ho raha hai? Gurgaon mein owners ki preference hoti hai.",
+          "Family ke liye hai, bachelors ke liye ya company lease?"
+        ],
+        "hi": [
+          "घर में कौन रहेगा — परिवार, बैचलर, दंपत्ति या कामकाजी लोग?",
+          "कौन शिफ़्ट हो रहा है? गुड़गाँव में मालिकों की पसंद होती है।",
+          "परिवार के लिए है, बैचलर के लिए या कंपनी लीज़?"
+        ]
+      },
+      "chips": [
+        {
+          "value": "family",
+          "label": {
+            "en": "👨‍👩‍👧 Family",
+            "hinglish": "👨‍👩‍👧 Family",
+            "hi": "👨‍👩‍👧 परिवार"
+          }
+        },
+        {
+          "value": "bachelors boys",
+          "label": {
+            "en": "Bachelors (men)",
+            "hinglish": "Bachelor ladke",
+            "hi": "बैचलर (पुरुष)"
+          }
+        },
+        {
+          "value": "bachelors girls",
+          "label": {
+            "en": "Bachelors (women)",
+            "hinglish": "Bachelor ladkiyan",
+            "hi": "बैचलर (महिला)"
+          }
+        },
+        {
+          "value": "couple",
+          "label": {
+            "en": "Couple",
+            "hinglish": "Couple",
+            "hi": "दंपत्ति"
+          }
+        },
+        {
+          "value": "working professionals",
+          "label": {
+            "en": "Working professionals",
+            "hinglish": "Working professionals",
+            "hi": "कामकाजी"
+          }
+        },
+        {
+          "value": "company lease",
+          "label": {
+            "en": "Company lease",
+            "hinglish": "Company lease",
+            "hi": "कंपनी लीज़"
+          }
+        }
+      ],
+      "ack": {
+        "en": [
+          "{value} — noted.",
+          "Got it, {value}."
+        ],
+        "hinglish": [
+          "{value} — note kar liya.",
+          "Theek hai, {value}."
+        ],
+        "hi": [
+          "{value} — नोट कर लिया।",
+          "ठीक है, {value}।"
+        ]
+      },
+      "followUps": [
+        {
+          "id": "occupancy.pets",
+          "when": {
+            "occupancySet": true,
+            "petsUnknown": true
+          },
+          "ask": {
+            "en": [
+              "Any pets coming along?"
+            ],
+            "hinglish": [
+              "Koi pet bhi saath aayega?"
+            ],
+            "hi": [
+              "क्या कोई पालतू जानवर भी साथ आएगा?"
+            ]
+          },
+          "chips": [
+            {
+              "value": "no pets",
+              "label": {
+                "en": "No pets",
+                "hinglish": "Pet nahi",
+                "hi": "पालतू नहीं"
+              }
+            },
+            {
+              "value": "have a dog",
+              "label": {
+                "en": "🐶 Dog",
+                "hinglish": "🐶 Dog hai",
+                "hi": "🐶 कुत्ता"
+              }
+            },
+            {
+              "value": "have a cat",
+              "label": {
+                "en": "🐱 Cat",
+                "hinglish": "🐱 Cat hai",
+                "hi": "🐱 बिल्ली"
+              }
+            }
+          ],
+          "optional": true
+        }
+      ],
+      "examples": [
+        "family",
+        "family of 4",
+        "bachelor",
+        "3 boys",
+        "2 girls",
+        "working women",
+        "couple",
+        "newly married",
+        "company lease",
+        "students",
+        "parivaar",
+        "परिवार",
+        "हम 2 लोग"
+      ]
+    },
+    "area": {
+      "required": false,
+      "appliesTo": [
+        "sale"
+      ],
+      "label": {
+        "en": "Minimum area",
+        "hinglish": "Minimum area",
+        "hi": "न्यूनतम क्षेत्रफल"
+      },
+      "ask": {
+        "en": [
+          "Any minimum size you need? In sq ft or sq yards.",
+          "What's the smallest carpet or built-up area that works for you?",
+          "Do you have a minimum area in mind?"
+        ],
+        "hinglish": [
+          "Minimum kitna area chahiye? Sq ft ya gaj mein bataiye.",
+          "Kam se kam kitna area chalega?",
+          "Area ki koi minimum requirement hai?"
+        ],
+        "hi": [
+          "कम से कम कितना क्षेत्रफल चाहिए? वर्ग फ़ुट या गज में बताइए।",
+          "कम से कम कितना एरिया चलेगा?",
+          "एरिया की कोई न्यूनतम ज़रूरत है?"
+        ]
+      },
+      "chips": [
+        {
+          "value": "1000 sqft",
+          "label": {
+            "en": "1,000+ sq ft",
+            "hinglish": "1000+ sq ft",
+            "hi": "1,000+ वर्ग फ़ुट"
+          }
+        },
+        {
+          "value": "1500 sqft",
+          "label": {
+            "en": "1,500+ sq ft",
+            "hinglish": "1500+ sq ft",
+            "hi": "1,500+ वर्ग फ़ुट"
+          }
+        },
+        {
+          "value": "2000 sqft",
+          "label": {
+            "en": "2,000+ sq ft",
+            "hinglish": "2000+ sq ft",
+            "hi": "2,000+ वर्ग फ़ुट"
+          }
+        },
+        {
+          "value": "200 gaj",
+          "label": {
+            "en": "200+ sq yd",
+            "hinglish": "200+ gaj",
+            "hi": "200+ गज"
+          }
+        },
+        {
+          "value": "any size",
+          "label": {
+            "en": "Any size",
+            "hinglish": "Koi bhi size",
+            "hi": "कोई भी साइज़"
+          }
+        }
+      ],
+      "ack": {
+        "en": [
+          "At least {value}.",
+          "Minimum {value} — noted."
+        ],
+        "hinglish": [
+          "Kam se kam {value}.",
+          "Minimum {value} — note kiya."
+        ],
+        "hi": [
+          "कम से कम {value}।",
+          "न्यूनतम {value} — नोट किया।"
+        ]
+      },
+      "examples": [
+        "1200 sqft",
+        "at least 1500 sq ft",
+        "200 gaj",
+        "250 sq yards",
+        "minimum 2000",
+        "kam se kam 1800 sqft",
+        "1 acre"
+      ]
+    },
+    "possession": {
+      "required": false,
+      "appliesTo": [
+        "sale"
+      ],
+      "label": {
+        "en": "Possession",
+        "hinglish": "Possession",
+        "hi": "पज़ेशन"
+      },
+      "ask": {
+        "en": [
+          "Ready-to-move, under-construction, or either?",
+          "Do you need immediate possession?",
+          "Is a ready-to-move home important?"
+        ],
+        "hinglish": [
+          "Ready-to-move chahiye, under-construction, ya dono chalenge?",
+          "Turant possession chahiye?",
+          "Ready-to-move zaroori hai?"
+        ],
+        "hi": [
+          "रेडी-टू-मूव चाहिए, निर्माणाधीन, या दोनों चलेंगे?",
+          "क्या तुरंत पज़ेशन चाहिए?",
+          "क्या रेडी-टू-मूव ज़रूरी है?"
+        ]
+      },
+      "chips": [
+        {
+          "value": "ready to move",
+          "label": {
+            "en": "✅ Ready to move",
+            "hinglish": "✅ Ready to move",
+            "hi": "✅ रेडी-टू-मूव"
+          }
+        },
+        {
+          "value": "under construction",
+          "label": {
+            "en": "🏗️ Under construction",
+            "hinglish": "🏗️ Under construction",
+            "hi": "🏗️ निर्माणाधीन"
+          }
+        },
+        {
+          "value": "either possession",
+          "label": {
+            "en": "Either",
+            "hinglish": "Dono chalenge",
+            "hi": "दोनों चलेंगे"
+          }
+        }
+      ],
+      "ack": {
+        "en": [
+          "{value} — noted."
+        ],
+        "hinglish": [
+          "{value} — note kar liya."
+        ],
+        "hi": [
+          "{value} — नोट कर लिया।"
+        ]
+      },
+      "examples": [
+        "ready to move",
+        "RTM",
+        "immediate possession",
+        "under construction",
+        "new launch",
+        "pre launch",
+        "either",
+        "ready chahiye"
+      ]
+    },
+    "purpose": {
+      "required": false,
+      "appliesTo": [
+        "sale"
+      ],
+      "label": {
+        "en": "Purpose",
+        "hinglish": "Purpose",
+        "hi": "उद्देश्य"
+      },
+      "ask": {
+        "en": [
+          "Is this for living in yourself, or as an investment?",
+          "End use or investment?",
+          "Will you live there or rent it out?"
+        ],
+        "hinglish": [
+          "Khud rehne ke liye hai ya investment?",
+          "End use ya investment?",
+          "Aap khud rahenge ya rent pe denge?"
+        ],
+        "hi": [
+          "ख़ुद रहने के लिए है या निवेश के लिए?",
+          "ख़ुद के इस्तेमाल के लिए या निवेश?",
+          "आप ख़ुद रहेंगे या किराये पर देंगे?"
+        ]
+      },
+      "chips": [
+        {
+          "value": "self use",
+          "label": {
+            "en": "🏠 To live in",
+            "hinglish": "🏠 Khud rehne ke liye",
+            "hi": "🏠 ख़ुद रहने के लिए"
+          }
+        },
+        {
+          "value": "investment",
+          "label": {
+            "en": "📈 Investment",
+            "hinglish": "📈 Investment",
+            "hi": "📈 निवेश"
+          }
+        },
+        {
+          "value": "both use and investment",
+          "label": {
+            "en": "Both",
+            "hinglish": "Dono",
+            "hi": "दोनों"
+          }
+        }
+      ],
+      "ack": {
+        "en": [
+          "{value} — noted."
+        ],
+        "hinglish": [
+          "{value} — note kar liya."
+        ],
+        "hi": [
+          "{value} — नोट कर लिया।"
+        ]
+      },
+      "examples": [
+        "self use",
+        "to live",
+        "end use",
+        "investment",
+        "rental income",
+        "resale",
+        "khud ke liye",
+        "निवेश"
+      ]
+    },
+    "priorities": {
+      "required": false,
+      "appliesTo": [
+        "rent",
+        "sale"
+      ],
+      "multiSelect": true,
+      "label": {
+        "en": "Nearby priorities",
+        "hinglish": "Paas mein kya chahiye",
+        "hi": "पास में क्या चाहिए"
+      },
+      "ask": {
+        "en": [
+          "Which of these should be close to your home? Pick as many as you like.",
+          "What matters nearby — market, metro, hospital, school, park or mall?",
+          "Tap everything you'd like within easy reach."
+        ],
+        "hinglish": [
+          "Ghar ke paas kya-kya hona chahiye? Jitne chahein choose kijiye.",
+          "Paas mein kya zaroori hai — market, metro, hospital, school, park ya mall?",
+          "Jo bhi paas chahiye sab tap kijiye."
+        ],
+        "hi": [
+          "घर के पास क्या-क्या होना चाहिए? जितने चाहें चुनिए।",
+          "पास में क्या ज़रूरी है — बाज़ार, मेट्रो, अस्पताल, स्कूल, पार्क या मॉल?",
+          "जो भी पास चाहिए, सब चुनिए।"
+        ]
+      },
+      "hint": {
+        "en": "Distances come from partner and map data and are straight-line estimates — I'll always say when something isn't verified.",
+        "hinglish": "Distance partner aur map data se aati hai aur seedhi line ka andaaza hoti hai — verified na ho to main bata dunga.",
+        "hi": "दूरी पार्टनर और मैप डेटा से आती है और सीधी रेखा का अनुमान होती है — सत्यापित न हो तो मैं बता दूँगा।"
+      },
+      "chips": [
+        {
+          "value": "market",
+          "label": {
+            "en": "🛒 Market",
+            "hinglish": "🛒 Market",
+            "hi": "🛒 बाज़ार"
+          }
+        },
+        {
+          "value": "metro",
+          "label": {
+            "en": "🚇 Metro",
+            "hinglish": "🚇 Metro",
+            "hi": "🚇 मेट्रो"
+          }
+        },
+        {
+          "value": "hospital",
+          "label": {
+            "en": "🏥 Hospital",
+            "hinglish": "🏥 Hospital",
+            "hi": "🏥 अस्पताल"
+          }
+        },
+        {
+          "value": "school",
+          "label": {
+            "en": "🎓 School",
+            "hinglish": "🎓 School",
+            "hi": "🎓 स्कूल"
+          }
+        },
+        {
+          "value": "park",
+          "label": {
+            "en": "🌳 Park",
+            "hinglish": "🌳 Park",
+            "hi": "🌳 पार्क"
+          }
+        },
+        {
+          "value": "mall",
+          "label": {
+            "en": "🛍️ Mall",
+            "hinglish": "🛍️ Mall",
+            "hi": "🛍️ मॉल"
+          }
+        },
+        {
+          "value": "none of these",
+          "label": {
+            "en": "None needed",
+            "hinglish": "Zaroorat nahi",
+            "hi": "ज़रूरत नहीं"
+          }
+        }
+      ],
+      "ack": {
+        "en": [
+          "I'll prioritise homes near {value}.",
+          "Noted — close to {value}."
+        ],
+        "hinglish": [
+          "{value} ke paas wale ghar pehle dikhaunga.",
+          "Note kiya — {value} ke paas."
+        ],
+        "hi": [
+          "{value} के पास वाले घर पहले दिखाऊँगा।",
+          "नोट किया — {value} के पास।"
+        ]
+      },
+      "examples": [
+        "metro and park",
+        "near market and school",
+        "hospital",
+        "sab kuch paas ho",
+        "metro ke paas, park facing",
+        "all of them",
+        "none",
+        "पार्क और स्कूल"
+      ]
+    },
+    "distances": {
+      "required": false,
+      "appliesTo": [
+        "rent",
+        "sale"
+      ],
+      "perParameter": true,
+      "label": {
+        "en": "Distances",
+        "hinglish": "Distance",
+        "hi": "दूरी"
+      },
+      "intro": {
+        "en": [
+          "Quick follow-up on distances — skip any you don't mind."
+        ],
+        "hinglish": [
+          "Distance ke baare mein chhota sa sawaal — jo zaroori na ho skip kar dijiye."
+        ],
+        "hi": [
+          "दूरी के बारे में छोटा-सा सवाल — जो ज़रूरी न हो, छोड़ दीजिए।"
+        ]
+      },
+      "askAgain": {
+        "en": [
+          "Give me a distance like “500 m”, “1 km” or “10 min walk”, or tap skip."
+        ],
+        "hinglish": [
+          "Distance bataiye jaise “500 m”, “1 km” ya “10 min walk”, ya skip kijiye."
+        ],
+        "hi": [
+          "दूरी बताइए जैसे “500 मी”, “1 किमी” या “10 मिनट पैदल”, या छोड़ दीजिए।"
+        ]
+      },
+      "ack": {
+        "en": [
+          "{param} within {distance}.",
+          "Okay — {param} within {distance}."
+        ],
+        "hinglish": [
+          "{param} {distance} ke andar.",
+          "Theek — {param} {distance} tak."
+        ],
+        "hi": [
+          "{param} {distance} के अंदर।",
+          "ठीक — {param} {distance} तक।"
+        ]
+      },
+      "skipAck": {
+        "en": [
+          "No fixed distance for {param} — I'll still favour closer homes."
+        ],
+        "hinglish": [
+          "{param} ki fixed distance nahi — phir bhi paas wale ghar pehle dikhaunga."
+        ],
+        "hi": [
+          "{param} की तय दूरी नहीं — फिर भी पास वाले घर पहले दिखाऊँगा।"
+        ]
+      },
+      "conversions": {
+        "walkMetersPerMinute": 80,
+        "driveMetersPerMinute": 500,
+        "autoMetersPerMinute": 400,
+        "parkFacingMeters": 100,
+        "walkingDistanceMeters": 800,
+        "nearbyDefault": "parameter.defaultMeters"
+      },
+      "examples": [
+        "500m",
+        "1 km",
+        "1.5km",
+        "within 2 kms",
+        "10 min walk",
+        "5 minute drive",
+        "walking distance",
+        "park facing",
+        "paidal",
+        "2 kilometre tak",
+        "आधा किलोमीटर"
+      ]
+    },
+    "corner": {
+      "required": false,
+      "appliesTo": [
+        "rent",
+        "sale"
+      ],
+      "label": {
+        "en": "Corner or middle",
+        "hinglish": "Corner ya middle",
+        "hi": "कॉर्नर या बीच"
+      },
+      "ask": {
+        "en": [
+          "Last one: do you prefer a corner property or one in the middle?",
+          "Corner home or middle — any preference?",
+          "Would a corner unit matter to you?"
+        ],
+        "hinglish": [
+          "Aakhri sawaal: corner wala ghar pasand hai ya beech wala?",
+          "Corner ya middle — koi preference?",
+          "Corner unit aapke liye zaroori hai?"
+        ],
+        "hi": [
+          "आख़िरी सवाल: कोने वाला घर पसंद है या बीच वाला?",
+          "कॉर्नर या बीच वाला — कोई पसंद?",
+          "क्या कॉर्नर यूनिट आपके लिए ज़रूरी है?"
+        ]
+      },
+      "hint": {
+        "en": "Corner homes usually get more light and ventilation; middle ones are often quieter and a little cheaper.",
+        "hinglish": "Corner ghar mein light aur hawa zyada; middle wale aksar shaant aur thode saste.",
+        "hi": "कॉर्नर घर में रोशनी और हवा ज़्यादा; बीच वाले अक्सर शांत और थोड़े सस्ते।"
+      },
+      "chips": [
+        {
+          "value": "corner",
+          "label": {
+            "en": "📐 Corner",
+            "hinglish": "📐 Corner",
+            "hi": "📐 कॉर्नर"
+          }
+        },
+        {
+          "value": "middle",
+          "label": {
+            "en": "Middle",
+            "hinglish": "Beech wala",
+            "hi": "बीच वाला"
+          }
+        },
+        {
+          "value": "no preference",
+          "label": {
+            "en": "No preference",
+            "hinglish": "Koi bhi",
+            "hi": "कोई भी"
+          }
+        }
+      ],
+      "ack": {
+        "en": [
+          "{value} — noted.",
+          "Got it, {value}."
+        ],
+        "hinglish": [
+          "{value} — note kar liya.",
+          "Theek hai, {value}."
+        ],
+        "hi": [
+          "{value} — नोट कर लिया।",
+          "ठीक है, {value}।"
+        ]
+      },
+      "examples": [
+        "corner",
+        "corner plot",
+        "two side open",
+        "middle",
+        "beech wala",
+        "doesn't matter",
+        "koi bhi",
+        "कोने वाला"
+      ]
+    },
+    "name": {
+      "required": true,
+      "phase": "contact",
+      "label": {
+        "en": "Name",
+        "hinglish": "Naam",
+        "hi": "नाम"
+      },
+      "ask": {
+        "en": [
+          "What name should our expert ask for?",
+          "May I have your name?"
+        ],
+        "hinglish": [
+          "Expert aapko kis naam se bulaye?",
+          "Aapka naam bata dijiye?"
+        ],
+        "hi": [
+          "विशेषज्ञ आपको किस नाम से पुकारें?",
+          "आपका नाम बता दीजिए?"
+        ]
+      },
+      "askAgain": {
+        "en": [
+          "Please share just your name, e.g. “Rahul”."
+        ],
+        "hinglish": [
+          "Bas apna naam bataiye, jaise “Rahul”."
+        ],
+        "hi": [
+          "बस अपना नाम बताइए, जैसे “राहुल”।"
+        ]
+      },
+      "ack": {
+        "en": [
+          "Thanks, {name}!",
+          "Nice to meet you, {name}."
+        ],
+        "hinglish": [
+          "Shukriya, {name}!",
+          "Aapse milkar achha laga, {name}."
+        ],
+        "hi": [
+          "धन्यवाद, {name}!",
+          "आपसे मिलकर अच्छा लगा, {name}।"
+        ]
+      },
+      "examples": [
+        "Rahul",
+        "my name is Priya Sharma",
+        "mera naam Amit hai",
+        "I'm Neha",
+        "मेरा नाम सुनील है"
+      ]
+    },
+    "phone": {
+      "required": true,
+      "phase": "contact",
+      "label": {
+        "en": "Mobile",
+        "hinglish": "Mobile",
+        "hi": "मोबाइल"
+      },
+      "ask": {
+        "en": [
+          "Which mobile number should we call you on?",
+          "What's the best number to reach you?"
+        ],
+        "hinglish": [
+          "Kis mobile number pe call karein?",
+          "Aapka mobile number kya hai?"
+        ],
+        "hi": [
+          "किस मोबाइल नंबर पर कॉल करें?",
+          "आपका मोबाइल नंबर क्या है?"
+        ]
+      },
+      "askAgain": {
+        "en": [
+          "That doesn't look like a valid 10-digit Indian mobile number. Please try again."
+        ],
+        "hinglish": [
+          "Ye valid 10-digit mobile number nahi lag raha. Dobara bataiye."
+        ],
+        "hi": [
+          "यह सही 10 अंकों का मोबाइल नंबर नहीं लग रहा। दोबारा बताइए।"
+        ]
+      },
+      "hint": {
+        "en": "Shared only with GgnHome and the partners handling your request.",
+        "hinglish": "Sirf GgnHome aur aapki request handle karne wale partners ke saath share hoga.",
+        "hi": "सिर्फ़ GgnHome और आपकी रिक्वेस्ट सँभालने वाले पार्टनर्स के साथ साझा होगा।"
+      },
+      "ack": {
+        "en": [
+          "Got it — we'll call {value}."
+        ],
+        "hinglish": [
+          "Theek hai — {value} pe call karenge."
+        ],
+        "hi": [
+          "ठीक है — {value} पर कॉल करेंगे।"
+        ]
+      },
+      "examples": [
+        "9876543210",
+        "+91 98765 43210",
+        "098765-43210",
+        "mera number 9812345678 hai"
+      ]
+    },
+    "email": {
+      "required": false,
+      "phase": "contact",
+      "label": {
+        "en": "Email",
+        "hinglish": "Email",
+        "hi": "ईमेल"
+      },
+      "ask": {
+        "en": [
+          "Want the shortlist by email too? Share your email or tap skip."
+        ],
+        "hinglish": [
+          "Shortlist email pe bhi chahiye? Email bataiye ya skip kijiye."
+        ],
+        "hi": [
+          "शॉर्टलिस्ट ईमेल पर भी चाहिए? ईमेल बताइए या छोड़ दीजिए।"
+        ]
+      },
+      "askAgain": {
+        "en": [
+          "That email doesn't look right — please re-check or tap skip."
+        ],
+        "hinglish": [
+          "Email sahi nahi lag raha — dobara check kijiye ya skip kijiye."
+        ],
+        "hi": [
+          "ईमेल सही नहीं लग रहा — दोबारा जाँचिए या छोड़ दीजिए।"
+        ]
+      },
+      "chips": [
+        {
+          "value": "skip",
+          "label": {
+            "en": "Skip",
+            "hinglish": "Skip",
+            "hi": "छोड़ें"
+          }
+        }
+      ],
+      "ack": {
+        "en": [
+          "Email noted."
+        ],
+        "hinglish": [
+          "Email note kar liya."
+        ],
+        "hi": [
+          "ईमेल नोट कर लिया।"
+        ]
+      },
+      "examples": [
+        "rahul@gmail.com",
+        "skip",
+        "no email",
+        "nahi chahiye"
+      ]
+    },
+    "review": {
+      "required": true,
+      "phase": "contact",
+      "label": {
+        "en": "Review",
+        "hinglish": "Review",
+        "hi": "समीक्षा"
+      },
+      "ask": {
+        "en": [
+          "Here's your summary. Check it, tick the consent box and press Submit — or edit anything first."
+        ],
+        "hinglish": [
+          "Ye raha aapka summary. Check kijiye, consent tick kijiye aur Submit dabaiye — ya pehle kuch bhi edit kijiye."
+        ],
+        "hi": [
+          "यह रहा आपका सारांश। जाँचिए, सहमति पर टिक कीजिए और सबमिट दबाइए — या पहले कुछ भी बदलिए।"
+        ]
+      },
+      "consentText": {
+        "en": "I agree that GgnHome and up to 3 verified GgnHome partners may contact me by call, SMS or WhatsApp about these requirements.",
+        "hinglish": "Main sahmat hoon ki GgnHome aur zyada se zyada 3 verified GgnHome partners in requirements ke baare mein mujhse call, SMS ya WhatsApp pe sampark kar sakte hain.",
+        "hi": "मैं सहमत हूँ कि GgnHome और अधिकतम 3 सत्यापित GgnHome पार्टनर इन ज़रूरतों के बारे में मुझसे कॉल, SMS या WhatsApp पर संपर्क कर सकते हैं।"
+      },
+      "typedConfirm": {
+        "en": [
+          "To submit, please tick the consent box on the summary card and press Submit."
+        ],
+        "hinglish": [
+          "Submit karne ke liye summary card pe consent tick kijiye aur Submit dabaiye."
+        ],
+        "hi": [
+          "सबमिट करने के लिए सारांश कार्ड पर सहमति टिक कीजिए और सबमिट दबाइए।"
+        ]
+      }
+    }
+  },
+  "intents": {
+    "restart": {
+      "priority": 100,
+      "patterns": [
+        "\\b(start over|start again|restart|reset|new search|begin again|from scratch|clear (all|everything))\\b",
+        "\\b(dobara|phir se|naye sire se|shuru se) (shuru|start|karo|karte)",
+        "फिर से शुरू",
+        "नई खोज",
+        "दोबारा शुरू"
+      ],
+      "reply": {
+        "en": [
+          "Fresh start! Let's begin again."
+        ],
+        "hinglish": [
+          "Naya start! Phir se shuru karte hain."
+        ],
+        "hi": [
+          "नई शुरुआत! फिर से शुरू करते हैं।"
+        ]
+      }
+    },
+    "cancel": {
+      "priority": 95,
+      "patterns": [
+        "^\\s*(cancel|stop|quit|exit|close|band karo|rehne do|chhodo|बंद करो|रहने दो)\\s*[.!]*\\s*$"
+      ],
+      "reply": {
+        "en": [
+          "No problem — I've paused here. Type anything to continue, or close me to search manually."
+        ],
+        "hinglish": [
+          "Koi baat nahi — yahin ruk gaya. Aage badhne ke liye kuch bhi likhiye, ya band karke manually search kijiye."
+        ],
+        "hi": [
+          "कोई बात नहीं — यहीं रुक गया। आगे बढ़ने के लिए कुछ भी लिखिए, या बंद करके ख़ुद खोजिए।"
+        ]
+      }
+    },
+    "help": {
+      "priority": 60,
+      "patterns": [
+        "^\\s*(help|what can you do|how does this work|options|menu|madad|help karo|मदद)\\s*\\??\\s*$",
+        "\\bhow (do|does) (i|this|it) work\\b"
+      ],
+      "reply": {
+        "en": [
+          "I ask a few quick questions, search GgnHome's live listings and rank them for you. You can talk or type, change any answer (“make it 30k”), say “show results” any time, or ask about a listing (“tell me about #2”)."
+        ],
+        "hinglish": [
+          "Main kuch chhote sawaal poochta hoon, GgnHome ki live listings search karke rank karta hoon. Aap bol ya likh sakte hain, koi bhi jawab badal sakte hain (“30k kar do”), kabhi bhi “results dikhao” bol sakte hain, ya kisi listing ke baare mein pooch sakte hain (“#2 ke baare mein batao”)."
+        ],
+        "hi": [
+          "मैं कुछ छोटे सवाल पूछता हूँ, GgnHome की लाइव लिस्टिंग खोजकर रैंक करता हूँ। आप बोल या लिख सकते हैं, कोई भी जवाब बदल सकते हैं (“30 हज़ार कर दो”), कभी भी “नतीजे दिखाओ” बोल सकते हैं, या किसी लिस्टिंग के बारे में पूछ सकते हैं (“#2 के बारे में बताओ”)।"
+        ]
+      }
+    },
+    "human": {
+      "priority": 80,
+      "patterns": [
+        "\\b(talk|speak|connect) (to|with) (a |an )?(human|person|agent|broker|expert|executive|someone|team)\\b",
+        "\\b(call me|callback|call back|ring me)\\b",
+        "\\b(agent|broker|expert) se baat\\b",
+        "\\bbaat (karni|karwa|karao)\\b",
+        "\\bmujhe call\\b",
+        "किसी से बात",
+        "कॉल करो",
+        "कॉल कीजिए"
+      ],
+      "reply": {
+        "en": [
+          "Sure — a GgnHome expert can call you. I just need your name and number."
+        ],
+        "hinglish": [
+          "Bilkul — GgnHome expert aapko call kar sakte hain. Bas naam aur number chahiye."
+        ],
+        "hi": [
+          "ज़रूर — GgnHome विशेषज्ञ आपको कॉल कर सकते हैं। बस नाम और नंबर चाहिए।"
+        ]
+      }
+    },
+    "showResults": {
+      "priority": 70,
+      "patterns": [
+        "\\b(show|see|find|search|get|give)( me)?( the)? (results|properties|homes|flats|options|listings|matches)\\b",
+        "\\b(search now|show now|find now|let'?s see|go ahead and search)\\b",
+        "\\b(results?|properties|options|ghar|flat) (dikhao|dikha do|batao)\\b",
+        "\\bdikhao\\b",
+        "नतीजे दिखाओ",
+        "दिखाओ",
+        "घर दिखाओ"
+      ],
+      "reply": {
+        "en": [
+          "On it — searching now."
+        ],
+        "hinglish": [
+          "Abhi search karta hoon."
+        ],
+        "hi": [
+          "अभी खोजता हूँ।"
+        ]
+      }
+    },
+    "moreResults": {
+      "priority": 65,
+      "patterns": [
+        "\\b(show )?(more|next|other) (results|options|properties|homes|ones)\\b",
+        "\\b(aur|or|baaki) (dikhao|options|ghar)\\b",
+        "\\bshow more\\b",
+        "और दिखाओ"
+      ],
+      "reply": {
+        "en": [
+          "Here are a few more."
+        ],
+        "hinglish": [
+          "Ye rahe kuch aur."
+        ],
+        "hi": [
+          "ये रहे कुछ और।"
+        ]
+      }
+    },
+    "contactMe": {
+      "priority": 75,
+      "patterns": [
+        "\\b(i('| a)?m interested|book (a )?visit|schedule (a )?visit|site visit|send (my )?enquiry|submit enquiry|contact (the )?owner|want to see (it|this|them))\\b",
+        "\\b(visit|enquiry) (karni|karna|book)\\b",
+        "\\bdekhne (jana|aana) hai\\b",
+        "विज़िट",
+        "देखने जाना"
+      ],
+      "reply": {
+        "en": [
+          "Lovely — let's set that up."
+        ],
+        "hinglish": [
+          "Badhiya — set up karte hain."
+        ],
+        "hi": [
+          "बढ़िया — व्यवस्था करते हैं।"
+        ]
+      }
+    },
+    "propertyDetail": {
+      "priority": 55,
+      "patterns": [
+        "\\b(tell me|more|details?|info|about)\\b.*\\b(#?\\s?[1-9]|first|second|third|fourth|fifth|sixth|last|1st|2nd|3rd|4th|5th|6th)\\b",
+        "\\b(#?[1-9]|pehl[aei]|doosr[aei]|dusr[aei]|teesr[aei]|chauth[aei]|paanchv[aei]|aakhri)\\b.*\\b(wala|wali|property|ghar|flat|ke baare|batao|details)\\b",
+        "(पहला|पहली|दूसरा|दूसरी|तीसरा|तीसरी|आख़िरी).*(बताओ|के बारे|विवरण)"
+      ],
+      "reply": {
+        "en": [
+          "Here's more on that one."
+        ],
+        "hinglish": [
+          "Uske baare mein aur details."
+        ],
+        "hi": [
+          "उसके बारे में और जानकारी।"
+        ]
+      }
+    },
+    "propertyNearby": {
+      "priority": 56,
+      "patterns": [
+        "\\b(what'?s|what is|anything) (near|nearby|around)\\b",
+        "\\b(near|paas) (it|that|the (first|second|third)|#?[1-9])\\b",
+        "\\bpaas mein kya\\b",
+        "आस-पास क्या",
+        "पास में क्या"
+      ],
+      "reply": {
+        "en": [
+          "Here's what's verified around it."
+        ],
+        "hinglish": [
+          "Iske aas-paas verified jagahen ye hain."
+        ],
+        "hi": [
+          "इसके आस-पास सत्यापित जगहें ये हैं।"
+        ]
+      }
+    },
+    "thanks": {
+      "priority": 20,
+      "patterns": [
+        "^\\s*(thanks|thank you|thx|ty|shukriya|dhanyavad|dhanyawad|धन्यवाद|शुक्रिया)[\\s!.]*$"
+      ],
+      "reply": {
+        "en": [
+          "Happy to help! Anything else you'd like to change?"
+        ],
+        "hinglish": [
+          "Khushi hui madad karke! Kuch aur badalna hai?"
+        ],
+        "hi": [
+          "मदद करके ख़ुशी हुई! कुछ और बदलना है?"
+        ]
+      }
+    },
+    "greeting": {
+      "priority": 10,
+      "patterns": [
+        "^\\s*(hi|hello|hey|hii+|namaste|namaskar|good (morning|afternoon|evening)|नमस्ते|नमस्कार)[\\s!.]*$"
+      ],
+      "reply": {
+        "en": [
+          "Hello! 👋"
+        ],
+        "hinglish": [
+          "Namaste! 👋"
+        ],
+        "hi": [
+          "नमस्ते! 👋"
+        ]
+      }
+    },
+    "whoAreYou": {
+      "priority": 30,
+      "patterns": [
+        "\\b(who are you|are you (a )?(bot|human|ai|real)|what are you|tum kaun|aap kaun)\\b",
+        "आप कौन"
+      ],
+      "reply": {
+        "en": [
+          "I'm GgnHome's AI property consultant. I'm rule-based at heart with an optional AI helper, and I only show real, live GgnHome listings — never invented ones."
+        ],
+        "hinglish": [
+          "Main GgnHome ka AI property consultant hoon. Main sirf asli, live GgnHome listings dikhata hoon — kabhi bhi banayi hui nahi."
+        ],
+        "hi": [
+          "मैं GgnHome का AI प्रॉपर्टी सलाहकार हूँ। मैं सिर्फ़ असली, लाइव GgnHome लिस्टिंग दिखाता हूँ — कभी भी बनाई हुई नहीं।"
+        ]
+      }
+    },
+    "langEnglish": {
+      "priority": 90,
+      "patterns": [
+        "\\b(in english|speak english|english please|switch to english)\\b"
+      ],
+      "setLanguage": "en",
+      "reply": {
+        "en": [
+          "Switched to English."
+        ],
+        "hinglish": [
+          "Switched to English."
+        ],
+        "hi": [
+          "Switched to English."
+        ]
+      }
+    },
+    "langHindi": {
+      "priority": 90,
+      "patterns": [
+        "\\b(in hindi|speak hindi|hindi (please|mein|me))\\b",
+        "हिंदी में",
+        "हिन्दी में"
+      ],
+      "setLanguage": "hi",
+      "reply": {
+        "en": [
+          "अब मैं हिन्दी में बात करूँगा।"
+        ],
+        "hinglish": [
+          "अब मैं हिन्दी में बात करूँगा।"
+        ],
+        "hi": [
+          "अब मैं हिन्दी में बात करूँगा।"
+        ]
+      }
+    },
+    "langHinglish": {
+      "priority": 90,
+      "patterns": [
+        "\\b(in hinglish|hinglish (please|mein|me))\\b"
+      ],
+      "setLanguage": "hinglish",
+      "reply": {
+        "en": [
+          "Theek hai, ab Hinglish mein baat karte hain."
+        ],
+        "hinglish": [
+          "Theek hai, ab Hinglish mein baat karte hain."
+        ],
+        "hi": [
+          "Theek hai, ab Hinglish mein baat karte hain."
+        ]
+      }
+    }
+  },
+  "answers": {
+    "yes": [
+      "yes",
+      "yeah",
+      "yep",
+      "yup",
+      "ya",
+      "sure",
+      "ok",
+      "okay",
+      "okk",
+      "correct",
+      "right",
+      "exactly",
+      "confirm",
+      "confirmed",
+      "go ahead",
+      "please do",
+      "haan",
+      "han",
+      "haa",
+      "ha",
+      "haanji",
+      "ji",
+      "ji haan",
+      "bilkul",
+      "theek hai",
+      "thik hai",
+      "sahi hai",
+      "chalega",
+      "हाँ",
+      "हां",
+      "जी",
+      "ठीक है",
+      "बिल्कुल",
+      "सही है"
+    ],
+    "no": [
+      "no",
+      "nope",
+      "nah",
+      "not really",
+      "don't",
+      "dont",
+      "wrong",
+      "incorrect",
+      "nahi",
+      "nahin",
+      "na",
+      "mat",
+      "galat",
+      "नहीं",
+      "ना",
+      "गलत"
+    ],
+    "skip": [
+      "skip",
+      "pass",
+      "next",
+      "later",
+      "any",
+      "anything",
+      "doesn't matter",
+      "does not matter",
+      "dont care",
+      "don't care",
+      "no preference",
+      "not important",
+      "whatever",
+      "koi bhi",
+      "kuch bhi",
+      "chalega",
+      "farak nahi",
+      "fark nahi",
+      "zaroori nahi",
+      "baad mein",
+      "छोड़ो",
+      "कोई भी",
+      "कुछ भी",
+      "फ़र्क नहीं",
+      "ज़रूरी नहीं"
+    ],
+    "anywhere": [
+      "anywhere",
+      "any location",
+      "any area",
+      "any sector",
+      "all of gurgaon",
+      "whole gurgaon",
+      "anywhere in gurgaon",
+      "kahin bhi",
+      "kahi bhi",
+      "koi bhi area",
+      "koi bhi sector",
+      "poora gurgaon",
+      "कहीं भी",
+      "कोई भी सेक्टर"
+    ]
+  },
+  "lexicon": {
+    "modes": {
+      "rent": [
+        "rent",
+        "rental",
+        "renting",
+        "on rent",
+        "for rent",
+        "lease",
+        "leasing",
+        "tenant",
+        "pg",
+        "kiraya",
+        "kiraye",
+        "kiraaye",
+        "kiraye pe",
+        "kirayedar",
+        "rent pe",
+        "rent par",
+        "किराया",
+        "किराये",
+        "किराए",
+        "रेंट",
+        "लीज़"
+      ],
+      "sale": [
+        "buy",
+        "buying",
+        "purchase",
+        "purchasing",
+        "for sale",
+        "sale",
+        "invest",
+        "investment",
+        "resale",
+        "kharid",
+        "khareed",
+        "kharidna",
+        "khareedna",
+        "kharidni",
+        "lena hai khud ka",
+        "apna ghar",
+        "ख़रीद",
+        "खरीद",
+        "ख़रीदना",
+        "खरीदना",
+        "बिक्री",
+        "निवेश"
+      ]
+    },
+    "propertyTypes": {
+      "apartment": [
+        "apartment",
+        "apartments",
+        "flat",
+        "flats",
+        "society",
+        "society flat",
+        "condo",
+        "condominium",
+        "high rise",
+        "highrise",
+        "tower",
+        "penthouse",
+        "फ़्लैट",
+        "फ्लैट",
+        "अपार्टमेंट",
+        "सोसाइटी"
+      ],
+      "builder-floor": [
+        "builder floor",
+        "builder-floor",
+        "independent floor",
+        "low rise",
+        "low-rise",
+        "kothi floor",
+        "बिल्डर फ़्लोर"
+      ],
+      "house": [
+        "independent house",
+        "kothi",
+        "bungalow",
+        "duplex",
+        "row house",
+        "standalone house",
+        "कोठी",
+        "बंगला"
+      ],
+      "villa": [
+        "villa",
+        "villas",
+        "farmhouse",
+        "farm house",
+        "विला",
+        "फ़ार्महाउस"
+      ],
+      "studio": [
+        "studio",
+        "studio apartment",
+        "service apartment",
+        "serviced apartment",
+        "स्टूडियो"
+      ],
+      "1RK": [
+        "1rk",
+        "1 rk",
+        "one rk",
+        "single room",
+        "room kitchen",
+        "kamra",
+        "ek kamra",
+        "कमरा"
+      ],
+      "plot": [
+        "plot",
+        "plots",
+        "land",
+        "residential plot",
+        "zameen",
+        "jameen",
+        "प्लॉट",
+        "ज़मीन",
+        "जमीन"
+      ],
+      "townhouse": [
+        "townhouse",
+        "town house"
+      ]
+    },
+    "furnishing": {
+      "furnished": [
+        "fully furnished",
+        "full furnished",
+        "furnished",
+        "fully-furnished",
+        "with furniture",
+        "furniture ke saath",
+        "पूरा फ़र्निश्ड",
+        "फ़र्निश्ड",
+        "फर्निश्ड"
+      ],
+      "semi-furnished": [
+        "semi furnished",
+        "semi-furnished",
+        "semifurnished",
+        "semi",
+        "partly furnished",
+        "partially furnished",
+        "सेमी"
+      ],
+      "unfurnished": [
+        "unfurnished",
+        "un-furnished",
+        "non furnished",
+        "bare shell",
+        "empty",
+        "khali",
+        "khaali",
+        "without furniture",
+        "बिना फ़र्नीचर",
+        "ख़ाली",
+        "खाली",
+        "अनफ़र्निश्ड"
+      ]
+    },
+    "occupancy": {
+      "family": [
+        "family",
+        "families",
+        "parivar",
+        "parivaar",
+        "with kids",
+        "with parents",
+        "परिवार",
+        "फ़ैमिली"
+      ],
+      "bachelor_male": [
+        "bachelors boys",
+        "bachelor boys",
+        "boys",
+        "men",
+        "male",
+        "guys",
+        "ladke",
+        "bachelor ladke",
+        "लड़के"
+      ],
+      "bachelor_female": [
+        "bachelors girls",
+        "bachelor girls",
+        "girls",
+        "women",
+        "female",
+        "ladies",
+        "ladkiyan",
+        "working women",
+        "लड़कियाँ",
+        "लड़कियां"
+      ],
+      "bachelor": [
+        "bachelor",
+        "bachelors",
+        "single",
+        "akela",
+        "akeli",
+        "बैचलर",
+        "अकेला"
+      ],
+      "couple": [
+        "couple",
+        "married couple",
+        "newly married",
+        "husband wife",
+        "pati patni",
+        "दंपत्ति",
+        "पति पत्नी"
+      ],
+      "professionals": [
+        "working professionals",
+        "working professional",
+        "professionals",
+        "it professionals",
+        "employees",
+        "naukri",
+        "कामकाजी"
+      ],
+      "company": [
+        "company lease",
+        "corporate lease",
+        "company",
+        "corporate",
+        "कंपनी"
+      ],
+      "students": [
+        "students",
+        "student",
+        "college students",
+        "छात्र"
+      ]
+    },
+    "pets": {
+      "yes": [
+        "dog",
+        "dogs",
+        "cat",
+        "cats",
+        "pet",
+        "pets",
+        "puppy",
+        "kutta",
+        "billi",
+        "कुत्ता",
+        "बिल्ली"
+      ],
+      "no": [
+        "no pets",
+        "no pet",
+        "without pets",
+        "pet nahi",
+        "koi pet nahi",
+        "पालतू नहीं"
+      ]
+    },
+    "possession": {
+      "ready": [
+        "ready to move",
+        "ready-to-move",
+        "rtm",
+        "ready",
+        "immediate possession",
+        "possession ready",
+        "ready possession",
+        "रेडी"
+      ],
+      "under-construction": [
+        "under construction",
+        "under-construction",
+        "uc",
+        "new launch",
+        "pre launch",
+        "pre-launch",
+        "upcoming",
+        "निर्माणाधीन"
+      ],
+      "any": [
+        "either possession",
+        "either",
+        "both",
+        "dono",
+        "दोनों"
+      ]
+    },
+    "purpose": {
+      "self": [
+        "self use",
+        "self-use",
+        "end use",
+        "end-use",
+        "to live",
+        "live in",
+        "living",
+        "for family",
+        "khud ke liye",
+        "khud rehne",
+        "rehne ke liye",
+        "ख़ुद के लिए",
+        "रहने के लिए"
+      ],
+      "investment": [
+        "investment",
+        "invest",
+        "rental income",
+        "rental yield",
+        "resale",
+        "returns",
+        "appreciation",
+        "nivesh",
+        "निवेश"
+      ],
+      "both": [
+        "both use and investment",
+        "both",
+        "dono"
+      ]
+    },
+    "moveIn": {
+      "immediate": {
+        "days": 0,
+        "phrases": [
+          "immediately",
+          "immediate",
+          "asap",
+          "as soon as possible",
+          "right away",
+          "right now",
+          "now",
+          "urgent",
+          "urgently",
+          "today",
+          "turant",
+          "abhi",
+          "jaldi",
+          "aaj",
+          "तुरंत",
+          "अभी",
+          "जल्दी",
+          "आज"
+        ]
+      },
+      "week": {
+        "days": 7,
+        "phrases": [
+          "this week",
+          "next week",
+          "within a week",
+          "in a week",
+          "is hafte",
+          "agle hafte",
+          "इस हफ़्ते",
+          "अगले हफ़्ते"
+        ]
+      },
+      "fortnight": {
+        "days": 15,
+        "phrases": [
+          "within 15 days",
+          "in 15 days",
+          "2 weeks",
+          "two weeks",
+          "fortnight",
+          "15 din",
+          "पंद्रह दिन",
+          "15 दिन"
+        ]
+      },
+      "month": {
+        "days": 30,
+        "phrases": [
+          "next month",
+          "in a month",
+          "within a month",
+          "1 month",
+          "one month",
+          "agle mahine",
+          "ek mahine",
+          "अगले महीने",
+          "एक महीने"
+        ]
+      },
+      "twoMonths": {
+        "days": 60,
+        "phrases": [
+          "in 2 months",
+          "in two months",
+          "1-2 months",
+          "couple of months",
+          "do mahine",
+          "दो महीने"
+        ]
+      },
+      "exploring": {
+        "days": null,
+        "phrases": [
+          "just exploring",
+          "just looking",
+          "not sure",
+          "no hurry",
+          "flexible",
+          "abhi dekh rahe",
+          "koi jaldi nahi",
+          "बस देख रहे",
+          "कोई जल्दी नहीं"
+        ]
+      }
+    },
+    "numberWords": {
+      "en": {
+        "zero": 0,
+        "one": 1,
+        "two": 2,
+        "three": 3,
+        "four": 4,
+        "five": 5,
+        "six": 6,
+        "seven": 7,
+        "eight": 8,
+        "nine": 9,
+        "ten": 10,
+        "eleven": 11,
+        "twelve": 12,
+        "fifteen": 15,
+        "twenty": 20,
+        "twenty five": 25,
+        "thirty": 30,
+        "thirty five": 35,
+        "forty": 40,
+        "forty five": 45,
+        "fifty": 50,
+        "sixty": 60,
+        "seventy": 70,
+        "seventy five": 75,
+        "eighty": 80,
+        "ninety": 90,
+        "hundred": 100,
+        "half": 0.5,
+        "one and a half": 1.5,
+        "two and a half": 2.5
+      },
+      "hinglish": {
+        "ek": 1,
+        "do": 2,
+        "teen": 3,
+        "char": 4,
+        "chaar": 4,
+        "paanch": 5,
+        "panch": 5,
+        "chhe": 6,
+        "che": 6,
+        "saat": 7,
+        "aath": 8,
+        "nau": 9,
+        "das": 10,
+        "pandrah": 15,
+        "bees": 20,
+        "pachees": 25,
+        "pachchis": 25,
+        "tees": 30,
+        "paintees": 35,
+        "chalis": 40,
+        "chaalis": 40,
+        "pachaas": 50,
+        "pachas": 50,
+        "saath": 60,
+        "sattar": 70,
+        "assi": 80,
+        "nabbe": 90,
+        "sau": 100,
+        "dedh": 1.5,
+        "dhai": 2.5,
+        "dhaai": 2.5,
+        "sava": 1.25,
+        "saade": 0.5
+      },
+      "hi": {
+        "एक": 1,
+        "दो": 2,
+        "तीन": 3,
+        "चार": 4,
+        "पाँच": 5,
+        "पांच": 5,
+        "छह": 6,
+        "सात": 7,
+        "आठ": 8,
+        "नौ": 9,
+        "दस": 10,
+        "पंद्रह": 15,
+        "बीस": 20,
+        "पच्चीस": 25,
+        "तीस": 30,
+        "पैंतीस": 35,
+        "चालीस": 40,
+        "पचास": 50,
+        "साठ": 60,
+        "सत्तर": 70,
+        "अस्सी": 80,
+        "नब्बे": 90,
+        "सौ": 100,
+        "डेढ़": 1.5,
+        "ढाई": 2.5,
+        "सवा": 1.25
+      }
+    },
+    "multipliers": {
+      "thousand": {
+        "value": 1000,
+        "words": [
+          "k",
+          "K",
+          "thousand",
+          "thousands",
+          "thou",
+          "hazar",
+          "hazaar",
+          "hajar",
+          "hazzar",
+          "हज़ार",
+          "हजार"
+        ]
+      },
+      "lakh": {
+        "value": 100000,
+        "words": [
+          "lakh",
+          "lakhs",
+          "lac",
+          "lacs",
+          "lak",
+          "l",
+          "L",
+          "लाख"
+        ]
+      },
+      "crore": {
+        "value": 10000000,
+        "words": [
+          "crore",
+          "crores",
+          "cr",
+          "crs",
+          "karod",
+          "karor",
+          "करोड़",
+          "करोड"
+        ]
+      }
+    },
+    "budgetQualifiers": {
+      "max": [
+        "under",
+        "below",
+        "less than",
+        "within",
+        "upto",
+        "up to",
+        "max",
+        "maximum",
+        "not more than",
+        "at most",
+        "tak",
+        "se kam",
+        "se zyada nahi",
+        "तक",
+        "से कम",
+        "अधिकतम"
+      ],
+      "min": [
+        "above",
+        "over",
+        "more than",
+        "at least",
+        "minimum",
+        "min",
+        "starting",
+        "se upar",
+        "se zyada",
+        "से ऊपर",
+        "से ज़्यादा",
+        "कम से कम"
+      ],
+      "approx": [
+        "around",
+        "about",
+        "approx",
+        "approximately",
+        "roughly",
+        "near",
+        "nearly",
+        "close to",
+        "lagbhag",
+        "takreeban",
+        "aas paas",
+        "aaspaas",
+        "करीब",
+        "लगभग",
+        "आस-पास"
+      ],
+      "flexible": [
+        "flexible",
+        "no limit",
+        "open",
+        "any budget",
+        "koi bhi budget",
+        "budget is flexible",
+        "लचीला"
+      ]
+    },
+    "distanceUnits": {
+      "meters": [
+        "m",
+        "mtr",
+        "mtrs",
+        "meter",
+        "meters",
+        "metre",
+        "metres",
+        "मीटर",
+        "मी"
+      ],
+      "kilometers": [
+        "km",
+        "kms",
+        "kilometer",
+        "kilometers",
+        "kilometre",
+        "kilometres",
+        "kilo meter",
+        "किमी",
+        "किलोमीटर"
+      ],
+      "walkMinutes": [
+        "min walk",
+        "mins walk",
+        "minute walk",
+        "minutes walk",
+        "min walking",
+        "minute walking",
+        "min paidal",
+        "minute paidal",
+        "मिनट पैदल"
+      ],
+      "driveMinutes": [
+        "min drive",
+        "mins drive",
+        "minute drive",
+        "minutes drive",
+        "min by car",
+        "min gaadi",
+        "मिनट गाड़ी"
+      ],
+      "walking": [
+        "walking distance",
+        "walkable",
+        "paidal",
+        "walking",
+        "पैदल"
+      ]
+    },
+    "areaUnits": {
+      "sqft": {
+        "factor": 1,
+        "words": [
+          "sqft",
+          "sq ft",
+          "sq. ft",
+          "square feet",
+          "square foot",
+          "sft",
+          "feet",
+          "वर्ग फ़ुट"
+        ]
+      },
+      "sqyd": {
+        "factor": 9,
+        "words": [
+          "sq yd",
+          "sq yards",
+          "sq yard",
+          "square yards",
+          "square yard",
+          "gaj",
+          "gaz",
+          "गज"
+        ]
+      },
+      "sqm": {
+        "factor": 10.7639,
+        "words": [
+          "sqm",
+          "sq m",
+          "square meter",
+          "square metre",
+          "वर्ग मीटर"
+        ]
+      },
+      "acre": {
+        "factor": 43560,
+        "words": [
+          "acre",
+          "acres",
+          "एकड़"
+        ]
+      }
+    },
+    "ordinals": {
+      "1": [
+        "1",
+        "#1",
+        "first",
+        "1st",
+        "pehla",
+        "pehli",
+        "pehle",
+        "पहला",
+        "पहली"
+      ],
+      "2": [
+        "2",
+        "#2",
+        "second",
+        "2nd",
+        "doosra",
+        "doosri",
+        "dusra",
+        "dusri",
+        "दूसरा",
+        "दूसरी"
+      ],
+      "3": [
+        "3",
+        "#3",
+        "third",
+        "3rd",
+        "teesra",
+        "teesri",
+        "tisra",
+        "तीसरा",
+        "तीसरी"
+      ],
+      "4": [
+        "4",
+        "#4",
+        "fourth",
+        "4th",
+        "chautha",
+        "chauthi",
+        "चौथा",
+        "चौथी"
+      ],
+      "5": [
+        "5",
+        "#5",
+        "fifth",
+        "5th",
+        "paanchva",
+        "paanchvi",
+        "पाँचवाँ",
+        "पांचवी"
+      ],
+      "6": [
+        "6",
+        "#6",
+        "sixth",
+        "6th",
+        "chhatha",
+        "chhathi",
+        "छठा",
+        "छठी"
+      ],
+      "last": [
+        "last",
+        "aakhri",
+        "akhri",
+        "आख़िरी",
+        "आखिरी"
+      ]
+    },
+    "localities": [
+      {
+        "name": "DLF Phase 1",
+        "aliases": [
+          "dlf phase 1",
+          "dlf phase i",
+          "dlf ph 1",
+          "dlf 1",
+          "dlf-1",
+          "phase 1 dlf"
+        ]
+      },
+      {
+        "name": "DLF Phase 2",
+        "aliases": [
+          "dlf phase 2",
+          "dlf phase ii",
+          "dlf ph 2",
+          "dlf 2",
+          "dlf-2"
+        ]
+      },
+      {
+        "name": "DLF Phase 3",
+        "aliases": [
+          "dlf phase 3",
+          "dlf phase iii",
+          "dlf ph 3",
+          "dlf 3",
+          "dlf-3"
+        ]
+      },
+      {
+        "name": "DLF Phase 4",
+        "aliases": [
+          "dlf phase 4",
+          "dlf phase iv",
+          "dlf ph 4",
+          "dlf 4",
+          "dlf-4"
+        ]
+      },
+      {
+        "name": "DLF Phase 5",
+        "aliases": [
+          "dlf phase 5",
+          "dlf phase v",
+          "dlf ph 5",
+          "dlf 5",
+          "dlf-5"
+        ]
+      },
+      {
+        "name": "DLF Cyber City",
+        "aliases": [
+          "cyber city",
+          "cybercity",
+          "cyber hub",
+          "cyberhub",
+          "dlf cyber city"
+        ]
+      },
+      {
+        "name": "Golf Course Road",
+        "aliases": [
+          "golf course road",
+          "gcr",
+          "golf course rd",
+          "golf course"
+        ]
+      },
+      {
+        "name": "Golf Course Extension Road",
+        "aliases": [
+          "golf course extension road",
+          "golf course extension",
+          "golf course ext",
+          "gcer",
+          "gc extension",
+          "extension road"
+        ]
+      },
+      {
+        "name": "Sohna Road",
+        "aliases": [
+          "sohna road",
+          "sohna rd",
+          "sohna-road"
+        ]
+      },
+      {
+        "name": "Sohna",
+        "aliases": [
+          "sohna town",
+          "south of sohna"
+        ]
+      },
+      {
+        "name": "MG Road",
+        "aliases": [
+          "mg road",
+          "m g road",
+          "mehrauli gurgaon road",
+          "mehrauli road"
+        ]
+      },
+      {
+        "name": "Sushant Lok 1",
+        "aliases": [
+          "sushant lok 1",
+          "sushant lok i",
+          "sushant lok phase 1",
+          "sushant lok-1"
+        ]
+      },
+      {
+        "name": "Sushant Lok 2",
+        "aliases": [
+          "sushant lok 2",
+          "sushant lok ii",
+          "sushant lok phase 2",
+          "sushant lok-2"
+        ]
+      },
+      {
+        "name": "Sushant Lok 3",
+        "aliases": [
+          "sushant lok 3",
+          "sushant lok iii",
+          "sushant lok phase 3",
+          "sushant lok-3"
+        ]
+      },
+      {
+        "name": "Sushant Lok",
+        "aliases": [
+          "sushant lok",
+          "sushantlok"
+        ]
+      },
+      {
+        "name": "South City 1",
+        "aliases": [
+          "south city 1",
+          "south city i",
+          "south city-1"
+        ]
+      },
+      {
+        "name": "South City 2",
+        "aliases": [
+          "south city 2",
+          "south city ii",
+          "south city-2"
+        ]
+      },
+      {
+        "name": "South City",
+        "aliases": [
+          "south city"
+        ]
+      },
+      {
+        "name": "Nirvana Country",
+        "aliases": [
+          "nirvana country",
+          "nirvana",
+          "unitech nirvana"
+        ]
+      },
+      {
+        "name": "Palam Vihar",
+        "aliases": [
+          "palam vihar",
+          "palam vihaar"
+        ]
+      },
+      {
+        "name": "Udyog Vihar",
+        "aliases": [
+          "udyog vihar",
+          "udyog vihaar"
+        ]
+      },
+      {
+        "name": "New Gurgaon",
+        "aliases": [
+          "new gurgaon",
+          "new gurugram"
+        ]
+      },
+      {
+        "name": "Dwarka Expressway",
+        "aliases": [
+          "dwarka expressway",
+          "dwarka exp",
+          "dwarka e-way",
+          "northern peripheral road",
+          "npr"
+        ]
+      },
+      {
+        "name": "Southern Peripheral Road",
+        "aliases": [
+          "southern peripheral road",
+          "spr"
+        ]
+      },
+      {
+        "name": "Manesar",
+        "aliases": [
+          "manesar",
+          "imt manesar"
+        ]
+      },
+      {
+        "name": "Pataudi Road",
+        "aliases": [
+          "pataudi road",
+          "pataudi rd"
+        ]
+      },
+      {
+        "name": "Old Gurgaon",
+        "aliases": [
+          "old gurgaon",
+          "old gurugram",
+          "purana gurgaon"
+        ]
+      },
+      {
+        "name": "Civil Lines",
+        "aliases": [
+          "civil lines"
+        ]
+      },
+      {
+        "name": "Ardee City",
+        "aliases": [
+          "ardee city",
+          "ardee"
+        ]
+      },
+      {
+        "name": "Malibu Towne",
+        "aliases": [
+          "malibu towne",
+          "malibu town"
+        ]
+      },
+      {
+        "name": "Mayfield Garden",
+        "aliases": [
+          "mayfield garden",
+          "mayfield gardens"
+        ]
+      },
+      {
+        "name": "Uppal Southend",
+        "aliases": [
+          "uppal southend",
+          "uppal south end"
+        ]
+      },
+      {
+        "name": "Vatika City",
+        "aliases": [
+          "vatika city"
+        ]
+      },
+      {
+        "name": "Rosewood City",
+        "aliases": [
+          "rosewood city"
+        ]
+      },
+      {
+        "name": "Greenwood City",
+        "aliases": [
+          "greenwood city"
+        ]
+      },
+      {
+        "name": "Sun City",
+        "aliases": [
+          "sun city"
+        ]
+      },
+      {
+        "name": "Ashok Vihar",
+        "aliases": [
+          "ashok vihar"
+        ]
+      },
+      {
+        "name": "Shivaji Nagar",
+        "aliases": [
+          "shivaji nagar"
+        ]
+      },
+      {
+        "name": "Laxman Vihar",
+        "aliases": [
+          "laxman vihar",
+          "lakshman vihar"
+        ]
+      },
+      {
+        "name": "Saraswati Vihar",
+        "aliases": [
+          "saraswati vihar"
+        ]
+      },
+      {
+        "name": "Chakkarpur",
+        "aliases": [
+          "chakkarpur",
+          "chakarpur"
+        ]
+      },
+      {
+        "name": "Sikanderpur",
+        "aliases": [
+          "sikanderpur",
+          "sikandarpur"
+        ]
+      },
+      {
+        "name": "Nathupur",
+        "aliases": [
+          "nathupur"
+        ]
+      },
+      {
+        "name": "Wazirabad",
+        "aliases": [
+          "wazirabad"
+        ]
+      },
+      {
+        "name": "Badshahpur",
+        "aliases": [
+          "badshahpur"
+        ]
+      },
+      {
+        "name": "Gwal Pahari",
+        "aliases": [
+          "gwal pahari",
+          "gwalpahari"
+        ]
+      },
+      {
+        "name": "Sector 14 Market",
+        "aliases": [
+          "sector 14 market"
+        ]
+      },
+      {
+        "name": "Huda City Centre",
+        "aliases": [
+          "huda city centre",
+          "huda city center",
+          "millennium city centre",
+          "millennium city center"
+        ]
+      },
+      {
+        "name": "Sadar Bazar",
+        "aliases": [
+          "sadar bazar",
+          "sadar bazaar"
+        ]
+      },
+      {
+        "name": "IFFCO Chowk",
+        "aliases": [
+          "iffco chowk",
+          "ifco chowk"
+        ]
+      },
+      {
+        "name": "Rajiv Chowk",
+        "aliases": [
+          "rajiv chowk gurgaon",
+          "rajiv chowk"
+        ]
+      },
+      {
+        "name": "Subhash Chowk",
+        "aliases": [
+          "subhash chowk"
+        ]
+      },
+      {
+        "name": "Hero Honda Chowk",
+        "aliases": [
+          "hero honda chowk"
+        ]
+      }
+    ],
+    "sectorPatterns": {
+      "description": "Sector numbers are recognised by the parser with these forms; Gurgaon sectors run 1–115 (some have letters, e.g. 37C, 37D).",
+      "forms": [
+        "sector 57",
+        "sector-57",
+        "sec 57",
+        "sec57",
+        "s57",
+        "s-57",
+        "sctr 57",
+        "sector fifty seven",
+        "57 sector",
+        "सेक्टर 57",
+        "sector 37c",
+        "sector 37 d"
+      ],
+      "validRange": [
+        1,
+        115
+      ],
+      "letterSuffixAllowed": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ]
+    },
+    "names": {
+      "prefixes": [
+        "my name is",
+        "i am",
+        "i'm",
+        "this is",
+        "it's",
+        "call me",
+        "mera naam",
+        "main",
+        "naam",
+        "मेरा नाम",
+        "मैं"
+      ],
+      "suffixes": [
+        "hai",
+        "hoon",
+        "hu",
+        "here",
+        "है",
+        "हूँ",
+        "हूं"
+      ]
+    }
+  },
+  "responses": {
+    "welcome": {
+      "en": [
+        "Hi, I'm your GgnHome AI property consultant 👋 Tell me what you're looking for — speak or type — and I'll find the best-matching homes in Gurgaon."
+      ],
+      "hinglish": [
+        "Namaste, main aapka GgnHome AI property consultant hoon 👋 Batayiye kya chahiye — bol kar ya likh kar — main Gurgaon mein sabse sahi ghar dhoondh dunga."
+      ],
+      "hi": [
+        "नमस्ते, मैं आपका GgnHome AI प्रॉपर्टी सलाहकार हूँ 👋 बताइए क्या चाहिए — बोलकर या लिखकर — मैं गुड़गाँव में सबसे सही घर ढूँढ दूँगा।"
+      ]
+    },
+    "welcomeBack": {
+      "en": [
+        "Welcome back! I've kept your earlier answers — pick up where you left off or start over."
+      ],
+      "hinglish": [
+        "Wapas swagat hai! Aapke pichhle jawab save hain — wahin se continue kijiye ya naya shuru kijiye."
+      ],
+      "hi": [
+        "फिर से स्वागत है! आपके पिछले जवाब सुरक्षित हैं — वहीं से आगे बढ़िए या नई शुरुआत कीजिए।"
+      ]
+    },
+    "understoodMany": {
+      "en": [
+        "Got all that: {value}.",
+        "Perfect — I've noted {value}."
+      ],
+      "hinglish": [
+        "Sab samajh gaya: {value}.",
+        "Perfect — note kar liya: {value}."
+      ],
+      "hi": [
+        "सब समझ गया: {value}।",
+        "बढ़िया — नोट कर लिया: {value}।"
+      ]
+    },
+    "updated": {
+      "en": [
+        "Updated {field} to {value}.",
+        "Changed {field} → {value}."
+      ],
+      "hinglish": [
+        "{field} badal kar {value} kar diya.",
+        "{field} ab {value} hai."
+      ],
+      "hi": [
+        "{field} बदलकर {value} कर दिया।",
+        "{field} अब {value} है।"
+      ]
+    },
+    "skipped": {
+      "en": [
+        "No problem, skipping that.",
+        "Sure — we'll leave that open."
+      ],
+      "hinglish": [
+        "Koi baat nahi, skip kar diya.",
+        "Theek hai — ise open rakhte hain."
+      ],
+      "hi": [
+        "कोई बात नहीं, छोड़ दिया।",
+        "ठीक है — इसे खुला रखते हैं।"
+      ]
+    },
+    "notUnderstood": {
+      "en": [
+        "Hmm, I didn't quite get that.",
+        "Sorry, I couldn't work that out."
+      ],
+      "hinglish": [
+        "Hmm, theek se samajh nahi aaya.",
+        "Maaf kijiye, samajh nahi paaya."
+      ],
+      "hi": [
+        "हम्म, ठीक से समझ नहीं आया।",
+        "माफ़ कीजिए, समझ नहीं पाया।"
+      ]
+    },
+    "offerSkip": {
+      "en": [
+        "You can tap a chip, rephrase, or say “skip”."
+      ],
+      "hinglish": [
+        "Chip tap kijiye, dobara boliye, ya “skip” boliye."
+      ],
+      "hi": [
+        "कोई विकल्प चुनिए, दोबारा बोलिए, या “छोड़ें” बोलिए।"
+      ]
+    },
+    "readyToSearch": {
+      "en": [
+        "That's everything I need. Finding your best matches now…",
+        "All set — let me search GgnHome's live listings for you."
+      ],
+      "hinglish": [
+        "Bas itna hi chahiye tha. Ab best matches dhoondhta hoon…",
+        "Sab set — GgnHome ki live listings mein dhoondhta hoon."
+      ],
+      "hi": [
+        "बस इतना ही चाहिए था। अब सबसे अच्छे मिलान ढूँढता हूँ…",
+        "सब तैयार — GgnHome की लाइव लिस्टिंग में ढूँढता हूँ।"
+      ]
+    },
+    "needMoreBeforeSearch": {
+      "en": [
+        "Almost there — I just need your {field} before I search."
+      ],
+      "hinglish": [
+        "Bas thoda sa — search se pehle {field} bata dijiye."
+      ],
+      "hi": [
+        "बस थोड़ा-सा — खोज से पहले {field} बता दीजिए।"
+      ]
+    },
+    "results": {
+      "en": [
+        "I found {count} homes that match. Here are the best ones, ranked for you:",
+        "{count} matches! Top picks first:"
+      ],
+      "hinglish": [
+        "{count} ghar match hue. Ye rahe best wale, rank karke:",
+        "{count} matches mile! Top picks pehle:"
+      ],
+      "hi": [
+        "{count} घर मेल खाते हैं। ये रहे सबसे अच्छे, रैंक करके:",
+        "{count} मिलान मिले! सबसे अच्छे पहले:"
+      ]
+    },
+    "resultsOne": {
+      "en": [
+        "I found 1 home that matches all your must-haves:"
+      ],
+      "hinglish": [
+        "1 ghar mila jo aapki saari zarooratein poori karta hai:"
+      ],
+      "hi": [
+        "1 घर मिला जो आपकी सारी ज़रूरतें पूरी करता है:"
+      ]
+    },
+    "afterResults": {
+      "en": [
+        "Want a GgnHome expert to arrange visits for these? Or refine — e.g. “increase budget to 35k” or “only furnished”."
+      ],
+      "hinglish": [
+        "Kya GgnHome expert inke visits arrange kare? Ya refine kijiye — jaise “budget 35k kar do” ya “sirf furnished”."
+      ],
+      "hi": [
+        "क्या GgnHome विशेषज्ञ इनकी विज़िट तय करें? या बदलाव कीजिए — जैसे “बजट 35 हज़ार कर दो” या “सिर्फ़ फ़र्निश्ड”।"
+      ]
+    },
+    "afterResultsChips": [
+      {
+        "value": "yes contact me",
+        "label": {
+          "en": "📞 Arrange visits",
+          "hinglish": "📞 Visit arrange karo",
+          "hi": "📞 विज़िट तय करें"
+        }
+      },
+      {
+        "value": "show more",
+        "label": {
+          "en": "More results",
+          "hinglish": "Aur dikhao",
+          "hi": "और दिखाओ"
+        }
+      },
+      {
+        "value": "refine",
+        "label": {
+          "en": "✏️ Refine",
+          "hinglish": "✏️ Badlav",
+          "hi": "✏️ बदलाव"
+        }
+      },
+      {
+        "value": "start over",
+        "label": {
+          "en": "↺ Start over",
+          "hinglish": "↺ Naya shuru",
+          "hi": "↺ नई शुरुआत"
+        }
+      }
+    ],
+    "noMoreResults": {
+      "en": [
+        "That's every match for now. Want me to widen the search, or have an expert hunt for off-market options?"
+      ],
+      "hinglish": [
+        "Abhi ke liye itne hi match hain. Search badhaun, ya expert off-market options dhoondhe?"
+      ],
+      "hi": [
+        "अभी के लिए इतने ही मिलान हैं। खोज बढ़ाऊँ, या विशेषज्ञ ऑफ़-मार्केट विकल्प ढूँढें?"
+      ]
+    },
+    "refinePrompt": {
+      "en": [
+        "Sure — what would you like to change? Budget, area, BHK, furnishing, or nearby places?"
+      ],
+      "hinglish": [
+        "Zaroor — kya badalna hai? Budget, area, BHK, furnishing ya paas ki jagahen?"
+      ],
+      "hi": [
+        "ज़रूर — क्या बदलना है? बजट, इलाका, BHK, फ़र्निशिंग या पास की जगहें?"
+      ]
+    },
+    "refineChips": [
+      {
+        "value": "change budget",
+        "label": {
+          "en": "💰 Budget",
+          "hinglish": "💰 Budget",
+          "hi": "💰 बजट"
+        }
+      },
+      {
+        "value": "change location",
+        "label": {
+          "en": "📍 Location",
+          "hinglish": "📍 Location",
+          "hi": "📍 लोकेशन"
+        }
+      },
+      {
+        "value": "change bhk",
+        "label": {
+          "en": "🛏️ BHK",
+          "hinglish": "🛏️ BHK",
+          "hi": "🛏️ BHK"
+        }
+      },
+      {
+        "value": "change nearby",
+        "label": {
+          "en": "🚇 Nearby places",
+          "hinglish": "🚇 Paas ki jagah",
+          "hi": "🚇 पास की जगहें"
+        }
+      }
+    ],
+    "noMatch": {
+      "en": [
+        "I couldn't find a home that meets every must-have right now."
+      ],
+      "hinglish": [
+        "Abhi aisa koi ghar nahi mila jo saari zarooratein poori kare."
+      ],
+      "hi": [
+        "अभी ऐसा कोई घर नहीं मिला जो सारी ज़रूरतें पूरी करे।"
+      ]
+    },
+    "noMatchReason": {
+      "budget": {
+        "en": [
+          "The budget is the tightest limit — {count} homes match if I go up to {value}. Shall I?"
+        ],
+        "hinglish": [
+          "Budget sabse tight hai — {value} tak jaaun to {count} ghar milte hain. Kar doon?"
+        ],
+        "hi": [
+          "बजट सबसे कड़ी सीमा है — {value} तक जाऊँ तो {count} घर मिलते हैं। कर दूँ?"
+        ]
+      },
+      "location": {
+        "en": [
+          "There's nothing in {location} right now, but {count} homes match elsewhere in Gurgaon. Want to see them?"
+        ],
+        "hinglish": [
+          "{location} mein abhi kuch nahi hai, par Gurgaon mein baaki jagah {count} ghar match karte hain. Dikhaun?"
+        ],
+        "hi": [
+          "{location} में अभी कुछ नहीं है, पर गुड़गाँव में दूसरी जगह {count} घर मेल खाते हैं। दिखाऊँ?"
+        ]
+      },
+      "bhk": {
+        "en": [
+          "{bhk} is the limiting factor — {count} homes match with other configurations. Open it up?"
+        ],
+        "hinglish": [
+          "{bhk} ki wajah se match nahi mil raha — dusre configuration mein {count} ghar hain. Khol doon?"
+        ],
+        "hi": [
+          "{bhk} की वजह से मिलान नहीं मिल रहा — दूसरे कॉन्फ़िगरेशन में {count} घर हैं। खोल दूँ?"
+        ]
+      },
+      "type": {
+        "en": [
+          "The property type is narrowing it down — {count} homes match if any type is fine. Include them?"
+        ],
+        "hinglish": [
+          "Property type ki wajah se kam hai — koi bhi type chale to {count} ghar hain. Shaamil karun?"
+        ],
+        "hi": [
+          "प्रॉपर्टी प्रकार की वजह से कम है — कोई भी प्रकार चले तो {count} घर हैं। शामिल करूँ?"
+        ]
+      },
+      "none": {
+        "en": [
+          "Even with relaxed filters there's nothing live right now. A GgnHome expert can track new and off-market listings for you."
+        ],
+        "hinglish": [
+          "Filters dheele karne par bhi abhi kuch live nahi hai. GgnHome expert naye aur off-market ghar aapke liye track kar sakte hain."
+        ],
+        "hi": [
+          "फ़िल्टर ढीले करने पर भी अभी कुछ लाइव नहीं है। GgnHome विशेषज्ञ नए और ऑफ़-मार्केट घर आपके लिए खोज सकते हैं।"
+        ]
+      }
+    },
+    "relaxChips": [
+      {
+        "value": "yes relax it",
+        "label": {
+          "en": "Yes, show them",
+          "hinglish": "Haan, dikhao",
+          "hi": "हाँ, दिखाओ"
+        }
+      },
+      {
+        "value": "no keep it",
+        "label": {
+          "en": "No, keep my filters",
+          "hinglish": "Nahi, filters rehne do",
+          "hi": "नहीं, फ़िल्टर रहने दो"
+        }
+      },
+      {
+        "value": "yes contact me",
+        "label": {
+          "en": "📞 Have an expert search",
+          "hinglish": "📞 Expert dhoondhe",
+          "hi": "📞 विशेषज्ञ खोजें"
+        }
+      }
+    ],
+    "relaxed": {
+      "en": [
+        "Done — I've relaxed the {field} and searched again."
+      ],
+      "hinglish": [
+        "Ho gaya — {field} dheela karke dobara search kiya."
+      ],
+      "hi": [
+        "हो गया — {field} ढीला करके फिर से खोजा।"
+      ]
+    },
+    "keptFilters": {
+      "en": [
+        "Okay, I'll keep your filters as they are. An expert can still look out for new listings."
+      ],
+      "hinglish": [
+        "Theek hai, filters waise hi rahenge. Expert phir bhi naye ghar dhoondh sakte hain."
+      ],
+      "hi": [
+        "ठीक है, फ़िल्टर वैसे ही रहेंगे। विशेषज्ञ फिर भी नए घर खोज सकते हैं।"
+      ]
+    },
+    "searchFailed": {
+      "en": [
+        "The search didn't go through — please try again in a moment."
+      ],
+      "hinglish": [
+        "Search nahi ho paya — thodi der mein dobara try kijiye."
+      ],
+      "hi": [
+        "खोज नहीं हो पाई — थोड़ी देर में फिर से कोशिश कीजिए।"
+      ]
+    },
+    "propertyNotFound": {
+      "en": [
+        "I don't have a result #{index} on screen. Ask about one of the cards shown."
+      ],
+      "hinglish": [
+        "Screen pe #{index} result nahi hai. Dikhaye gaye cards mein se kisi ke baare mein poochiye."
+      ],
+      "hi": [
+        "स्क्रीन पर #{index} नतीजा नहीं है। दिखाए गए कार्ड में से किसी के बारे में पूछिए।"
+      ]
+    },
+    "noResultsYet": {
+      "en": [
+        "I haven't shown any homes yet — let's finish a couple of questions first."
+      ],
+      "hinglish": [
+        "Abhi tak koi ghar nahi dikhaya — pehle do-teen sawaal poore karte hain."
+      ],
+      "hi": [
+        "अभी तक कोई घर नहीं दिखाया — पहले दो-तीन सवाल पूरे करते हैं।"
+      ]
+    },
+    "nearbyUnverified": {
+      "en": [
+        "Distances for this listing haven't been verified yet, so I won't guess."
+      ],
+      "hinglish": [
+        "Is listing ki distances abhi verified nahi hain, isliye andaaza nahi lagaunga."
+      ],
+      "hi": [
+        "इस लिस्टिंग की दूरियाँ अभी सत्यापित नहीं हैं, इसलिए अनुमान नहीं लगाऊँगा।"
+      ]
+    },
+    "distanceDisclaimer": {
+      "en": "Approx. straight-line distance — not road distance.",
+      "hinglish": "Lagbhag seedhi line ki doori — sadak ki nahi.",
+      "hi": "लगभग सीधी रेखा की दूरी — सड़क की नहीं।"
+    },
+    "enquiryStart": {
+      "en": [
+        "Wonderful! A few details so the right expert can reach you."
+      ],
+      "hinglish": [
+        "Bahut badhiya! Kuch details taaki sahi expert aap tak pahunche."
+      ],
+      "hi": [
+        "बहुत बढ़िया! कुछ जानकारी ताकि सही विशेषज्ञ आप तक पहुँचे।"
+      ]
+    },
+    "submitted": {
+      "en": [
+        "Done! Your request {leadRef} is with our team. A GgnHome expert will call you shortly. 🎉"
+      ],
+      "hinglish": [
+        "Ho gaya! Aapki request {leadRef} hamari team ke paas hai. GgnHome expert jaldi call karenge. 🎉"
+      ],
+      "hi": [
+        "हो गया! आपकी रिक्वेस्ट {leadRef} हमारी टीम के पास है। GgnHome विशेषज्ञ जल्द कॉल करेंगे। 🎉"
+      ]
+    },
+    "submittedDuplicate": {
+      "en": [
+        "You're all set — request {leadRef} was already received, so I didn't send it twice."
+      ],
+      "hinglish": [
+        "Sab set hai — request {leadRef} pehle hi mil chuki hai, dobara nahi bheji."
+      ],
+      "hi": [
+        "सब तैयार है — रिक्वेस्ट {leadRef} पहले ही मिल चुकी है, दोबारा नहीं भेजी।"
+      ]
+    },
+    "submitFailed": {
+      "en": [
+        "I couldn't submit that just now. Your details are still here — please try again."
+      ],
+      "hinglish": [
+        "Abhi submit nahi ho paya. Aapki details yahin hain — dobara try kijiye."
+      ],
+      "hi": [
+        "अभी सबमिट नहीं हो पाया। आपकी जानकारी यहीं है — फिर से कोशिश कीजिए।"
+      ]
+    },
+    "consentRequired": {
+      "en": [
+        "Please tick the consent box so we can share your details with the expert."
+      ],
+      "hinglish": [
+        "Consent box tick kijiye taaki details expert ke saath share ho sakein."
+      ],
+      "hi": [
+        "कृपया सहमति बॉक्स पर टिक कीजिए ताकि जानकारी विशेषज्ञ के साथ साझा हो सके।"
+      ]
+    },
+    "afterSubmit": {
+      "en": [
+        "Anything else? You can keep refining your search or close me to browse on your own."
+      ],
+      "hinglish": [
+        "Aur kuch? Search refine karte rahiye ya band karke khud browse kijiye."
+      ],
+      "hi": [
+        "और कुछ? खोज बदलते रहिए या बंद करके ख़ुद देखिए।"
+      ]
+    },
+    "aiOffline": {
+      "en": "Running in fast rule-based mode.",
+      "hinglish": "Fast rule-based mode mein chal raha hai.",
+      "hi": "तेज़ नियम-आधारित मोड में चल रहा है।"
+    },
+    "voice": {
+      "unsupported": {
+        "en": "Voice input isn't supported in this browser — typing works just as well.",
+        "hinglish": "Is browser mein voice input nahi chalta — type karna bhi utna hi achha hai.",
+        "hi": "इस ब्राउज़र में आवाज़ से इनपुट नहीं चलता — टाइप करना भी उतना ही अच्छा है।"
+      },
+      "denied": {
+        "en": "Microphone access was blocked. Allow it in your browser settings, or just type.",
+        "hinglish": "Microphone ki permission block hai. Browser settings mein allow kijiye, ya type kijiye.",
+        "hi": "माइक्रोफ़ोन की अनुमति बंद है। ब्राउज़र सेटिंग में चालू कीजिए, या टाइप कीजिए।"
+      },
+      "noSpeech": {
+        "en": "I didn't hear anything — tap the mic and try again.",
+        "hinglish": "Kuch sunai nahi diya — mic dabakar dobara boliye.",
+        "hi": "कुछ सुनाई नहीं दिया — माइक दबाकर फिर से बोलिए।"
+      },
+      "network": {
+        "en": "Voice recognition needs a connection right now — please type instead.",
+        "hinglish": "Voice recognition ke liye abhi network chahiye — type kar dijiye.",
+        "hi": "आवाज़ पहचान के लिए अभी नेटवर्क चाहिए — टाइप कर दीजिए।"
+      },
+      "listening": {
+        "en": "Listening…",
+        "hinglish": "Sun raha hoon…",
+        "hi": "सुन रहा हूँ…"
+      }
+    },
+    "fieldNames": {
+      "mode": {
+        "en": "rent or buy",
+        "hinglish": "rent ya buy",
+        "hi": "किराया या ख़रीद"
+      },
+      "location": {
+        "en": "location",
+        "hinglish": "location",
+        "hi": "लोकेशन"
+      },
+      "budget": {
+        "en": "budget",
+        "hinglish": "budget",
+        "hi": "बजट"
+      },
+      "bhk": {
+        "en": "BHK",
+        "hinglish": "BHK",
+        "hi": "BHK"
+      },
+      "propertyType": {
+        "en": "property type",
+        "hinglish": "property type",
+        "hi": "प्रॉपर्टी प्रकार"
+      },
+      "furnishing": {
+        "en": "furnishing",
+        "hinglish": "furnishing",
+        "hi": "फ़र्निशिंग"
+      },
+      "moveIn": {
+        "en": "move-in date",
+        "hinglish": "shift date",
+        "hi": "शिफ़्ट की तारीख़"
+      },
+      "occupancy": {
+        "en": "who's moving in",
+        "hinglish": "kaun rahega",
+        "hi": "कौन रहेगा"
+      },
+      "area": {
+        "en": "minimum area",
+        "hinglish": "minimum area",
+        "hi": "न्यूनतम क्षेत्रफल"
+      },
+      "possession": {
+        "en": "possession",
+        "hinglish": "possession",
+        "hi": "पज़ेशन"
+      },
+      "purpose": {
+        "en": "purpose",
+        "hinglish": "purpose",
+        "hi": "उद्देश्य"
+      },
+      "priorities": {
+        "en": "nearby places",
+        "hinglish": "paas ki jagahen",
+        "hi": "पास की जगहें"
+      },
+      "corner": {
+        "en": "corner/middle",
+        "hinglish": "corner/middle",
+        "hi": "कॉर्नर/बीच"
+      },
+      "name": {
+        "en": "name",
+        "hinglish": "naam",
+        "hi": "नाम"
+      },
+      "phone": {
+        "en": "mobile number",
+        "hinglish": "mobile number",
+        "hi": "मोबाइल नंबर"
+      },
+      "email": {
+        "en": "email",
+        "hinglish": "email",
+        "hi": "ईमेल"
+      }
+    },
+    "matchReasons": {
+      "budgetWithin": {
+        "en": "Within your {budget} budget",
+        "hinglish": "Aapke {budget} budget mein",
+        "hi": "आपके {budget} बजट में"
+      },
+      "budgetSlightlyAbove": {
+        "en": "{value} above your budget (you allowed a little stretch)",
+        "hinglish": "Budget se {value} upar (thoda stretch chalega bola tha)",
+        "hi": "बजट से {value} ऊपर (थोड़ा ऊपर चलेगा कहा था)"
+      },
+      "budgetFlexible": {
+        "en": "Budget is open",
+        "hinglish": "Budget open hai",
+        "hi": "बजट खुला है"
+      },
+      "locationExact": {
+        "en": "In your preferred {location}",
+        "hinglish": "Aapke pasandida {location} mein",
+        "hi": "आपके पसंदीदा {location} में"
+      },
+      "locationAny": {
+        "en": "Gurgaon — you're open to any area",
+        "hinglish": "Gurgaon — koi bhi area chalega",
+        "hi": "गुड़गाँव — कोई भी इलाका चलेगा"
+      },
+      "locationNearby": {
+        "en": "Near your preferred area",
+        "hinglish": "Aapke pasandida area ke paas",
+        "hi": "आपके पसंदीदा इलाके के पास"
+      },
+      "bhkExact": {
+        "en": "Matches your {bhk} need",
+        "hinglish": "Aapka {bhk} match",
+        "hi": "आपका {bhk} मेल खाता है"
+      },
+      "typeMatch": {
+        "en": "{type} as you wanted",
+        "hinglish": "Jaisa chahiye tha — {type}",
+        "hi": "जैसा चाहिए था — {type}"
+      },
+      "furnishingMatch": {
+        "en": "{value}",
+        "hinglish": "{value}",
+        "hi": "{value}"
+      },
+      "amenityVerified": {
+        "en": "{param} ~{distance} away",
+        "hinglish": "{param} lagbhag {distance} door",
+        "hi": "{param} लगभग {distance} दूर"
+      },
+      "amenityTooFar": {
+        "en": "{param} ~{distance} away (farther than you'd like)",
+        "hinglish": "{param} lagbhag {distance} door (chahiye se zyada)",
+        "hi": "{param} लगभग {distance} दूर (चाहत से ज़्यादा)"
+      },
+      "amenityUnverified": {
+        "en": "{param} distance not verified",
+        "hinglish": "{param} ki distance verified nahi",
+        "hi": "{param} की दूरी सत्यापित नहीं"
+      },
+      "cornerMatch": {
+        "en": "Corner property ✓",
+        "hinglish": "Corner property ✓",
+        "hi": "कॉर्नर प्रॉपर्टी ✓"
+      },
+      "middleMatch": {
+        "en": "Middle position ✓",
+        "hinglish": "Middle position ✓",
+        "hi": "बीच वाली ✓"
+      },
+      "positionUnverified": {
+        "en": "Corner/middle not specified by the lister",
+        "hinglish": "Corner/middle lister ne nahi bataya",
+        "hi": "कॉर्नर/बीच लिस्टर ने नहीं बताया"
+      },
+      "fresh": {
+        "en": "Listed recently",
+        "hinglish": "Haal hi mein list hua",
+        "hi": "हाल ही में लिस्ट हुआ"
+      },
+      "verifiedSource": {
+        "en": "Verified GgnHome listing",
+        "hinglish": "Verified GgnHome listing",
+        "hi": "सत्यापित GgnHome लिस्टिंग"
+      },
+      "locationOther": {
+        "en": "In {location}, outside your preferred areas",
+        "hinglish": "{location} mein, aapke pasandida area se bahar",
+        "hi": "{location} में, आपके पसंदीदा इलाके से बाहर"
+      }
+    },
+    "contactAck": {
+      "en": [
+        "Thanks! Here's a summary of your request."
+      ],
+      "hinglish": [
+        "Shukriya! Ye raha aapki request ka summary."
+      ],
+      "hi": [
+        "धन्यवाद! यह रहा आपकी रिक्वेस्ट का सारांश।"
+      ]
+    }
+  },
+  "searchStages": [
+    {
+      "id": "understand",
+      "durationMs": 700,
+      "icon": "BrainCircuit",
+      "label": {
+        "en": "Understanding your requirements",
+        "hinglish": "Aapki zarooratein samajh raha hoon",
+        "hi": "आपकी ज़रूरतें समझ रहा हूँ"
+      },
+      "detail": {
+        "en": "{value}",
+        "hinglish": "{value}",
+        "hi": "{value}"
+      }
+    },
+    {
+      "id": "scan",
+      "durationMs": 900,
+      "icon": "Radar",
+      "label": {
+        "en": "Scanning live Gurgaon listings",
+        "hinglish": "Gurgaon ki live listings scan kar raha hoon",
+        "hi": "गुड़गाँव की लाइव लिस्टिंग स्कैन कर रहा हूँ"
+      },
+      "detail": {
+        "en": "{count} listings scanned",
+        "hinglish": "{count} listings scan hui",
+        "hi": "{count} लिस्टिंग स्कैन हुईं"
+      }
+    },
+    {
+      "id": "filter",
+      "durationMs": 800,
+      "icon": "Filter",
+      "label": {
+        "en": "Applying your must-haves",
+        "hinglish": "Must-haves laga raha hoon",
+        "hi": "ज़रूरी शर्तें लगा रहा हूँ"
+      },
+      "detail": {
+        "en": "{count} pass budget, area and BHK",
+        "hinglish": "{count} budget, area aur BHK mein fit",
+        "hi": "{count} बजट, इलाके और BHK में फ़िट"
+      }
+    },
+    {
+      "id": "amenities",
+      "durationMs": 900,
+      "icon": "MapPinned",
+      "label": {
+        "en": "Measuring market, metro, hospital, school, park & mall",
+        "hinglish": "Market, metro, hospital, school, park aur mall ki doori naap raha hoon",
+        "hi": "बाज़ार, मेट्रो, अस्पताल, स्कूल, पार्क और मॉल की दूरी नाप रहा हूँ"
+      },
+      "detail": {
+        "en": "{count} with verified distances",
+        "hinglish": "{count} ki distance verified",
+        "hi": "{count} की दूरी सत्यापित"
+      }
+    },
+    {
+      "id": "rank",
+      "durationMs": 800,
+      "icon": "Sparkles",
+      "label": {
+        "en": "Scoring and ranking the best fits",
+        "hinglish": "Best fit score aur rank kar raha hoon",
+        "hi": "सबसे सही घरों को स्कोर और रैंक कर रहा हूँ"
+      },
+      "detail": {
+        "en": "Top {count} picked",
+        "hinglish": "Top {count} chune",
+        "hi": "शीर्ष {count} चुने"
+      }
+    }
+  ],
+  "loadingTips": {
+    "en": [
+      "Tip: in Gurgaon, a security deposit of 1–3 months' rent is common — the owner decides.",
+      "Tip: park-facing homes usually rent faster and hold value well.",
+      "Tip: ask for the RERA number on any under-construction project.",
+      "Tip: corner units often get two open sides — more light and cross-ventilation.",
+      "Tip: check the power-backup and water-supply arrangement before you sign.",
+      "Tip: metro access can cut a Cyber City commute dramatically during peak hours."
+    ],
+    "hinglish": [
+      "Tip: Gurgaon mein 1–3 mahine ka security deposit aam hai — owner decide karta hai.",
+      "Tip: park-facing ghar jaldi rent pe chadhte hain aur value bhi achhi rehti hai.",
+      "Tip: under-construction project mein RERA number zaroor poochiye.",
+      "Tip: corner unit mein do side khuli hoti hain — zyada roshni aur hawa.",
+      "Tip: sign karne se pehle power backup aur paani ki vyavastha check kijiye.",
+      "Tip: metro paas ho to peak hours mein Cyber City ka safar kaafi chhota ho jata hai."
+    ],
+    "hi": [
+      "सुझाव: गुड़गाँव में 1–3 महीने का सिक्योरिटी डिपॉज़िट आम है — मालिक तय करता है।",
+      "सुझाव: पार्क-फेसिंग घर जल्दी किराये पर चढ़ते हैं और क़ीमत भी अच्छी रहती है।",
+      "सुझाव: निर्माणाधीन प्रोजेक्ट में RERA नंबर ज़रूर पूछिए।",
+      "सुझाव: कॉर्नर यूनिट में दो तरफ़ खुला होता है — ज़्यादा रोशनी और हवा।",
+      "सुझाव: साइन करने से पहले पावर बैकअप और पानी की व्यवस्था जाँचिए।",
+      "सुझाव: मेट्रो पास हो तो भीड़ के समय साइबर सिटी का सफ़र काफ़ी छोटा हो जाता है।"
+    ]
+  },
+  "faq": [
+    {
+      "id": "brokerage",
+      "patterns": [
+        "\\b(brokerage|broker fee|commission|service fee|kitna charge|charges)\\b",
+        "ब्रोकरेज",
+        "कमीशन"
+      ],
+      "answer": {
+        "en": "Many listings on GgnHome show any brokerage the owner or partner has set right on the card. If a listing doesn't show one, the expert will confirm charges with you before any visit — nothing is charged without your agreement.",
+        "hinglish": "GgnHome ki kaafi listings pe owner ya partner ka brokerage card pe hi dikhta hai. Agar nahi dikhta, to visit se pehle expert aapko charges confirm karenge — aapki marzi ke bina kuch charge nahi hota.",
+        "hi": "GgnHome की कई लिस्टिंग पर मालिक या पार्टनर का ब्रोकरेज कार्ड पर ही दिखता है। अगर नहीं दिखता, तो विज़िट से पहले विशेषज्ञ शुल्क की पुष्टि करेंगे — आपकी सहमति के बिना कुछ नहीं लिया जाता।"
+      }
+    },
+    {
+      "id": "deposit",
+      "patterns": [
+        "\\b(security deposit|deposit|advance)\\b",
+        "डिपॉज़िट",
+        "एडवांस"
+      ],
+      "answer": {
+        "en": "In Gurgaon, security deposits are usually between one and three months' rent, but each owner sets their own. Where the lister has entered it, you'll see it on the listing page.",
+        "hinglish": "Gurgaon mein security deposit aam taur pe 1 se 3 mahine ke rent ke barabar hota hai, lekin har owner apna tay karta hai. Agar lister ne daala hai to listing page pe dikhega.",
+        "hi": "गुड़गाँव में सिक्योरिटी डिपॉज़िट आमतौर पर 1 से 3 महीने के किराये के बराबर होता है, पर हर मालिक अपना तय करता है। अगर लिस्टर ने डाला है तो लिस्टिंग पेज पर दिखेगा।"
+      }
+    },
+    {
+      "id": "rentAgreement",
+      "patterns": [
+        "\\b(rent agreement|lease agreement|agreement|registration of lease)\\b",
+        "एग्रीमेंट"
+      ],
+      "answer": {
+        "en": "Most Gurgaon rentals use an 11-month rent agreement on stamp paper. Read the lock-in period, notice period, maintenance and deposit-refund clauses carefully before signing.",
+        "hinglish": "Gurgaon mein zyadatar 11 mahine ka rent agreement stamp paper pe banta hai. Sign karne se pehle lock-in, notice period, maintenance aur deposit refund wale clause dhyan se padhiye.",
+        "hi": "गुड़गाँव में ज़्यादातर 11 महीने का रेंट एग्रीमेंट स्टांप पेपर पर बनता है। साइन करने से पहले लॉक-इन, नोटिस पीरियड, मेंटेनेंस और डिपॉज़िट वापसी वाली शर्तें ध्यान से पढ़िए।"
+      }
+    },
+    {
+      "id": "policeVerification",
+      "patterns": [
+        "\\b(police verification|tenant verification|verification)\\b",
+        "पुलिस वेरिफ़िकेशन"
+      ],
+      "answer": {
+        "en": "Tenant police verification is expected in Haryana and is usually done by the owner through the Haryana Police online services. Keep your ID and a passport photo ready.",
+        "hinglish": "Haryana mein tenant ka police verification zaroori maana jata hai, aksar owner Haryana Police ki online seva se karwata hai. ID aur passport photo ready rakhiye.",
+        "hi": "हरियाणा में किरायेदार का पुलिस वेरिफ़िकेशन अपेक्षित है, अक्सर मालिक हरियाणा पुलिस की ऑनलाइन सेवा से कराता है। पहचान पत्र और पासपोर्ट फ़ोटो तैयार रखिए।"
+      }
+    },
+    {
+      "id": "documentsBuy",
+      "patterns": [
+        "\\b(documents|papers|paperwork|title|registry|kaagaz|kagaz)\\b.*\\b(buy|purchase|property|flat|kharid)\\b",
+        "\\b(what documents|which documents)\\b",
+        "दस्तावेज़",
+        "कागज़"
+      ],
+      "answer": {
+        "en": "Before buying, check the title chain, approved building plan, occupancy certificate (for ready homes), RERA registration (for new projects), society NOC and latest tax and maintenance receipts. A property lawyer's review is always worth it.",
+        "hinglish": "Khareedne se pehle title chain, approved building plan, occupancy certificate (ready ghar ke liye), RERA registration (naye project ke liye), society NOC aur tax-maintenance ki receipts check kijiye. Property lawyer se review karwana hamesha faydemand hai.",
+        "hi": "ख़रीदने से पहले टाइटल चेन, स्वीकृत बिल्डिंग प्लान, ऑक्यूपेंसी सर्टिफ़िकेट (रेडी घर के लिए), RERA पंजीकरण (नए प्रोजेक्ट के लिए), सोसाइटी NOC और टैक्स-मेंटेनेंस रसीदें जाँचिए। प्रॉपर्टी वकील से जाँच करवाना हमेशा फ़ायदेमंद है।"
+      }
+    },
+    {
+      "id": "stampDuty",
+      "patterns": [
+        "\\b(stamp duty|registration charges?|registry charges?)\\b",
+        "स्टांप ड्यूटी"
+      ],
+      "answer": {
+        "en": "Stamp duty and registration charges in Haryana depend on the buyer's profile and the area, and rates change from time to time. Please confirm the current rate with the sub-registrar office or your lawyer before budgeting.",
+        "hinglish": "Haryana mein stamp duty aur registration charges buyer aur area pe depend karte hain aur samay-samay pe badalte hain. Budget banane se pehle sub-registrar office ya lawyer se current rate confirm kijiye.",
+        "hi": "हरियाणा में स्टांप ड्यूटी और पंजीकरण शुल्क ख़रीदार और इलाके पर निर्भर करते हैं और समय-समय पर बदलते हैं। बजट बनाने से पहले सब-रजिस्ट्रार कार्यालय या वकील से वर्तमान दर की पुष्टि कीजिए।"
+      }
+    },
+    {
+      "id": "homeLoan",
+      "patterns": [
+        "\\b(home loan|loan|emi|mortgage|finance)\\b",
+        "लोन",
+        "ईएमआई"
+      ],
+      "answer": {
+        "en": "Every sale listing on GgnHome has an EMI calculator on its page. Banks typically finance a large share of the property value for salaried buyers — your eligibility depends on income, credit score and the property's approvals.",
+        "hinglish": "GgnHome ki har sale listing ke page pe EMI calculator hai. Bank salaried buyers ko property value ka bada hissa finance karte hain — eligibility income, credit score aur property ki approvals pe depend karti hai.",
+        "hi": "GgnHome की हर बिक्री लिस्टिंग के पेज पर EMI कैलकुलेटर है। बैंक नौकरीपेशा ख़रीदारों को प्रॉपर्टी मूल्य का बड़ा हिस्सा फ़ाइनेंस करते हैं — पात्रता आय, क्रेडिट स्कोर और प्रॉपर्टी की स्वीकृतियों पर निर्भर करती है।"
+      }
+    },
+    {
+      "id": "rera",
+      "patterns": [
+        "\\brera\\b",
+        "रेरा"
+      ],
+      "answer": {
+        "en": "For under-construction projects in Gurgaon, ask for the HRERA (Haryana RERA) registration number and verify it on the official HRERA Gurugram website before paying anything.",
+        "hinglish": "Gurgaon ke under-construction project mein HRERA (Haryana RERA) registration number maangiye aur kuch bhi pay karne se pehle official HRERA Gurugram website pe verify kijiye.",
+        "hi": "गुड़गाँव के निर्माणाधीन प्रोजेक्ट में HRERA (हरियाणा रेरा) पंजीकरण नंबर माँगिए और कुछ भी भुगतान करने से पहले आधिकारिक HRERA गुरुग्राम वेबसाइट पर जाँचिए।"
+      }
+    },
+    {
+      "id": "visit",
+      "patterns": [
+        "\\b(how (do|can) i (visit|see)|site visit process|visit kaise)\\b",
+        "विज़िट कैसे"
+      ],
+      "answer": {
+        "en": "Tap “Arrange visits” after your results, share your name and number, and a GgnHome expert will call to fix a time that suits you.",
+        "hinglish": "Results ke baad “Visit arrange karo” dabaiye, naam aur number dijiye, GgnHome expert aapke time ke hisaab se visit fix karenge.",
+        "hi": "नतीजों के बाद “विज़िट तय करें” दबाइए, नाम और नंबर दीजिए, GgnHome विशेषज्ञ आपके समय के हिसाब से विज़िट तय करेंगे।"
+      }
+    },
+    {
+      "id": "privacy",
+      "patterns": [
+        "\\b(privacy|my data|share my number|spam|who will see my number)\\b",
+        "प्राइवेसी",
+        "मेरा नंबर"
+      ],
+      "answer": {
+        "en": "Your number is only shared after you tick the consent box, and only with GgnHome and at most three verified partners working on your request. It never appears on public listings.",
+        "hinglish": "Aapka number tabhi share hota hai jab aap consent tick karte hain, aur sirf GgnHome aur aapki request pe kaam karne wale zyada se zyada 3 verified partners ke saath. Public listings pe kabhi nahi dikhta.",
+        "hi": "आपका नंबर तभी साझा होता है जब आप सहमति पर टिक करते हैं, और सिर्फ़ GgnHome और आपकी रिक्वेस्ट पर काम करने वाले अधिकतम 3 सत्यापित पार्टनर्स के साथ। सार्वजनिक लिस्टिंग पर कभी नहीं दिखता।"
+      }
+    },
+    {
+      "id": "distanceAccuracy",
+      "patterns": [
+        "\\b(how accurate|is (the|this) distance|distance (accurate|correct|real))\\b"
+      ],
+      "answer": {
+        "en": "Distances come from the listing partner or a map lookup and are straight-line estimates, not road distances. Where nothing is verified I say so instead of guessing.",
+        "hinglish": "Distance listing partner ya map lookup se aati hai aur seedhi line ka andaaza hai, sadak ki doori nahi. Jahan verified nahi hai wahan main andaaza nahi lagata.",
+        "hi": "दूरी लिस्टिंग पार्टनर या मैप लुकअप से आती है और सीधी रेखा का अनुमान है, सड़क की दूरी नहीं। जहाँ सत्यापित नहीं है वहाँ मैं अनुमान नहीं लगाता।"
+      }
+    },
+    {
+      "id": "cornerVsMiddle",
+      "patterns": [
+        "\\b(corner|middle).*(better|good|pros|cons|difference)\\b",
+        "\\bcorner (achha|acha|sahi)\\b"
+      ],
+      "answer": {
+        "en": "Corner homes usually get more daylight and cross-ventilation and can feel more spacious; they may see more road noise and sometimes cost a little more. Middle homes tend to be quieter, more private and slightly cheaper.",
+        "hinglish": "Corner ghar mein zyada roshni aur cross-ventilation hota hai aur khula lagta hai; road ka shor zyada ho sakta hai aur kabhi thoda mehnga. Middle ghar zyada shaant, private aur thode saste hote hain.",
+        "hi": "कॉर्नर घर में ज़्यादा रोशनी और हवा आती है और खुला लगता है; सड़क का शोर ज़्यादा हो सकता है और कभी थोड़ा महँगा। बीच वाले घर ज़्यादा शांत, निजी और थोड़े सस्ते होते हैं।"
+      }
+    }
+  ],
+  "llm": {
+    "enabledTasks": [
+      "extract",
+      "answerGeneral"
+    ],
+    "disabledTasks": [
+      "rank",
+      "query",
+      "createListing",
+      "assignLead",
+      "submitEnquiry"
+    ],
+    "extractSystemPrompt": "You extract a Gurgaon home-seeker's requirements from ONE message into strict JSON. Output only JSON. Use null for anything the message does not state. Never invent values. Budgets are rupees as plain numbers (25k = 25000, 1.2 lakh = 120000, 1.5 crore = 15000000). Sectors are integers 1-115. Distances are metres. Understand English, Hindi and Hinglish.",
+    "extractSchema": {
+      "intent": [
+        "provide_info",
+        "show_results",
+        "refine",
+        "ask_property",
+        "human",
+        "restart",
+        "general_question",
+        "other"
+      ],
+      "fields": {
+        "mode": [
+          "rent",
+          "sale",
+          null
+        ],
+        "sectors": "integer[] (1-115)",
+        "localities": "string[] (named areas)",
+        "anywhere": "boolean",
+        "budgetMin": "number|null",
+        "budgetMax": "number|null",
+        "budgetApprox": "boolean",
+        "bhk": "integer[] (0 = 1RK/studio, 1-10)",
+        "propertyType": [
+          "apartment",
+          "builder-floor",
+          "house",
+          "villa",
+          "studio",
+          "1RK",
+          "plot",
+          null
+        ],
+        "furnishing": [
+          "furnished",
+          "semi-furnished",
+          "unfurnished",
+          "any",
+          null
+        ],
+        "occupancy": [
+          "family",
+          "bachelor",
+          "bachelor_male",
+          "bachelor_female",
+          "couple",
+          "professionals",
+          "company",
+          "students",
+          null
+        ],
+        "pets": "boolean|null",
+        "moveInDays": "integer|null",
+        "minAreaSqft": "number|null",
+        "possession": [
+          "ready",
+          "under-construction",
+          "any",
+          null
+        ],
+        "purpose": [
+          "self",
+          "investment",
+          "both",
+          null
+        ],
+        "priorities": "object: key in market|metro|hospital|school|park|mall -> maxMeters number|null",
+        "corner": [
+          "corner",
+          "middle",
+          "any",
+          null
+        ]
+      },
+      "clarify": "string|null — one short question if the message is ambiguous",
+      "confidence": "number 0-1"
+    },
+    "answerSystemPrompt": "You are GgnHome's property consultant for Gurgaon, India. Answer general real-estate process questions in at most 70 words, in the user's language style. Never state specific listing details, prices, availability, distances or contact information. Never claim a property exists. If the question needs listing data, say the consultant will search live listings."
+  },
+  "testDialogues": [
+    {
+      "name": "Everything in one English sentence",
+      "turns": [
+        {
+          "user": "2 bhk for rent in sector 57 under 30k near metro",
+          "expect": {
+            "mode": "rent",
+            "sectors": [
+              57
+            ],
+            "budgetMax": 30000,
+            "bhk": [
+              2
+            ],
+            "priorities": [
+              "metro"
+            ],
+            "nextSlot": "propertyType"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Hinglish rental with correction",
+      "turns": [
+        {
+          "user": "mujhe kiraye pe flat chahiye",
+          "expect": {
+            "mode": "rent",
+            "propertyType": [
+              "apartment"
+            ],
+            "nextSlot": "location"
+          }
+        },
+        {
+          "user": "sohna road",
+          "expect": {
+            "localities": [
+              "Sohna Road"
+            ],
+            "nextSlot": "budget"
+          }
+        },
+        {
+          "user": "25 hazaar tak",
+          "expect": {
+            "budgetMax": 25000
+          }
+        },
+        {
+          "user": "nahi 30k kar do",
+          "expect": {
+            "budgetMax": 30000,
+            "localities": [
+              "Sohna Road"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Hindi purchase",
+      "turns": [
+        {
+          "user": "मुझे घर ख़रीदना है",
+          "expect": {
+            "mode": "sale",
+            "nextSlot": "location"
+          }
+        },
+        {
+          "user": "सेक्टर 65",
+          "expect": {
+            "sectors": [
+              65
+            ]
+          }
+        },
+        {
+          "user": "डेढ़ करोड़ तक",
+          "expect": {
+            "budgetMax": 15000000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bare number budget needs confirmation",
+      "turns": [
+        {
+          "user": "rent",
+          "expect": {
+            "mode": "rent"
+          }
+        },
+        {
+          "user": "sector 46",
+          "expect": {
+            "sectors": [
+              46
+            ]
+          }
+        },
+        {
+          "user": "25",
+          "expect": {
+            "pendingConfirm": "budget",
+            "value": 25000
+          }
+        },
+        {
+          "user": "yes",
+          "expect": {
+            "budgetMax": 25000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Approximate sale budget",
+      "turns": [
+        {
+          "user": "buy a 3bhk villa around 3 crore in golf course extension",
+          "expect": {
+            "mode": "sale",
+            "bhk": [
+              3
+            ],
+            "propertyType": [
+              "villa"
+            ],
+            "budgetMax": 30000000,
+            "budgetApprox": true,
+            "localities": [
+              "Golf Course Extension Road"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Near metro without a distance",
+      "turns": [
+        {
+          "user": "near metro",
+          "expect": {
+            "priorities": {
+              "metro": null
+            },
+            "followUp": "distances.metro"
+          }
+        },
+        {
+          "user": "10 min walk",
+          "expect": {
+            "priorities": {
+              "metro": 800
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Park facing corner plot",
+      "turns": [
+        {
+          "user": "park facing corner plot for sale in sector 82",
+          "expect": {
+            "mode": "sale",
+            "propertyType": [
+              "plot"
+            ],
+            "corner": "corner",
+            "priorities": {
+              "park": 100
+            },
+            "sectors": [
+              82
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Range rent budget",
+      "turns": [
+        {
+          "user": "between 20 and 25 thousand",
+          "expect": {
+            "budgetMin": 20000,
+            "budgetMax": 25000
+          }
+        },
+        {
+          "user": "20-25k",
+          "expect": {
+            "budgetMin": 20000,
+            "budgetMax": 25000
+          }
+        }
+      ]
+    },
+    {
+      "name": "Multiple sectors and BHK options",
+      "turns": [
+        {
+          "user": "2 or 3 bhk in sector 49, 50 or 51",
+          "expect": {
+            "bhk": [
+              2,
+              3
+            ],
+            "sectors": [
+              49,
+              50,
+              51
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Skip optional questions",
+      "turns": [
+        {
+          "user": "skip",
+          "expect": {
+            "skipped": "current"
+          }
+        },
+        {
+          "user": "koi bhi chalega",
+          "expect": {
+            "skipped": "current"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Show results early",
+      "turns": [
+        {
+          "user": "rent in sector 57 under 40k",
+          "expect": {
+            "mode": "rent"
+          }
+        },
+        {
+          "user": "show results",
+          "expect": {
+            "next": "search"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ask about a result",
+      "turns": [
+        {
+          "user": "tell me more about the second one",
+          "expect": {
+            "intent": "propertyDetail",
+            "index": 2
+          }
+        },
+        {
+          "user": "what's near the first one",
+          "expect": {
+            "intent": "propertyNearby",
+            "index": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contact details",
+      "turns": [
+        {
+          "user": "yes contact me",
+          "expect": {
+            "phase": "contact",
+            "nextSlot": "name"
+          }
+        },
+        {
+          "user": "mera naam Rahul hai",
+          "expect": {
+            "name": "Rahul"
+          }
+        },
+        {
+          "user": "98765 43210",
+          "expect": {
+            "phone": "9876543210"
+          }
+        },
+        {
+          "user": "skip",
+          "expect": {
+            "nextSlot": "review"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Family with pets",
+      "turns": [
+        {
+          "user": "family of 4 with a dog",
+          "expect": {
+            "occupancy": "family",
+            "people": 4,
+            "pets": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Move-in timing",
+      "turns": [
+        {
+          "user": "next month",
+          "expect": {
+            "moveInDays": 30
+          }
+        },
+        {
+          "user": "turant chahiye",
+          "expect": {
+            "moveInDays": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "Area in gaj",
+      "turns": [
+        {
+          "user": "at least 200 gaj",
+          "expect": {
+            "minAreaSqft": 1800
+          }
+        }
+      ]
+    },
+    {
+      "name": "Language switch",
+      "turns": [
+        {
+          "user": "hindi mein baat karo",
+          "expect": {
+            "language": "hi"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Restart",
+      "turns": [
+        {
+          "user": "start over",
+          "expect": {
+            "reset": true
+          }
+        }
+      ]
+    }
+  ]
+}

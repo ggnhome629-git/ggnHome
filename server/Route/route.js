@@ -21,7 +21,10 @@ const {
   guestFormLimiter,
   chatLimiter,
   smsConsoleLoginLimiter,
+  aiTurnLimiter,
+  aiSearchLimiter,
 } = require("../middleware/rateLimit");
+const aiConsultant = require("../controllers/aiConsultant.controller");
 
 // Controllers
 const { requestOtp, verifyOtp, loginWithPassword, setPassword, checkMobile , setRecoveryEmail , changePasswordDirect } = require("../controllers/login.controller");
@@ -342,6 +345,22 @@ router.delete("/admin/api/deleteenquiry/:id", verifyToken, checkAdminEmail, dele
 router.post("/api/chatbot", chatLimiter, getChatResponse);
 router.get("/api/chatbot/initial-questions", getInitialQuestions);
 
+// ================== AI PROPERTY CONSULTANT ==================
+// Rule-based consultant with optional Groq assistance. Conversation state is
+// held by the client and re-validated on every call; leads are written only
+// on a consented, idempotent submit.
+router.get("/api/ai-consultant/config", aiConsultant.getConfig);
+router.post("/api/ai-consultant/turn", aiTurnLimiter, aiConsultant.turn);
+router.post("/api/ai-consultant/search", aiSearchLimiter, aiConsultant.search);
+router.post("/api/ai-consultant/enquiry", verifyTokenOptional, guestFormLimiter, aiConsultant.createEnquiry);
+router.post("/api/ai-consultant/metric", aiTurnLimiter, aiConsultant.metric);
+router.get("/api/admin/ai-consultant/leads", verifyToken, checkAdminEmail, aiConsultant.adminListLeads);
+router.patch("/api/admin/ai-consultant/leads/:id", verifyToken, checkAdminEmail, aiConsultant.adminUpdateLead);
+router.get("/api/admin/ai-consultant/partners", verifyToken, checkAdminEmail, aiConsultant.adminListPartners);
+router.get("/api/admin/ai-consultant/usage", verifyToken, checkAdminEmail, aiConsultant.adminUsage);
+// Nearby market / metro / hospital / school / park / mall for the listing forms (server-side LocationIQ).
+router.post("/api/nearby-parameters", verifyTokenOrAgent, aiSearchLimiter, aiConsultant.nearbyParameters);
+
 // ================== SALE & RENTAL PROPERTY ROUTES ==================
 router.get("/api/getSaleproperties/:id", verifyTokenOptional, getSalePropertyById);
 router.post(
@@ -523,6 +542,9 @@ router.post("/api/partner/properties", verifyAgentToken, verifyPartnerAccess, up
 router.get("/api/partner/leads", verifyAgentToken, verifyPartnerAccess, getAgentLeads);
 router.get("/api/partner/leads/preferences", verifyAgentToken, verifyPartnerAccess, listPreferenceForms);
 router.get("/api/partner/leads/searches", verifyAgentToken, verifyPartnerAccess, getPartnerSearchLeads);
+router.get("/api/partner/ai-leads", verifyAgentToken, verifyPartnerAccess, aiConsultant.partnerListLeads);
+router.post("/api/partner/ai-leads/:id/claim", verifyAgentToken, verifyPartnerAccess, aiConsultant.partnerClaimLead);
+router.patch("/api/partner/ai-leads/:id", verifyAgentToken, verifyPartnerAccess, aiConsultant.partnerUpdateLead);
 router.get("/api/partner/enquiries", verifyAgentToken, verifyPartnerAccess, getPartnerEnquiries);
 router.patch("/api/partner/leads/:enquiryId/status", verifyAgentToken, verifyPartnerAccess, updateLeadStatus);
 router.get("/api/partner/profile", verifyAgentToken, verifyPartnerAccess, getAgentProfile);

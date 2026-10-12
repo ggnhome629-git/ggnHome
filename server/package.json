@@ -6,7 +6,7 @@
   "scripts": {
     "start": "nodemon index.js",
     "sync:nobroker": "node scripts/runNobrokerSync.js",
-    "test": ""
+    "test": "jest tests"
   },
   "keywords": [],
   "author": "",

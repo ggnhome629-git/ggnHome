@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { radii } from "../../../theme/theme";
 import { directionsUrl, displayAmount, formatCurrency, locationLine } from "../../../utils/propertyModel";
+import { NEARBY_PARAMETERS, POSITION_PARAMETER, formatDistance, nearestByCategory } from "../../../data/propertyParameters";
 
 export function SectionCard({ title, action, children, id, sx }) {
   return (
@@ -543,6 +544,64 @@ export function LocationSection({ property, mapSlot, onDirections, hasConnectivi
 }
 
 /* ---------------------------------------------------- nearby / connectivity */
+
+/**
+ * The seven property parameters for this listing: nearest market, metro,
+ * hospital, school, park and mall (approx. straight-line distances given by
+ * the lister or a map lookup) plus corner / middle position.
+ */
+export function PropertyParametersSection({ nearbyAmenities, cornerPosition }) {
+  const nearest = nearestByCategory(nearbyAmenities);
+  const hasPosition = cornerPosition === "corner" || cornerPosition === "middle";
+  if (!Object.keys(nearest).length && !hasPosition) return null;
+  const tile = (key, Icon, color, label, value, sub) => (
+    <Box
+      key={key}
+      sx={{
+        p: 3,
+        borderRadius: `${radii.md}px`,
+        border: "1px solid",
+        borderColor: value ? `${color}55` : "divider",
+        backgroundColor: value ? `${color}0F` : "background.default",
+        display: "flex",
+        gap: 2.5,
+        alignItems: "center",
+        minWidth: 0,
+      }}
+    >
+      <Box sx={{ width: 36, height: 36, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", backgroundColor: value ? `${color}1F` : "divider" }}>
+        <Icon size={18} color={value ? color : "#94A3B8"} />
+      </Box>
+      <Box sx={{ minWidth: 0 }}>
+        <Typography variant="caption" sx={{ color: "text.secondary", display: "block" }}>
+          {label}
+        </Typography>
+        <Typography variant="body2" sx={{ fontWeight: 700, color: value ? "text.primary" : "text.disabled" }}>
+          {value || "Not verified"}
+        </Typography>
+        {sub ? (
+          <Typography variant="caption" sx={{ color: "text.secondary", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {sub}
+          </Typography>
+        ) : null}
+      </Box>
+    </Box>
+  );
+  return (
+    <SectionCard title="Neighbourhood check">
+      <Box sx={{ display: "grid", gap: 3, gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" } }}>
+        {NEARBY_PARAMETERS.map((p) => {
+          const row = nearest[p.key];
+          return tile(p.key, p.icon, p.color, p.label, row ? `~${formatDistance(row.distanceMeters)}` : "", row?.name);
+        })}
+        {tile("corner", POSITION_PARAMETER.icon, POSITION_PARAMETER.color, POSITION_PARAMETER.label, hasPosition ? (cornerPosition === "corner" ? "Corner property" : "Middle position") : "", null)}
+      </Box>
+      <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mt: 3 }}>
+        Distances are approximate straight-line estimates from the lister or map data, not road distances.
+      </Typography>
+    </SectionCard>
+  );
+}
 
 const PLACE_CATEGORIES = [
   { label: "Healthcare", icon: HeartPulse, color: "#EF4444", test: /hospital|clinic|health|medical|doctor|dental|pharma|nursing|diagnostic/i },

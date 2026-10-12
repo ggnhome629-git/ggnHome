@@ -190,4 +190,4 @@ const bulkApproveProperties = async (req, res) => {
   }
 };
 
-module.exports = { listAdminProperties, getPropertyCounts, bulkApproveProperties };
+module.exports = { listAdminProperties, getPropertyCounts, bulkApproveProperties, listPartnerPropertyPartners };

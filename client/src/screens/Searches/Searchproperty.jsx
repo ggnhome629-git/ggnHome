@@ -39,7 +39,7 @@ const Footer = React.lazy(() => import("../Dashboard/Footer"));
 
 const NAV_ITEMS = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 const RECENT_KEY = "recentSearches";
-const MORE_FILTER_KEYS = ["bathrooms", "minArea", "maxArea", "parking", "moveInBy", "propertyType", "postedBy", "listedWithin", "withPhotos"];
+const MORE_FILTER_KEYS = ["bathrooms", "minArea", "maxArea", "parking", "moveInBy", "propertyType", "postedBy", "listedWithin", "withPhotos", "near", "position"];
 
 const authHeaders = () => {
   const token = localStorage.getItem("accessToken");

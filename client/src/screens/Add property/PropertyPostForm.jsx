@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { CORNER_OPTIONS, emptyNearbyAmenities } from "../../data/propertyParameters";
 import {
   Accordion,
   AccordionDetails,
@@ -97,14 +98,6 @@ const COPY = {
     success: "The property has been saved. You can review and manage it from the admin property manager.",
   },
 };
-const PARTNER_AMENITIES = [
-  { key: "market", label: "Nearest market", query: /market|supermarket|grocery|convenience/i },
-  { key: "metro", label: "Metro station", query: /metro|subway/i },
-  { key: "hospital", label: "Hospital / clinic", query: /hospital|clinic/i },
-  { key: "school", label: "School", query: /school|college|university/i },
-  { key: "park", label: "Park / garden", query: /park|garden|playground/i },
-  { key: "mall", label: "Shopping mall", query: /mall|shopping centre|department store/i },
-];
 const PARTNER_STEPS = [
   { key: "photos", label: "Photos", heading: "Add Property Photos", hint: "Add a front photo without the house number, plus rooms, kitchen and bathroom." },
   { key: "details", label: "Property Details", heading: "Tell Us The Main Details", hint: "Choose simple options and fill only the important details." },
@@ -215,7 +208,10 @@ export default function PropertyPostForm({
   const [restored, setRestored] = useState(Boolean(initialDraft));
   const [photos, setPhotos] = useState([]);
   const [panoramas, setPanoramas] = useState([]);
-  const [nearbyAmenities, setNearbyAmenities] = useState(() => PARTNER_AMENITIES.map((a) => ({ category: a.key, label: a.label, name: "", distance: "", source: "partner", edited: false })));
+  const [nearbyAmenities, setNearbyAmenities] = useState(() => {
+    const saved = Array.isArray(initialDraft?.nearbyAmenities) ? initialDraft.nearbyAmenities : [];
+    return emptyNearbyAmenities().map((row) => ({ ...row, ...(saved.find((r) => r && r.category === row.category) || {}), label: row.label }));
+  });
   const [findingAmenities, setFindingAmenities] = useState(false);
   const [amenityMessage, setAmenityMessage] = useState("");
   const [partnerPhotoError, setPartnerPhotoError] = useState("");
@@ -253,13 +249,13 @@ export default function PropertyPostForm({
     if (saved) return undefined;
     const t = setTimeout(() => {
       try {
-        localStorage.setItem(draftKey, JSON.stringify({ f, step, reached }));
+        localStorage.setItem(draftKey, JSON.stringify({ f, step, reached, nearbyAmenities }));
       } catch (e) {
         // storage full or blocked — the form still works, just without a draft
       }
     }, 600);
     return () => clearTimeout(t);
-  }, [f, step, reached, saved, draftKey]);
+  }, [f, step, reached, saved, draftKey, nearbyAmenities]);
 
   const set = (key) => (value) => {
     setF((prev) => ({ ...prev, [key]: value }));
@@ -280,32 +276,23 @@ export default function PropertyPostForm({
     setFindingAmenities(true);
     setAmenityMessage("");
     try {
-      const base = process.env.REACT_APP_Base_API;
-      const keyResponse = await fetch(`${base}/api/locationqapi`);
-      const keyData = await keyResponse.json();
-      if (!keyResponse.ok || !keyData.apiKey) throw new Error("Location service unavailable. You can enter nearby places manually.");
-      const query = [f.address, f.Sector, "Gurugram, Haryana, India"].filter(Boolean).join(", ");
-      const geoResponse = await fetch(`https://us1.locationiq.com/v1/search.php?key=${encodeURIComponent(keyData.apiKey)}&q=${encodeURIComponent(query)}&format=json&limit=1`);
-      const geo = await geoResponse.json();
-      if (!geoResponse.ok || !geo?.[0]) throw new Error("Address not found. Add a more complete address.");
-      const lat = Number(geo[0].lat);
-      const lon = Number(geo[0].lon);
-      const nearResponse = await fetch(`https://us1.locationiq.com/v1/nearby.php?key=${encodeURIComponent(keyData.apiKey)}&lat=${lat}&lon=${lon}&tag=amenity,shop,leisure,railway,public_transport,healthcare,education&radius=3000&format=json`);
-      const places = await nearResponse.json();
-      if (!nearResponse.ok || !Array.isArray(places)) throw new Error("Nearby lookup failed. You can enter amenities manually.");
-      const rad = (n) => n * Math.PI / 180;
-      const distance = (p) => {
-        const dLat = rad(Number(p.lat) - lat);
-        const dLon = rad(Number(p.lon) - lon);
-        const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat)) * Math.cos(rad(Number(p.lat))) * Math.sin(dLon / 2) ** 2;
-        return Math.round(6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-      };
+      // Server-side lookup: the map API key never reaches the browser.
+      const authToken = mode === "partner" ? localStorage.getItem("partnerAccessToken") || token : token;
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/api/nearby-parameters`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
+        body: JSON.stringify({ address: f.address, sector: f.Sector }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.success) throw new Error(data?.message || "Nearby lookup failed. You can enter amenities manually.");
       setNearbyAmenities((prev) => prev.map((item) => {
-        const rule = PARTNER_AMENITIES.find((a) => a.key === item.category);
-        const match = places.filter((p) => p.lat && p.lon && rule.query.test(`${p.name || ""} ${p.type || ""} ${p.class || ""}`)).sort((a, b) => distance(a) - distance(b))[0];
-        return match ? { ...item, name: match.name || item.label, distance: String(distance(match)), source: "locationiq", edited: false } : item;
+        const hit = (data.amenities || []).find((a) => a.category === item.category && a.found);
+        // Keep anything the lister typed by hand.
+        if (!hit || item.edited) return item;
+        return { ...item, name: hit.name || item.label, distance: String(hit.distanceMeters), source: "locationiq", edited: false };
       }));
-      setF((prev) => ({ ...prev, partnerLatitude: String(lat), partnerLongitude: String(lon) }));
+      setF((prev) => ({ ...prev, partnerLatitude: String(data.latitude), partnerLongitude: String(data.longitude) }));
       setAmenityMessage("Suggestions loaded. Review and edit them; distances are straight-line estimates.");
     } catch (error) {
       setAmenityMessage(error.message || "Could not detect nearby places.");
@@ -419,7 +406,7 @@ export default function PropertyPostForm({
     setF({ ...INITIAL, partnerRequired: mode === "partner" });
     setPhotos([]);
     setPanoramas([]);
-    setNearbyAmenities(PARTNER_AMENITIES.map((a) => ({ category: a.key, label: a.label, name: "", distance: "", source: "partner", edited: false })));
+    setNearbyAmenities(emptyNearbyAmenities());
     setAmenityMessage("");
     setPartnerPhotoError("");
     setStep(0);
@@ -457,19 +444,20 @@ export default function PropertyPostForm({
           if (mode === "partner") {
             form.append("mobile", String(f.ownerMobile || "").replace(/[\s-]/g, ""));
             form.append("ownerName", String(f.ownerName || "").trim());
-            form.append("cornerPosition", f.cornerPosition || "not_sure");
-            if (f.partnerLatitude) form.append("latitude", f.partnerLatitude);
-            if (f.partnerLongitude) form.append("longitude", f.partnerLongitude);
-            form.append("amenities", JSON.stringify(nearbyAmenities
-              .filter((item) => item.name.trim() || item.distance !== "")
-              .map((item) => ({
-                category: item.category,
-                name: item.name,
-                distance: item.distance,
-                source: item.source,
-                edited: Boolean(item.edited),
-              }))));
           }
+          // The seven property parameters, for every kind of lister.
+          form.append("cornerPosition", f.cornerPosition || "not_sure");
+          if (f.partnerLatitude) form.append("latitude", f.partnerLatitude);
+          if (f.partnerLongitude) form.append("longitude", f.partnerLongitude);
+          form.append("amenities", JSON.stringify(nearbyAmenities
+            .filter((item) => item.name.trim() || item.distance !== "")
+            .map((item) => ({
+              category: item.category,
+              name: item.name,
+              distance: item.distance,
+              source: item.source,
+              edited: Boolean(item.edited),
+            }))));
           Object.entries(extraFormFields || {}).forEach(([k, v]) => form.append(k, v));
           return form;
         })(),
@@ -605,12 +593,15 @@ export default function PropertyPostForm({
               {partnerContact?.agencyName && <Typography variant="body2"><strong>Agency:</strong> {partnerContact.agencyName}</Typography>}
             </Stack>
           </Box>
+        </>
+      )}
+      <>
           <Accordion defaultExpanded={false} disableGutters elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: `${radii.md}px !important`, "&:before": { display: "none" }, mb: 2 }}>
             <AccordionSummary expandIcon={<ChevronDown size={18} />}>
-              <Typography sx={{ fontWeight: 700, color: "primary.main" }}>Nearby places (optional)</Typography>
+              <Typography sx={{ fontWeight: 700, color: "primary.main" }}>Nearby market, metro, hospital, school, park & mall (optional)</Typography>
             </AccordionSummary>
             <AccordionDetails>
-            <FormSection title="Nearby Amenities" hint="Auto-detect suggestions around this address, then edit names and distances as needed.">
+            <FormSection title="Nearby Amenities" hint="Auto-detect suggestions around this address, then edit names and distances. Home-seekers and the GgnHome AI consultant use these to find homes near what matters to them.">
             <Button variant="outlined" onClick={detectPartnerAmenities} disabled={findingAmenities} startIcon={<MapPin size={16} />} sx={{ mb: 2, fontWeight: 700 }}>
               {findingAmenities ? "Finding nearby places…" : "Auto-detect nearby places"}
             </Button>
@@ -625,7 +616,7 @@ export default function PropertyPostForm({
                     onChange={(e) => setNearbyAmenities((prev) => prev.map((a, i) => i === index ? { ...a, name: e.target.value, source: "partner", edited: true } : a))}
                   />
                   <TextField
-                    label="Distance (m)"
+                    label="Approx. distance (m)"
                     type="number"
                     value={item.distance}
                     onChange={(e) => setNearbyAmenities((prev) => prev.map((a, i) => i === index ? { ...a, distance: e.target.value, source: "partner", edited: true } : a))}
@@ -637,8 +628,7 @@ export default function PropertyPostForm({
             </FormSection>
             </AccordionDetails>
           </Accordion>
-        </>
-      )}
+      </>
     </>
   );
 
@@ -683,11 +673,11 @@ export default function PropertyPostForm({
       <FormSection title="Parking">
         <ChoiceChips ariaLabel="Parking" options={PARKING} value={f.parking} onChange={set("parking")} />
       </FormSection>
+      <FormSection title="Corner Or Middle?" hint="Corner homes usually get more light and two open sides — buyers and tenants often ask for them.">
+        <ChoiceChips ariaLabel="Position" options={CORNER_OPTIONS} value={f.cornerPosition || "not_sure"} onChange={set("cornerPosition")} />
+      </FormSection>
       {mode === "partner" && (
         <>
-          <FormSection title="Position in the building">
-            <ChoiceChips ariaLabel="Position" options={[{ value: "corner", label: "Corner" }, { value: "middle", label: "Middle" }, { value: "not_sure", label: "Not sure" }]} value={f.cornerPosition || "not_sure"} onChange={set("cornerPosition")} />
-          </FormSection>
           {rent && (
             <FormSection title="Pet Policy">
               <ChoiceChips ariaLabel="Pet policy" options={[{ value: "allowed", label: "Pets allowed" }, { value: "not-allowed", label: "Pets not allowed" }, { value: "not_sure", label: "Not sure" }]} value={f.petPolicy || "not_sure"} onChange={set("petPolicy")} />
@@ -973,13 +963,14 @@ export default function PropertyPostForm({
               ...(mode === "partner" ? [["Contact mobile", f.partnerMobile]] : []),
             ]}
           />
-          {mode === "partner" && (
-            <SummaryBlock
-              title="Nearby Amenities"
-              onEdit={() => goTo(mode === "partner" ? 1 : STEP.location)}
-              rows={nearbyAmenities.map((item) => [item.label, item.name ? `${item.name}${item.distance ? ` · approx. ${item.distance} m` : ""}` : ""])}
-            />
-          )}
+          <SummaryBlock
+            title="Nearby Places & Position"
+            onEdit={() => goTo(mode === "partner" ? 1 : STEP.location)}
+            rows={[
+              ...nearbyAmenities.map((item) => [item.label, item.name || item.distance !== "" ? `${item.name || "—"}${item.distance !== "" ? ` · approx. ${item.distance} m` : ""}` : ""]),
+              ["Corner / middle", CORNER_OPTIONS.find((o) => o.value === (f.cornerPosition || "not_sure"))?.label],
+            ]}
+          />
           <SummaryBlock
             title="Property Profile"
             onEdit={() => goTo(mode === "partner" ? 1 : STEP.profile)}

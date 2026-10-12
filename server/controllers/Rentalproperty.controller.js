@@ -8,6 +8,7 @@
 // Imports
 // ==============================
 const SearchHistory = require("../models/SearchHistory.model.js");
+const { parametersFromBody } = require("../config/propertyParameters");
 const { stripProtectedFields } = require("../utils/protectedFields");
 const { escapeRegex } = require("../utils/escapeRegex");
 const RentalProperty = require("../models/Rentalproperty.model.js");
@@ -283,6 +284,7 @@ if (panoFiles && panoFiles.length > 6) panoFiles = panoFiles.slice(0, 6);
     // ------------------------------
     // Create new RentalProperty document and save
     // ------------------------------
+    Object.assign(propertyData, parametersFromBody(req.body));
     const Rentalproperty = new RentalProperty(propertyData);
     const savedProperty = await Rentalproperty.save();
 

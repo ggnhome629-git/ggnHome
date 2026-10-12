@@ -8,6 +8,7 @@ import {
   POSTED_BY_OPTIONS,
   PROPERTY_TYPE_OPTIONS,
 } from "./searchParams";
+import { NEARBY_PARAMETERS } from "../../data/propertyParameters";
 
 const BATHROOM_OPTIONS = ["1", "2", "3", "4"];
 
@@ -56,6 +57,51 @@ function RangeFields({ label, minValue, maxValue, onMin, onMax }) {
       <Stack direction="row" spacing={3}>
         <TextField type="number" label="Min" size="small" fullWidth value={minValue} onChange={(e) => onMin(e.target.value)} inputProps={{ min: 0 }} />
         <TextField type="number" label="Max" size="small" fullWidth value={maxValue} onChange={(e) => onMax(e.target.value)} inputProps={{ min: 0 }} />
+      </Stack>
+    </Box>
+  );
+}
+
+/** Multi-select for the six nearby parameters, stored as "metro,park". */
+function NearbyGroup({ value, onChange }) {
+  const selected = String(value || "").split(",").filter(Boolean);
+  const toggle = (key) => {
+    const next = selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key];
+    onChange(next.join(","));
+  };
+  return (
+    <Box>
+      <Typography variant="overline" sx={{ color: "text.secondary", display: "block", mb: 1 }}>
+        Close to
+      </Typography>
+      <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 3 }}>
+        Only homes with a verified distance (approx.) to each place you pick.
+      </Typography>
+      <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
+        {NEARBY_PARAMETERS.map((p) => {
+          const active = selected.includes(p.key);
+          const Icon = p.icon;
+          return (
+            <Chip
+              key={p.key}
+              icon={<Icon size={15} color={active ? "#fff" : p.color} />}
+              label={p.short}
+              aria-pressed={active}
+              onClick={() => toggle(p.key)}
+              sx={{
+                height: 36,
+                px: 1,
+                fontWeight: 600,
+                border: "1px solid",
+                borderColor: active ? "primary.main" : "divider",
+                backgroundColor: active ? "primary.main" : "background.paper",
+                color: active ? "common.white" : "text.primary",
+                "& .MuiChip-icon": { color: "inherit" },
+                "&:hover": { backgroundColor: active ? "primary.dark" : "background.default" },
+              }}
+            />
+          );
+        })}
       </Stack>
     </Box>
   );
@@ -118,6 +164,16 @@ export default function FilterDrawer({ open, onClose, onApply, filters, type }) 
             maxValue={local.maxArea}
             onMin={set("minArea")}
             onMax={set("maxArea")}
+          />
+          <NearbyGroup value={local.near} onChange={set("near")} />
+          <ChipGroup
+            label="Corner or middle"
+            options={[
+              { value: "corner", label: "Corner" },
+              { value: "middle", label: "Middle" },
+            ]}
+            value={local.position}
+            onChange={set("position")}
           />
           <ChipGroup label="Posted by" options={POSTED_BY_OPTIONS} value={local.postedBy} onChange={set("postedBy")} />
           <ChipGroup

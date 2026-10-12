@@ -205,6 +205,9 @@ const smsConsoleLoginLimiter = make({
 });
 const chatLimiter = make({ name: "chat", windowMs: 10 * 60 * 1000, max: 60 });
 const apiLimiter = make({ name: "api", windowMs: 60 * 1000, max: 600 });
+// AI Property Consultant: a conversation is ~15-30 turns and a few searches.
+const aiTurnLimiter = make({ name: "ai-turn", windowMs: 10 * 60 * 1000, max: 120, message: "You're going a little fast — please wait a moment and try again." });
+const aiSearchLimiter = make({ name: "ai-search", windowMs: 10 * 60 * 1000, max: 40, message: "Too many searches — please wait a moment and try again." });
 
 module.exports = {
   otpRequestLimiter,
@@ -215,4 +218,6 @@ module.exports = {
   chatLimiter,
   smsConsoleLoginLimiter,
   apiLimiter,
+  aiTurnLimiter,
+  aiSearchLimiter,
 };

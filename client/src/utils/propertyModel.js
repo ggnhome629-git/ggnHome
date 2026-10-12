@@ -249,6 +249,9 @@ export function normaliseProperty(raw, type) {
     sitePlan: clean(raw.sitePlan),
     documents: Array.isArray(raw.documents) ? raw.documents : [],
     nearbyPlaces: Array.isArray(raw.nearbyPlaces) ? raw.nearbyPlaces : [],
+    // The seven property parameters: six nearby distances + corner/middle.
+    nearbyAmenities: Array.isArray(raw.nearbyAmenities) ? raw.nearbyAmenities : [],
+    cornerPosition: clean(raw.cornerPosition) || "not_sure",
     connectivity: Array.isArray(raw.connectivity) ? raw.connectivity : [],
     developer: raw.developer || null,
     project: raw.project || null,

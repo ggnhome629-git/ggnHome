@@ -77,6 +77,7 @@ const AdminPayments = lazy(() => import("./screens/Admin Page/admin.properties")
 const FeatureTogglesAdmin = lazy(() => import("./screens/Admin Page/admin.featureToggles"));
 const AdminAppDownloads = lazy(() => import("./screens/Admin Page/admin.appDownloads"));
 const AdminSettings = lazy(() => import("./screens/Admin Page/admin.settings"));
+const AdminAiConsultantLeads = lazy(() => import("./screens/Admin Page/admin.aiConsultantLeads"));
 // Static imports for agent property detail views
 const RentalPropertyPageAgentDesktop = lazy(() => import("./screens/Agent Page/Property View Agent/Desktop view/RentalPropertyPageView"));
 const SalePropertyPageAgentDesktop = lazy(() => import("./screens/Agent Page/Property View Agent/Desktop view/SalePropertyPageView"));
@@ -240,6 +241,7 @@ function App() {
         <Route path="/admin/Dashboard" element={<AdminProtectedRoute element={<AdminDashboard />} />} />
         <Route path="/admin/UserManagement" element={<AdminProtectedRoute element={<UserManagementSystem />} />} />
         <Route path="/admin/enquiries" element={<AdminProtectedRoute element={<PaymentsRewardsDashboard />} />} />
+        <Route path="/admin/ai-leads" element={<AdminProtectedRoute element={<AdminAiConsultantLeads />} />} />
         <Route path="/admin/callback" element={<AdminProtectedRoute element={<CallbackRequestsDashboard />} />} />
         <Route path="/admin/rewardsproperties" element={<AdminProtectedRoute element={<PropertyListingPage />} />} />
         <Route path="/admin/propertymanager" element={<AdminProtectedRoute element={<AdminPropertyManager />} />} />

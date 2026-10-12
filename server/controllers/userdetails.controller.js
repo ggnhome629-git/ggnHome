@@ -6,6 +6,7 @@
 
 const User = require('../models/user.model');
 const { stripProtectedFields } = require("../utils/protectedFields");
+const { parametersFromBody } = require("../config/propertyParameters");
 const RentalProperty = require('../models/Rentalproperty.model');
 const SaleProperty = require('../models/SaleProperty.model');
 const PropertyAnalysis = require('../models/PropertyAnalysis.model');
@@ -360,6 +361,10 @@ const updateProperty = async (req, res) => {
         req.body.totalArea.configuration = req.body.totalArea.configuration.toString().trim().toUpperCase();
       }
     }
+
+    // Nearby amenities + corner/middle arrive as a JSON string; store them clean.
+    Object.assign(req.body, parametersFromBody(req.body));
+    delete req.body.amenities;
 
     // Fetch existing property for cloudinaryAccountIndex
     let existingPropertyForAccount = null;
