@@ -117,7 +117,7 @@ export default function AdminPropertyManager() {
   };
 
   const exportCsv = () => {
-    const lines = [["Title", "Type", "Price", "Location", "BHK", "Source", "Status", "Added"], ...rows.map((r) => [`"${(r.title || "").replace(/"/g, '""')}"`, r.listingType, r.price, `"${r.location}"`, r.bhk, r.source, r.isActive ? "Live" : "Pending", new Date(r.createdAt).toLocaleDateString()])];
+    const lines = [["Title", "Type", "Price", "Location", "BHK", "Source", "Partner", "Partner mobile", "Owner mobile", "Status", "Added"], ...rows.map((r) => [\`"\${(r.title || "").replace(/"/g, '""')}"\`, r.listingType, r.price, \`"\${r.location}"\`, r.bhk, r.source, \`"\${r.partnerName || ""}"\`, r.partnerMobile || "", r.ownerMobile || "", r.isActive ? "Live" : "Pending", new Date(r.createdAt).toLocaleDateString()])];
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([lines.map((l) => l.join(",")).join("\n")], { type: "text/csv" }));
     a.download = `properties-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -176,6 +176,12 @@ export default function AdminPropertyManager() {
             sx={{ flex: 1 }}
             InputProps={{ startAdornment: <InputAdornment position="start"><Search size={16} /></InputAdornment> }}
           />
+          {tab === "partner" && (
+            <TextField select size="small" label="Added by partner" value={partnerFilter} onChange={(e) => { setPartnerFilter(e.target.value); setPage(1); }} sx={{ minWidth: 220 }}>
+              <MenuItem value="">All partners</MenuItem>
+              {partners.map((partner) => <MenuItem key={partner._id} value={partner._id}>{partner.name}{partner.mobileNumber ? ` · ${partner.mobileNumber}` : ""}</MenuItem>)}
+            </TextField>
+          )}
           {tab === "all" && (
             <Select size="small" value={state} onChange={(e) => setState(e.target.value)} sx={{ minWidth: 140 }}>
               <MenuItem value="all">All status</MenuItem>
