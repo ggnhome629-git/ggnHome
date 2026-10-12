@@ -113,7 +113,7 @@ class MainActivity : Activity() {
             setTypeface(typeface, Typeface.BOLD)
         })
         titles.addView(TextView(this).apply {
-            text = "Status only · managed from the website"
+            text = "OTP viewer · managed from the website"
             setTextColor(Color.parseColor("#B8D4E8"))
             textSize = 12f
         })
@@ -189,7 +189,7 @@ class MainActivity : Activity() {
 
         val history = card()
         history.addView(TextView(this).apply {
-            text = "Recent messages"
+            text = "Recent OTPs"
             setTextColor(navy)
             textSize = 16f
             setTypeface(typeface, Typeface.BOLD)
@@ -231,7 +231,7 @@ class MainActivity : Activity() {
         }
         prefs.edit().putBoolean(Config.KEY_ENABLED, true).apply()
 
-        val needed = mutableListOf(Manifest.permission.SEND_SMS)
+        val needed = mutableListOf<String>()
         if (Build.VERSION.SDK_INT >= 33) needed.add(Manifest.permission.POST_NOTIFICATIONS)
         val missing = needed.filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
         if (missing.isNotEmpty()) {
@@ -243,13 +243,9 @@ class MainActivity : Activity() {
 
     override fun onRequestPermissionsResult(code: Int, perms: Array<out String>, results: IntArray) {
         super.onRequestPermissionsResult(code, perms, results)
-        if (checkSelfPermission(Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED) {
-            startGateway()
-        } else {
-            Config.prefs(this).edit().putBoolean(Config.KEY_ENABLED, false).apply()
-            note = "SMS permission is required to send messages."
-            refresh()
-        }
+        // SMS permission is not used: this app only displays OTPs received from the server.
+        Config.prefs(this).edit().putBoolean(Config.KEY_ENABLED, true).apply()
+        startGateway()
     }
 
     private fun startGateway() {
@@ -304,7 +300,7 @@ class MainActivity : Activity() {
                 }, 20
             )
             val pending = prefs.getInt(Config.queueKey(svc), -1)
-            v.line1.text = "Sent by this phone: ${prefs.getInt(Config.sentKey(svc), 0)}" +
+            v.line1.text = "OTPs displayed: ${prefs.getInt(Config.sentKey(svc), 0)}" +
                 (if (pending >= 0) " · waiting: $pending" else "")
             v.line2.text = statusLine(prefs.getString(Config.statusKey(svc), null))
             v.line3.text = "Last check ${if (beat == 0L) "never" else hhmmss.format(Date(beat))} · ${prefs.getString(Config.lastKey(svc), "—")}"
@@ -319,7 +315,7 @@ class MainActivity : Activity() {
         bgView.setTextColor(if (unrestricted) Color.parseColor("#1E9E5A") else Color.parseColor("#C0392B"))
 
         val entries = Config.readLog(this)
-        logView.text = if (entries.isEmpty()) "Nothing sent yet." else {
+        logView.text = if (entries.isEmpty()) "No OTPs displayed yet." else {
             val fmt = SimpleDateFormat("dd MMM HH:mm:ss", Locale.getDefault())
             entries.take(40).joinToString("\n") {
                 val mark = if (it.ok) "✔ ${it.detail}" else "✘ ${it.detail}"
