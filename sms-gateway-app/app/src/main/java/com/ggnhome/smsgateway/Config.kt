@@ -7,17 +7,18 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.UUID
 
-// Display-only GGN Home OTP viewer. No SMS sending and no Shine One lead-message polling. Everything is managed
+// The two services this phone can send for. Everything about them (limits, times, which phone does what) is managed
 // on the website console; the app only holds the addresses and keys it needs to reach each server.
 class Svc(val id: String, val label: String, val base: String, val prefix: String, val key: String) {
     fun url(path: String) = "$base$prefix$path"
 }
 
 object Config {
-    const val APP_VERSION = "5.0"
+    const val APP_VERSION = "5.1"
 
     val SERVICES = listOf(
-        Svc("ggnhome", "GGN Home OTPs", BuildConfig.GGNHOME_URL.trimEnd('/'), "/sms-gateway", BuildConfig.GGNHOME_KEY),
+        Svc("ggnhome", "GGN Home", BuildConfig.GGNHOME_URL.trimEnd('/'), "/sms-gateway", BuildConfig.GGNHOME_KEY),
+        Svc("shine", "Shine One Estate", BuildConfig.SHINE_URL.trimEnd('/'), "/api/sms-gateway", BuildConfig.SHINE_KEY),
     )
 
     private const val PREFS = "gateway"
@@ -50,7 +51,7 @@ object Config {
 
     fun service(id: String): Svc? = SERVICES.firstOrNull { it.id == id }
 
-    // ---- local history of OTPs displayed on this phone ----
+    // ---- local history of what this phone sent (message text is never stored) ----
     class LogEntry(val time: Long, val number: String, val ok: Boolean, val detail: String, val qid: String = "", val svc: String = "")
 
     @Synchronized
