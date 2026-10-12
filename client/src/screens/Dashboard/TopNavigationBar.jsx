@@ -52,6 +52,41 @@ const TopNavigationBar = ({  navItems = [] }) => {
     return flatmatesPrefixes.some((prefix) => path.startsWith(prefix));
   }, [location]);
   const { user, loading, logout } = useAuth();
+  const [flatmatesEnabled, setFlatmatesEnabled] = useState(false);
+
+  // Read the centrally managed flag so the navigation follows admin settings.
+  useEffect(() => {
+    let cancelled = false;
+    const loadFeatureToggles = async () => {
+      try {
+        const response = await fetch(process.env.REACT_APP_Base_API + "/api/features", {
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!response.ok) return;
+        const features = await response.json();
+        if (!cancelled) setFlatmatesEnabled(features.flatmates === true);
+      } catch (error) {
+        if (!cancelled) setFlatmatesEnabled(false);
+      }
+    };
+    const onFeatureUpdate = (event) => {
+      if (typeof event.detail?.flatmates === "boolean") setFlatmatesEnabled(event.detail.flatmates);
+    };
+    const onStorage = (event) => {
+      if (event.key !== "admin:featureToggles") return;
+      try { setFlatmatesEnabled(JSON.parse(event.newValue || "{}").flatmates === true); }
+      catch (_) { setFlatmatesEnabled(false); }
+    };
+    loadFeatureToggles();
+    window.addEventListener("featureTogglesUpdated", onFeatureUpdate);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("featureTogglesUpdated", onFeatureUpdate);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, []);
 
   // Post button: flatmate form inside the flatmates section, the normal post
   // form everywhere else — same for every role, admins included.
@@ -733,7 +768,7 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
           </button>
           {/* Quick switch to Flatmates Search */}
           {/* Quick switch: toggles between Flatmates Search and Property Search depending on current route */}
-          <button
+          {flatmatesEnabled && <button
             aria-label={
               isFlatmatesRoute
                 ? "Go to Property Search"
@@ -794,7 +829,7 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
                 </span>
               </>
             )}
-          </button>
+          </button>}
 
           {/* Location Icon
           {!isSmallScreen && density !== "icon" && (
@@ -987,7 +1022,7 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
                         Quick Actions
                       </div>
                       {/* Show Flatmates Search when NOT on /flatmates* pages */}
-                      {!isFlatmatesRoute && (
+                      {flatmatesEnabled && !isFlatmatesRoute && (
                         <MenuItem
                           icon={Home}
                           label="Flatmates Search"
