@@ -46,17 +46,23 @@ const parseSearchQuery = (raw) => {
   });
 
   // Sector numbers: sector 46, sec46, sectr-46, s 46
-  q = q.replace(/\b(?:sector|sectr|sec|s)\s*(\d{1,3})(?!\d)/g, (_, n) => {
-    const num = String(Number(n));
-    if (!result.sectors.includes(num)) result.sectors.push(num);
+  // "sector 49", "sec-49 or 50", "sectors 49, 50 and 51"
+  const addSector = (n, letter) => {
+    const num = `${Number(n)}${letter ? letter.toUpperCase() : ''}`;
+    if (!result.sectors.includes(num) && result.sectors.length < 6) result.sectors.push(num);
+  };
+  q = q.replace(/\b(?:sectors?|sectr|sctr|sec|s)\s*(\d{1,3})\s*([a-d])?(?![a-z\d])((?:\s+(?:(?:or|and)\s+)?\d{1,3}\s*[a-d]?(?![a-z\d]))*)/g, (_, n, letter, more) => {
+    addSector(n, letter);
+    for (const m of (more || '').matchAll(/(\d{1,3})\s*([a-d](?![a-z]))?/g)) addSector(m[1], m[2]);
     return ' ';
   });
 
   const words = q.split(/\s+/).filter((w) => w && !STOP_WORDS.has(w) && w !== 'sector' && w !== 'sec');
 
   // A bare number ("46", "2bhk in 46") is treated as a sector number
-  if (!result.sectors.length && words.length === 1 && /^\d{1,3}$/.test(words[0])) {
-    result.sectors.push(String(Number(words[0])));
+  if (!result.sectors.length && words.length === 1 && /^\d{1,3}[a-d]?$/.test(words[0])) {
+    const m = words[0].match(/^(\d{1,3})([a-d])?$/);
+    result.sectors.push(`${Number(m[1])}${m[2] ? m[2].toUpperCase() : ''}`);
     words.length = 0;
   }
 
@@ -73,7 +79,41 @@ const buildCanonicalQuery = ({ sectors, bhk, text }) => {
   return parts.join(' ').trim();
 };
 
-const sectorRegexFor = (num) => new RegExp(`^\\s*sector\\s*[-_.]?\\s*0*${num}(?!\\d)`, 'i');
+// ---- Strict sector matching -------------------------------------------
+// A sector search returns only listings that are in that sector:
+//  - the Sector field names it in any common spelling ("Sector-57",
+//    "sector 57", "Sec. 57", "S-57", "57", "Sector 57, Gurgaon"), never a
+//    neighbour (157, 5, 57A — lettered sectors only match when asked for);
+//  - or, when the Sector field holds a locality name with no sector number
+//    ("Sohna Road"), the address/location names that sector.
+const sectorParts = (id) => {
+  const m = String(id).match(/^(\d{1,3})([A-Za-z])?$/);
+  return m ? { num: String(Number(m[1])), letter: m[2] ? m[2].toLowerCase() : '' } : null;
+};
+const sectorTail = (letter) => (letter ? `\\s*-?\\s*${letter}(?![a-z0-9])` : '(?![a-z0-9])');
+const sectorRegexFor = (id) => {
+  const p = sectorParts(id);
+  if (!p) return /$^/;
+  return new RegExp(`^\\s*(?:(?:sector|sectr|sctr|sec|s)\\.?\\s*[-_.#:]?\\s*)?0*${p.num}${sectorTail(p.letter)}`, 'i');
+};
+const sectorInTextRegexFor = (id) => {
+  const p = sectorParts(id);
+  if (!p) return /$^/;
+  return new RegExp(`(?<![a-z0-9])(?:sector|sectr|sctr|sec)\\.?\\s*[-_.#:]?\\s*0*${p.num}${sectorTail(p.letter)}`, 'i');
+};
+// Sector fields that already carry a sector number (so the address must not override them).
+const HAS_SECTOR_NUMBER = /(^\s*\d{1,3}\s*[a-z]?\s*(?:$|[,(])|(?<![a-z0-9])(?:sector|sectr|sctr|sec|s)\.?\s*[-_.#:]?\s*\d)/i;
+const sectorClause = (id) => ({
+  $or: [
+    { Sector: sectorRegexFor(id) },
+    {
+      $and: [
+        { Sector: { $not: HAS_SECTOR_NUMBER } },
+        { $or: [{ address: sectorInTextRegexFor(id) }, { location: sectorInTextRegexFor(id) }] },
+      ],
+    },
+  ],
+});
 
 const buildFilterObject = ({ parsed, extras = {} }) => {
   const filter = { isActive: true };
@@ -81,7 +121,7 @@ const buildFilterObject = ({ parsed, extras = {} }) => {
 
   if (parsed.sectors.length) {
     // Strict: only properties located in the requested sector(s)
-    and.push({ $or: parsed.sectors.map((n) => ({ Sector: sectorRegexFor(n) })) });
+    and.push(parsed.sectors.length === 1 ? sectorClause(parsed.sectors[0]) : { $or: parsed.sectors.map(sectorClause) });
   }
   if (parsed.bhk) {
     and.push({ 'totalArea.configuration': new RegExp(`\\b0*${parsed.bhk}\\s*-?\\s*BHK`, 'i') });
@@ -89,7 +129,7 @@ const buildFilterObject = ({ parsed, extras = {} }) => {
   // Free text only narrows results when no explicit sector was given
   if (parsed.text && !parsed.sectors.length) {
     const textRegex = new RegExp(escapeRegex(parsed.text), 'i');
-    and.push({ $or: [{ Sector: textRegex }, { address: textRegex }, { description: textRegex }] });
+    and.push({ $or: [{ title: textRegex }, { Sector: textRegex }, { address: textRegex }, { location: textRegex }, { description: textRegex }] });
   }
 
   // Optional *non-mandatory* extra filters (do not break API)
@@ -768,3 +808,6 @@ exports.getUserDashboard = async (req, res) => {
     });
   }
 };
+
+// Exposed for tests only.
+exports._internals = { parseSearchQuery, buildFilterObject, sectorRegexFor, HAS_SECTOR_NUMBER, sectorInTextRegexFor };
