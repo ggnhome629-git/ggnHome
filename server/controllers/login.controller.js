@@ -220,7 +220,7 @@ exports.requestOtp = async (req, res) => {
 
     return res.status(200).json({
       message: smsPreview
-        ? "SMS delivery is off. Your testing code is available in the authenticated SMS Service web console."
+        ? "SMS is not sent automatically. Your login code is available in the SMS Service Android OTP Viewer."
         : emailFallback && !smsQueued
           ? "SMS is unavailable right now, so we emailed your code instead."
           : emailFallback
