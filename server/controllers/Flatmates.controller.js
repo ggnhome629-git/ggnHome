@@ -313,10 +313,9 @@ const searchListings = async (req, res) => {
     const limit = Math.min(100, Number(req.query.limit || 20));
     const skip = (page - 1) * limit;
 
-    // onlyActive default true
-    const onlyActive = (req.query.onlyActive === undefined)
-      ? true
-      : (req.query.onlyActive === 'true' || req.query.onlyActive === true);
+    // Public search must only expose published listings. Ignore client-supplied
+    // onlyActive=false; owner/admin management uses separate authenticated APIs.
+    const onlyActive = true;
 
     // normalize helper
     const norm = v => (typeof v === 'string' ? v.trim().toLowerCase() : v);
@@ -325,10 +324,15 @@ const searchListings = async (req, res) => {
     const normalizedQuery = {};
     const appliedFields = [];
 
+    // Publication constraints are mandatory for this search endpoint. A listing
+    // is public only after approval (isPostedNew=false) and activation (isActive=true).
     if (onlyActive) {
       q.isActive = true;
+      q.isPostedNew = false;
       normalizedQuery.isActive = true;
+      normalizedQuery.isPostedNew = false;
       appliedFields.push({ field: 'isActive', value: true });
+      appliedFields.push({ field: 'isPostedNew', value: false });
     }
 
     // Helper: detect sector-like input and return canonical 'Sector-<N>'
@@ -620,30 +624,53 @@ const approveListing = async (req, res) => {
 
 
 // GET /flatmatelistingdetails?id=<id>&incView=true
+// This is the consumer-facing detail endpoint: unpublished listings are not
+// visible here, and owner contact fields are disclosed only when the listing
+// explicitly enables that contact method.
 async function flatmateListingDetails(req, res) {
   try {
     const listingId = req.query.id || req.query.listingId || null;
     if (!listingId) return res.status(400).json({ success: false, message: 'Missing listing id' });
+    if (!mongoose.isValidObjectId(listingId)) {
+      return res.status(400).json({ success: false, message: 'Invalid listing id' });
+    }
 
-    // fetch listing and populate owner contact if available
-    const listing = await Flatmates.findById(listingId).populate('ownerId', 'email mobileNumber').lean();
-    if (!listing) return res.status(404).json({ success: false, message: 'Listing not found' });
+    const listing = await Flatmates.findById(listingId).lean();
+    // Return the same not-found response for non-public listings to avoid
+    // disclosing whether a pending/paused listing exists.
+    if (!listing || listing.isActive !== true || listing.isPostedNew !== false) {
+      return res.status(404).json({ success: false, message: 'Listing not found' });
+    }
 
-    // optional: increment view count if requested
+    const canSharePhone = listing.contactMethods?.phone === true;
+    const canShareEmail = listing.contactMethods?.email === true;
+    const owner = (canSharePhone || canShareEmail)
+      ? await User.findById(listing.ownerId).select('_id email mobileNumber').lean()
+      : null;
+
+    // Never serialize the owner model wholesale. Include only fields allowed by
+    // this listing's explicit contact preferences.
+    listing.ownerId = owner
+      ? {
+          _id: owner._id,
+          ...(canShareEmail && owner.email ? { email: owner.email } : {}),
+          ...(canSharePhone && owner.mobileNumber ? { mobileNumber: owner.mobileNumber } : {}),
+        }
+      : { _id: listing.ownerId };
+
     const incView = (req.query.incView === 'true' || req.query.incView === '1');
     if (incView) {
       try {
-        await Flatmates.updateOne({ _id: listingId }, { $inc: { views: 1 } });
+        await Flatmates.updateOne({ _id: listingId, isActive: true, isPostedNew: false }, { $inc: { views: 1 } });
         listing.views = (listing.views || 0) + 1;
       } catch (e) {
-        
+        // View tracking is best-effort; do not fail a published listing detail.
       }
     }
 
     return res.json({ success: true, listing });
   } catch (err) {
-    
-    return res.status(500).json({ success: false, message: 'Server error', error: err && err.message ? err.message : undefined });
+    return res.status(500).json({ success: false, message: 'Server error' });
   }
 }
 
