@@ -165,13 +165,17 @@ function App() {
         ]);
         setData({ dashboard, properties, leads, enquiries });
       } else if (target === "properties") {
-        setData(prev => ({ ...prev, properties: await request("/api/partner/properties", {}, currentToken) }));
+        const properties = await request("/api/partner/properties", {}, currentToken);
+        setData(prev => ({ ...prev, properties }));
       } else if (target === "leads") {
-        setData(prev => ({ ...prev, leads: await request("/api/partner/leads", {}, currentToken) }));
+        const leads = await request("/api/partner/leads", {}, currentToken);
+        setData(prev => ({ ...prev, leads }));
       } else if (target === "enquiries") {
-        setData(prev => ({ ...prev, enquiries: await request("/api/partner/enquiries", {}, currentToken) }));
+        const enquiries = await request("/api/partner/enquiries", {}, currentToken);
+        setData(prev => ({ ...prev, enquiries }));
       } else if (target === "profile") {
-        setData(prev => ({ ...prev, profile: await request("/api/partner/profile", {}, currentToken) }));
+        const profile = await request("/api/partner/profile", {}, currentToken);
+        setData(prev => ({ ...prev, profile }));
       }
     } catch (e) { setError(e.message || "Could not load this section."); }
     finally { setLoading(false); }
