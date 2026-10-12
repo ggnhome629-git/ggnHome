@@ -36,7 +36,7 @@ async function sendSms(mobileNumber, message, kind = "otp") {
   // Otherwise preserve the existing SMS delivery path (Android SIM or third-party gateway).
   const SmsSetting = require("../models/SmsSetting.model");
   const setting = await SmsSetting.findOne({ key: "ggnhome" }).lean();
-  if (setting && setting.showOtpOnAndroid === true) {
+  if (kind === "otp" && setting && setting.showOtpOnAndroid === true) {
     const SmsQueue = require("../models/SmsQueue.model");
     const SmsLog = require("../models/SmsLog.model");
     const phoneNumber = toE164(mobileNumber);
