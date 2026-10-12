@@ -163,7 +163,7 @@ AgentSchema.methods.getRefreshToken = function () {
     {
       agentId: this._id,
       userId: this.userId,
-      role: "Agent"
+      role: this.roleType === "Partner" ? "Partner" : "Agent"
     },
     secret,
     { expiresIn }
