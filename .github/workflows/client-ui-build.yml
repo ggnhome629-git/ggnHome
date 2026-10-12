@@ -6,11 +6,13 @@ on:
       - "fix/**"
     paths:
       - "client/**"
+      - "server/**"
       - ".github/workflows/client-ui-build.yml"
   pull_request:
     branches: [main]
     paths:
       - "client/**"
+      - "server/**"
       - ".github/workflows/client-ui-build.yml"
 
 permissions:
@@ -40,3 +42,13 @@ jobs:
         env:
           CI: "false"
         run: npm run build
+
+      - name: Install server dependencies
+        run: npm ci --prefix server --no-audit --no-fund
+      - name: Check server notification syntax
+        run: |
+          node --check server/services/smartNotifications.js
+          node --check server/Route/appRoutes.js
+          node --check server/index.js
+      - name: Validate notification templates
+        run: node server/scripts/validate-notification-templates.js
