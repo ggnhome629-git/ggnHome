@@ -117,7 +117,7 @@ export default function AdminPropertyManager() {
   };
 
   const exportCsv = () => {
-    const lines = [["Title", "Type", "Price", "Location", "BHK", "Source", "Partner", "Partner mobile", "Owner mobile", "Status", "Added"], ...rows.map((r) => [\`"\${(r.title || "").replace(/"/g, '""')}"\`, r.listingType, r.price, \`"\${r.location}"\`, r.bhk, r.source, \`"\${r.partnerName || ""}"\`, r.partnerMobile || "", r.ownerMobile || "", r.isActive ? "Live" : "Pending", new Date(r.createdAt).toLocaleDateString()])];
+    const lines = [["Title", "Type", "Price", "Location", "BHK", "Source", "Partner", "Partner mobile", "Owner mobile", "Status", "Added"], ...rows.map((r) => ['"' + (r.title || "").replace(/"/g, '""') + '"', r.listingType, r.price, '"' + (r.location || "") + '"', r.bhk, r.source, '"' + (r.partnerName || "") + '"', r.partnerMobile || "", r.ownerMobile || "", r.isActive ? "Live" : "Pending", new Date(r.createdAt).toLocaleDateString()])];
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([lines.map((l) => l.join(",")).join("\n")], { type: "text/csv" }));
     a.download = `properties-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -230,7 +230,8 @@ export default function AdminPropertyManager() {
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography sx={{ fontWeight: 700, fontSize: "0.9rem", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{r.title || "Untitled"}</Typography>
                   <Typography sx={{ fontWeight: 800, color: "#003366", fontSize: "0.95rem" }}>{money(r)}{r.bhk ? ` · ${/bhk/i.test(r.bhk) ? r.bhk : `${r.bhk} BHK`}` : ""}</Typography>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.location || "—"} · {new Date(r.createdAt).toLocaleDateString()}</Typography>\n                  {tab === "partner" && <Typography variant="caption" sx={{ display: "block", color: "text.secondary", mt: 0.5 }}>Partner: {r.partnerName || "—"}{r.partnerMobile ? ` · ${r.partnerMobile}` : ""}<br />Owner mobile: {r.ownerMobile || "—"}</Typography>}
+                  <Typography variant="caption" color="text.secondary" sx={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.location || "—"} · {new Date(r.createdAt).toLocaleDateString()}</Typography>
+                  {tab === "partner" && <Typography variant="caption" sx={{ display: "block", color: "text.secondary", mt: 0.5 }}>Partner: {r.partnerName || "—"}{r.partnerMobile ? ` · ${r.partnerMobile}` : ""}<br />Owner mobile: {r.ownerMobile || "—"}</Typography>}
                   <Stack direction="row" spacing={0.75} sx={{ my: 1, flexWrap: "wrap", rowGap: 0.75 }}>
                     <Chip size="small" label={sourceLabel(r)} sx={r.origin === "scraped" ? { bgcolor: "rgba(245,158,11,0.15)", color: "#B45309", fontWeight: 700 } : { bgcolor: "rgba(0,167,157,0.14)", color: "#00857D", fontWeight: 700 }} />
                     <Chip size="small" variant="outlined" color={r.isActive ? "success" : r.isPending ? "warning" : "default"} label={statusLabel(r)} />
@@ -261,7 +262,7 @@ export default function AdminPropertyManager() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={8} style={{ textAlign: "center", padding: 32 }}>Loading…</td></tr>
+                  <tr><td colSpan={tab === "partner" ? 10 : 8} style={{ textAlign: "center", padding: 32 }}>Loading…</td></tr>
                 ) : rows.map((r) => (
                   <tr key={r._id} className="admin-table-row">
                     {current.bulkOrigin && (
@@ -277,9 +278,10 @@ export default function AdminPropertyManager() {
                     <td>{money(r)}</td>
                     <td>{r.bhk || "—"}</td>
                     <td>
-                      <Chip size="small" label={r.origin === "scraped" ? (r.source === "nobroker" ? "NoBroker" : "99acres") : r.ownerType === "Agent" ? "Agent" : "Owner"}
+                      <Chip size="small" label={r.partnerAgentId ? "Partner-added" : r.origin === "scraped" ? (r.source === "nobroker" ? "NoBroker" : "99acres") : r.ownerType === "Agent" ? "Agent" : "Owner"}
                         sx={r.origin === "scraped" ? { bgcolor: "rgba(245,158,11,0.15)", color: "#B45309", fontWeight: 700 } : { bgcolor: "rgba(0,167,157,0.14)", color: "#00857D", fontWeight: 700 }} />
                     </td>
+                    {tab === "partner" && <><td><Typography sx={{ fontWeight: 600 }}>{r.partnerName || "—"}</Typography><Typography variant="caption" color="text.secondary">{r.partnerMobile || "—"}{r.partnerEmail ? ` · ${r.partnerEmail}` : ""}</Typography></td><td>{r.ownerMobile || "—"}</td></>}
                     <td>
                       <Chip size="small" variant="outlined" color={r.isActive ? "success" : r.isPending ? "warning" : "default"}
                         label={r.isActive ? "Live" : r.isPending ? (r.isEdited ? "Edited – review" : "New – review") : "Not live"} />
