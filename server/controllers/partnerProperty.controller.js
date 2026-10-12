@@ -20,7 +20,7 @@ async function createPartnerProperty(req, res) {
     const purpose = ['rent', 'rental'].includes(purposeValue) ? 'rental' : ['sale', 'sell'].includes(purposeValue) ? 'sale' : '';
     const title = body.title;
     const propertyType = body.propertyType;
-    const ownerMobile = String(body.ownerMobile || body.mobile || "").replace(/[\\s-]/g, "");
+    const ownerMobile = String(body.ownerMobile || body.mobile || "").replace(/[\s-]/g, "");
     const address = body.address || body.location;
     const sector = body.sector || body.Sector;
     const price = purpose === 'rental' ? (body.monthlyRent || body.price) : body.price;
