@@ -37,13 +37,16 @@ async function registerPartnerAccess(req, res) {
       return res.status(409).json({ success: false, message: "Partner access is already registered for this mobile number.", partner: { id: existing._id, mobileNumber: existing.mobileNumber, status: existing.status } });
     }
 
-    const user = await User.findOne({ mobileNumber });
+    let user = await User.findOne({ mobileNumber });
     if (user?.role === "admin") {
       return res.status(409).json({ success: false, message: "An administrator's mobile number cannot be registered as a Partner." });
     }
     if (user && await Agent.exists({ userId: user._id })) {
       return res.status(409).json({ success: false, message: "This user is already linked to another Agent/Partner account." });
     }
+    // Create the base user record now so the Agent unique sparse userId is populated from day one.
+    // OTP remains unverified until the partner logs in.
+    if (!user) user = await User.create({ mobileNumber, role: "renter", isVerified: false });
 
     const agentCode = await allocatePartnerCode();
     const partner = await Agent.create({
@@ -52,7 +55,7 @@ async function registerPartnerAccess(req, res) {
       whatsappNumber: mobileNumber,
       agentCode,
       roleType: "Partner",
-      ...(user ? { userId: user._id } : {}),
+      userId: user._id,
       status: "active",
       isVerified: true,
       verificationStatus: "approved",
