@@ -9,7 +9,7 @@ const { getPublicFeatureToggles, getAdminFeatureToggles, updateAdminFeatureToggl
 
 const multer = require("multer");
 const upload = require("../middleware/multer");
-const { verifyToken, verifyTokenOptional , verifyAgentToken , verifyAgentTokenOptional , verifyTokenOrAgent } = require("../middleware/auth");
+const { verifyToken, verifyTokenOptional , verifyAgentToken , verifyPartnerAccess , verifyAgentTokenOptional , verifyTokenOrAgent } = require("../middleware/auth");
 const {
   otpRequestLimiter,
   otpRequestIpLimiter,
@@ -507,16 +507,16 @@ router.post("/api/admin/partner-session", verifyToken, checkAdminEmail, createAd
 
 // All routes protected by verifyAgentToken
 router.post("/api/partner/register", verifyToken, registerPartner);
-router.get("/api/partner/dashboard", verifyAgentToken, getAgentHubDashboard);
-router.get("/api/partner/properties", verifyAgentToken, getAgentProperties);
-router.post("/api/partner/properties", verifyAgentToken, upload.array("images", 18), createPartnerProperty);
-router.get("/api/partner/leads", verifyAgentToken, getAgentLeads);
-router.get("/api/partner/leads/preferences", verifyAgentToken, listPreferenceForms);
-router.get("/api/partner/leads/searches", verifyAgentToken, getPartnerSearchLeads);
-router.get("/api/partner/enquiries", verifyAgentToken, getPartnerEnquiries);
-router.patch("/api/partner/leads/:enquiryId/status", verifyAgentToken, updateLeadStatus);
-router.get("/api/partner/profile", verifyAgentToken, getAgentProfile);
-router.patch("/api/partner/profile", verifyAgentToken, updateAgentProfile);
+router.get("/api/partner/dashboard", verifyAgentToken, verifyPartnerAccess, getAgentHubDashboard);
+router.get("/api/partner/properties", verifyAgentToken, verifyPartnerAccess, getAgentProperties);
+router.post("/api/partner/properties", verifyAgentToken, verifyPartnerAccess, upload.array("images", 18), createPartnerProperty);
+router.get("/api/partner/leads", verifyAgentToken, verifyPartnerAccess, getAgentLeads);
+router.get("/api/partner/leads/preferences", verifyAgentToken, verifyPartnerAccess, listPreferenceForms);
+router.get("/api/partner/leads/searches", verifyAgentToken, verifyPartnerAccess, getPartnerSearchLeads);
+router.get("/api/partner/enquiries", verifyAgentToken, verifyPartnerAccess, getPartnerEnquiries);
+router.patch("/api/partner/leads/:enquiryId/status", verifyAgentToken, verifyPartnerAccess, updateLeadStatus);
+router.get("/api/partner/profile", verifyAgentToken, verifyPartnerAccess, getAgentProfile);
+router.patch("/api/partner/profile", verifyAgentToken, verifyPartnerAccess, updateAgentProfile);
 
 // ================== PROPERTY RANKING ROUTES ==================
 const {
