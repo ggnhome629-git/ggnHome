@@ -808,6 +808,7 @@ export default function PropertyPostForm({
       <PhotoUploader
         value={photos}
         onChange={setPhotos}
+        categoryMode={mode === "partner"}
         max={8}
         privacyNotice="For your safety, please don't upload photos that show the front of your house or your house number. Photos of rooms, kitchen, bathrooms and the view work best."
         tips={["Shoot in daylight with lights on", "Hold the phone horizontally and capture whole rooms", "The first photo is the cover — pick your best one"]}
