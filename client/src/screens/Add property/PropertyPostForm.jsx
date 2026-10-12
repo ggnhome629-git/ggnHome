@@ -840,8 +840,8 @@ export default function PropertyPostForm({
         onChange={(nextPhotos) => { setPhotos(nextPhotos); setPartnerPhotoError(""); }}
         categoryMode={mode === "partner"}
         max={8}
-        privacyNotice="For your safety, please don't upload photos that show the front of your house or your house number. Photos of rooms, kitchen, bathrooms and the view work best."
-        tips={["Shoot in daylight with lights on", "Hold the phone horizontally and capture whole rooms", "The first photo is the cover — pick your best one"]}
+        privacyNotice={mode === "partner" ? "Include a clear front / exterior photo, plus photos of rooms, kitchen and bathrooms. Avoid showing people or private documents." : "For your safety, please don't upload photos that show the front of your house or your house number. Photos of rooms, kitchen, bathrooms and the view work best."}
+        tips={mode === "partner" ? ["Choose a category for each photo", "Include front / exterior, living room, bedrooms, kitchen and bathrooms", "Use bright, clear photos taken in daylight"] : ["Shoot in daylight with lights on", "Hold the phone horizontally and capture whole rooms", "The first photo is the cover — pick your best one"]}
       />
       {partnerPhotoError && <Alert severity="error" sx={{ mt: 2 }}>{partnerPhotoError}</Alert>}
       <Box sx={{ mt: 6, p: 5, borderRadius: `${radii.md}px`, border: "1.5px dashed #A9C7E6", backgroundColor: "#F7FBFF" }}>
