@@ -303,14 +303,14 @@ function GgnhomeTab({ data, reload, notify }) {
   const eff = s.effective;
   return (
     <Stack spacing={2}>
-      <Typography color="text.secondary">The Android app is display-only and never sends SMS. Enable OTP viewing here to show recent login OTPs in the Android app.</Typography>
+      <Typography color="text.secondary">Choose how GGN Home login codes are delivered. SMS mode keeps the existing SMS gateway and SIM sending. App mode shows OTPs in the Android app instead of sending SMS.</Typography>
       <Paper sx={{ p: 2.5 }}>
         <Stack spacing={2}>
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-            <Typography fontWeight={600}>OTP display</Typography>
+            <Typography fontWeight={600}>OTP delivery</Typography>
             <FormControlLabel
               control={<Switch checked={!!form.showOtpOnAndroid} onChange={(e) => setForm({ ...form, showOtpOnAndroid: e.target.checked })} />}
-              label={form.showOtpOnAndroid ? "Show OTPs in Android app" : "OTP display disabled"}
+              label={form.showOtpOnAndroid ? "Show OTP in app (no SMS)" : "Send OTP as SMS"}
             />
           </Stack>
           <Stack direction="row" spacing={2} alignItems="center">
