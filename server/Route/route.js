@@ -93,7 +93,6 @@ const {
   updateAgentProfile
 } = require("../controllers/partnerHub.controller.js");
 const { createPartnerProperty } = require("../controllers/partnerProperty.controller");
-const { registerPartner } = require("../controllers/partnerAuth.controller");
 const { getPartnerEnquiries } = require("../controllers/Enquiry.controller.js");
 const { createAdminPartnerSession } = require("../controllers/adminPartnerSession.controller");
 
