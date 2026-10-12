@@ -48,7 +48,7 @@ async function runSmartNotifications({ dryRun = false, max = 300 } = {}) {
 
   const cutoff = new Date(Date.now() - WEEK);
   const devices = await DeviceToken.find({
-    $or: [{ generalPushes: true }, { personalPushes: true }],
+    $or: [{ generalPushes: true }, { generalPushes: { $exists: false } }, { personalPushes: true }],
     $and: [{ $or: [{ lastGeneralPushAt: null }, { lastGeneralPushAt: { $lt: cutoff } }] }],
   }).sort({ lastGeneralPushAt: 1, createdAt: 1 }).limit(Math.min(Math.max(Number(max) || 300, 1), 1000)).lean();
 
