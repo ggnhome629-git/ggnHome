@@ -38,6 +38,7 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    otpVerifiedAt: { type: Date, default: null },
     role: {
       type: String,
       enum: ["renter", "owner", "admin", "Agent", "Partner"],
