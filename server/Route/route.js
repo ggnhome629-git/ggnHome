@@ -6,6 +6,7 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/user.model.js");
 const { getPublicFeatureToggles, getAdminFeatureToggles, updateAdminFeatureToggles } = require("../controllers/featureToggle.controller");
+const { getAppDownloads, updateAppDownloads } = require("../controllers/appDownload.controller");
 
 const multer = require("multer");
 const upload = require("../middleware/multer");
@@ -121,6 +122,9 @@ const checkAdminEmail = async (req, res, next) => {
 router.get("/api/features", getPublicFeatureToggles);
 router.get("/api/admin/feature-toggles", verifyToken, checkAdminEmail, getAdminFeatureToggles);
 router.put("/api/admin/feature-toggles", verifyToken, checkAdminEmail, updateAdminFeatureToggles);
+router.get("/api/app-downloads", getAppDownloads);
+router.get("/api/admin/app-downloads", verifyToken, checkAdminEmail, getAppDownloads);
+router.put("/api/admin/app-downloads", verifyToken, checkAdminEmail, updateAppDownloads);
 
 router.get("/api/users", verifyToken, checkAdminEmail, async (req, res) => {
   try {
