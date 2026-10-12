@@ -324,7 +324,7 @@ const {
   deleteEnquiry
 } = require("../controllers/Enquiry.controller.js");
 const { verify } = require("jsonwebtoken");
-router.post("/api/enquiry", verifyToken, createEnquiry);
+router.post("/api/enquiry", verifyTokenOptional, guestFormLimiter, createEnquiry);
 router.get("/api/enquiry", verifyToken, checkAdminEmail, getEnquiries);
 router.delete("/admin/api/deleteenquiry/:id", verifyToken, checkAdminEmail, deleteEnquiry);
 
