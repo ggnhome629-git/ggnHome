@@ -110,6 +110,22 @@ const verifyAgentToken = async (req, res, next) => {
 };
 
 
+
+const verifyAgentRole = async (req, res, next) => {
+  try {
+    if (!req.agent?._id) return res.status(401).json({ message: "Agent authentication required." });
+    const agent = await Agent.findById(req.agent._id).select("roleType userId").lean();
+    if (!agent) return res.status(401).json({ message: "Agent account not found." });
+    if (agent.roleType === "Partner") {
+      return res.status(403).json({ message: "This account has the Partner role. Use PartnerHub instead." });
+    }
+    return next();
+  } catch (error) {
+    console.error("verifyAgentRole error:", error);
+    return res.status(500).json({ message: "Could not verify Agent role." });
+  }
+};
+
 const verifyPartnerAccess = async (req, res, next) => {
   try {
     if (!req.agent?._id) return res.status(401).json({ message: "Partner authentication required." });
@@ -266,6 +282,7 @@ module.exports = {
   verifyToken,
   verifyTokenOptional,
   verifyAgentToken,
+  verifyAgentRole,
   verifyPartnerAccess,
   verifyAgentTokenOptional,
   verifyTokenOrAgent
