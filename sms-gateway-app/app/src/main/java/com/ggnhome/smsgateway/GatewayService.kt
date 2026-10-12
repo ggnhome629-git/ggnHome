@@ -99,41 +99,39 @@ class GatewayService : Service() {
 
         while (running) {
             try {
-                val next = request("GET", svc.url("/next"), svc.key, null, deviceId, deviceName)
+                val next = request("GET", svc.url("/otp-preview"), svc.key, null, deviceId, deviceName)
                 failures = 0
-                if (next.code == 200 || next.code == 204) {
-                    prefs.edit()
-                        .putLong(Config.beatKey(svc), System.currentTimeMillis())
-                        .putInt(Config.queueKey(svc), next.pending)
-                        .apply()
-                }
                 if (next.code == 200) {
-                    val job = JSONObject(next.body)
-                    val id = job.getString("id")
-                    val to = job.getString("phoneNumber")
-                    try {
-                        sendSms(to, job.getString("message"), id, svc.id)
-                        request("POST", svc.url("/$id/result"), svc.key, """{"status":"sent"}""", deviceId, deviceName)
-                        prefs.edit().putInt(Config.sentKey(svc), prefs.getInt(Config.sentKey(svc), 0) + 1).apply()
-                        note(svc, "Sent to …${to.takeLast(4)}")
-                        Config.appendLog(this, svc.id, to, true, "Sent, waiting for delivery report", id)
-                    } catch (e: Exception) {
-                        val err = JSONObject().put("status", "failed").put("error", e.message ?: "send error")
-                        request("POST", svc.url("/$id/result"), svc.key, err.toString(), deviceId, deviceName)
-                        note(svc, "Send failed: ${e.message}")
-                        Config.appendLog(this, svc.id, to, false, e.message ?: "send error", id)
+                    prefs.edit().putLong(Config.beatKey(svc), System.currentTimeMillis()).apply()
+                    val payload = JSONObject(next.body)
+                    val enabled = payload.optBoolean("enabled", false)
+                    val messages = payload.optJSONArray("messages")
+                    if (enabled && messages != null) {
+                        for (i in 0 until messages.length()) {
+                            val item = messages.optJSONObject(i) ?: continue
+                            val id = item.optString("id")
+                            val otp = item.optString("otp")
+                            val phone = item.optString("phoneNumber")
+                            if (id.isBlank() || otp.isBlank()) continue
+                            val seenKey = "otp_seen_$id"
+                            if (prefs.getBoolean(seenKey, false)) continue
+                            prefs.edit().putBoolean(seenKey, true).apply()
+                            showOtpNotification(phone, otp)
+                            note(svc, "OTP available for …${phone.takeLast(4)}")
+                            Config.appendLog(this, svc.id, phone, true, "OTP: $otp", id)
+                        }
+                    } else if (!enabled) {
+                        note(svc, "OTP display disabled by admin")
                     }
+                } else if (next.code == 401) {
+                    note(svc, "Wrong device key")
                 }
-                if (next.code == 401) note(svc, "Wrong device key")
-                // A short read-only status line for the screen (when it is next allowed to send, today's count…).
                 if (System.currentTimeMillis() - lastStatusAt > 20_000L) {
                     lastStatusAt = System.currentTimeMillis()
                     try {
                         val st = request("GET", svc.url("/status"), svc.key, null, deviceId, deviceName)
                         if (st.code == 200) prefs.edit().putString(Config.statusKey(svc), st.body).apply()
-                    } catch (_: Exception) {
-                        // The status line is optional.
-                    }
+                    } catch (_: Exception) { }
                 }
                 Thread.sleep(3000)
             } catch (_: InterruptedException) {
@@ -146,30 +144,29 @@ class GatewayService : Service() {
         }
     }
 
-    private val requestCodes = AtomicInteger(1000)
-
-    @Suppress("DEPRECATION")
-    private fun sendSms(to: String, text: String, queueId: String, svcId: String) {
-        val sms = if (Build.VERSION.SDK_INT >= 31) getSystemService(SmsManager::class.java) else SmsManager.getDefault()
-        val parts = sms.divideMessage(text)
-        val sentIntents = ArrayList<PendingIntent>()
-        val deliveryIntents = ArrayList<PendingIntent>()
-        for (i in parts.indices) {
-            // Android needs a unique requestCode per PendingIntent (extras don't count).
-            sentIntents.add(statusIntent(SmsStatusReceiver.ACTION_SENT, queueId, to, svcId))
-            deliveryIntents.add(statusIntent(SmsStatusReceiver.ACTION_DELIVERED, queueId, to, svcId))
+    private fun showOtpNotification(phone: String, otp: String) {
+        val channelId = "otp-viewer"
+        val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (Build.VERSION.SDK_INT >= 26) {
+            nm.createNotificationChannel(
+                NotificationChannel(channelId, "Login OTPs", NotificationManager.IMPORTANCE_HIGH)
+            )
         }
-        sms.sendMultipartTextMessage(to, null, parts, sentIntents, deliveryIntents)
+        val notification = Notification.Builder(this, channelId)
+            .setContentTitle("GGN Home login OTP")
+            .setContentText("$otp · phone ending ${phone.takeLast(4)}")
+            .setStyle(Notification.BigTextStyle().bigText("OTP: $otp\\nFor phone ending ${phone.takeLast(4)}"))
+            .setSmallIcon(android.R.drawable.stat_notify_chat)
+            .setAutoCancel(true)
+            .setContentIntent(PendingIntent.getActivity(
+                this, 0, Intent(this, MainActivity::class.java),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            ))
+            .build()
+        nm.notify((idForOtp(phone, otp)), notification)
     }
 
-    private fun statusIntent(action: String, queueId: String, to: String, svcId: String): PendingIntent =
-        PendingIntent.getBroadcast(
-            this,
-            requestCodes.incrementAndGet(),
-            Intent(this, SmsStatusReceiver::class.java).setAction(action)
-                .putExtra("qid", queueId).putExtra("to", to).putExtra("svc", svcId),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-        )
+    private fun idForOtp(phone: String, otp: String): Int = (phone + otp).hashCode() and 0x7fffffff
 
     private fun request(method: String, url: String, key: String, body: String?, deviceId: String, deviceName: String): Resp {
         val c = URL(url).openConnection() as HttpURLConnection
