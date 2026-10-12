@@ -78,18 +78,18 @@ const PartnerHubProfile = () => {
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Box sx={{ mb: 6 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: '#0f172a', mb: 1 }}>Partner Profile</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 850, letterSpacing: '-.8px', color: '#102a43', mb: 1 }}>Partner Profile</Typography>
         <Typography variant="body2" sx={{ color: '#6b7280' }}>Manage your account and preferences</Typography>
       </Box>
 
       {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
 
-      <Card sx={{ borderRadius: '12px', border: '1px solid #e5e7eb', mb: 4 }}>
+      <Card sx={{ borderRadius: '18px', border: '1px solid #e7edf3', boxShadow: '0 5px 22px rgba(16,42,67,.035)', mb: 4 }}>
         <CardContent>
           <Stack spacing={4}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={4} alignItems={{ xs: 'center', sm: 'flex-start' }}>
               <Box sx={{ textAlign: 'center' }}>
-                <Avatar sx={{ width: 120, height: 120, backgroundColor: '#3b82f6', fontSize: '2.5rem', mb: 2 }} src={profile?.profilePhoto}>{profile?.name?.charAt(0)?.toUpperCase()}</Avatar>
+                <Avatar sx={{ width: 120, height: 120, backgroundColor: '#0f766e', fontSize: '2.5rem', mb: 2 }} src={profile?.profilePhoto}>{profile?.name?.charAt(0)?.toUpperCase()}</Avatar>
                 <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>{profile?.name}</Typography>
                 <Typography variant="caption" sx={{ color: '#6b7280' }}>{profile?.agentType?.replace('-', ' ').toUpperCase()}</Typography>
               </Box>
@@ -121,7 +121,7 @@ const PartnerHubProfile = () => {
               <Box>
                 <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Personal Information</Typography>
                 <Stack spacing={3}>
-                  <TextField fullWidth label="Full Name" name="name" value={formData?.name || ''} onChange={handleInputChange} disabled={!editing} InputProps={{ startAdornment: <User size={18} style={{ marginRight: 8, color: '#9ca3af' }} /> }} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', backgroundColor: !editing ? '#f9fafb' : '#fff' } }} />
+                  <TextField fullWidth label="Full Name" name="name" value={formData?.name || ''} onChange={handleInputChange} disabled={!editing} InputProps={{ startAdornment: <User size={18} style={{ marginRight: 8, color: '#9ca3af' }} /> }} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '10px', backgroundColor: !editing ? '#f9fafb' : '#fff' } }} />
                   <TextField fullWidth label="Email Address" name="email" type="email" value={formData?.email || ''} onChange={handleInputChange} disabled={!editing} InputProps={{ startAdornment: <Mail size={18} style={{ marginRight: 8, color: '#9ca3af' }} /> }} sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', backgroundColor: !editing ? '#f9fafb' : '#fff' } }} />
                 </Stack>
               </Box>
@@ -129,7 +129,7 @@ const PartnerHubProfile = () => {
               {profile?.agencyName && (
                 <Box>
                   <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>Agency Information</Typography>
-                  <TextField fullWidth label="Agency Name" value={profile?.agencyName} disabled sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', backgroundColor: '#f9fafb' } }} />
+                  <TextField fullWidth label="Agency Name" value={profile?.agencyName} disabled sx={{ '& .MuiOutlinedInput-root': { borderRadius: '8px', backgroundColor: '#f6f9fb' } }} />
                 </Box>
               )}
 
