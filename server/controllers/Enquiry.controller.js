@@ -16,10 +16,10 @@ const { debouncedRankingCalculation } = require("../hooks/propertyRankingHook");
 const createEnquiry = async (req, res) => {
   const { propertyId, message, brokerage } = req.body;
   const user = req.user || null;
-  const messageName = String(message || "").match(/(?:^|\\n)\\s*Name:\\s*(.+)/i)?.[1] || "";
+  const messageName = String(message || "").match(/(?:^|\n)\s*Name:\s*(.+)/i)?.[1] || "";
   const submittedName = String(req.body.customerName || req.body.name || user?.name || user?.fullName || messageName).trim().slice(0, 120);
-  const submittedMobile = String(req.body.customerMobile || req.body.phone || user?.mobileNumber || "").replace(/\D/g, "").slice(-10);
-
+  const messagePhone = String(message || "").match(/(?:^|\n)\s*Phone:\s*([+\d()\s-]+)/i)?.[1] || "";
+  const submittedMobile = String(req.body.customerMobile || req.body.phone || user?.mobileNumber || messagePhone).replace(/\D/g, "").slice(-10);
   try {
     if (
       typeof brokerage !== "number" ||
