@@ -62,10 +62,10 @@ async function safeCachePut(cacheName, request, response) {
     } catch (error) {
       if (error?.name !== "QuotaExceededError") return;
     }
-    const cache = await caches.open(cacheName);
-    const keys = await cache.keys();
+    const cacheAfterFailure = await caches.open(cacheName);
+    const keys = await cacheAfterFailure.keys();
     const removeCount = Math.max(1, Math.ceil(keys.length * 0.1));
-    await Promise.all(keys.slice(0, removeCount).map((key) => cache.delete(key)));
+    await Promise.all(keys.slice(0, removeCount).map((key) => cacheAfterFailure.delete(key)));
     await (await caches.open(cacheName)).put(request, response);
   } catch (_) {
     // Ignore storage failures. The network response remains usable.
