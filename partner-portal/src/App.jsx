@@ -38,11 +38,9 @@ function AuthScreen({ onLogin }) {
   const [mobile, setMobile] = useState("");
   const [otp, setOtp] = useState("");
   const [sent, setSent] = useState(false);
-  const [userToken, setUserToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [registerMode, setRegisterMode] = useState(false);
   const normalized = mobile.replace(/\D/g, "").slice(-10);
 
   async function sendOtp() {
@@ -51,38 +49,27 @@ function AuthScreen({ onLogin }) {
     setBusy(true);
     try {
       const data = await request("/login/request-otp", { method: "POST", body: JSON.stringify({ mobileNumber: normalized }) });
-      setSent(true); setNotice(data.message || "OTP sent. Check your messages.");
-    } catch (e) { setError(e.message); } finally { setBusy(false); }
-  }
-
-  async function finishRegistration(token) {
-    setBusy(true); setError("");
-    try {
-      const data = await request("/api/partner/register", { method: "POST", body: JSON.stringify({}), headers: { Authorization: `Bearer ${token}` } });
-      localStorage.setItem("accessToken", token);
-      if (data.agentAccessToken) localStorage.setItem("partnerAccessToken", data.agentAccessToken);
-      onLogin(data.agentAccessToken || token);
+      setSent(true); setNotice(data.message || "OTP sent. It is valid for 5 minutes.");
     } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
 
   async function verifyOtp() {
     setError(""); setNotice("");
-    if (!/^[A-Z]{4}$/.test(otp.trim().toUpperCase())) return setError("Enter the 4-letter OTP you received.");
+    const code = otp.trim().toUpperCase();
+    if (!/^[A-Z]{4}$/.test(code)) return setError("Enter the 4-letter OTP you received.");
     setBusy(true);
     try {
-      const data = await request("/login/verify-otp", { method: "POST", body: JSON.stringify({ mobileNumber: normalized, otp: otp.trim().toUpperCase() }) });
-      if (!data.accessToken) throw new Error("OTP verified but no login token was returned.");
+      const data = await request("/login/verify-otp", { method: "POST", body: JSON.stringify({ mobileNumber: normalized, otp: code }) });
+      if (!data.accessToken) throw new Error("OTP was verified but no login token was returned.");
+      if (data.agent?.role === "Agent") throw new Error("This number is registered as a standard Agent, not a Partner. Contact GgnHome admin.");
+      if (data.agent?.role !== "Partner") throw new Error("This mobile number is not registered for Partner Portal access. Ask a GgnHome administrator to register it first.");
+      if (data.agent.status === "suspended") throw new Error("This Partner account is suspended. Contact GgnHome support.");
+      if (data.agent.status !== "active") throw new Error("This Partner account is not active yet. Contact GgnHome admin.");
+      if (!data.agentAccessToken) throw new Error("OTP was verified, but a Partner session could not be created. Please try again.");
       localStorage.setItem("accessToken", data.accessToken);
-      if (data.agent?.role === "Partner" && data.agentAccessToken) {
-        if (data.agent.status !== "active") throw new Error("Your partner account is not active. Contact GgnHome support.");
-        localStorage.setItem("partnerAccessToken", data.agentAccessToken);
-        onLogin(data.agentAccessToken);
-        return;
-      }
-      setUserToken(data.accessToken);
-      setNotice("Mobile verified. Complete your Partner registration to open the portal.");
-      setRegisterMode(true);
-    } catch (e) { setError(e.message); } finally { setBusy(false); }
+      localStorage.setItem("partnerAccessToken", data.agentAccessToken);
+      onLogin(data.agentAccessToken);
+    } catch (e) { setError(e.message || "OTP verification failed."); } finally { setBusy(false); }
   }
 
   return (
@@ -100,22 +87,20 @@ function AuthScreen({ onLogin }) {
       <section className="auth-panel">
         <div className="auth-card">
           <Brand small />
-          <div className="eyebrow dark">{registerMode ? "PARTNER REGISTRATION" : "WELCOME BACK"}</div>
-          <h2>{registerMode ? "Create your partner account" : "Sign in to PartnerHub"}</h2>
-          <p className="muted">Use your mobile number and the one-time code. No password needed.</p>
+          <div className="eyebrow dark">SECURE PARTNER LOGIN</div>
+          <h2>Sign in to PartnerHub</h2>
+          <p className="muted">Only mobile numbers registered by GgnHome admin can access this portal. OTP verification is required for every login.</p>
           {error && <div className="alert error">{error}</div>}
           {notice && <div className="alert info">{notice}</div>}
           <label>Mobile number</label>
           <div className="input-with-prefix"><span>+91</span><input value={mobile} onChange={e => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="10-digit mobile number" inputMode="numeric" disabled={sent || busy} /></div>
           {!sent ? <button className="primary full" onClick={sendOtp} disabled={busy}>{busy ? "Sending code…" : "Send OTP"} <ArrowRight size={17} /></button> : <>
             <label>4-letter OTP</label>
-            <input className="otp-input" value={otp} onChange={e => setOtp(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4))} placeholder="e.g. KQMX" maxLength={4} disabled={busy || Boolean(userToken)} />
-            {!userToken && <button className="primary full" onClick={verifyOtp} disabled={busy}>{busy ? "Verifying…" : "Verify OTP"} <ArrowRight size={17} /></button>}
-            {userToken && <button className="primary full" onClick={() => finishRegistration(userToken)} disabled={busy}>{busy ? "Creating account…" : "Complete Partner Registration"} <ArrowRight size={17} /></button>}
-            {!userToken && <button className="text-button" onClick={() => { setSent(false); setOtp(""); setError(""); setNotice(""); }}>Change mobile number</button>}
+            <input className="otp-input" value={otp} onChange={e => setOtp(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4))} placeholder="e.g. KQMX" maxLength={4} disabled={busy} />
+            <button className="primary full" onClick={verifyOtp} disabled={busy}>{busy ? "Verifying…" : "Verify OTP and sign in"} <ArrowRight size={17} /></button>
+            <button className="text-button" onClick={() => { setSent(false); setOtp(""); setError(""); setNotice(""); }} disabled={busy}>Change mobile number</button>
           </>}
-          <div className="auth-switch">{registerMode ? "Already registered?" : "New to GgnHome Partner?"} <button onClick={() => { setRegisterMode(!registerMode); setError(""); setNotice(""); }}>{registerMode ? "Login help" : "Register with mobile"}</button></div>
-          <p className="fine-print">By continuing, you confirm that you are authorised to use this mobile number.</p>
+          <p className="fine-print">Need access? Ask a GgnHome administrator to register your mobile number. Self-registration is disabled.</p>
         </div>
       </section>
     </main>
