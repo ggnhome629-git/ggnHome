@@ -46,6 +46,7 @@ function emptyState(lang = "en") {
     turn: 0,
     aiUsed: false,
     lastResultCount: null,
+    deep: false,
   };
 }
 
@@ -130,6 +131,7 @@ function sanitizeState(input) {
   s.offset = Math.min(150, Number.isInteger(input.offset) && input.offset >= 0 ? input.offset : 0);
   s.turn = Math.min(10000, Number.isInteger(input.turn) && input.turn >= 0 ? input.turn : 0);
   s.aiUsed = input.aiUsed === true;
+  s.deep = input.deep === true;
   s.lastResultCount = Number.isInteger(input.lastResultCount) ? input.lastResultCount : null;
   return s;
 }
@@ -144,7 +146,13 @@ const markAnswered = (s, slot) => {
 const markSkipped = (s, slot) => {
   if (!s.skipped.includes(slot) && !s.answered.includes(slot)) s.skipped.push(slot);
 };
-const flowFor = (s) => (s.req.mode === "sale" ? bank.flows.sale : bank.flows.rent);
+// The core five questions; "Personalise more" (s.deep) appends the optional ones.
+const flowFor = (s) => {
+  const sale = s.req.mode === "sale";
+  const base = sale ? bank.flows.sale : bank.flows.rent;
+  return s.deep ? [...base, ...(sale ? bank.flows.saleMore : bank.flows.rentMore)] : base;
+};
+const moreQuestionsLeft = (s) => Boolean(nextCollectSlot({ ...s, deep: true }));
 const slotDef = (slot) => bank.slots[slot];
 
 function slotApplies(s, slot) {
@@ -542,7 +550,7 @@ function askNext(s, messages, prefix = "") {
 
 function reAsk(s, messages, prefix) {
   if (s.phase === "results" || s.phase === "done") {
-    const resultChips = bank.responses.afterResultsChips.filter((c) => c.value !== "show more" || (s.lastResultCount || 0) > s.shown.length);
+    const resultChips = resultsChipsFor(s);
     messages.push({ text: [prefix, say(bank.responses.afterResults, s.lang, s.turn)].filter(Boolean).join(" "), chips: chips(resultChips, s.lang), kind: "info" });
     return null;
   }
@@ -554,6 +562,14 @@ function reAsk(s, messages, prefix) {
     }
   }
   return askNext(s, messages, prefix);
+}
+
+function resultsChipsFor(s, { hasMore } = {}) {
+  return bank.responses.afterResultsChips.filter((c) => {
+    if (c.value === "show more") return hasMore !== undefined ? hasMore : (s.lastResultCount || 0) > s.shown.length;
+    if (c.value === "personalise more") return moreQuestionsLeft(s);
+    return true;
+  });
 }
 
 function startContact(s, messages, prefix) {
@@ -722,7 +738,7 @@ async function handleTurn({ state: rawState, message, action }) {
         return { state: s, messages, next: "search", ui: ui(s) };
       }
       if (parsed.no) {
-        messages.push({ text: say(bank.responses.keptFilters, lang, s.turn), chips: chips(bank.responses.afterResultsChips.filter((c) => c.value !== "show more"), lang), kind: "info" });
+        messages.push({ text: say(bank.responses.keptFilters, lang, s.turn), chips: chips(resultsChipsFor(s, { hasMore: false }), lang), kind: "info" });
         return { state: s, messages, next: null, ui: ui(s) };
       }
     } else if (pending.type === "followUp") {
@@ -751,6 +767,17 @@ async function handleTurn({ state: rawState, message, action }) {
     const slot = { budget: "budget", location: "location", bhk: "bhk", nearby: "priorities" }[changeMatch[1]];
     return handleTurn({ state: s, action: { type: "edit", slot } });
   }
+  if (hasIntent("personalise") && parsed.fieldCount === 0) {
+    if (!moreQuestionsLeft(s)) {
+      next = reAsk(s, messages, say(bank.responses.personaliseDone, lang, s.turn));
+      return { state: s, messages, next, ui: ui(s) };
+    }
+    s.deep = true;
+    s.phase = "collect";
+    s.pending = null;
+    next = askNext(s, messages, say(bank.responses.personaliseIntro, lang, s.turn));
+    return { state: s, messages, next, ui: ui(s) };
+  }
   if (lower === "refine") {
     const extra = s.req.mode === "sale" ? bank.responses.refineChipsSale : bank.responses.refineChipsRent;
     messages.push({ text: say(bank.responses.refinePrompt, lang, s.turn), chips: chips([...(extra || []), ...bank.responses.refineChips], lang), kind: "question" });
@@ -758,7 +785,7 @@ async function handleTurn({ state: rawState, message, action }) {
   }
   if ((hasIntent("propertyDetail") || hasIntent("propertyNearby")) && parsed.ordinal && parsed.fieldCount === 0) {
     const d = await describeListing(s, parsed.ordinal, hasIntent("propertyNearby") && !hasIntent("propertyDetail"));
-    messages.push({ text: d.text, listing: d.listing, chips: chips(bank.responses.afterResultsChips, lang), kind: "listing" });
+    messages.push({ text: d.text, listing: d.listing, chips: chips(resultsChipsFor(s), lang), kind: "listing" });
     return { state: s, messages, next: null, ui: ui(s) };
   }
   if (hasIntent("moreResults") && (s.phase === "results" || s.phase === "done") && parsed.fieldCount === 0) {
@@ -1032,9 +1059,9 @@ async function handleSearch({ state: rawState, more = false }) {
       const head = total === 1 ? say(bank.responses.resultsOne, lang, s.turn) : say(bank.responses.results, lang, s.turn, { count: total });
       messages.push({ text: head, kind: "results" });
     }
-    messages.push({ text: say(bank.responses.afterResults, lang, s.turn), chips: chips(bank.responses.afterResultsChips.filter((c) => c.value !== "show more" || stats.hasMore), lang), kind: "info" });
+    messages.push({ text: say(bank.responses.afterResults, lang, s.turn), chips: chips(resultsChipsFor(s, { hasMore: stats.hasMore }), lang), kind: "info" });
   } else if (more) {
-    messages.push({ text: say(bank.responses.noMoreResults, lang, s.turn), chips: chips(bank.responses.afterResultsChips.filter((c) => c.value !== "show more"), lang), kind: "info" });
+    messages.push({ text: say(bank.responses.noMoreResults, lang, s.turn), chips: chips(resultsChipsFor(s, { hasMore: false }), lang), kind: "info" });
   } else {
     const d = diagnosis || { reason: "none" };
     const homes = { en: d.count === 1 ? "1 home" : `${d.count} homes`, hinglish: `${d.count} ghar`, hi: `${d.count} घर` }[lang];

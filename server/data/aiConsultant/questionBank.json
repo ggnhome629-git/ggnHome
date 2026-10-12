@@ -703,7 +703,24 @@
       "Five short questions at most, then results. Anything else the user mentions (furnishing, move-in, occupancy, area, possession, purpose, exact distances, corner) is understood and applied without being asked.",
       "A slot already answered (in any earlier message) is never asked again; 'show homes now' works once rent/buy, location and budget are known.",
       "Furnishing, move-in, possession and exact distances are offered as one-tap refinements after the results instead of extra questions.",
-      "bhk is skipped automatically when propertyType is plot."
+      "bhk is skipped automatically when propertyType is plot.",
+      "After results, 'Personalise more' asks the optional rentMore/saleMore questions (each skippable), then searches again."
+    ],
+    "rentMore": [
+      "propertyType",
+      "furnishing",
+      "moveIn",
+      "occupancy",
+      "distances",
+      "corner"
+    ],
+    "saleMore": [
+      "propertyType",
+      "area",
+      "possession",
+      "purpose",
+      "distances",
+      "corner"
     ]
   },
   "slots": {
@@ -2303,19 +2320,19 @@
       },
       "ask": {
         "en": [
-          "Last one — anything you'd like close by? Tap all that matter, or I'll show homes right away.",
-          "One last thing: should anything be nearby? Pick any, or just see the homes.",
-          "Almost done! Anything important nearby? Tap as many as you like."
+          "Anything you'd like close by? Tap all that matter, or I'll show homes right away.",
+          "Should anything be nearby? Pick any, or just see the homes.",
+          "Anything important nearby? Tap as many as you like."
         ],
         "hinglish": [
-          "Aakhri sawaal — paas mein kya chahiye? Jo zaroori ho tap kijiye, ya seedha ghar dekhiye.",
-          "Bas ek aur — paas mein kuch zaroori? Chuniye ya seedha ghar dekhiye.",
-          "Lagbhag ho gaya! Paas mein kya hona chahiye?"
+          "Paas mein kya chahiye? Jo zaroori ho tap kijiye, ya seedha ghar dekhiye.",
+          "Paas mein kuch zaroori? Chuniye ya seedha ghar dekhiye.",
+          "Paas mein kya hona chahiye? Jitne chahein chuniye."
         ],
         "hi": [
-          "आख़िरी सवाल — पास में क्या चाहिए? जो ज़रूरी हो चुनिए, या सीधे घर देखिए।",
-          "बस एक और — पास में कुछ ज़रूरी? चुनिए या सीधे घर देखिए।",
-          "लगभग हो गया! पास में क्या होना चाहिए?"
+          "पास में क्या चाहिए? जो ज़रूरी हो चुनिए, या सीधे घर देखिए।",
+          "पास में कुछ ज़रूरी? चुनिए या सीधे घर देखिए।",
+          "पास में क्या होना चाहिए? जितने चाहें चुनिए।"
         ]
       },
       "hint": {
@@ -2508,17 +2525,17 @@
       },
       "ask": {
         "en": [
-          "Last one: do you prefer a corner property or one in the middle?",
+          "Do you prefer a corner home or one in the middle?",
           "Corner home or middle — any preference?",
           "Would a corner unit matter to you?"
         ],
         "hinglish": [
-          "Aakhri sawaal: corner wala ghar pasand hai ya beech wala?",
+          "Corner wala ghar pasand hai ya beech wala?",
           "Corner ya middle — koi preference?",
           "Corner unit aapke liye zaroori hai?"
         ],
         "hi": [
-          "आख़िरी सवाल: कोने वाला घर पसंद है या बीच वाला?",
+          "कोने वाला घर पसंद है या बीच वाला?",
           "कॉर्नर या बीच वाला — कोई पसंद?",
           "क्या कॉर्नर यूनिट आपके लिए ज़रूरी है?"
         ]
@@ -3075,6 +3092,26 @@
         ],
         "hi": [
           "Theek hai, ab Hinglish mein baat karte hain."
+        ]
+      }
+    },
+    "personalise": {
+      "priority": 72,
+      "patterns": [
+        "\\b(personali[sz]e( more)?|more questions|ask me more|better matches|refine further|fine[- ]tune more)\\b",
+        "\\b(aur sawaal|aur personal|aur behtar)\\b",
+        "और सवाल",
+        "और बेहतर"
+      ],
+      "reply": {
+        "en": [
+          "Sure!"
+        ],
+        "hinglish": [
+          "Zaroor!"
+        ],
+        "hi": [
+          "ज़रूर!"
         ]
       }
     }
@@ -4570,6 +4607,14 @@
     },
     "afterResultsChips": [
       {
+        "value": "personalise more",
+        "label": {
+          "en": "✨ Personalise more",
+          "hinglish": "✨ Aur personalise karo",
+          "hi": "✨ और व्यक्तिगत बनाएँ"
+        }
+      },
+      {
         "value": "yes contact me",
         "label": {
           "en": "📞 Arrange visits",
@@ -5173,6 +5218,28 @@
       ],
       "hi": [
         "अभी स्क्रीन पर कोई घर नहीं है — “नतीजे दिखाओ” बोलिए या फ़िल्टर बदलिए।"
+      ]
+    },
+    "personaliseIntro": {
+      "en": [
+        "Great — a few optional questions for sharper matches. Skip any, or tap “Show results now” whenever you like."
+      ],
+      "hinglish": [
+        "Badhiya — behtar matches ke liye kuch optional sawaal. Koi bhi skip kijiye, ya kabhi bhi “Abhi results dikhao” dabaiye."
+      ],
+      "hi": [
+        "बढ़िया — बेहतर मिलान के लिए कुछ वैकल्पिक सवाल। कोई भी छोड़िए, या कभी भी “अभी नतीजे दिखाओ” दबाइए।"
+      ]
+    },
+    "personaliseDone": {
+      "en": [
+        "You've already told me everything I'd ask — these are your most personalised matches."
+      ],
+      "hinglish": [
+        "Aapne sab kuch bata diya hai — ye aapke sabse personalised matches hain."
+      ],
+      "hi": [
+        "आपने सब कुछ बता दिया है — ये आपके सबसे व्यक्तिगत मिलान हैं।"
       ]
     }
   },

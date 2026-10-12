@@ -204,6 +204,37 @@ describe("listing parameters", () => {
   });
 });
 
+describe("personalise more", () => {
+  test("after results, the optional questions are offered, asked once each, then search again", async () => {
+    let r = await converse(["2 bhk for rent in sector 57 under 30k near metro"]);
+    expect(r.next).toBe("search");
+    r = { ...r, state: { ...r.state, phase: "results" } };
+    const offered = await engine.handleTurn({ state: r.state, message: "tell me about #1" });
+    expect(offered.messages.flatMap((m) => m.chips || []).some((c) => c.value === "personalise more")).toBe(true);
+    let t = await engine.handleTurn({ state: r.state, message: "personalise more" });
+    expect(t.state.deep).toBe(true);
+    expect(t.state.slot).toBe("propertyType");
+    const asked = [];
+    for (const message of ["apartment", "skip", "skip", "skip", "skip", "skip", "skip"]) {
+      asked.push(t.state.slot);
+      t = await engine.handleTurn({ state: JSON.parse(JSON.stringify(t.state)), message });
+      if (t.next === "search") break;
+    }
+    expect(t.next).toBe("search");
+    expect(new Set(asked).size).toBe(asked.length); // never the same question twice
+    expect(asked).toEqual(expect.arrayContaining(["propertyType", "furnishing", "moveIn", "occupancy"]));
+    const again = await engine.handleTurn({ state: { ...t.state, phase: "results" }, message: "personalise more" });
+    expect(again.state.slot).not.toBe("propertyType");
+  });
+
+  test("show results now works in the middle of the optional round", async () => {
+    let r = await converse(["buy 3 bhk in sector 65 under 2 crore", "none of these"]);
+    r = await engine.handleTurn({ state: { ...r.state, phase: "results" }, message: "personalise more" });
+    r = await engine.handleTurn({ state: r.state, message: "show results" });
+    expect(r.next).toBe("search");
+  });
+});
+
 describe("robustness", () => {
   const junk = [
     "", " ", "?????", "🙂🙂🙂", "asdfghjkl", "x".repeat(600), "<script>alert(1)</script>", "{$gt: ''}", "sector 999", "₹₹₹",
