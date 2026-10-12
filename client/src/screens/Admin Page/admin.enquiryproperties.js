@@ -224,12 +224,14 @@ export default function AdminEnquiryProperties() {
                       {enquiry.property?.sourcePortal ? (
                         <Chip size="small" label={`Scraped · ${enquiry.property.sourcePortal === "nobroker" ? "NoBroker" : "99acres"}`} sx={{ bgcolor: "rgba(245,158,11,0.15)", color: "#B45309", fontWeight: 700 }} />
                       ) : (
-                        <Chip size="small" label={enquiry.property?.ownerType === "Agent" ? "Agent property" : "Normal · Owner property"} sx={{ bgcolor: "rgba(0,167,157,0.14)", color: "#00857D", fontWeight: 700 }} />
+                        <Chip size="small" label={enquiry.property?.ownerType === "Partner" ? "Partner property" : enquiry.property?.ownerType === "Agent" ? "Agent property" : "Normal · Owner property"} sx={{ bgcolor: "rgba(0,167,157,0.14)", color: "#00857D", fontWeight: 700 }} />
                       )}
+                      {enquiry.property?.sourceUrl && <Typography component="a" href={enquiry.property.sourceUrl} target="_blank" rel="noreferrer" variant="caption" sx={{ display: "block", mt: 0.75, overflowWrap: "anywhere", color: "primary.main" }}>Open source listing</Typography>}
                     </td>
                     <td>
                       {enquiry.owner ? (
                         <>
+                          <Typography variant="body2" sx={{ fontWeight: 800, mb: 0.75 }}>{enquiry.ownerName || enquiry.owner.name || enquiry.owner.fullName || "Owner"}</Typography>
                           <Box className="admin-flex admin-gap-2 admin-mb-1">
                             <Mail size={13} color="#94a3b8" />
                             <Typography variant="body2">{enquiry.owner.email || "N/A"}</Typography>
@@ -246,6 +248,7 @@ export default function AdminEnquiryProperties() {
                       )}
                     </td>
                     <td>
+                      <Typography variant="body2" sx={{ fontWeight: 800, mb: 0.75 }}>{enquiry.customerName || enquiry.customer?.name || "Customer"}</Typography>
                       <Box className="admin-flex admin-gap-2 admin-mb-1">
                         <Mail size={13} color="#94a3b8" />
                         <Typography variant="body2">{enquiry.userEmail || "N/A"}</Typography>
