@@ -79,8 +79,10 @@ export default function PartnerHubLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const current = NAV_ITEMS.find((item) => item.path === location.pathname)
-    || (location.pathname.startsWith("/partner/properties") ? NAV_ITEMS[1] : NAV_ITEMS[0]);
+  const current = location.pathname === "/partner/properties/add"
+    ? { label: "Add a property" }
+    : NAV_ITEMS.find((item) => item.path === location.pathname)
+      || (location.pathname.startsWith("/partner/properties") ? NAV_ITEMS[1] : NAV_ITEMS[0]);
   const logout = () => {
     localStorage.removeItem("partnerAccessToken");
     navigate("/partner/login");
