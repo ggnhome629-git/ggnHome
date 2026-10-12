@@ -28,6 +28,7 @@ const toRow = (doc, kind) => {
     image: Array.isArray(p.images) ? p.images[0] || "" : "",
     listingType: kind,
     createdAt: p.createdAt,
+    ownerName: p.ownerName || "",
     ownerMobile: p.partnerAgentId ? (p.ownernumber || "") : p.ranking?.source === "Partner" ? "" : (p.ownernumber || ""),
     agentUserId: p.agentUserId ? String(p.agentUserId) : "",
     rankingSource: p.ranking?.source || "",
