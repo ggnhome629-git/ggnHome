@@ -15,8 +15,27 @@ async function createPartnerProperty(req, res) {
     const agent = await Agent.findById(req.agent._id);
     if (!agent || agent.status !== 'active') return res.status(403).json({ message: 'Partner account is not active' });
 
-    const { purpose, title, propertyType, mobile, address, sector, price, bedrooms, bathrooms, area, floor, totalFloors, cornerPosition, petPolicy, furnishing, parking, latitude, longitude } = req.body;
-    if (!['sale', 'rental'].includes(purpose)) return res.status(400).json({ message: 'Choose rent or sale.' });
+    const body = req.body || {};
+    const purposeValue = String(body.purpose || '').toLowerCase();
+    const purpose = ['rent', 'rental'].includes(purposeValue) ? 'rental' : ['sale', 'sell'].includes(purposeValue) ? 'sale' : '';
+    const title = body.title;
+    const propertyType = body.propertyType;
+    const mobile = body.mobile || body.partnerMobile || body.ownerMobile;
+    const address = body.address || body.location;
+    const sector = body.sector || body.Sector;
+    const price = purpose === 'rental' ? (body.monthlyRent || body.price) : body.price;
+    const bedrooms = body.bedrooms || body.bhk;
+    const bathrooms = body.bathrooms;
+    const area = body.area || body['totalArea.sqft'];
+    const floor = body.floor !== undefined ? body.floor : (body.floorForRent !== undefined ? body.floorForRent : body.floorNumber);
+    const totalFloors = body.totalFloors;
+    const cornerPosition = body.cornerPosition;
+    const petPolicy = body.petPolicy;
+    const furnishing = body.furnishing;
+    const parking = body.parking;
+    const latitude = body.latitude;
+    const longitude = body.longitude;
+    if (!purpose) return res.status(400).json({ message: 'Choose rent or sale.' });
     if (!String(mobile || '').trim() || !String(address || '').trim() || !String(sector || '').trim()) {
       return res.status(400).json({ message: 'Mobile number, address and sector/locality are required.' });
     }
