@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, BottomNavigation, BottomNavigationAction } from '@mui/material';
-import { Home, Search, Heart, Plus, User } from 'lucide-react';
+import { Home, Search, Heart, User } from 'lucide-react';
+import { PostPropertyIcon } from './PostActionIcon';
 
 /**
  * PART 11 MobileBottomNav — Home / Search / Saved / Post / Profile on the
@@ -15,7 +16,7 @@ export default function MobileBottomNav({
     { value: 0, icon: Home, label: 'Home', path: '/' },
     { value: 1, icon: Search, label: 'Search', path: '/search' },
     { value: 2, icon: Heart, label: 'Saved', path: '/savedproperties' },
-    { value: 3, icon: Plus, label: 'Post', path: '/add-property' },
+    { value: 3, icon: PostPropertyIcon, label: 'Post', path: '/add-property' },
     { value: 4, icon: User, label: 'Profile', path: '/profile' },
   ];
 
