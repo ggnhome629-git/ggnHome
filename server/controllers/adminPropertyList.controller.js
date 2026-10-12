@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const RentalProperty = mongoose.models.RentalProperty || require("../models/RentalProperty.model");
 const SaleProperty = mongoose.models.SaleProperty || require("../models/SaleProperty.model");
+const Agent = require("../models/Agent.model");
 
 const escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -27,6 +28,11 @@ const toRow = (doc, kind) => {
     image: Array.isArray(p.images) ? p.images[0] || "" : "",
     listingType: kind,
     createdAt: p.createdAt,
+    ownerMobile: p.ownernumber || "",
+    partnerAgentId: p.partnerAgentId ? String(p.partnerAgentId) : "",
+    partnerName: p.partnerName || "",
+    partnerMobile: p.partnerMobile || "",
+    partnerEmail: p.partnerEmail || "",
   };
 };
 
@@ -38,10 +44,12 @@ const listAdminProperties = async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
     const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 10, 1), 100);
-    const { search, source, status, origin, state, approval } = req.query;
+    const { search, source, status, origin, state, approval, partnerAdded, partnerAgentId } = req.query;
 
     const filter = {};
     if (source) filter.source = String(source);
+    if (partnerAdded === "true") filter.partnerAgentId = { $exists: true, $ne: null };
+    if (partnerAgentId && mongoose.isValidObjectId(partnerAgentId)) filter.partnerAgentId = new mongoose.Types.ObjectId(partnerAgentId);
     if (status) filter.status = String(status);
     if (origin === "scraped") filter.sourcePortal = { $exists: true, $ne: null };
     if (origin === "own") filter.sourcePortal = null;
@@ -80,6 +88,27 @@ const OWN = { sourcePortal: null };
 const countBoth = async (filter) => {
   const [a, b] = await Promise.all([RentalProperty.countDocuments(filter), SaleProperty.countDocuments(filter)]);
   return a + b;
+};
+
+/** GET /api/admin/properties/partners — partners available for Property Manager filtering. */
+const listPartnerPropertyPartners = async (req, res) => {
+  try {
+    const agents = await Agent.find({ status: { $ne: "suspended" } })
+      .select("_id name mobileNumber email agencyName status")
+      .sort({ name: 1 })
+      .lean();
+    res.json({ success: true, partners: agents.map((agent) => ({
+      _id: String(agent._id),
+      name: agent.name || "Partner",
+      mobileNumber: agent.mobileNumber || "",
+      email: agent.email || "",
+      agencyName: agent.agencyName || "",
+      status: agent.status || "pending",
+    })) });
+  } catch (err) {
+    console.error("listPartnerPropertyPartners error:", err);
+    res.status(500).json({ success: false, message: "Failed to load partners" });
+  }
 };
 
 /** GET /api/admin/properties/counts — totals shown at the top of Property Manager. */
