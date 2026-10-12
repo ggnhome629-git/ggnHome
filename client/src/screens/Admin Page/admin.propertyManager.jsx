@@ -262,7 +262,7 @@ export default function AdminPropertyManager() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={tab === "partner" ? 10 : 8} style={{ textAlign: "center", padding: 32 }}>Loading…</td></tr>
+                  <tr><td colSpan={tab === "partner" ? 9 : current.bulkOrigin ? 8 : 7} style={{ textAlign: "center", padding: 32 }}>Loading…</td></tr>
                 ) : rows.map((r) => (
                   <tr key={r._id} className="admin-table-row">
                     {current.bulkOrigin && (
