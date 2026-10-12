@@ -30,10 +30,13 @@ jobs:
       - name: Install server dependencies
         working-directory: server
         run: npm ci --no-audit --no-fund
-      - name: Check notification server syntax
+      - name: Check server syntax
         run: |
           node --check server/services/smartNotifications.js
           node --check server/Route/appRoutes.js
           node --check server/index.js
+          node --check server/Route/route.js
+          node --check server/controllers/mapintegration.js
+          node --check server/controllers/Flatmates.controller.js
       - name: Validate notification template library
         run: node server/scripts/validate-notification-templates.js
