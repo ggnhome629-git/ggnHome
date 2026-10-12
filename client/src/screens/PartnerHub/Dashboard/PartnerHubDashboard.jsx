@@ -5,9 +5,10 @@ import {
 } from "@mui/material";
 import {
   ArrowRight, BarChart3, Building2, CheckCircle2, ChevronRight, Home,
-  MessageSquare, Plus, Search, Sparkles, TrendingUp, Users,
+  MessageSquare, Search, Sparkles, TrendingUp, Users,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { PostPropertyIcon } from "../../../components/ui/PostActionIcon";
 
 const INK = "#102a43";
 const MUTED = "#718096";
@@ -57,7 +58,7 @@ const PartnerHubDashboard = () => {
   ];
 
   const actions = [
-    { title: "Add a property", description: "Create a listing in a few simple steps.", icon: Plus, color: "#0f766e", bg: "#e5f4f1", path: "/partner/properties/add" },
+    { title: "Add a property", description: "Create a listing in a few simple steps.", icon: PostPropertyIcon, color: "#0f766e", bg: "#e5f4f1", path: "/partner/properties/add" },
     { title: "Manage listings", description: "Update details and check listing status.", icon: Home, color: "#3563c9", bg: "#eaf1ff", path: "/partner/properties" },
     { title: "Review leads", description: "Explore customer searches and preferences.", icon: Users, color: "#8556bd", bg: "#f3eaff", path: "/partner/leads" },
     { title: "View all enquiries", description: "See incoming property enquiries in one place.", icon: MessageSquare, color: "#b66b08", bg: "#fff3df", path: "/partner/enquiries" },
@@ -100,7 +101,7 @@ const PartnerHubDashboard = () => {
               Your property business, leads and customer enquiries — all in one clear workspace.
             </Typography>
           </Box>
-          <Button onClick={() => navigate("/partner/properties/add")} variant="contained" startIcon={<Plus size={18} />}
+          <Button onClick={() => navigate("/partner/properties/add")} variant="contained" startIcon={<PostPropertyIcon size={18} />}
             sx={{ flexShrink: 0, px: 2.4, py: 1.35, bgcolor: "#fff", color: "#0f766e", borderRadius: "12px", fontWeight: 850, "&:hover": { bgcolor: "#eafffa" } }}>
             Add property
           </Button>
@@ -164,7 +165,7 @@ const PartnerHubDashboard = () => {
             <Box sx={{ mx: "auto", width: 46, height: 46, display: "grid", placeItems: "center", borderRadius: "14px", bgcolor: "#e5f4f1", color: TEAL }}><Building2 size={22} /></Box>
             <Typography sx={{ mt: 1.5, color: INK, fontWeight: 800, fontSize: 14 }}>Your next listing starts here</Typography>
             <Typography sx={{ mt: .5, color: MUTED, fontSize: 12 }}>Add a property to start building your portfolio.</Typography>
-            <Button onClick={() => navigate("/partner/properties/add")} variant="contained" startIcon={<Plus size={16} />} sx={{ mt: 1.8, bgcolor: TEAL }}>Add your first property</Button>
+            <Button onClick={() => navigate("/partner/properties/add")} variant="contained" startIcon={<PostPropertyIcon size={16} />} sx={{ mt: 1.8, bgcolor: TEAL }}>Add your first property</Button>
           </Box>
         ) : (
           <Grid container spacing={2}>
