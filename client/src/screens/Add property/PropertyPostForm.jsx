@@ -108,6 +108,11 @@ const HEADER_BADGES = {
     { icon: Eye, label: "Live Preview" },
     { icon: PencilLine, label: "Edit Anytime" },
   ],
+  partner: [
+    { icon: Wallet, label: "Partner Listing" },
+    { icon: Eye, label: "Live Preview" },
+    { icon: CheckCircle2, label: "Publish Immediately" },
+  ],
   admin: [
     { icon: Eye, label: "Live Preview" },
     { icon: ShieldCheck, label: "Owner Number Kept Private" },
