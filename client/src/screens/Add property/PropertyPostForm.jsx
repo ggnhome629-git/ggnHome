@@ -844,6 +844,7 @@ export default function PropertyPostForm({
         tips={mode === "partner" ? ["Choose a category for each photo", "Include front / exterior, living room, bedrooms, kitchen and bathrooms", "Use bright, clear photos taken in daylight"] : ["Shoot in daylight with lights on", "Hold the phone horizontally and capture whole rooms", "The first photo is the cover — pick your best one"]}
       />
       {partnerPhotoError && <Alert severity="error" sx={{ mt: 2 }}>{partnerPhotoError}</Alert>}
+      {mode !== "partner" && (
       <Box sx={{ mt: 6, p: 5, borderRadius: `${radii.md}px`, border: "1.5px dashed #A9C7E6", backgroundColor: "#F7FBFF" }}>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={3} justifyContent="space-between" alignItems={{ sm: "center" }}>
           <Box>
@@ -857,6 +858,7 @@ export default function PropertyPostForm({
           </Button>
         </Stack>
       </Box>
+      )}
     </>
   );
 
