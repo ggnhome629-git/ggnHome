@@ -17,7 +17,8 @@ export default function SideMenuBar({ currentUser, onLoginClick, onPost, postLab
   const menuSections = [{title: null, items: [{icon: User, label: currentUser
     ? (currentUser.mobileNumber || currentUser.email || 'User')
     : 'LOGIN / REGISTER', color: '#0066FF', special: true, onClick: !currentUser ? onLoginClick : undefined}]}, {title: 'Quick Actions', items: [{icon: postLabel.toLowerCase().includes('room') ? PostRoomIcon : PostPropertyIcon, label: postLabel, color: '#00A79D', badge: 'FREE', onClick: post}, {icon: Sparkles, label: 'AI Search', color: '#22D3EE', badge: 'NEW', link: '/AIassistant'}, {icon: Scale, label: 'Legal Laws', color: '#4A6A8A', onClick: () => {
-    window.location.href = '/#news';
+    const el = document.getElementById('news');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
   }}]}, {title: 'Explore our Services', items: [
     {
       icon: Search,
@@ -39,12 +40,7 @@ export default function SideMenuBar({ currentUser, onLoginClick, onPost, postLab
       label: 'For Dealers / Builders',
       onClick: () => { window.location.href = '/partner/login'; }
     }
-  ]}, {title: 'Tools & Resources', items: [{icon: Calculator, label: 'EMI Calculator', badge: 'Coming Soon'}, {icon: DollarSign, label: 'Home Loans', badge: 'Coming Soon'}, {icon: Lightbulb, label: 'Insights', badge: 'NEW', onClick: () => { window.location.href = '/#news'; }}, {icon: FileText, label: 'Articles & News', onClick: () => {
-    const el = document.getElementById('news');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  }}]}, {title: 'Support', items: [{icon: TrendingUp, label: 'About Us', onClick: () => { window.location.href = '/about'; }}, {icon: HelpCircle, label: 'Get Help', onClick: () => { window.location.href = '/support'; }}]}];
+  ]}, {title: 'Tools & Resources', items: [{icon: Calculator, label: 'EMI Calculator', badge: 'Coming Soon'}, {icon: DollarSign, label: 'Home Loans', badge: 'Coming Soon'}, {icon: Lightbulb, label: 'Insights', badge: 'NEW', onClick: () => { window.location.href = '/#news'; }}, {icon: FileText, label: 'Articles & News', onClick: () => { window.location.href = '/#news'; }}]}, {title: 'Support', items: [{icon: TrendingUp, label: 'About Us', onClick: () => { window.location.href = '/about'; }}, {icon: HelpCircle, label: 'Get Help', onClick: () => { window.location.href = '/support'; }}]}];
 
   return (<div
     style={{display: 'flex', fontFamily: 'Arial, sans-serif'}}
