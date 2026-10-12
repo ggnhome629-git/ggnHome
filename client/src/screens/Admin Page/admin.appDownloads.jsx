@@ -62,7 +62,7 @@ export default function AdminAppDownloads() {
         {notice && <Alert severity="success">{notice}</Alert>}
         {error && <Alert severity="error">{error}</Alert>}
         <Alert severity="info">
-          Paste the HTTPS direct-download URL for each APK. A link is shown in the Partner portal only after a URL is configured. APK binaries have not been uploaded by this settings page.
+          The Partner portal exposes a first-party download URL on your API domain, so users download the APK without landing on GitHub. For Partner, this optional source must be a direct GgnHome GitHub Release asset URL; if empty, the latest-apks release is used. Other app URLs are displayed as configured.
         </Alert>
         {apps.map((app) => (
           <Card key={app.key} variant="outlined" sx={{ borderRadius: 3 }}>
@@ -76,9 +76,9 @@ export default function AdminAppDownloads() {
                   </Box>
                   {app.url && <Button size="small" endIcon={<ExternalLink size={15} />} onClick={() => window.open(app.url, "_blank", "noopener,noreferrer")}>Test link</Button>}
                 </Stack>
-                <TextField label="Direct APK download URL (HTTPS)" placeholder="https://github.com/owner/repo/releases/download/v1.0.0/app.apk" value={app.url} onChange={e => change(app.key, "url", e.target.value)} fullWidth />
+                <TextField label={app.key === "partner" ? "Partner APK source asset URL (optional)" : "Direct APK download URL (HTTPS)"} placeholder={app.key === "partner" ? "https://github.com/ggnhome629-git/ggnHome/releases/download/latest-apks/GgnHome-Partner.apk" : "https://example.com/app.apk"} value={app.url} onChange={e => change(app.key, "url", e.target.value)} fullWidth />
                 <TextField label="Version (optional)" placeholder="1.0.0" value={app.version} onChange={e => change(app.key, "version", e.target.value)} sx={{ maxWidth: 260 }} />
-                <Typography variant="caption" color="text.secondary">{app.url ? "Configured — this link will be displayed on the Partner portal." : "Not configured — no APK download link will be shown yet."}</Typography>
+                <Typography variant="caption" color="text.secondary">{app.key === "partner" ? (app.url ? "The portal serves this asset through the first-party /api/app-downloads/partner.apk endpoint." : "The latest published Partner APK is used automatically; no GitHub URL is shown to partners.") : (app.url ? "Configured — this direct URL is shown in the app-download list." : "Not configured — this APK will not appear in the download list.")}</Typography>
               </Stack>
             </CardContent>
           </Card>
