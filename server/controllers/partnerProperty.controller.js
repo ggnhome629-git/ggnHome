@@ -76,6 +76,7 @@ async function createPartnerProperty(req, res) {
       propertyType: propertyType || 'apartment',
       Sector: String(sector).trim().slice(0, 120),
       address: String(address).trim().slice(0, 500),
+      location: String(address).trim().slice(0, 500),
       ownernumber: String(mobile).trim().slice(0, 20),
       ownerType: 'Agent',
       agentUserId: agent.userId,
