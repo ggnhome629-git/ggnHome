@@ -84,6 +84,7 @@ const SalePropertyPageAgentMobile = lazy(() => import("./screens/Agent Page/Prop
 
 // PartnerHub (ggnHome Partner Portal for partners to manage properties and leads)
 const PartnerHubDashboard = lazy(() => import("./screens/PartnerHub/Dashboard/PartnerHubDashboard"));
+const PartnerAuthPage = lazy(() => import("./screens/PartnerHub/PartnerAuthPage"));
 const PartnerHubProperties = lazy(() => import("./screens/PartnerHub/Properties/PartnerHubProperties"));
 const PartnerPropertyAdd = lazy(() => import("./screens/PartnerHub/Properties/PartnerPropertyAdd"));
 const PartnerHubLeads = lazy(() => import("./screens/PartnerHub/Leads/PartnerHubLeads"));
@@ -205,7 +206,10 @@ function App() {
       <Route path="/agent/register" element={<AgentRegistration />} />
       <Route path="/agent/login" element={<AgentLogin />} />
 
-      {/* PartnerHub routes share one responsive shell and navigation system. */}
+      {/* PartnerHub public mobile + OTP authentication. */}
+      <Route path="/partner/login" element={<PartnerAuthPage />} />
+      <Route path="/partner/register" element={<PartnerAuthPage />} />
+      {/* PartnerHub routes share one responsive shell and navigation system. */
       <Route path="/partner/dashboard" element={<PartnerHubProtectedRoute element={<PartnerHubLayout><PartnerHubDashboard /></PartnerHubLayout>} />} />
       <Route path="/partner/properties" element={<PartnerHubProtectedRoute element={<PartnerHubLayout><PartnerHubProperties /></PartnerHubLayout>} />} />
       <Route path="/partner/properties/add" element={<PartnerHubProtectedRoute element={<PartnerHubLayout><PartnerPropertyAdd /></PartnerHubLayout>} />} />
