@@ -57,7 +57,7 @@ async function sendSms(mobileNumber, message, kind = "otp") {
     return queued;
   }
 
-  const baseUrl = (process.env.SMS_GATEWAY_URL || "https://api.sms-gate.app/3rdparty/v1").replace(/\\/+$/, "");
+  const baseUrl = (process.env.SMS_GATEWAY_URL || "https://api.sms-gate.app/3rdparty/v1").replace(/\/+$/, "");
   const res = await axios.post(
     `${baseUrl}/messages`,
     { message, phoneNumbers: [toE164(mobileNumber)] },
