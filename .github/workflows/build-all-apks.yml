@@ -107,7 +107,7 @@ jobs:
         run: |
           gradle assembleRelease --no-daemon
           mkdir -p ../dist-apks
-          cp app/build/outputs/apk/release/sms-service.apk ../dist-apks/sms-service.apk
+          cp app/build/outputs/apk/release/app-release.apk ../dist-apks/sms-service.apk
 
       - name: Upload all APKs as GitHub Actions artifact
         if: always()
