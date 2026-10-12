@@ -343,6 +343,9 @@ export default function PropertyPostForm({
     setF({ ...INITIAL, partnerRequired: mode === "partner" });
     setPhotos([]);
     setPanoramas([]);
+    setNearbyAmenities(PARTNER_AMENITIES.map((a) => ({ category: a.key, label: a.label, name: "", distance: "", source: "partner" })));
+    setAmenityMessage("");
+    setPartnerPhotoError("");
     setStep(0);
     setReached(0);
     setErrors({});
