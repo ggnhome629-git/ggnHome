@@ -397,47 +397,36 @@ const deleteEnquiry = async (req, res) => {
  */
 const getPartnerEnquiries = async (req, res) => {
   try {
-    const Agent = require("../models/Agent.model");
     if (!req.agent) return res.status(401).json({ success: false, message: "Partner authentication required" });
-    const agent = await Agent.findById(req.agent._id).lean();
-    if (!agent || agent.status !== "active") return res.status(403).json({ success: false, message: "Partner account is not active" });
-
-    const ownership = agent.roleType === "Partner"
-      ? { $or: [
-          { partnerAgentId: agent._id },
-          { agentUserId: agent.userId, ownerType: "Agent", "ranking.source": "Partner" },
-        ] }
-      : { agentUserId: agent.userId, ownerType: "Agent" };
-
-    const [rentalProps, saleProps] = await Promise.all([
-      RentalProperty.find(ownership).select("_id title address Sector monthlyRent owner ownerName ownernumber images").lean(),
-      SaleProperty.find(ownership).select("_id title address location Sector price ownerId owner ownerName ownernumber images").lean(),
-    ]);
-    const propertyMap = new Map();
-    rentalProps.forEach(p => propertyMap.set(String(p._id), { ...p, propertyType: "rental", price: p.monthlyRent }));
-    saleProps.forEach(p => propertyMap.set(String(p._id), { ...p, propertyType: "sale", price: p.price }));
-    const propertyIds = [...propertyMap.keys()];
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
-    const query = propertyIds.length ? { propertyId: { $in: propertyIds } } : { _id: null };
     const [totalEnquiries, enquiries] = await Promise.all([
-      Enquiry.countDocuments(query),
-      Enquiry.find(query).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+      Enquiry.countDocuments(),
+      Enquiry.find().sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
     ]);
-    const userIds = [...new Set(enquiries.map(e => String(e.userId || "")).filter(Boolean))];
-    const ownerIds = [...new Set(enquiries.map(e => {
-      const p = propertyMap.get(String(e.propertyId));
-      return p ? String(p.owner || p.ownerId || "") : "";
-    }).filter(Boolean))];
+
+    const rentalIds = enquiries.filter(e => e.propertyType === "rental" && e.propertyId).map(e => e.propertyId);
+    const saleIds = enquiries.filter(e => e.propertyType === "sale" && e.propertyId).map(e => e.propertyId);
+    const [rentalProps, saleProps] = await Promise.all([
+      rentalIds.length ? RentalProperty.find({ _id: { $in: rentalIds } }).lean() : [],
+      saleIds.length ? SaleProperty.find({ _id: { $in: saleIds } }).lean() : [],
+    ]);
+    const propertyMap = new Map([
+      ...rentalProps.map(p => [String(p._id), { ...p, propertyType: "rental", price: p.monthlyRent }]),
+      ...saleProps.map(p => [String(p._id), { ...p, propertyType: "sale", price: p.price }]),
+    ]);
+    const ownerIds = [...new Set([...rentalProps.map(p => p.owner), ...saleProps.map(p => p.ownerId || p.owner)].filter(Boolean).map(String))];
+    const userIds = [...new Set(enquiries.map(e => e.userId).filter(Boolean).map(String))];
     const [users, owners] = await Promise.all([
       userIds.length ? User.find({ _id: { $in: userIds } }).select("_id name fullName email mobileNumber").lean() : [],
       ownerIds.length ? User.find({ _id: { $in: ownerIds } }).select("_id name fullName").lean() : [],
     ]);
     const userMap = new Map(users.map(u => [String(u._id), u]));
     const ownerMap = new Map(owners.map(u => [String(u._id), u]));
+
     const enriched = enquiries.map(e => {
       const p = propertyMap.get(String(e.propertyId));
-      const customer = userMap.get(String(e.userId || ""));
+      const user = userMap.get(String(e.userId || ""));
       const ownerId = p ? String(p.owner || p.ownerId || "") : "";
       const owner = ownerMap.get(ownerId);
       const ownerName = e.ownerName || p?.ownerName || owner?.name || owner?.fullName || "";
@@ -445,10 +434,12 @@ const getPartnerEnquiries = async (req, res) => {
         _id: e._id,
         propertyId: e.propertyId,
         propertyType: e.propertyType,
-        customerName: e.customerName || customer?.name || customer?.fullName || "Customer",
-        userName: e.customerName || customer?.name || customer?.fullName || "Customer",
-        userEmail: e.userEmail || customer?.email || "",
-        userMobile: e.userMobile || customer?.mobileNumber || "",
+        propertyAddress: e.propertyAddress,
+        propertyPrice: e.propertyPrice,
+        customerName: e.customerName || user?.name || user?.fullName || "Customer",
+        userName: e.customerName || user?.name || user?.fullName || "Customer",
+        userEmail: e.userEmail || user?.email || "",
+        userMobile: e.userMobile || user?.mobileNumber || "",
         message: e.message || "",
         brokerage: e.brokerage,
         createdAt: e.createdAt,
@@ -461,9 +452,10 @@ const getPartnerEnquiries = async (req, res) => {
           price: p.price,
           monthlyRent: p.monthlyRent,
           propertyType: p.propertyType,
+          ownerType: p.ownerType,
           images: p.images || [],
         } : null,
-        // Intentionally no sourcePortal/sourceUrl/sourceListingId in partner responses.
+        // Scraped-source fields and source URLs are intentionally omitted here.
       };
     });
     return res.json({ success: true, page, limit, totalEnquiries, totalPages: Math.ceil(totalEnquiries / limit), enquiries: enriched });
