@@ -221,12 +221,12 @@ export default function AdminEnquiryProperties() {
                       </Typography>
                     </td>
                     <td>
-                      {enquiry.property?.sourcePortal ? (
-                        <Chip size="small" label={`Scraped · ${enquiry.property.sourcePortal === "nobroker" ? "NoBroker" : "99acres"}`} sx={{ bgcolor: "rgba(245,158,11,0.15)", color: "#B45309", fontWeight: 700 }} />
+                      {(enquiry.property?.sourcePortal || enquiry.sourcePortal) ? (
+                        <Chip size="small" label={`Scraped · ${(enquiry.property?.sourcePortal || enquiry.sourcePortal) === "nobroker" ? "NoBroker" : "99acres"}`} sx={{ bgcolor: "rgba(245,158,11,0.15)", color: "#B45309", fontWeight: 700 }} />
                       ) : (
                         <Chip size="small" label={enquiry.property?.ownerType === "Partner" ? "Partner property" : enquiry.property?.ownerType === "Agent" ? "Agent property" : "Normal · Owner property"} sx={{ bgcolor: "rgba(0,167,157,0.14)", color: "#00857D", fontWeight: 700 }} />
                       )}
-                      {enquiry.property?.sourceUrl && <Typography component="a" href={enquiry.property.sourceUrl} target="_blank" rel="noreferrer" variant="caption" sx={{ display: "block", mt: 0.75, overflowWrap: "anywhere", color: "primary.main" }}>Open source listing</Typography>}
+                      {(enquiry.property?.sourceUrl || enquiry.sourceUrl) && <Typography component="a" href={enquiry.property?.sourceUrl || enquiry.sourceUrl} target="_blank" rel="noreferrer" variant="caption" sx={{ display: "block", mt: 0.75, overflowWrap: "anywhere", color: "primary.main" }}>Open source listing</Typography>}
                     </td>
                     <td>
                       {(enquiry.ownerName || enquiry.owner?.name || enquiry.owner?.fullName) && (
@@ -245,7 +245,7 @@ export default function AdminEnquiryProperties() {
                         </>
                       ) : (
                         <Typography variant="body2" color="text.disabled" style={{ fontStyle: "italic" }}>
-                          {enquiry.property?.sourcePortal ? "Scraped – admin only" : "No owner found"}
+                          {(enquiry.property?.sourcePortal || enquiry.sourcePortal) ? "Scraped – admin only" : "No owner found"}
                         </Typography>
                       )}
                     </td>
