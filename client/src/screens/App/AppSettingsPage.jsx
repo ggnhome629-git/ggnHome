@@ -34,7 +34,7 @@ function Row({ icon: Icon, title, body, action, onClick }) {
 export default function AppSettingsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [prefs, setPrefs] = useState({ popularPushes: true, personalPushes: true });
+  const [prefs, setPrefs] = useState({ popularPushes: true, personalPushes: true, generalPushes: true });
   const [bio, setBio] = useState(() => localStorage.getItem(BIOMETRIC_KEY) === "1");
   const [bioAvailable, setBioAvailable] = useState(false);
   const [update, setUpdate] = useState(null);
@@ -44,7 +44,7 @@ export default function AppSettingsPage() {
     document.title = "App settings | GgnHome";
     nativePlugin("BiometricAuth")?.checkBiometry?.().then((r) => setBioAvailable(Boolean(r?.isAvailable))).catch(() => {});
     const token = fcmToken();
-    if (token) appFetch("/devices", { method: "POST", body: { token, appVersion: appVersion() } }).then((d) => setPrefs({ popularPushes: d.popularPushes, personalPushes: d.personalPushes })).catch(() => {});
+    if (token) appFetch("/devices", { method: "POST", body: { token, appVersion: appVersion() } }).then((d) => setPrefs({ popularPushes: d.popularPushes, personalPushes: d.personalPushes, generalPushes: d.generalPushes !== false })).catch(() => {});
   }, []);
 
   const setPush = async (key, value) => {
@@ -107,6 +107,7 @@ export default function AppSettingsPage() {
         <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.08em", color: "#00857D", mb: 1, mt: 1 }}>NOTIFICATIONS</Typography>
         <Row icon={Bell} title="Popular homes" body="A daily nudge about the hottest listing" action={<Switch checked={prefs.popularPushes} onChange={(e) => setPush("popularPushes", e.target.checked)} />} />
         <Row icon={Bell} title="Picked for you" body={user ? "A weekly pick matched to your taste" : "Sign in to get personal picks"} action={<Switch disabled={!user} checked={prefs.personalPushes} onChange={(e) => setPush("personalPushes", e.target.checked)} />} />
+        <Row icon={Bell} title="General updates" body="Useful tips and app updates when no property match is available" action={<Switch checked={prefs.generalPushes} onChange={(e) => setPush("generalPushes", e.target.checked)} />} />
         <Row icon={Bell} title="Notification inbox" body="Everything we've sent you" action={<ChevronRight size={18} color="#9AA7B4" />} onClick={() => navigate("/app/notifications")} />
 
         <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.08em", color: "#00857D", mb: 1, mt: 2.5 }}>SECURITY</Typography>
