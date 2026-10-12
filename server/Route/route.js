@@ -238,7 +238,8 @@ router.put(
 );
 router.delete("/api/admin/delete-property/:id", verifyToken, deletePropertyAdmin);
 // Property Manager (Settings tab) — list + delete, matches admin.propertyManager.jsx
-const { listAdminProperties, getPropertyCounts, bulkApproveProperties } = require("../controllers/adminPropertyList.controller");
+const { listAdminProperties, getPropertyCounts, bulkApproveProperties, listPartnerPropertyPartners } = require("../controllers/adminPropertyList.controller");
+router.get("/api/admin/properties/partners", verifyToken, checkAdminEmail, listPartnerPropertyPartners);
 router.get("/api/admin/properties", verifyToken, checkAdminEmail, listAdminProperties);
 router.get("/api/admin/properties/counts", verifyToken, checkAdminEmail, getPropertyCounts);
 router.post("/api/admin/properties/bulk-approve", verifyToken, checkAdminEmail, bulkApproveProperties);
