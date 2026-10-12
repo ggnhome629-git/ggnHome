@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, LayoutDashboard, Users, MessageSquare, Home, TrendingUp, ArrowRight, Settings } from 'lucide-react';
-import { Box, Button, Card, CardContent, TextField, Typography, Alert, Chip, useMediaQuery, useTheme } from "@mui/material";
+import { Sparkles, LayoutDashboard, Users, MessageSquare, Home, TrendingUp, ArrowRight, Settings, LockKeyhole, Unlock, EyeOff } from 'lucide-react';
+import { Box, Button, Card, CardContent, TextField, Typography, Alert, Chip, IconButton, Tooltip, Divider, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
 import './admin.css';
@@ -17,6 +17,10 @@ const AdminLandingPage = () => {
   const emailRef = useRef();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [hiddenRoutes, setHiddenRoutes] = useState([]);
+  const [toolsLoading, setToolsLoading] = useState(true);
+  const [toolsSaving, setToolsSaving] = useState(false);
+  const [toolsError, setToolsError] = useState("");
 
   const handleNavigation = (route) => {
     navigate(route);
@@ -61,6 +65,50 @@ const AdminLandingPage = () => {
     };
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    const loadDashboardTools = async () => {
+      try {
+        const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+        const response = await fetch((process.env.REACT_APP_Base_API || "") + "/api/admin/dashboard-tools", {
+          credentials: "include",
+          headers: token ? { Authorization: "Bearer " + token } : {},
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || "Could not load dashboard preferences.");
+        setHiddenRoutes(Array.isArray(data.hiddenRoutes) ? data.hiddenRoutes : []);
+      } catch (error) {
+        setToolsError(error.message || "Could not load dashboard preferences.");
+      } finally {
+        setToolsLoading(false);
+      }
+    };
+    loadDashboardTools();
+  }, []);
+
+  const toggleToolVisibility = async (route) => {
+    const next = hiddenRoutes.includes(route)
+      ? hiddenRoutes.filter((item) => item !== route)
+      : [...hiddenRoutes, route];
+    setToolsSaving(true);
+    setToolsError("");
+    try {
+      const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
+      const response = await fetch((process.env.REACT_APP_Base_API || "") + "/api/admin/dashboard-tools", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) },
+        body: JSON.stringify({ hiddenRoutes: next }),
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || "Could not save dashboard preferences.");
+      setHiddenRoutes(data.hiddenRoutes || next);
+    } catch (error) {
+      setToolsError(error.message || "Could not save dashboard preferences.");
+    } finally {
+      setToolsSaving(false);
+    }
+  };
 
   // Use admin shell instead of public nav - handled by AdminLayout now
 
@@ -136,6 +184,8 @@ const AdminLandingPage = () => {
         { label: 'User Management', route: '/admin/UserManagement' },
         { label: 'Agents Management', route: '/admin/agentsmanagement' },
         { label: 'Register Agent', route: '/admin/agent-registration' },
+        { label: 'Register Partner', route: '/admin/partner-access' },
+        { label: 'Partner Portal', route: '/partner/dashboard' },
       ],
     },
     {
@@ -160,6 +210,13 @@ const AdminLandingPage = () => {
     },
   ];
 
+  const visibleAdminGroups = adminGroups
+    .map((group) => ({ ...group, links: group.links.filter((link) => !hiddenRoutes.includes(link.route)) }))
+    .filter((group) => group.links.length > 0);
+  const hiddenTools = adminGroups.flatMap((group) =>
+    group.links.filter((link) => hiddenRoutes.includes(link.route)).map((link) => ({ ...link, groupTitle: group.title, groupColor: group.color }))
+  );
+
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#F4F7F9', p: { xs: 4, md: 6 }, pt: { xs: 16, md: 0 } }}>
       {/* Admin shell is provided by AdminLayout - no need for TopNavigationBar here */}
@@ -183,10 +240,10 @@ const AdminLandingPage = () => {
           <Typography sx={{ position: 'relative', color: 'rgba(255,255,255,0.85)', fontSize: { xs: '14px', md: '16px' } }}>
             Everything you manage on GgnHome, in one place. Pick a section to get started.
           </Typography>
-          <Box sx={{ position: 'relative', display: 'flex', gap: 2, mt: 4, flexWrap: 'wrap' }}>
-            <Button className="no-lively" onClick={() => navigate('/admin/propertymanager')} variant="contained" sx={{ bgcolor: '#fff', color: '#003366', fontWeight: 700, textTransform: 'none', '&:hover': { bgcolor: '#E6FFFB' } }}>Review properties</Button>
-            <Button className="no-lively" onClick={() => navigate('/admin/enquiries')} variant="outlined" sx={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff', fontWeight: 700, textTransform: 'none', '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.12)' } }}>View enquiries</Button>
-            <Button className="no-lively" onClick={() => navigate('/admin/Dashboard')} variant="outlined" sx={{ borderColor: 'rgba(255,255,255,0.6)', color: '#fff', fontWeight: 700, textTransform: 'none', '&:hover': { borderColor: '#fff', bgcolor: 'rgba(255,255,255,0.12)' } }}>Open dashboard</Button>
+          <Box sx={{ position: 'relative', display: 'flex', gap: 1, mt: 3, flexWrap: 'wrap' }}>
+            <Chip label={toolsLoading ? "Loading tools…" : (adminGroups.flatMap((group) => group.links).length - hiddenTools.length) + " active tools"} sx={{ bgcolor: 'rgba(255,255,255,.14)', color: '#fff', fontWeight: 800 }} />
+            <Chip label={hiddenTools.length + " hidden"} icon={<EyeOff size={14} />} sx={{ bgcolor: 'rgba(255,255,255,.10)', color: '#fff', fontWeight: 700, '& .MuiChip-icon': { color: '#fff' } }} />
+            {toolsSaving && <Chip label="Saving…" sx={{ bgcolor: 'rgba(255,255,255,.10)', color: '#fff' }} />}
           </Box>
         </Box>
 
@@ -202,7 +259,7 @@ const AdminLandingPage = () => {
             gap: 4,
           }}
         >
-          {adminGroups.map((group) => {
+          {visibleAdminGroups.map((group) => {
             const Icon = group.icon;
             return (
               <Card
@@ -241,6 +298,13 @@ const AdminLandingPage = () => {
                           )}
                         </Box>
                         <ArrowRight size={16} />
+                        <Tooltip title="Hide this tool from the main dashboard">
+                          <span>
+                            <IconButton size="small" disabled={toolsSaving || toolsLoading} aria-label={"Hide " + link.label + " from dashboard"} onClick={(e) => { e.stopPropagation(); toggleToolVisibility(link.route); }} sx={{ ml: 0.5, mr: -0.5, color: '#64748b' }}>
+                              <LockKeyhole size={15} />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
                       </Box>
                     ))}
                   </Box>
@@ -249,6 +313,35 @@ const AdminLandingPage = () => {
             );
           })}
         </Box>
+
+        {toolsError && <Alert severity="error" sx={{ mt: 3 }}>{toolsError}</Alert>}
+
+        {hiddenTools.length > 0 && (
+          <Box sx={{ mt: 4, p: { xs: 2.5, md: 3.5 }, bgcolor: '#fff', border: '1px solid #e2e8f0', borderRadius: 3, boxShadow: '0 4px 18px rgba(16,42,67,.035)' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+              <EyeOff size={20} color="#64748b" />
+              <Typography variant="h2" sx={{ fontSize: { xs: 18, md: 21 }, fontWeight: 800, color: '#102a43' }}>Hidden tools</Typography>
+              <Chip label={hiddenTools.length} size="small" />
+            </Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>These shortcuts are hidden from the main dashboard only. Restore a tool to show it in its original card again.</Typography>
+            <Divider sx={{ mb: 1 }} />
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1 }}>
+              {hiddenTools.map((tool) => (
+                <Box key={tool.route} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, p: 1.5, borderRadius: 2, bgcolor: '#f8fafc', border: '1px solid #edf2f7' }}>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 750, color: '#334155' }}>{tool.label}</Typography>
+                    <Typography variant="caption" color="text.secondary">{tool.groupTitle}</Typography>
+                  </Box>
+                  <Tooltip title="Restore to main dashboard">
+                    <span><IconButton size="small" disabled={toolsSaving} aria-label={"Restore " + tool.label + " to dashboard"} onClick={() => toggleToolVisibility(tool.route)} sx={{ color: '#0f766e', border: '1px solid #b8dcd6', borderRadius: 2 }}>
+                      <Unlock size={16} />
+                    </IconButton></span>
+                  </Tooltip>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        )}
 
         {/* Admin Access Management */}
         <Box
