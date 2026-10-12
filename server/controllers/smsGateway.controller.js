@@ -182,14 +182,19 @@ exports.claimNext = async (req, res) => {
 // Display-only Android OTP viewer. Never returns OTPs unless enabled in the authenticated web console.
 exports.otpPreview = async (req, res) => {
   try {
+    const deviceId = String(req.headers["x-device-id"] || "").slice(0, 64);
+    if (!deviceId) return res.status(400).json({ message: "X-Device-Id header required" });
+    await SmsDevice.findOneAndUpdate(
+      { deviceId },
+      { $set: { lastSeen: new Date(), ready: true, appVersion: String(req.headers["x-app-version"] || "").slice(0, 20) }, $setOnInsert: { name: String(req.headers["x-device-name"] || "Android OTP Viewer").slice(0, 60) } },
+      { upsert: true, new: true }
+    );
     const setting = await SmsSetting.findOne({ key: "ggnhome" }).lean();
     if (!setting || setting.showOtpOnAndroid !== true) return res.json({ enabled: false, messages: [] });
-    const messages = await SmsQueue.find({
-      status: "preview", kind: "otp",
-      createdAt: { $gt: new Date(Date.now() - MAX_AGE_MS) },
-    }).select("phoneNumber message createdAt").sort({ createdAt: -1 }).limit(20).lean();
+    const messages = await SmsQueue.find({ status: "preview", kind: "otp", createdAt: { $gt: new Date(Date.now() - MAX_AGE_MS) } })
+      .select("phoneNumber message createdAt").sort({ createdAt: -1 }).limit(20).lean();
     res.json({ enabled: true, messages: messages.map(m => ({
-      id: String(m._id), phoneNumber: m.phoneNumber, otp: (String(m.message).match(/\\b([A-Z0-9]{4,8})\\b/) || [])[1] || m.message, createdAt: m.createdAt
+      id: String(m._id), phoneNumber: m.phoneNumber, otp: (String(m.message).match(/[A-Z0-9]{4,8}/) || [])[0] || m.message, createdAt: m.createdAt
     })) });
   } catch (e) {
     res.status(500).json({ message: "Server error" });
