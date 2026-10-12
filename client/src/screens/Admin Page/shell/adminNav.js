@@ -5,6 +5,7 @@ import {
   CreditCard,
   Gift,
   Gauge,
+  SlidersHorizontal,
   Home,
   LayoutDashboard,
   Megaphone,
@@ -86,6 +87,7 @@ export const ADMIN_NAV = [
     color: "#64748B",
     items: [
       { id: "usage", label: "Usage & Limits", route: "/admin/usagetrack", icon: Gauge },
+      { id: "feature-toggles", label: "Feature Control", route: "/admin/feature-toggles", icon: SlidersHorizontal },
       { id: "settings", label: "Settings", route: "/admin/settings", icon: Settings },
     ],
   },
