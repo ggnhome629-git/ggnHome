@@ -34,7 +34,7 @@ import { Trash2 } from "lucide-react";
 /**
  * SMS Service console — hidden page (/sms-service/app/manage). Opened with the shared SMS key; it manages both services:
  * phones (which service each one sends for), limits, Shine One sending times, per-sheet message + Auto-send, a log
- * and a test send. The Android app only shows status; everything is changed here.
+ * and a test send. GGN Home OTP delivery can be switched between SMS and app display here.
  */
 const BASE = process.env.REACT_APP_Base_API;
 const TOKEN_KEY = "smsConsoleToken";
