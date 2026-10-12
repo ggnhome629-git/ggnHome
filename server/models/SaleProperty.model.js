@@ -80,7 +80,6 @@ totalArea: {
   // Partner attribution and fixed partner contact for listings submitted through PartnerHub.
   partnerAgentId: { type: mongoose.Schema.Types.ObjectId, ref: "Agent", index: true },
   ownerName: { type: String, trim: true },
-  ownerName: { type: String, trim: true },
   partnerName: { type: String, trim: true },
   partnerMobile: { type: String, trim: true },
   partnerEmail: { type: String, trim: true, lowercase: true },
