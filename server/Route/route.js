@@ -88,6 +88,7 @@ const {
   updateAgentProfile
 } = require("../controllers/partnerHub.controller.js");
 const { createPartnerProperty } = require("../controllers/partnerProperty.controller");
+const { createAdminPartnerSession } = require("../controllers/adminPartnerSession.controller");
 
 // Helper middleware to restrict access to admins only
 const checkAdminEmail = async (req, res, next) => {
@@ -492,6 +493,9 @@ const propertySyncRoutes = require("../routes/propertySync.routes");
 router.use("/api/admin/property-sync", propertySyncRoutes);
 
 // ================== PARTNER HUB ROUTES (ggnHome Partner Portal) ==================
+// Admin-only bootstrap: open the dedicated admin-owned PartnerHub profile without a second login.
+router.post("/api/admin/partner-session", verifyToken, checkAdminEmail, createAdminPartnerSession);
+
 // All routes protected by verifyAgentToken
 router.get("/api/partner/dashboard", verifyAgentToken, getAgentHubDashboard);
 router.get("/api/partner/properties", verifyAgentToken, getAgentProperties);
