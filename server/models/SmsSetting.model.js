@@ -6,7 +6,7 @@ const SmsSettingSchema = new mongoose.Schema(
   {
     key: { type: String, required: true, unique: true },
     // Global GGN Home SMS delivery switch. Defaults on to preserve existing behaviour.
-    enabled: { type: Boolean, default: true },
+    showOtpOnAndroid: { type: Boolean, default: false },
     mode: { type: String, enum: ["auto", "custom"], default: "auto" },
     dailyLimit: { type: Number },
     hourlyLimit: { type: Number },
