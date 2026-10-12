@@ -501,6 +501,8 @@ router.get("/api/partner/dashboard", verifyAgentToken, getAgentHubDashboard);
 router.get("/api/partner/properties", verifyAgentToken, getAgentProperties);
 router.post("/api/partner/properties", verifyAgentToken, upload.array("images", 18), createPartnerProperty);
 router.get("/api/partner/leads", verifyAgentToken, getAgentLeads);
+router.get("/api/partner/leads/preferences", verifyAgentToken, listPreferenceForms);
+router.get("/api/partner/enquiries", verifyAgentToken, getEnquiries);
 router.patch("/api/partner/leads/:enquiryId/status", verifyAgentToken, updateLeadStatus);
 router.get("/api/partner/profile", verifyAgentToken, getAgentProfile);
 router.patch("/api/partner/profile", verifyAgentToken, updateAgentProfile);
