@@ -28,14 +28,15 @@ async function issueAgentSession(req, res, user) {
 
   if (!agent.userId) agent.userId = user._id;
   const status = String(agent.status || "pending").toLowerCase();
-  const summary = { status, name: agent.name, agentCode: agent.agentCode };
+  const roleType = agent.roleType === "Partner" ? "Partner" : "Agent";
+  const summary = { status, name: agent.name, agentCode: agent.agentCode, role: roleType };
   if (status !== "active") {
     await agent.save();
     return { agent: summary };
   }
 
-  if (user.role !== "admin" && user.role !== "Agent") {
-    user.role = "Agent";
+  if (user.role !== "admin" && user.role !== roleType) {
+    user.role = roleType;
     await user.save();
   }
   const agentAccessToken = agent.getAccessToken();
