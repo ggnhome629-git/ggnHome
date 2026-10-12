@@ -544,7 +544,7 @@ export default function PropertyPostForm({
                     label="Distance (m)"
                     type="number"
                     value={item.distance}
-                    onChange={(e) => setNearbyAmenities((prev) => prev.map((a, i) => i === index ? { ...a, distance: e.target.value, source: "partner" } : a))}
+                    onChange={(e) => setNearbyAmenities((prev) => prev.map((a, i) => i === index ? { ...a, distance: e.target.value, source: "partner", edited: true } : a))}
                     sx={{ minWidth: { xs: "100%", sm: 160 } }}
                   />
                 </Stack>
