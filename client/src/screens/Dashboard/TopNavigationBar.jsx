@@ -765,7 +765,7 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
             onClick={goToPost}
           >
             {density === "icon" ? (
-              {isFlatmatesRoute ? <PostRoomIcon size={18} color="#FFFFFF" /> : <PostPropertyIcon size={18} color="#FFFFFF" />}
+              isFlatmatesRoute ? <PostRoomIcon size={18} color="#FFFFFF" /> : <PostPropertyIcon size={18} color="#FFFFFF" />
             ) : (
               <>
                 {isFlatmatesRoute ? <PostRoomIcon size={16} /> : <PostPropertyIcon size={16} />}
