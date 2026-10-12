@@ -73,6 +73,7 @@ const {
 } = require("../controllers/agentLogin.controller.js");
 const {
   getAgentDashboard,
+  getPartnerSearchLeads,
   createRentalPropertyAgent,
   createSalePropertyAgent,
   revealLeadMobileNumber,
@@ -502,6 +503,7 @@ router.get("/api/partner/properties", verifyAgentToken, getAgentProperties);
 router.post("/api/partner/properties", verifyAgentToken, upload.array("images", 18), createPartnerProperty);
 router.get("/api/partner/leads", verifyAgentToken, getAgentLeads);
 router.get("/api/partner/leads/preferences", verifyAgentToken, listPreferenceForms);
+router.get("/api/partner/leads/searches", verifyAgentToken, getPartnerSearchLeads);
 router.get("/api/partner/enquiries", verifyAgentToken, getEnquiries);
 router.patch("/api/partner/leads/:enquiryId/status", verifyAgentToken, updateLeadStatus);
 router.get("/api/partner/profile", verifyAgentToken, getAgentProfile);
