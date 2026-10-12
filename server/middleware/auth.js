@@ -114,7 +114,7 @@ const verifyPartnerAccess = async (req, res, next) => {
   try {
     if (!req.agent?._id) return res.status(401).json({ message: "Partner authentication required." });
     const agent = await Agent.findById(req.agent._id);
-    if (!agent || agent.status !== "active") return res.status(403).json({ message: "Partner account is not active." });
+    if (!agent || String(agent.status || "").toLowerCase() !== "active") return res.status(403).json({ message: "Partner account is not active." });
     if (agent.roleType === "Partner") {
       req.agent = agent;
       return next();
