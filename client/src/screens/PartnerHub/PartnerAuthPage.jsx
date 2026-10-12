@@ -64,7 +64,7 @@ export default function PartnerAuthPage() {
 
   async function verifyOtp() {
     setError(""); setNotice("");
-    if (!/^\d{4,8}$/.test(otp.trim())) {
+    if (!/^[A-Z]{4}$/.test(otp.trim().toUpperCase())) {
       setError("Enter the 4-letter OTP you received.");
       return;
     }
@@ -147,7 +147,7 @@ export default function PartnerAuthPage() {
                 <TextField
                   label="OTP"
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 8))}
+                  onChange={(e) => setOtp(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4))}
                   disabled={busy || Boolean(verifiedToken)}
                   fullWidth
                   inputProps={{ maxLength: 4, style: { textTransform: "uppercase", letterSpacing: 8, fontWeight: 800 } }}
