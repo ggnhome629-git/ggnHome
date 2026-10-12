@@ -135,7 +135,7 @@ export default function EnquiryCard({ property, onEvent, onToast }) {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ propertyId: property.id, message: composed, brokerage: 1499 }),
+        body: JSON.stringify({ propertyId: property.id, message: composed, brokerage: 1499, customerName: form.name.trim(), customerMobile: form.phone.replace(/\\D/g, "").slice(-10) }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "Could not send your enquiry.");
