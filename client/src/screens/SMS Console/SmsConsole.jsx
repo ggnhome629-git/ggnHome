@@ -306,6 +306,13 @@ function GgnhomeTab({ data, reload, notify }) {
       <Typography color="text.secondary">The Android app is display-only and never sends SMS. Enable OTP viewing here to show recent login OTPs in the Android app.</Typography>
       <Paper sx={{ p: 2.5 }}>
         <Stack spacing={2}>
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+            <Typography fontWeight={600}>OTP display</Typography>
+            <FormControlLabel
+              control={<Switch checked={!!form.showOtpOnAndroid} onChange={(e) => setForm({ ...form, showOtpOnAndroid: e.target.checked })} />}
+              label={form.showOtpOnAndroid ? "Show OTPs in Android app" : "OTP display disabled"}
+            />
+          </Stack>
           <Stack direction="row" spacing={2} alignItems="center">
             <Typography fontWeight={600}>Limits</Typography>
             <ModeSwitch mode={form.mode} setMode={(mode) => setForm({ ...form, mode })} />
