@@ -4,8 +4,8 @@ import { Settings, RefreshCw } from "lucide-react";
 import { useAdminFeedback } from "./shell/adminUi";
 
 /**
- * Feature Toggles Admin Page — control visibility of Flatmates and Agent portals.
- * Settings are stored in localStorage and can be synced to the backend later.
+ * Feature Toggles Admin Page — settings are persisted in the shared backend,
+ * so changes apply to users across browsers and devices.
  */
 export default function FeatureTogglesAdmin() {
   const { confirm, notify, feedback } = useAdminFeedback();
@@ -17,34 +17,60 @@ export default function FeatureTogglesAdmin() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
-  // Load from localStorage
+  // Load the shared settings from the backend. localStorage is retained as
+  // a short-term cache for instant UI updates, not as the source of truth.
   useEffect(() => {
-    try {
-      const stored = JSON.parse(localStorage.getItem("admin:featureToggles") || "{}");
-      setFeatures({
-        flatmates: stored.flatmates ?? false,
-        agentPortal: stored.agentPortal ?? false,
-      });
-    } catch (err) {
-      console.error("Error loading feature toggles:", err);
-    } finally {
-      setLoading(false);
-    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch(`${process.env.REACT_APP_Base_API}/api/admin/feature-toggles`, {
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!response.ok) throw new Error("Could not load feature settings.");
+        const data = await response.json();
+        if (cancelled) return;
+        const next = { flatmates: data.flatmates === true, agentPortal: data.agentPortal === true };
+        setFeatures(next);
+        localStorage.setItem("admin:featureToggles", JSON.stringify(next));
+      } catch (err) {
+        if (!cancelled) {
+          try {
+            const stored = JSON.parse(localStorage.getItem("admin:featureToggles") || "{}");
+            setFeatures({ flatmates: stored.flatmates === true, agentPortal: stored.agentPortal === true });
+          } catch (_) {
+            setFeatures({ flatmates: false, agentPortal: false });
+          }
+          setMessage("Could not sync with the server. Changes may not be shared until connection is restored.");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  // Save to localStorage
+  // Save settings globally so the user-facing UI is controlled by this panel.
   const handleSave = async () => {
     setSaving(true);
+    setMessage("");
     try {
-      localStorage.setItem("admin:featureToggles", JSON.stringify(features));
-      setMessage("✓ Feature toggles saved successfully");
-      setTimeout(() => setMessage(""), 3000);
-      
-      // Dispatch event so other parts of app can react
-      window.dispatchEvent(new CustomEvent("featureTogglesUpdated", { detail: features }));
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/api/admin/feature-toggles`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(features),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || "Failed to save feature settings.");
+      const saved = data.features || features;
+      setFeatures(saved);
+      localStorage.setItem("admin:featureToggles", JSON.stringify(saved));
+      window.dispatchEvent(new CustomEvent("featureTogglesUpdated", { detail: saved }));
+      setMessage("✓ Feature toggles saved and applied platform-wide");
+      setTimeout(() => setMessage(""), 3500);
     } catch (err) {
-      setMessage("✗ Failed to save toggles");
-      console.error(err);
+      setMessage(`✗ ${err.message || "Failed to save toggles"}`);
     } finally {
       setSaving(false);
     }
@@ -60,10 +86,30 @@ export default function FeatureTogglesAdmin() {
   const handleReset = async () => {
     if (await confirm({ title: "Reset features", message: "Reset all features to OFF?", confirmLabel: "Reset", danger: true })) {
       setFeatures({ flatmates: false, agentPortal: false });
-      localStorage.removeItem("admin:featureToggles");
-      setMessage("✓ Features reset");
-      setTimeout(() => setMessage(""), 3000);
-      window.dispatchEvent(new CustomEvent("featureTogglesUpdated", { detail: { flatmates: false, agentPortal: false } }));
+      await handlePersistReset();
+    }
+  };
+
+  const handlePersistReset = async () => {
+    setSaving(true);
+    try {
+      const disabled = { flatmates: false, agentPortal: false };
+      const response = await fetch(`${process.env.REACT_APP_Base_API}/api/admin/feature-toggles`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(disabled),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || "Could not reset feature settings.");
+      setFeatures(data.features || disabled);
+      localStorage.setItem("admin:featureToggles", JSON.stringify(data.features || disabled));
+      window.dispatchEvent(new CustomEvent("featureTogglesUpdated", { detail: data.features || disabled }));
+      setMessage("✓ Features reset and applied platform-wide");
+    } catch (err) {
+      setMessage(`✗ ${err.message || "Could not reset features"}`);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -208,7 +254,7 @@ export default function FeatureTogglesAdmin() {
         {/* Info Note */}
         <Box sx={{ p: 2, backgroundColor: "rgba(34,211,238,0.08)", borderRadius: "8px", borderLeft: "4px solid #22D3EE" }}>
           <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
-            💡 <strong>Note:</strong> Changes are saved to browser storage. Implement backend sync for multi-device persistence.
+            💡 <strong>Note:</strong> Changes are saved centrally and apply to users across devices.
           </Typography>
         </Box>
       </Stack>
