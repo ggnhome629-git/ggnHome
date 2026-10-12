@@ -1292,3 +1292,25 @@ See LICENSE file for full text.
 **Last Updated**: September 2026  
 **Status**: Active Development  
 **Maintainers**: ggnHome Team
+
+
+---
+
+## GgnHome-Partner standalone web app
+
+The independent React + Vite app lives in `partner-portal/`.
+
+```bash
+cd partner-portal
+npm install
+cp .env.example .env
+# Set VITE_API_BASE to the deployed ggnHome backend origin.
+npm run dev
+npm run build
+```
+
+Deploy `partner-portal/dist` as a separate static site with SPA fallback enabled. It reuses the GgnHome logo from `https://www.ggnhome.com/Logo2.jpg`.
+
+### App downloads
+
+The admin page at `/admin/app-downloads` manages the HTTPS URLs shown in the Partner portal's App Downloads section. The GgnHome, GgnHome-Partner and sms-service APK files still need to be uploaded as actual binaries before direct download links can be published.
