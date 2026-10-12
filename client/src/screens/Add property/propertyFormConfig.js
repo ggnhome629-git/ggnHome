@@ -201,6 +201,8 @@ export function validateStep(step, f) {
     if (containsContactInfo(f.address)) e.address = "Please remove phone numbers / emails from the address";
     // Admin-only field; owners and agents never see it so it stays empty.
     if (f.ownerMobile && !/^(?:\+?91)?[6-9]\d{9}$/.test(String(f.ownerMobile).replace(/[\s-]/g, ""))) e.ownerMobile = "Enter a valid 10-digit mobile number";
+    if (f.partnerMobile && !/^(?:\+?91)?[6-9]\d{9}$/.test(String(f.partnerMobile).replace(/[\s-]/g, ""))) e.partnerMobile = "Enter a valid 10-digit mobile number";
+    if (f.partnerRequired && !String(f.partnerMobile || "").trim()) e.partnerMobile = "Enter the contact mobile number";
   }
   if (step === STEP.profile) {
     if (hasRooms(f) && !f.bhk) e.bhk = "Pick the number of bedrooms";
