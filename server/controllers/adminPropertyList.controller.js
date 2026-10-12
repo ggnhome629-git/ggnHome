@@ -28,7 +28,9 @@ const toRow = (doc, kind) => {
     image: Array.isArray(p.images) ? p.images[0] || "" : "",
     listingType: kind,
     createdAt: p.createdAt,
-    ownerMobile: p.ownernumber || "",
+    ownerMobile: p.partnerAgentId ? (p.ownernumber || "") : p.ranking?.source === "Partner" ? "" : (p.ownernumber || ""),
+    agentUserId: p.agentUserId ? String(p.agentUserId) : "",
+    rankingSource: p.ranking?.source || "",
     partnerAgentId: p.partnerAgentId ? String(p.partnerAgentId) : "",
     partnerName: p.partnerName || "",
     partnerMobile: p.partnerMobile || "",
@@ -80,6 +82,27 @@ const listAdminProperties = async (req, res) => {
     const rows = [...rent.map((d) => toRow(d, "rent")), ...sale.map((d) => toRow(d, "sale"))]
       .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
       .slice((page - 1) * limit, page * limit);
+
+    // Backfill partner contact labels for older PartnerHub listings. Older records
+    // stored the partner's number as ownernumber, so don't present that as owner contact.
+    const legacyUserIds = [...new Set(rows
+      .filter((row) => row.rankingSource === "Partner" && !row.partnerName && row.agentUserId)
+      .map((row) => row.agentUserId))];
+    if (legacyUserIds.length) {
+      const legacyAgents = await Agent.find({ userId: { $in: legacyUserIds } })
+        .select("_id userId name mobileNumber email")
+        .lean();
+      const byUserId = new Map(legacyAgents.map((agent) => [String(agent.userId), agent]));
+      rows.forEach((row) => {
+        if (row.rankingSource !== "Partner" || row.partnerName) return;
+        const agent = byUserId.get(row.agentUserId);
+        if (!agent) return;
+        row.partnerAgentId = String(agent._id);
+        row.partnerName = agent.name || "";
+        row.partnerMobile = agent.mobileNumber || "";
+        row.partnerEmail = agent.email || "";
+      });
+    }
 
     res.json({ success: true, data: rows, meta: { total: rentTotal + saleTotal, page, limit } });
   } catch (err) {
