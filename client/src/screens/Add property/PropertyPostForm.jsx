@@ -354,6 +354,12 @@ export default function PropertyPostForm({
 
   async function submit() {
     if (submitting) return;
+    if (mode === "partner" && !photos.some((photo) => photo.category === "front")) {
+      setPartnerPhotoError("Please mark at least one photo as Front / Exterior before continuing.");
+      setStep(STEP.photos);
+      scrollToTop();
+      return;
+    }
     const bad = firstInvalidStep(f);
     if (bad !== -1) {
       setStep(bad);
