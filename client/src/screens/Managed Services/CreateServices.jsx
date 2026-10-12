@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, Clock, Home, User, Phone, Calendar, FileText, Wrench, ChevronLeft } from 'lucide-react';
 import TopNavigationBar from '../Dashboard/TopNavigationBar';
 import {useAuth} from '../../Context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useServiceCatalog } from '../../data/useServiceCatalog';
 import Footer from '../Dashboard/Footer';
 
 const ServiceRequestApp = () => {
@@ -35,18 +36,18 @@ const ServiceRequestApp = () => {
 
   const navItems = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 
-  const serviceTypes = [
-    { value: 'cleaning', label: 'Cleaning', icon: '🧹' },
-    { value: 'painting', label: 'Painting', icon: '🎨' },
-    { value: 'termite', label: 'Termite Control', icon: '🐛' },
-    { value: 'plumbing', label: 'Plumbing', icon: '🚰' },
-    { value: 'acService', label: 'AC Service', icon: '❄️' },
-    { value: 'carpenter', label: 'Carpenter', icon: '🪚' },
-    { value: 'electrical', label: 'Electrical', icon: '⚡' },
-    { value: 'moving', label: 'Moving', icon: '📦' },
-    { value: 'pestControl', label: 'Pest Control', icon: '🦟' },
-    { value: 'other', label: 'Other', icon: '🔧' }
-  ];
+  // Services switched on by admins (Admin → Service Catalog).
+  const { services: catalog } = useServiceCatalog();
+  const serviceTypes = catalog.map((svc) => ({ value: svc.key, label: svc.title, icon: svc.emoji || '🔧', startsFrom: svc.startsFrom }));
+
+  // "?service=plumbing" (from the dashboard tiles) pre-selects that service.
+  const location = useLocation();
+  useEffect(() => {
+    const wanted = new URLSearchParams(location.search).get('service');
+    if (wanted && catalog.some((svc) => svc.key === wanted)) {
+      setFormData((prev) => (prev.serviceType ? prev : { ...prev, serviceType: wanted }));
+    }
+  }, [location.search, catalog]);
 
   const statusOptions = [
     { value: 'pending', label: 'Pending', color: '#F59E0B' },

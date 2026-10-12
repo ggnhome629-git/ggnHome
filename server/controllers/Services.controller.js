@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const ServiceRequest = require('../models/serviceRequests.model');
 const RentalProperty = require('../models/Rentalproperty.model');
 const SaleProperty = require('../models/SaleProperty.model');
+const ServiceCatalog = require('../models/ServiceCatalog.model');
+const { ensureSeeded } = require('./serviceCatalog.controller');
 
 // -----------------------------
 // helpers
@@ -52,10 +54,11 @@ exports.createServiceRequest = async (req, res) => {
       return res.status(400).json({ message: 'contactNumber is required' });
     }
 
-    // validate serviceType against schema enum
-    const allowedServices = ServiceRequest.schema.path('serviceType').enumValues;
-    if (!allowedServices.includes(serviceType)) {
-      return res.status(400).json({ message: `Invalid serviceType. Allowed: ${allowedServices.join(', ')}` });
+    // validate serviceType against the services switched on in the catalogue
+    await ensureSeeded();
+    const service = await ServiceCatalog.findOne({ key: String(serviceType || ''), active: true }).select('key title').lean();
+    if (!service) {
+      return res.status(400).json({ message: 'This service is not available right now. Please choose another service.' });
     }
 
     let resolvedPropertyId = null;
@@ -107,7 +110,8 @@ exports.createServiceRequest = async (req, res) => {
       propertyType: resolvedPropertyType,
       propertyId: resolvedPropertyId,
       address: resolvedAddress,
-      serviceType,
+      serviceType: service.key,
+      serviceTitle: service.title,
       contactNumber: phone,
       preferredDate: preferredDate ? new Date(preferredDate) : undefined,
       notes,
@@ -152,11 +156,10 @@ exports.getServiceRequests = async (req, res) => {
     if (status) filter.status = status; // validate optionally
 
     if (serviceType) {
-      const allowedServices = ServiceRequest.schema.path('serviceType').enumValues;
-      if (!allowedServices.includes(serviceType)) {
-        return res.status(400).json({ message: `Invalid serviceType. Allowed: ${allowedServices.join(', ')}` });
+      if (!/^[a-zA-Z][a-zA-Z0-9_-]{0,39}$/.test(String(serviceType))) {
+        return res.status(400).json({ message: 'Invalid serviceType.' });
       }
-      filter.serviceType = serviceType;
+      filter.serviceType = String(serviceType);
     }
 
     if (userRole && ['owner', 'renter'].includes(userRole)) {

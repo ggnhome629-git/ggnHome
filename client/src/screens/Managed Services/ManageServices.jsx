@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useServiceCatalog } from '../../data/useServiceCatalog';
 import { 
   Package, Clock, CheckCircle, AlertCircle, Home, Phone, Calendar, 
   FileText, Wrench, X, ChevronRight, Filter, Search, Download, 
@@ -105,7 +106,7 @@ const ServiceTrackingSystem = () => {
   const isMobile = window.innerWidth <= 768;
 
   // Service types with Lucide icons
-  const serviceTypes = {
+  const builtInServiceTypes = {
     cleaning: { icon: Sparkles, label: 'Cleaning', color: DESIGN_TOKENS.colors.accent },
     painting: { icon: Edit, label: 'Painting', color: '#8B5CF6' },
     termite: { icon: Shield, label: 'Termite Control', color: DESIGN_TOKENS.colors.error },
@@ -117,6 +118,19 @@ const ServiceTrackingSystem = () => {
     pestControl: { icon: Shield, label: 'Pest Control', color: '#EF4444' },
     other: { icon: Wrench, label: 'Other', color: DESIGN_TOKENS.colors.gray[500] }
   };
+
+  // Admin-managed catalogue: new services and renamed titles show up here;
+  // a request for a since-deleted service still renders with a readable name.
+  const { services: catalog } = useServiceCatalog();
+  const serviceTypes = useMemo(() => {
+    const map = { ...builtInServiceTypes };
+    catalog.forEach((svc) => {
+      map[svc.key] = { ...(map[svc.key] || { icon: Wrench }), label: svc.title, color: map[svc.key]?.color || svc.color || '#6B7280' };
+    });
+    const humanize = (k) => String(k).replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
+    return new Proxy(map, { get: (t, k) => (typeof k !== 'string' || k in t ? t[k] : { icon: Wrench, label: humanize(k), color: '#6B7280' }) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [catalog]);
 
   const statusConfig = {
     pending: { 

@@ -407,6 +407,14 @@ router.post("/api/user/preferences-SALE-aria", verifyToken, (req, res) => {
   saveUserPreferencesARIA(req, res);
 });
 
+// ================== Home services catalogue ==================
+const serviceCatalog = require("../controllers/serviceCatalog.controller");
+router.get("/api/service-catalog", serviceCatalog.listPublic);
+router.get("/api/admin/service-catalog", verifyToken, checkAdminEmail, serviceCatalog.adminList);
+router.post("/api/admin/service-catalog", verifyToken, checkAdminEmail, serviceCatalog.adminCreate);
+router.patch("/api/admin/service-catalog/:id", verifyToken, checkAdminEmail, serviceCatalog.adminUpdate);
+router.delete("/api/admin/service-catalog/:id", verifyToken, checkAdminEmail, serviceCatalog.adminDelete);
+
 // ================== Services API ==================
 // Create a new service request (owner or renter)
 router.post("/api/createservices", verifyToken, createServiceRequest);

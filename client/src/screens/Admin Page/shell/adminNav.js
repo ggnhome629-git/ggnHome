@@ -72,7 +72,8 @@ export const ADMIN_NAV = [
       { id: "enquiries", label: "Enquiries", route: "/admin/enquiries", icon: MessageSquare },
       { id: "callbacks", label: "Callback Requests", route: "/admin/callback", icon: PhoneCall },
       { id: "preferences", label: "Preference Forms", route: "/admin/userpreferenceformresponses", icon: ClipboardList },
-      { id: "services", label: "Services", route: "/admin/services", icon: Wrench },
+      { id: "services", label: "Service Requests", route: "/admin/services", icon: Wrench },
+      { id: "service-catalog", label: "Service Catalog", route: "/admin/service-catalog", icon: ClipboardList },
     ],
   },
   {

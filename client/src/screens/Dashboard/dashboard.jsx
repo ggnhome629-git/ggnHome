@@ -40,6 +40,7 @@ const Location = React.lazy(() => import("./Location"));
 const ToolsShowcase = React.lazy(() => import("./Tools"));
 const RewardsSteps = React.lazy(() => import("./RewardsSteps"));
 const OffersCarousel = React.lazy(() => import("./OffersCarousel"));
+const HomeServices = React.lazy(() => import("./HomeServices"));
 
 const NAV_ITEMS = [
   "For Buyers",
@@ -425,6 +426,10 @@ export default function RealEstateDashboard() {
           <CardSection user={user} />
         </Suspense>
       </SectionShell>
+
+      <LazySection fallback={<SectionSkeleton count={5} height={132} />}>
+        <HomeServices user={user} />
+      </LazySection>
 
       <LazySection fallback={<SectionSkeleton variant="row" count={3} height={260} />}>
         <OffersCarousel />

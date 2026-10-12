@@ -38,8 +38,17 @@ const ServiceRequestSchema = new mongoose.Schema({
 
   serviceType: {
     type: String,
-    enum: ['cleaning', 'painting', 'termite', 'plumbing', 'acService' , "carpenter", "electrical" , "moving", "pestControl", "other"],
+    // Key from the admin-managed ServiceCatalog (validated in the controller).
     required: true,
+    trim: true,
+    maxlength: 40,
+  },
+
+  // Title at the time of the request, so renaming/deleting a service later
+  // never leaves a request without a readable name.
+  serviceTitle: {
+    type: String,
+    trim: true,
   },
 
   contactNumber: {

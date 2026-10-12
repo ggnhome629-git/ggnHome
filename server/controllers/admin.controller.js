@@ -1,4 +1,5 @@
 const { escapeRegex } = require('../utils/escapeRegex');
+const ServiceCatalog = require("../models/ServiceCatalog.model");
 const { parametersFromBody } = require("../config/propertyParameters");
 const Payment = require('../models/Payment.model');
 const { saleProfileFields } = require("../utils/saleProfile");
@@ -1165,11 +1166,13 @@ const updateServiceRequestDetails = async (req, res) => {
 
     // Validate serviceType
     if (serviceType !== undefined) {
-      const allowedServices = ServiceRequest.schema.path('serviceType').enumValues;
-      if (!allowedServices.includes(serviceType)) {
-        return res.status(400).json({ message: `Invalid serviceType. Allowed: ${allowedServices.join(', ')}` });
+      // Admins may move a request to any catalogue service, including ones hidden from users.
+      const service = await ServiceCatalog.findOne({ key: String(serviceType) }).select('key title').lean();
+      if (!service) {
+        return res.status(400).json({ message: 'Unknown service. Add it in Service Catalog first.' });
       }
-      update.$set.serviceType = serviceType;
+      update.$set.serviceType = service.key;
+      update.$set.serviceTitle = service.title;
       changedFields.push('serviceType');
     }
 

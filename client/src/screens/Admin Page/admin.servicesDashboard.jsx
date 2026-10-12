@@ -3,8 +3,9 @@ import { Box, Button, Card, CardContent, Grid, Typography, TextField, Select, Me
 import { Package, Clock, CheckCircle, AlertCircle, Home, Calendar, X, ChevronRight, Filter, Search, Edit, Save, User, Building, RefreshCw, MessageCircle } from "lucide-react";
 import { PageHeader, StatCard } from "./shell/adminUi";
 import "./admin.css";
+import { useServiceCatalog } from "../../data/useServiceCatalog";
 
-const SERVICE_TYPES = {
+const BUILT_IN_SERVICE_TYPES = {
   cleaning:    { icon: "🧹", label: "Cleaning",        color: "#00A79D" },
   painting:    { icon: "🎨", label: "Painting",        color: "#8B5CF6" },
   termite:     { icon: "🐛", label: "Termite Control", color: "#DC2626" },
@@ -35,6 +36,16 @@ const STATUS_CONFIG = {
 const PROGRESS_MAP = { pending: 33, "in-progress": 66, completed: 100 };
 
 export default function AdminServiceTracking() {
+  // Admin-managed catalogue (Admin → Service Catalog) merged over the built-ins.
+  const { services: catalog } = useServiceCatalog();
+  const SERVICE_TYPES = React.useMemo(() => {
+    const map = { ...BUILT_IN_SERVICE_TYPES };
+    catalog.forEach((svc) => {
+      map[svc.key] = { icon: svc.emoji || map[svc.key]?.icon || "🔧", label: svc.title, color: svc.color || map[svc.key]?.color || "#6B7280" };
+    });
+    const humanize = (k) => String(k).replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
+    return new Proxy(map, { get: (t, k) => (typeof k !== "string" || k in t ? t[k] : { icon: "🔧", label: humanize(k), color: "#6B7280" }) });
+  }, [catalog]);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
