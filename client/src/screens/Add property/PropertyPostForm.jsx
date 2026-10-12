@@ -210,7 +210,7 @@ export default function PropertyPostForm({
   const [restored, setRestored] = useState(Boolean(initialDraft));
   const [photos, setPhotos] = useState([]);
   const [panoramas, setPanoramas] = useState([]);
-  const [nearbyAmenities, setNearbyAmenities] = useState(() => PARTNER_AMENITIES.map((a) => ({ category: a.key, label: a.label, name: "", distance: "", source: "partner" })));
+  const [nearbyAmenities, setNearbyAmenities] = useState(() => PARTNER_AMENITIES.map((a) => ({ category: a.key, label: a.label, name: "", distance: "", source: "partner", edited: false })));
   const [findingAmenities, setFindingAmenities] = useState(false);
   const [amenityMessage, setAmenityMessage] = useState("");
   const [partnerPhotoError, setPartnerPhotoError] = useState("");
@@ -343,7 +343,7 @@ export default function PropertyPostForm({
     setF({ ...INITIAL, partnerRequired: mode === "partner" });
     setPhotos([]);
     setPanoramas([]);
-    setNearbyAmenities(PARTNER_AMENITIES.map((a) => ({ category: a.key, label: a.label, name: "", distance: "", source: "partner" })));
+    setNearbyAmenities(PARTNER_AMENITIES.map((a) => ({ category: a.key, label: a.label, name: "", distance: "", source: "partner", edited: false })));
     setAmenityMessage("");
     setPartnerPhotoError("");
     setStep(0);
