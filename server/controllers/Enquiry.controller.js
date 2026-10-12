@@ -452,7 +452,6 @@ const getPartnerEnquiries = async (req, res) => {
           price: p.price,
           monthlyRent: p.monthlyRent,
           propertyType: p.propertyType,
-          ownerType: p.ownerType,
           images: p.images || [],
         } : null,
         // Scraped-source fields and source URLs are intentionally omitted here.
