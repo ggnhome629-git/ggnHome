@@ -211,7 +211,7 @@ export default function PropertyPostForm({
     return { ...INITIAL, purpose, partnerRequired: mode === "partner" };
   });
   const [step, setStep] = useState(() => mode === "partner" ? (initialDraft?.step >= 4 ? 0 : initialDraft?.step >= 1 ? 1 : 0) : (initialDraft?.step ?? 0));
-  const [reached, setReached] = useState(initialDraft?.reached ?? 0);
+  const [reached, setReached] = useState(() => mode === "partner" ? Math.min(2, initialDraft?.reached || 0) : (initialDraft?.reached ?? 0));
   const [restored, setRestored] = useState(Boolean(initialDraft));
   const [photos, setPhotos] = useState([]);
   const [panoramas, setPanoramas] = useState([]);
@@ -294,7 +294,7 @@ export default function PropertyPostForm({
 
   const goTo = (target) => {
     if (mode === "partner") {
-      const partnerTarget = target === STEP.photos ? 0 : target === STEP.review ? 2 : 1;
+      const partnerTarget = Math.min(2, Math.max(0, target));
       if (partnerTarget !== step) {
         setErrors({});
         setStep(partnerTarget);
@@ -410,7 +410,7 @@ export default function PropertyPostForm({
     if (submitting) return;
     if (mode === "partner" && !photos.some((photo) => photo.category === "front")) {
       setPartnerPhotoError("Please mark at least one photo as Front / Exterior before continuing.");
-      setStep(STEP.photos);
+      setStep(mode === "partner" ? 0 : STEP.photos);
       scrollToTop();
       return;
     }
@@ -580,7 +580,12 @@ export default function PropertyPostForm({
               sx={{ maxWidth: 420 }}
             />
           </FormSection>
-          <FormSection title="Nearby Amenities" hint="Auto-detect suggestions around this address, then edit names and distances as needed.">
+          <Accordion defaultExpanded={false} disableGutters elevation={0} sx={{ border: "1px solid", borderColor: "divider", borderRadius: `${radii.md}px !important`, "&:before": { display: "none" }, mb: 2 }}>
+            <AccordionSummary expandIcon={<ChevronDown size={18} />}>
+              <Typography sx={{ fontWeight: 700, color: "primary.main" }}>Nearby places (optional)</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+            <FormSection title="Nearby Amenities" hint="Auto-detect suggestions around this address, then edit names and distances as needed.">
             <Button variant="outlined" onClick={detectPartnerAmenities} disabled={findingAmenities} startIcon={<MapPin size={16} />} sx={{ mb: 2, fontWeight: 700 }}>
               {findingAmenities ? "Finding nearby places…" : "Auto-detect nearby places"}
             </Button>
@@ -604,7 +609,9 @@ export default function PropertyPostForm({
                 </Stack>
               ))}
             </Stack>
-          </FormSection>
+            </FormSection>
+            </AccordionDetails>
+          </Accordion>
         </>
       )}
     </>
@@ -931,7 +938,7 @@ export default function PropertyPostForm({
         <Stack spacing={4}>
           <SummaryBlock
             title="Basics & Location"
-            onEdit={() => goTo(STEP.basics)}
+            onEdit={() => goTo(mode === "partner" ? 1 : STEP.basics)}
             rows={[
               ["Listing for", rent ? "Rent" : "Sale"],
               ["Type", typeLabel(f.propertyType)],
@@ -944,13 +951,13 @@ export default function PropertyPostForm({
           {mode === "partner" && (
             <SummaryBlock
               title="Nearby Amenities"
-              onEdit={() => goTo(STEP.location)}
+              onEdit={() => goTo(mode === "partner" ? 1 : STEP.location)}
               rows={nearbyAmenities.map((item) => [item.label, item.name ? `${item.name}${item.distance ? ` · approx. ${item.distance} m` : ""}` : ""])}
             />
           )}
           <SummaryBlock
             title="Property Profile"
-            onEdit={() => goTo(STEP.profile)}
+            onEdit={() => goTo(mode === "partner" ? 1 : STEP.profile)}
             rows={[
               ["Configuration", configuration(f)],
               ["Bathrooms", f.bathrooms],
@@ -963,7 +970,7 @@ export default function PropertyPostForm({
           />
           <SummaryBlock
             title="Price & Description"
-            onEdit={() => goTo(STEP.price)}
+            onEdit={() => goTo(mode === "partner" ? 1 : STEP.price)}
             rows={
               rent
                 ? [
