@@ -481,6 +481,48 @@ export default function PropertyPostForm({
           />
         </FormSection>
       )}
+      {mode === "partner" && (
+        <>
+          <FormSection title="Contact Mobile Number" required error={err("partnerMobile")} id="field-partnerMobile" hint="Used by ggnHome to contact you about this listing.">
+            <TextField
+              fullWidth
+              value={f.partnerMobile || ""}
+              onChange={onInput("partnerMobile")}
+              placeholder="10-digit mobile number"
+              error={Boolean(err("partnerMobile"))}
+              helperText={err("partnerMobile") || " "}
+              InputProps={{ startAdornment: <InputAdornment position="start">+91</InputAdornment> }}
+              inputProps={{ inputMode: "tel", maxLength: 14 }}
+              sx={{ maxWidth: 420 }}
+            />
+          </FormSection>
+          <FormSection title="Nearby Amenities" hint="Auto-detect suggestions around this address, then edit names and distances as needed.">
+            <Button variant="outlined" onClick={detectPartnerAmenities} disabled={findingAmenities} startIcon={<MapPin size={16} />} sx={{ mb: 2, fontWeight: 700 }}>
+              {findingAmenities ? "Finding nearby places…" : "Auto-detect nearby places"}
+            </Button>
+            {amenityMessage && <Alert severity="info" sx={{ mb: 2 }}>{amenityMessage}</Alert>}
+            <Stack spacing={2}>
+              {nearbyAmenities.map((item, index) => (
+                <Stack key={item.category} direction={{ xs: "column", sm: "row" }} spacing={2}>
+                  <TextField
+                    fullWidth
+                    label={item.label}
+                    value={item.name}
+                    onChange={(e) => setNearbyAmenities((prev) => prev.map((a, i) => i === index ? { ...a, name: e.target.value, source: "partner" } : a))}
+                  />
+                  <TextField
+                    label="Distance (m)"
+                    type="number"
+                    value={item.distance}
+                    onChange={(e) => setNearbyAmenities((prev) => prev.map((a, i) => i === index ? { ...a, distance: e.target.value, source: "partner" } : a))}
+                    sx={{ minWidth: { xs: "100%", sm: 160 } }}
+                  />
+                </Stack>
+              ))}
+            </Stack>
+          </FormSection>
+        </>
+      )}
     </>
   );
 
