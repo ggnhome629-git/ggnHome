@@ -203,7 +203,7 @@ export default function PropertyPostForm({
     if (initialDraft) return { ...INITIAL, ...initialDraft.f, partnerRequired: mode === "partner" };
     const q = new URLSearchParams(location.search).get("purpose");
     const purpose = /^sale|sell$/i.test(q || "") ? "Sale" : /^rent$/i.test(q || "") ? "Rent" : "";
-    return { ...INITIAL, purpose };
+    return { ...INITIAL, purpose, partnerRequired: mode === "partner" };
   });
   const [step, setStep] = useState(initialDraft?.step ?? 0);
   const [reached, setReached] = useState(initialDraft?.reached ?? 0);
