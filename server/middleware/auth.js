@@ -1,6 +1,8 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
 const Agent = require("../models/Agent.model");
+const SaleProperty = require("../models/SaleProperty.model");
+const RentalProperty = require("../models/Rentalproperty.model");
 
 const getBearerToken = (req) => {
   const authHeader = req.headers.authorization || req.headers.Authorization;
@@ -104,6 +106,49 @@ const verifyAgentToken = async (req, res, next) => {
   } catch (error) {
     console.error("verifyAgentToken error:", error);
     return res.status(500).json({ message: "Server error during agent verification." });
+  }
+};
+
+
+const verifyPartnerAccess = async (req, res, next) => {
+  try {
+    if (!req.agent?._id) return res.status(401).json({ message: "Partner authentication required." });
+    const agent = await Agent.findById(req.agent._id);
+    if (!agent || agent.status !== "active") return res.status(403).json({ message: "Partner account is not active." });
+    if (agent.roleType === "Partner") {
+      req.agent = agent;
+      return next();
+    }
+
+    // Admins use their dedicated PartnerHub profile without a second login.
+    const linkedUser = agent.userId ? await User.findById(agent.userId).select("role").lean() : null;
+    if (linkedUser?.role === "admin") {
+      req.agent = agent;
+      return next();
+    }
+
+    // Backward compatibility: promote older Agent records that already own
+    // PartnerHub-attributed listings, without granting Partner access to every Agent.
+    const legacyFilter = {
+      $or: [
+        { partnerAgentId: agent._id },
+        { agentUserId: agent.userId, ownerType: "Agent", "ranking.source": "Partner" },
+      ],
+    };
+    const [saleListing, rentalListing] = await Promise.all([
+      SaleProperty.exists(legacyFilter),
+      RentalProperty.exists(legacyFilter),
+    ]);
+    if (!saleListing && !rentalListing) {
+      return res.status(403).json({ message: "Partner access is required for PartnerHub." });
+    }
+    agent.roleType = "Partner";
+    await agent.save();
+    req.agent = agent;
+    return next();
+  } catch (error) {
+    console.error("verifyPartnerAccess error:", error);
+    return res.status(500).json({ message: "Could not verify PartnerHub access." });
   }
 };
 
@@ -221,6 +266,7 @@ module.exports = {
   verifyToken,
   verifyTokenOptional,
   verifyAgentToken,
+  verifyPartnerAccess,
   verifyAgentTokenOptional,
   verifyTokenOrAgent
 };
