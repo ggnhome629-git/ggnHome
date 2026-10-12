@@ -626,11 +626,29 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
             overflow: "hidden",
           }}
         >
-          {navItems.slice(0, 3).map((item, idx) => (
+          {navItems.slice(0, 3).map((item, idx) => {
+            const normalized = String(item).toLowerCase();
+            const target = normalized.includes("buyer")
+              ? "/search?type=sale"
+              : normalized.includes("tenant")
+              ? "/search?type=rent"
+              : normalized.includes("owner")
+              ? "/add-property"
+              : normalized.includes("dealer") || normalized.includes("builder")
+              ? "/partner/login"
+              : normalized.includes("insight")
+              ? "/#news"
+              : "/";
+            return (
             <a
               key={idx}
-              href="/"
-              onClick={(e) => e.preventDefault()}
+              href={target}
+              onClick={(e) => {
+                e.preventDefault();
+                if (normalized.includes("owner")) goToPost();
+                else if (target === "/#news") window.location.href = target;
+                else navigate(target);
+              }}
               style={{
                 color: "#FFFFFF",
                 textDecoration: "none",
@@ -656,7 +674,8 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
             >
               {item}
             </a>
-          ))}
+            );
+          })}
         </div>
 
         {/* Right Section */}
