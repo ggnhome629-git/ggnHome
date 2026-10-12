@@ -126,6 +126,25 @@ export default function PhotoUploader({ value, onChange, max = 8, privacyNotice,
                 sx={{ position: "relative", aspectRatio: "4 / 3", borderRadius: `${radii.md}px`, overflow: "hidden", border: "1px solid", borderColor: i === 0 ? "secondary.main" : "divider" }}
               >
                 <img src={p.url} alt={`Upload ${i + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                {categoryMode && (
+                  <TextField
+                    select
+                    size="small"
+                    aria-label={`Photo category ${i + 1}`}
+                    value={p.category || "other"}
+                    onChange={(e) => onChange(value.map((photo) => photo.id === p.id ? { ...photo, category: e.target.value } : photo))}
+                    sx={{ position: "absolute", left: 6, right: 6, bottom: 6, backgroundColor: "rgba(255,255,255,0.96)", borderRadius: 1, "& .MuiInputBase-root": { fontSize: 12 } }}
+                  >
+                    {[
+                      ["front", "Front / Exterior"],
+                      ["living", "Living room"],
+                      ["bedroom", "Bedroom"],
+                      ["kitchen", "Kitchen"],
+                      ["bathroom", "Bathroom"],
+                      ["other", "Other"],
+                    ].map(([v, label]) => <MenuItem key={v} value={v}>{label}</MenuItem>)}
+                  </TextField>
+                )}
                 {i === 0 ? (
                   <Box sx={{ position: "absolute", left: 8, top: 8, px: 2, py: 0.5, borderRadius: 999, backgroundColor: "secondary.main", color: "#fff", fontSize: 11, fontWeight: 800 }}>Cover</Box>
                 ) : (
