@@ -1,4 +1,9 @@
 const AppDownload = require("../models/AppDownload.model");
+const { Readable } = require("node:stream");
+const { pipeline } = require("node:stream/promises");
+
+const DEFAULT_PARTNER_APK = "https://github.com/ggnhome629-git/ggnHome/releases/download/latest-apks/GgnHome-Partner.apk";
+const isApprovedPartnerApkUrl = (value) => /^https:\/\/github\.com\/ggnhome629-git\/ggnHome\/releases\/download\/[^/]+\/GgnHome-Partner\.apk$/i.test(String(value || ""));
 
 const DEFAULTS = [
   { key: "ggnhome", name: "GgnHome", description: "Main GgnHome Android app" },
@@ -10,9 +15,17 @@ async function getAppDownloads(req, res) {
   try {
     const stored = await AppDownload.find({ key: { $in: DEFAULTS.map(x => x.key) } }).lean();
     const byKey = new Map(stored.map(x => [x.key, x]));
+    const isAdminRequest = String(req.path || "").startsWith("/api/admin/");
+    const publicApiBase = String(process.env.PUBLIC_API_BASE_URL || (req.protocol + "://" + req.get("host"))).replace(/\\/+$/, "");
     return res.json(DEFAULTS.map(item => {
       const row = byKey.get(item.key);
-      return { ...item, url: row?.url || "", version: row?.version || "", updatedAt: row?.updatedAt || null };
+      const directPartnerUrl = publicApiBase + "/api/app-downloads/partner.apk";
+      return {
+        ...item,
+        url: item.key === "partner" && !isAdminRequest ? directPartnerUrl : (row?.url || ""),
+        version: row?.version || "",
+        updatedAt: row?.updatedAt || null,
+      };
     }));
   } catch (error) {
     console.error("getAppDownloads error:", error);
@@ -46,4 +59,28 @@ async function updateAppDownloads(req, res) {
   }
 }
 
-module.exports = { getAppDownloads, updateAppDownloads };
+async function downloadPartnerApk(req, res) {
+  try {
+    const saved = await AppDownload.findOne({ key: "partner" }).select("url").lean();
+    const configured = process.env.PARTNER_APK_SOURCE_URL || saved?.url || DEFAULT_PARTNER_APK;
+    const source = isApprovedPartnerApkUrl(configured) ? configured : DEFAULT_PARTNER_APK;
+    const upstream = await fetch(source, { redirect: "follow", signal: AbortSignal.timeout(25000) });
+    if (!upstream.ok || !upstream.body) {
+      return res.status(502).json({ message: "The latest Partner APK is temporarily unavailable. Please try again later." });
+    }
+    res.status(200);
+    res.setHeader("Content-Type", "application/vnd.android.package-archive");
+    res.setHeader("Content-Disposition", 'attachment; filename="GgnHome-Partner.apk"');
+    res.setHeader("Cache-Control", "public, max-age=300");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    const length = upstream.headers.get("content-length");
+    if (length && /^\d+$/.test(length)) res.setHeader("Content-Length", length);
+    await pipeline(Readable.fromWeb(upstream.body), res);
+  } catch (error) {
+    console.error("[partner apk download] failed:", error.message);
+    if (!res.headersSent) res.status(502).json({ message: "The latest Partner APK is temporarily unavailable. Please try again later." });
+    else res.destroy(error);
+  }
+}
+
+module.exports = { getAppDownloads, updateAppDownloads, downloadPartnerApk };
