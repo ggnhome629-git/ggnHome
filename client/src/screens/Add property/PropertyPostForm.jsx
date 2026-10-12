@@ -828,7 +828,7 @@ export default function PropertyPostForm({
     <>
       <PhotoUploader
         value={photos}
-        onChange={setPhotos}
+        onChange={(nextPhotos) => { setPhotos(nextPhotos); setPartnerPhotoError(""); }}
         categoryMode={mode === "partner"}
         max={8}
         privacyNotice="For your safety, please don't upload photos that show the front of your house or your house number. Photos of rooms, kitchen, bathrooms and the view work best."
