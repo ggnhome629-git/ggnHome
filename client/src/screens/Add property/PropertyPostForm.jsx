@@ -538,7 +538,7 @@ export default function PropertyPostForm({
                     fullWidth
                     label={item.label}
                     value={item.name}
-                    onChange={(e) => setNearbyAmenities((prev) => prev.map((a, i) => i === index ? { ...a, name: e.target.value, source: "partner" } : a))}
+                    onChange={(e) => setNearbyAmenities((prev) => prev.map((a, i) => i === index ? { ...a, name: e.target.value, source: "partner", edited: true } : a))}
                   />
                   <TextField
                     label="Distance (m)"
