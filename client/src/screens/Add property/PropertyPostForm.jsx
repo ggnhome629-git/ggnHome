@@ -80,6 +80,14 @@ const COPY = {
     declaration: "I confirm these details are accurate and I'm authorised by the owner to list this property.",
     success: "Your listing has been saved. Track its status and enquiries from My Properties.",
   },
+  partner: {
+    eyebrow: "PartnerHub · Add Property",
+    titles: { Sale: "List A Property For Sale", Rent: "List A Property For Rent", "": "Add A Property" },
+    done: "Property Published!",
+    subtitle: "Add a property using the same guided listing flow. Your listing is published immediately after submission.",
+    declaration: "I confirm these details are accurate and I am authorised to publish this property on ggnHome.",
+    success: "Your property is published. You can manage it and track enquiries from PartnerHub.",
+  },
   admin: {
     eyebrow: "Admin · Add Property",
     titles: { Sale: "Add A Property For Sale", Rent: "Add A Property For Rent", "": "Add A Property" },
