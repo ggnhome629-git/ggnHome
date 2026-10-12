@@ -58,6 +58,7 @@ const getAgentHubDashboard = async (req, res) => {
 
     return res.json({
       agent: {
+        roleType: agent.roleType || "Agent",
         name: agent.name,
         email: agent.email,
         mobileNumber: agent.mobileNumber,
@@ -290,6 +291,7 @@ const getAgentProfile = async (req, res) => {
 
     return res.json({
       _id: agent._id,
+      roleType: agent.roleType || "Agent",
       name: agent.name,
       email: agent.email,
       mobileNumber: agent.mobileNumber,
