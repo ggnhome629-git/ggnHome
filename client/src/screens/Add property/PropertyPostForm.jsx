@@ -573,6 +573,11 @@ export default function PropertyPostForm({
           inputProps={{ maxLength: 200 }}
         />
       </FormSection>
+      {mode === "partner" && (
+        <FormSection title="Property Owner’s Name" hint="Optional — helps the ggnHome team identify the owner." id="field-ownerName">
+          <TextField value={f.ownerName || ""} onChange={onInput("ownerName")} placeholder="Owner name (optional)" inputProps={{ maxLength: 120 }} sx={{ width: { xs: "100%", sm: 420 } }} />
+        </FormSection>
+      )}
       {(askOwnerContact || mode === "partner") && (
         <FormSection title={mode === "partner" ? "Property Owner’s Mobile Number" : "Owner’s Mobile Number"} required={mode === "partner"} hint={mode === "partner" ? "Enter the number of the owner whose property you are listing. Your own partner contact is shown separately below." : "Kept private — used by the ggnHome team to reach the owner"} id="field-ownerMobile">
           <TextField
