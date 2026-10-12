@@ -1,0 +1,28 @@
+name: GgnHome-Partner build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "partner-portal/**"
+      - ".github/workflows/partner-portal-build.yml"
+  pull_request:
+    paths:
+      - "partner-portal/**"
+      - ".github/workflows/partner-portal-build.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: partner-portal
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: partner-portal/package.json
+      - run: npm install
+      - run: npm run build
