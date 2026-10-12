@@ -12,7 +12,7 @@ const push = require("./push");
 const { getRecommendations } = require("./appRecommender");
 
 const WEEK = 7 * 24 * 60 * 60 * 1000;
-const clean = (value, fallback = "") => String(value ?? fallback).replace(/[\\r\\n]+/g, " ").trim();
+const clean = (value, fallback = "") => String(value ?? fallback).replace(/[\r\n]+/g, " ").trim();
 
 function chooseTemplate(category, seed) {
   const choices = templates.filter((t) => t.category === category);
@@ -31,7 +31,7 @@ function render(template, property) {
     bedrooms: clean(property?.bedrooms, "home"),
     propertyPath: clean(property?.path, "/search"),
   };
-  const fill = (value) => String(value || "").replace(/{{(\\w+)}}/g, (_, key) => values[key] ?? "");
+  const fill = (value) => String(value || "").replace(/{{(\w+)}}/g, (_, key) => values[key] ?? "");
   return {
     templateId: template.id,
     category: template.category,
@@ -85,7 +85,7 @@ async function runSmartNotifications({ dryRun = false, max = 300 } = {}) {
         title: message.title,
         body: message.body,
         link: message.link,
-        image: property?.image && /^https:\\/\\//i.test(property.image) ? property.image : undefined,
+        image: property?.image && /^https:\/\/\//i.test(property.image) ? property.image : undefined,
         data: {
           kind: property ? "personal" : "general",
           category: message.category,
