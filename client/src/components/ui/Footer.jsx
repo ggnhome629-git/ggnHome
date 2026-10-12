@@ -105,24 +105,44 @@ export default function Footer({ pathname = '/' }) {
             }}
           >
             <IconButton
+              component="a"
+              href="https://www.instagram.com/ggnhome"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open GgnHome on Instagram"
               size="small"
               sx={{ backgroundColor: 'rgba(255,255,255,0.1)', '&:hover': { backgroundColor: 'rgba(255,255,255,0.18)' } }}
             >
               <Instagram size={16} />
             </IconButton>
             <IconButton
+              component="a"
+              href="https://www.facebook.com/ggnhome"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open GgnHome on Facebook"
               size="small"
               sx={{ backgroundColor: 'rgba(255,255,255,0.1)', '&:hover': { backgroundColor: 'rgba(255,255,255,0.18)' } }}
             >
               <Facebook size={16} />
             </IconButton>
             <IconButton
+              component="a"
+              href="https://www.twitter.com/GgnHome"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open GgnHome on X"
               size="small"
               sx={{ backgroundColor: 'rgba(255,255,255,0.1)', '&:hover': { backgroundColor: 'rgba(255,255,255,0.18)' } }}
             >
               <Twitter size={16} />
             </IconButton>
             <IconButton
+              component="a"
+              href="https://www.linkedin.com/company/ggnhome"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open GgnHome on LinkedIn"
               size="small"
               sx={{ backgroundColor: 'rgba(255,255,255,0.1)', '&:hover': { backgroundColor: 'rgba(255,255,255,0.18)' } }}
             >
