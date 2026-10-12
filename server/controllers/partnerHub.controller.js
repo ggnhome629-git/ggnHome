@@ -6,6 +6,13 @@ const SaleProperty = require('../models/SaleProperty.model');
 const RentalProperty = require('../models/Rentalproperty.model');
 const EnquirySchema = require('../models/EnquirySchema.model');
 
+const ownedPropertyFilter = (agent) => agent.roleType === "Partner"
+  ? { $or: [
+      { partnerAgentId: agent._id },
+      { agentUserId: agent.userId, ownerType: "Agent", "ranking.source": "Partner" },
+    ] }
+  : ownedPropertyFilter(agent);
+
 /**
  * PartnerHub Dashboard — main entry point
  * Returns partner's stats: properties, leads, recent activities
