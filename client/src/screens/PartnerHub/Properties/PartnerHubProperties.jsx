@@ -15,7 +15,8 @@ import {
   MenuItem,
   InputAdornment,
 } from '@mui/material';
-import { Search, Plus, Trash2, Edit } from 'lucide-react';
+import { Search, Trash2, Edit } from 'lucide-react';
+import { PostPropertyIcon } from '../../../components/ui/PostActionIcon';
 import { useNavigate } from 'react-router-dom';
 
 const PartnerHubProperties = () => {
@@ -198,7 +199,7 @@ const PartnerHubProperties = () => {
         </Box>
         <Button
           variant="contained"
-          startIcon={<Plus size={20} />}
+          startIcon={<PostPropertyIcon size={20} />}
           onClick={() => navigate('/partner/properties/add')}
           sx={{
             backgroundColor: '#0f766e',
@@ -298,7 +299,7 @@ const PartnerHubProperties = () => {
           </Typography>
           <Button
             variant="contained"
-            startIcon={<Plus size={20} />}
+            startIcon={<PostPropertyIcon size={20} />}
             onClick={() => navigate('/partner/properties/add')}
             sx={{
               backgroundColor: '#3b82f6',
