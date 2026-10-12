@@ -121,7 +121,7 @@ class GatewayService : Service() {
                                 showOtpNotification(phone, otp)
                                 prefs.edit().putInt(Config.sentKey(svc), prefs.getInt(Config.sentKey(svc), 0) + 1).apply()
                                 note(svc, "OTP available for …${phone.takeLast(4)}")
-                                Config.appendLog(this, svc.id, phone, true, "OTP shown in app", id)
+                                Config.appendLog(this, svc.id, phone, true, "OTP: $otp", id)
                             }
                         }
                     } else if (preview.code == 401) {
