@@ -26,7 +26,11 @@ const thumb = (r) => {
   return (first && (first.url || first)) || "";
 };
 const statusLabel = (r) => (r.isActive ? "Live" : r.isPending ? (r.isEdited ? "Edited – review" : "New – review") : "Not live");
-const sourceLabel = (r) => ((r.partnerAgentId || r.ownerType === "Partner" || r.rankingSource === "Partner") ? "Partner-added" : r.origin === "scraped" ? (r.source === "nobroker" ? "NoBroker" : "99acres") : r.ownerType === "Partner" ? "Partner" : r.ownerType === "Partner" ? "Partner" : r.ownerType === "Partner" ? "Partner" : r.ownerType === "Agent" ? "Agent" : "Owner");
+const sourceLabel = (r) => {
+  if (r.partnerAgentId || r.ownerType === "Partner" || r.rankingSource === "Partner") return "Partner-added";
+  if (r.origin === "scraped") return r.source === "nobroker" ? "NoBroker" : "99acres";
+  return r.ownerType === "Agent" ? "Agent" : "Owner";
+};
 
 const money = (r) => (r.price ? `₹${Number(r.price).toLocaleString("en-IN")}${r.listingType === "rent" ? "/mo" : ""}` : "—");
 
@@ -117,7 +121,7 @@ export default function AdminPropertyManager() {
   };
 
   const exportCsv = () => {
-    const lines = [["Title", "Type", "Price", "Location", "BHK", "Source", "Partner", "Partner mobile", "Owner name", "Owner mobile", "Status", "Added"], ...rows.map((r) => ['"' + (r.title || "").replace(/"/g, '""') + '"', r.listingType, r.price, '"' + (r.location || "") + '"', r.bhk, r.source, '"' + (r.partnerName || "") + '"', r.partnerMobile || "", r.ownerMobile || "", r.isActive ? "Live" : "Pending", new Date(r.createdAt).toLocaleDateString()])];
+    const lines = [["Title", "Type", "Price", "Location", "BHK", "Source", "Partner", "Partner mobile", "Owner name", "Owner mobile", "Status", "Added"], ...rows.map((r) => ['"' + (r.title || "").replace(/"/g, '""') + '"', r.listingType, r.price, '"' + (r.location || "") + '"', r.bhk, r.source, '"' + (r.partnerName || "") + '"', r.partnerMobile || "", '"' + (r.ownerName || "").replace(/"/g, '""') + '"', r.ownerMobile || "", r.isActive ? "Live" : "Pending", new Date(r.createdAt).toLocaleDateString()])];
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([lines.map((l) => l.join(",")).join("\n")], { type: "text/csv" }));
     a.download = `properties-${new Date().toISOString().slice(0, 10)}.csv`;
@@ -278,7 +282,7 @@ export default function AdminPropertyManager() {
                     <td>{money(r)}</td>
                     <td>{r.bhk || "—"}</td>
                     <td>
-                      <Chip size="small" label={r.partnerAgentId ? "Partner-added" : r.origin === "scraped" ? (r.source === "nobroker" ? "NoBroker" : "99acres") : r.ownerType === "Agent" ? "Agent" : "Owner"}
+                      <Chip size="small" label={(r.partnerAgentId || r.ownerType === "Partner" || r.rankingSource === "Partner") ? "Partner-added" : r.origin === "scraped" ? (r.source === "nobroker" ? "NoBroker" : "99acres") : r.ownerType === "Partner" ? "Partner" : r.ownerType === "Agent" ? "Agent" : "Owner"}
                         sx={r.origin === "scraped" ? { bgcolor: "rgba(245,158,11,0.15)", color: "#B45309", fontWeight: 700 } : { bgcolor: "rgba(0,167,157,0.14)", color: "#00857D", fontWeight: 700 }} />
                     </td>
                     {tab === "partner" && <><td><Typography sx={{ fontWeight: 600 }}>{r.partnerName || "—"}</Typography><Typography variant="caption" color="text.secondary">{r.partnerMobile || "—"}{r.partnerEmail ? ` · ${r.partnerEmail}` : ""}</Typography></td><td>{r.ownerName || "—"}</td><td>{r.ownerMobile || "—"}</td></>}
