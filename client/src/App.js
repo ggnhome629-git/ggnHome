@@ -206,6 +206,7 @@ function App() {
       {/* AgentHub Portal Routes (Professional agent portal) */}
       <Route path="/partner/dashboard" element={<PartnerHubProtectedRoute element={<PartnerHubDashboard />} />} />
       <Route path="/partner/properties" element={<PartnerHubProtectedRoute element={<PartnerHubProperties />} />} />
+      <Route path="/partner/properties/add" element={<PartnerHubProtectedRoute element={<PartnerPropertyAdd />} />} />
       <Route path="/partner/leads" element={<PartnerHubProtectedRoute element={<PartnerHubLeads />} />} />
       <Route path="/partner/profile" element={<PartnerHubProtectedRoute element={<PartnerHubProfile />} />} />
 
