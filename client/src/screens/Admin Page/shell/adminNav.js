@@ -3,6 +3,7 @@ import {
   Settings,
   ClipboardList,
   CreditCard,
+  Download,
   Gift,
   Gauge,
   SlidersHorizontal,
@@ -88,6 +89,7 @@ export const ADMIN_NAV = [
     items: [
       { id: "usage", label: "Usage & Limits", route: "/admin/usagetrack", icon: Gauge },
       { id: "feature-toggles", label: "Feature Control", route: "/admin/feature-toggles", icon: SlidersHorizontal },
+      { id: "app-downloads", label: "App Downloads", route: "/admin/app-downloads", icon: Download },
       { id: "settings", label: "Settings", route: "/admin/settings", icon: Settings },
     ],
   },
