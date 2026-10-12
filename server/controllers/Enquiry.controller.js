@@ -17,7 +17,7 @@ const createEnquiry = async (req, res) => {
   const { propertyId, message, brokerage } = req.body;
   const user = req.user || null;
   const submittedName = String(req.body.customerName || req.body.name || user?.name || user?.fullName || "").trim().slice(0, 120);
-  const submittedMobile = String(req.body.customerMobile || req.body.phone || user?.mobileNumber || "").replace(/\\D/g, "").slice(-10);
+  const submittedMobile = String(req.body.customerMobile || req.body.phone || user?.mobileNumber || "").replace(/\D/g, "").slice(-10);
 
   try {
     if (
@@ -31,7 +31,7 @@ const createEnquiry = async (req, res) => {
       });
     }
 
-    if (!submittedName || !/^[6-9]\\d{9}$/.test(submittedMobile)) {
+    if (!submittedName || !/^[6-9]\d{9}$/.test(submittedMobile)) {
       return res.status(400).json({ success: false, message: "Customer name and a valid 10-digit mobile number are required." });
     }
 
