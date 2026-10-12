@@ -200,7 +200,7 @@ export default function PropertyPostForm({
 
   const initialDraft = useRef(readDraft(draftKey)).current;
   const [f, setF] = useState(() => {
-    if (initialDraft) return { ...INITIAL, ...initialDraft.f };
+    if (initialDraft) return { ...INITIAL, ...initialDraft.f, partnerRequired: mode === "partner" };
     const q = new URLSearchParams(location.search).get("purpose");
     const purpose = /^sale|sell$/i.test(q || "") ? "Sale" : /^rent$/i.test(q || "") ? "Rent" : "";
     return { ...INITIAL, purpose };
