@@ -158,7 +158,7 @@ const PartnerHubDashboard = () => {
             <Button
               variant="contained"
               startIcon={<Plus size={20} />}
-              onClick={() => navigate('/partner/properties?action=add')}
+              onClick={() => navigate('/partner/properties/add')}
               fullWidth
               sx={{
                 backgroundColor: '#3b82f6',
