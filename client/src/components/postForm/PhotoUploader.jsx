@@ -11,7 +11,7 @@ const MAX_BYTES = 5 * 1024 * 1024;
  * value: [{ id, file, url }]. Files are checked here (type, 5 MB, max count)
  * so nothing invalid ever reaches the upload.
  */
-export default function PhotoUploader({ value, onChange, max = 8, privacyNotice, tips }) {
+export default function PhotoUploader({ value, onChange, max = 8, privacyNotice, tips, categoryMode = false }) {
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const [problems, setProblems] = useState([]);
