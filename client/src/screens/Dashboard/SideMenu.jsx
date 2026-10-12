@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { PostPropertyIcon, PostRoomIcon } from '../../components/ui/PostActionIcon';
 import { User, X, ChevronRight, Home, Key, Building, Users, TrendingUp, Lightbulb, FileText, HelpCircle, Smartphone, Search, Sparkles, Scale, Calculator, MapPin, DollarSign } from 'lucide-react';
 const ad1 = process.env.PUBLIC_URL + "/Ad/ad1.jpg";
 const ad2 = process.env.PUBLIC_URL + "/Ad/ad2.jpg";
@@ -15,7 +16,7 @@ export default function SideMenuBar({ currentUser, onLoginClick, onPost, postLab
 
   const menuSections = [{title: null, items: [{icon: User, label: currentUser
     ? (currentUser.mobileNumber || currentUser.email || 'User')
-    : 'LOGIN / REGISTER', color: '#0066FF', special: true, onClick: !currentUser ? onLoginClick : undefined}]}, {title: 'Quick Actions', items: [{icon: Home, label: postLabel, color: '#00A79D', badge: 'FREE', onClick: post}, {icon: Sparkles, label: 'AI Search', color: '#22D3EE', badge: 'NEW', link: '/AIassistant'}, {icon: Scale, label: 'Legal Laws', color: '#4A6A8A', onClick: () => {
+    : 'LOGIN / REGISTER', color: '#0066FF', special: true, onClick: !currentUser ? onLoginClick : undefined}]}, {title: 'Quick Actions', items: [{icon: postLabel.toLowerCase().includes('room') ? PostRoomIcon : PostPropertyIcon, label: postLabel, color: '#00A79D', badge: 'FREE', onClick: post}, {icon: Sparkles, label: 'AI Search', color: '#22D3EE', badge: 'NEW', link: '/AIassistant'}, {icon: Scale, label: 'Legal Laws', color: '#4A6A8A', onClick: () => {
     const el = document.getElementById('news');
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -144,7 +145,7 @@ export default function SideMenuBar({ currentUser, onLoginClick, onPost, postLab
                 };
                 return (<div key={key} onMouseEnter={() => setHoveredItem(key)} onMouseLeave={() => setHoveredItem(null)} onClick={handleClick} style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 12px', margin: '4px 0', borderRadius: '10px', cursor: item.onClick || item.link ? 'pointer' : 'default', transition: 'all 0.3s ease', backgroundColor: hoveredItem === key ? '#F4F7F9' : 'transparent', transform: hoveredItem === key ? 'translateX(4px)' : 'translateX(0)', borderLeft: hoveredItem === key ? '3px solid #00A79D' : '3px solid transparent'}}>
                     <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                      <div style={{width: '36px', height: '6px', borderRadius: '8px', backgroundColor: item.special ? '#0066FF15' : item.color ? `${item.color}15` : '#4A6A8A15', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', transform: hoveredItem === key ? 'rotate(5deg) scale(1.1)' : 'rotate(0) scale(1)'}}><Icon size={20} color={item.special ? '#0066FF' : item.color || '#4A6A8A'} /></div>
+                      <div style={{width: '36px', height: '36px', borderRadius: '8px', backgroundColor: item.special ? '#0066FF15' : item.color ? `${item.color}15` : '#4A6A8A15', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', transform: hoveredItem === key ? 'rotate(5deg) scale(1.1)' : 'rotate(0) scale(1)'}}><Icon size={20} color={item.special ? '#0066FF' : item.color || '#4A6A8A'} /></div>
                       <span style={{fontSize: '15px', fontWeight: item.special ? '700' : '500', color: item.special ? '#0066FF' : '#333333'}}>{item.label}</span>
                       {item.badge && <span style={{padding: '3px 8px', backgroundColor: item.badge === 'NEW' ? '#22D3EE' : '#00A79D', color: '#FFFFFF', borderRadius: '6px', fontSize: '10px', fontWeight: '700'}}>{item.badge}</span>}
                     </div>
