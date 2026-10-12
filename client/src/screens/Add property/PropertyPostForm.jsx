@@ -876,6 +876,13 @@ export default function PropertyPostForm({
               ...(mode === "partner" ? [["Contact mobile", f.partnerMobile]] : []),
             ]}
           />
+          {mode === "partner" && (
+            <SummaryBlock
+              title="Nearby Amenities"
+              onEdit={() => goTo(STEP.location)}
+              rows={nearbyAmenities.map((item) => [item.label, item.name ? `${item.name}${item.distance ? ` · approx. ${item.distance} m` : ""}` : ""])}
+            />
+          )}
           <SummaryBlock
             title="Property Profile"
             onEdit={() => goTo(STEP.profile)}
