@@ -6,7 +6,7 @@ const EnquirySchema = new mongoose.Schema({
   propertyAddress: { type: String, required: true }, // store essential info
   propertyPrice: { type: Number, required: true },   // store essential info
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  userEmail: { type: String, required: true },
+  userEmail: { type: String, default: "" },
   userMobile: { type: String, required: true },
   customerName: { type: String, trim: true, default: "Customer" },
   ownerName: { type: String, trim: true, default: "" },
