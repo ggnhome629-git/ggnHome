@@ -75,6 +75,8 @@ export const INITIAL = {
   title: "",
   description: "",
   ownerMobile: "",
+  partnerMobile: "",
+  cornerPosition: "not_sure",
   // Admin-only rental extras (the admin form has always collected these).
   layoutFeatures: "",
   outdoorSpace: "",
