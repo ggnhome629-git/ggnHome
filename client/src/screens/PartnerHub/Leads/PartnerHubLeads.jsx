@@ -1,159 +1,130 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Typography, Chip, Button, Stack, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Skeleton } from '@mui/material';
-import { MessageSquare, Phone, CheckCircle, Clock } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  Alert, Box, Button, Chip, Container, Paper, Skeleton, Stack,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography,
+} from "@mui/material";
+import { RefreshCw, Search, Users, MessageSquare } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const PartnerHubLeads = () => {
+export default function PartnerHubLeads() {
   const navigate = useNavigate();
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all');
-  const [selectedLead, setSelectedLead] = useState(null);
-  const [openDialog, setOpenDialog] = useState(false);
-  const [responseText, setResponseText] = useState('');
-  const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0 });
+  const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState({ total: 0, totalPages: 1 });
+  const limit = 20;
 
-  useEffect(() => {
-    fetchLeads();
-  }, [filter, pagination.page]);
-
-  const fetchLeads = async () => {
+  const fetchLeads = useCallback(async () => {
+    setLoading(true);
+    setError("");
     try {
-      const token = localStorage.getItem('partnerAccessToken');
+      const token = localStorage.getItem("partnerAccessToken");
       if (!token) {
-        navigate('/partner/login');
+        navigate("/partner/login");
         return;
       }
-
-      setLoading(true);
-      const params = new URLSearchParams({
-        page: pagination.page,
-        limit: pagination.limit,
-        status: filter === 'all' ? 'all' : filter,
-      });
-
-      const res = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/partner/leads?${params}`,
-        {
-          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-          credentials: 'include',
-        }
+      const response = await fetch(
+        `${process.env.REACT_APP_Base_API}/api/partner/leads/preferences?page=${page}&limit=${limit}`,
+        { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, credentials: "include" }
       );
-
-      if (!res.ok) {
-        if (res.status === 401) navigate('/partner/login');
-        throw new Error('Failed to fetch leads');
-      }
-
-      const data = await res.json();
-      setLeads(data.enquiries || []);
-      setPagination(prev => ({ ...prev, ...data.pagination }));
+      if (!response.ok) throw new Error("Could not load preference leads. Please refresh and try again.");
+      const payload = await response.json();
+      setLeads(payload.data || []);
+      setMeta({ total: payload.meta?.total || 0, totalPages: payload.meta?.totalPages || 1 });
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "Could not load leads.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate, page]);
 
-  const handleUpdateStatus = async (leadId) => {
-    try {
-      const token = localStorage.getItem('partnerAccessToken');
-      const res = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/partner/leads/${leadId}/status`,
-        {
-          method: 'PATCH',
-          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ responded: true, response: responseText }),
-        }
-      );
-
-      if (!res.ok) throw new Error('Failed to update status');
-      setOpenDialog(false);
-      setResponseText('');
-      fetchLeads();
-    } catch (err) {
-      console.error('Error:', err);
-    }
-  };
-
-  const maskPhone = (phone) => phone ? phone.replace(/(\d{2})(\d{2})/, 'xx$2') : 'N/A';
-
-  if (error) return <Container sx={{ py: 4 }}><Typography color="error">{error}</Typography></Container>;
+  useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: '#0f172a', mb: 1 }}>Leads & Enquiries</Typography>
-        <Typography variant="body2" sx={{ color: '#6b7280' }}>Manage all customer inquiries for your properties</Typography>
-      </Box>
-
-      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 4 }}>
-        <Paper sx={{ flex: 1, p: 3, borderRadius: '12px', backgroundColor: filter === 'all' ? '#eff6ff' : '#fff', cursor: 'pointer', borderLeft: filter === 'all' ? '4px solid #3b82f6' : '1px solid #e5e7eb' }} onClick={() => setFilter('all')}>
-          <Stack direction="row" spacing={2} alignItems="center">
-            <MessageSquare size={24} color="#3b82f6" />
-            <Box><Typography variant="caption" sx={{ color: '#6b7280' }}>Total Leads</Typography><Typography variant="h6" sx={{ fontWeight: 700 }}>{pagination.total}</Typography></Box>
-          </Stack>
-        </Paper>
-        <Paper sx={{ flex: 1, p: 3, borderRadius: '12px', backgroundColor: filter === 'new' ? '#fef3c7' : '#fff', cursor: 'pointer', borderLeft: filter === 'new' ? '4px solid #f59e0b' : '1px solid #e5e7eb' }} onClick={() => setFilter('new')}>
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Clock size={24} color="#f59e0b" />
-            <Box><Typography variant="caption" sx={{ color: '#6b7280' }}>New Leads</Typography><Typography variant="h6" sx={{ fontWeight: 700 }}>{leads.filter(l => !l.responded).length}</Typography></Box>
-          </Stack>
-        </Paper>
-        <Paper sx={{ flex: 1, p: 3, borderRadius: '12px', backgroundColor: filter === 'responded' ? '#d1fae5' : '#fff', cursor: 'pointer', borderLeft: filter === 'responded' ? '4px solid #10b981' : '1px solid #e5e7eb' }} onClick={() => setFilter('responded')}>
-          <Stack direction="row" spacing={2} alignItems="center">
-            <CheckCircle size={24} color="#10b981" />
-            <Box><Typography variant="caption" sx={{ color: '#6b7280' }}>Responded</Typography><Typography variant="h6" sx={{ fontWeight: 700 }}>{leads.filter(l => l.responded).length}</Typography></Box>
-          </Stack>
-        </Paper>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems={{ md: "center" }} spacing={2} sx={{ mb: 3 }}>
+        <Box>
+          <Typography variant="h4" sx={{ fontWeight: 800, color: "#0f172a" }}>Leads</Typography>
+          <Typography variant="body2" sx={{ color: "#64748b", mt: 0.5 }}>
+            AI Assistant property search and customer requirements submitted through the User Preference Form.
+          </Typography>
+        </Box>
+        <Stack direction="row" spacing={1} flexWrap="wrap">
+          <Button variant="contained" startIcon={<Search size={16} />} onClick={() => navigate("/AIassistant")} sx={{ textTransform: "none" }}>
+            Open AI Assistant
+          </Button>
+          <Button variant="outlined" startIcon={<MessageSquare size={16} />} onClick={() => navigate("/partner/enquiries")} sx={{ textTransform: "none" }}>
+            All Enquiries
+          </Button>
+          <Button variant="outlined" startIcon={<RefreshCw size={16} />} onClick={fetchLeads} sx={{ textTransform: "none" }}>
+            Refresh
+          </Button>
+        </Stack>
       </Stack>
 
-      <TableContainer component={Paper} sx={{ borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" }, gap: 2, mb: 3 }}>
+        <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Search size={22} color="#0d9488" />
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>AI Assistant Search</Typography>
+              <Typography variant="body2" color="text.secondary">Open the property-search assistant to explore buyer and tenant requirements.</Typography>
+            </Box>
+          </Stack>
+          <Button onClick={() => navigate("/AIassistant")} sx={{ mt: 1.5, textTransform: "none" }}>Launch search assistant</Button>
+        </Paper>
+        <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Users size={22} color="#2563eb" />
+            <Box>
+              <Typography variant="subtitle2" sx={{ fontWeight: 800 }}>User Preference Form Leads</Typography>
+              <Typography variant="body2" color="text.secondary">Customer-submitted location, budget, BHK and move-in requirements.</Typography>
+              <Typography variant="h5" sx={{ fontWeight: 800, mt: 0.5 }}>{meta.total}</Typography>
+            </Box>
+          </Stack>
+        </Paper>
+      </Box>
+
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}>
         <Table>
-          <TableHead sx={{ backgroundColor: '#f9fafb' }}>
+          <TableHead sx={{ bgcolor: "#f8fafc" }}>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700 }}>Customer</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Contact</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Property</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Message</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Date</TableCell>
-              <TableCell sx={{ fontWeight: 700 }}>Action</TableCell>
+              {["Customer", "Mobile", "Preferred Location", "Budget", "BHK / Type", "Furnishing", "Move-in", "Status", "Submitted"].map((label) => (
+                <TableCell key={label} sx={{ fontWeight: 800, whiteSpace: "nowrap" }}>{label}</TableCell>
+              ))}
             </TableRow>
           </TableHead>
           <TableBody>
-            {loading ? Array.from({ length: 5 }).map((_, i) => <TableRow key={i}>{Array.from({ length: 7 }).map((_, j) => <TableCell key={j}><Skeleton variant="text" /></TableCell>)}</TableRow>)
-              : leads.length === 0 ? <TableRow><TableCell colSpan={7} align="center" sx={{ py: 4 }}><Typography color="textSecondary">No leads found</Typography></TableCell></TableRow>
-              : leads.map(lead => (
-                <TableRow key={lead._id} sx={{ '&:hover': { backgroundColor: '#f9fafb' } }}>
-                  <TableCell sx={{ fontWeight: 600 }}>{lead.name}</TableCell>
-                  <TableCell><Stack spacing={0.5}><Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}><Phone size={14} />{maskPhone(lead.mobile)}</Typography><Typography variant="caption" sx={{ color: '#6b7280' }}>{lead.email || 'No email'}</Typography></Stack></TableCell>
-                  <TableCell><Typography variant="body2" sx={{ color: '#3b82f6', fontWeight: 600 }}>{lead.propertyId?.title || 'Property'}</Typography><Typography variant="caption" sx={{ color: '#6b7280' }}>{lead.propertyId?.Sector}</Typography></TableCell>
-                  <TableCell><Typography variant="body2" sx={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis' }}>{lead.message || 'No message'}</Typography></TableCell>
-                  <TableCell><Chip label={lead.responded ? 'Responded' : 'New'} size="small" sx={{ backgroundColor: lead.responded ? '#d1fae5' : '#fee2e2', color: lead.responded ? '#065f46' : '#991b1b', fontWeight: 600 }} /></TableCell>
-                  <TableCell><Typography variant="caption" sx={{ color: '#6b7280' }}>{new Date(lead.createdAt).toLocaleDateString('en-IN')}</Typography></TableCell>
-                  <TableCell>{!lead.responded && <Button size="small" startIcon={<MessageSquare size={14} />} onClick={() => { setSelectedLead(lead); setOpenDialog(true); }} sx={{ color: '#3b82f6', fontWeight: 600, textTransform: 'none' }}>Respond</Button>}</TableCell>
-                </TableRow>
-              ))}
+            {loading
+              ? Array.from({ length: 5 }).map((_, i) => <TableRow key={i}>{Array.from({ length: 9 }).map((__, j) => <TableCell key={j}><Skeleton /></TableCell>)}</TableRow>)
+              : leads.length === 0
+                ? <TableRow><TableCell colSpan={9} align="center" sx={{ py: 6 }}><Typography color="text.secondary">No preference-form leads found.</Typography></TableCell></TableRow>
+                : leads.map((lead) => (
+                  <TableRow key={lead._id} hover>
+                    <TableCell sx={{ fontWeight: 700 }}>{lead.userName || "Customer"}</TableCell>
+                    <TableCell sx={{ whiteSpace: "nowrap" }}>{lead.mobileNumber || "—"}</TableCell>
+                    <TableCell>{lead.preferredLocation || "—"}</TableCell>
+                    <TableCell>{lead.budgetRange || "—"}</TableCell>
+                    <TableCell>{[lead.bhkSize, lead.propertyType].filter(Boolean).join(" · ") || "—"}</TableCell>
+                    <TableCell>{lead.furnishingLevel || "—"}</TableCell>
+                    <TableCell>{lead.moveInDate || "Flexible / not set"}</TableCell>
+                    <TableCell><Chip size="small" label={lead.status || "ACTIVE"} color={lead.status === "INACTIVE" ? "default" : "success"} /></TableCell>
+                    <TableCell sx={{ whiteSpace: "nowrap" }}>{lead.createdAt ? new Date(lead.createdAt).toLocaleDateString("en-IN") : "—"}</TableCell>
+                  </TableRow>
+                ))}
           </TableBody>
         </Table>
       </TableContainer>
 
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700 }}>Respond to {selectedLead?.name}</DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          <Typography variant="body2" sx={{ color: '#6b7280', mb: 2 }}>Property: {selectedLead?.propertyId?.title}</Typography>
-          <TextField fullWidth multiline rows={4} label="Your Response" value={responseText} onChange={(e) => setResponseText(e.target.value)} placeholder="Type your response here..." sx={{ mb: 2 }} />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button variant="contained" onClick={() => handleUpdateStatus(selectedLead._id)} disabled={!responseText} sx={{ backgroundColor: '#3b82f6' }}>Send Response</Button>
-        </DialogActions>
-      </Dialog>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 2 }}>
+        <Typography variant="body2" color="text.secondary">Page {page} of {meta.totalPages}</Typography>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" disabled={page <= 1 || loading} onClick={() => setPage((p) => Math.max(1, p - 1))}>Previous</Button>
+          <Button variant="outlined" disabled={page >= meta.totalPages || loading} onClick={() => setPage((p) => Math.min(meta.totalPages, p + 1))}>Next</Button>
+        </Stack>
+      </Stack>
     </Container>
   );
-};
-
-export default PartnerHubLeads;
+}
