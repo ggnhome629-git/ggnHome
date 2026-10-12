@@ -1,9 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * Browser speech recognition + synthesis with every failure mode surfaced as a
- * state the UI can explain. Text input always keeps working; nothing here is
- * required for the consultant to function.
+ * Browser speech recognition + synthesis for hands-free use.
+ *
+ * - One recognition object is created once and reused, so turning the mic on
+ *   is instant (no re-creation, no second audio stream for a meter).
+ * - The final transcript is delivered the moment the browser marks it final,
+ *   instead of waiting for the end-of-session timeout.
+ * - Every failure is reported as a code the UI can explain. Typing always
+ *   keeps working; nothing here is required for the consultant to function.
  *
  * Note: browser speech services may send audio to the browser vendor and are
  * not guaranteed to work offline.
@@ -13,164 +18,165 @@ const Recognition = typeof window !== "undefined" ? window.SpeechRecognition || 
 export function useSpeechRecognition({ lang = "en-IN", onFinal, onError } = {}) {
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
-  const [level, setLevel] = useState(0);
   const recRef = useRef(null);
-  const finalRef = useRef("");
-  const audioRef = useRef({ ctx: null, stream: null, raf: 0 });
+  const activeRef = useRef(false);
+  const deliveredRef = useRef(false);
+  const handlers = useRef({ onFinal, onError });
+  handlers.current = { onFinal, onError };
   const supported = Boolean(Recognition);
 
-  const stopMeter = useCallback(() => {
-    const a = audioRef.current;
-    cancelAnimationFrame(a.raf);
-    if (a.stream) a.stream.getTracks().forEach((t) => t.stop());
-    if (a.ctx) a.ctx.close().catch(() => {});
-    audioRef.current = { ctx: null, stream: null, raf: 0 };
-    setLevel(0);
-  }, []);
-
-  // A lightweight input-level meter so the waveform reacts to the user's voice.
-  const startMeter = useCallback(async () => {
-    try {
-      // Mobile browsers can't share the mic between recognition and a meter.
-      if (!navigator.mediaDevices?.getUserMedia || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)) return;
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) {
-        stream.getTracks().forEach((t) => t.stop());
+  // Build the recognizer once.
+  useEffect(() => {
+    if (!supported) return undefined;
+    const rec = new Recognition();
+    rec.interimResults = true;
+    rec.continuous = false;
+    rec.maxAlternatives = 1;
+    rec.onstart = () => {
+      activeRef.current = true;
+      deliveredRef.current = false;
+      setListening(true);
+      setInterim("");
+    };
+    rec.onresult = (event) => {
+      let text = "";
+      let final = "";
+      for (let i = 0; i < event.results.length; i += 1) {
+        const r = event.results[i];
+        if (r.isFinal) final += r[0].transcript;
+        else text += r[0].transcript;
+      }
+      if (final.trim() && !deliveredRef.current) {
+        // Deliver immediately and close the mic — no waiting for silence timeout.
+        deliveredRef.current = true;
+        setInterim(final.trim());
+        try {
+          rec.stop();
+        } catch (_) {
+          // already stopping
+        }
+        handlers.current.onFinal && handlers.current.onFinal(final.trim());
         return;
       }
-      const ctx = new AC();
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 256;
-      ctx.createMediaStreamSource(stream).connect(analyser);
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      const tick = () => {
-        analyser.getByteFrequencyData(data);
-        let sum = 0;
-        for (let i = 0; i < data.length; i += 1) sum += data[i];
-        setLevel(Math.min(1, sum / data.length / 90));
-        audioRef.current.raf = requestAnimationFrame(tick);
-      };
-      audioRef.current = { ctx, stream, raf: requestAnimationFrame(tick) };
-    } catch (_) {
-      // Meter is decorative; recognition reports real permission errors.
-    }
-  }, []);
+      setInterim((final + text).trim());
+    };
+    rec.onerror = (event) => {
+      const map = { "not-allowed": "denied", "service-not-allowed": "denied", "audio-capture": "denied", "no-speech": "noSpeech", network: "network", aborted: null };
+      const code = map[event.error] !== undefined ? map[event.error] : "failed";
+      if (code && handlers.current.onError) handlers.current.onError(code);
+    };
+    rec.onend = () => {
+      activeRef.current = false;
+      setListening(false);
+    };
+    recRef.current = rec;
+    return () => {
+      try {
+        rec.abort();
+      } catch (_) {
+        // ignore
+      }
+      recRef.current = null;
+    };
+  }, [supported]);
 
   const stop = useCallback(() => {
+    if (!recRef.current || !activeRef.current) return;
     try {
-      recRef.current && recRef.current.stop();
+      recRef.current.abort();
     } catch (_) {
-      // already stopped
+      // ignore
     }
   }, []);
 
   const start = useCallback(() => {
-    if (!supported) {
-      onError && onError("unsupported");
-      return;
+    if (!supported || !recRef.current) {
+      handlers.current.onError && handlers.current.onError("unsupported");
+      return false;
     }
-    if (listening) {
-      stop();
-      return;
-    }
+    if (activeRef.current) return true;
     try {
       window.speechSynthesis && window.speechSynthesis.cancel();
     } catch (_) {
       // ignore
     }
-    const rec = new Recognition();
-    rec.lang = lang;
-    rec.interimResults = true;
-    rec.continuous = false;
-    rec.maxAlternatives = 1;
-    finalRef.current = "";
-    rec.onstart = () => {
-      setListening(true);
-      setInterim("");
-      startMeter();
-    };
-    rec.onresult = (event) => {
-      let text = "";
-      let final = "";
-      for (let i = event.resultIndex; i < event.results.length; i += 1) {
-        const r = event.results[i];
-        if (r.isFinal) final += r[0].transcript;
-        else text += r[0].transcript;
-      }
-      if (final) finalRef.current += final;
-      setInterim((finalRef.current + text).trim());
-    };
-    rec.onerror = (event) => {
-      const map = { "not-allowed": "denied", "service-not-allowed": "denied", "no-speech": "noSpeech", network: "network", "audio-capture": "denied", aborted: null };
-      const code = map[event.error] !== undefined ? map[event.error] : "failed";
-      if (code && onError) onError(code);
-    };
-    rec.onend = () => {
-      setListening(false);
-      stopMeter();
-      const text = finalRef.current.trim();
-      if (text && onFinal) onFinal(text);
-      finalRef.current = "";
-    };
-    recRef.current = rec;
+    recRef.current.lang = lang;
     try {
-      rec.start();
+      recRef.current.start();
+      activeRef.current = true;
+      return true;
     } catch (_) {
-      onError && onError("failed");
+      // InvalidStateError: still shutting down from the last session — retry on the next tick.
+      setTimeout(() => {
+        try {
+          recRef.current && recRef.current.start();
+        } catch (__) {
+          handlers.current.onError && handlers.current.onError("failed");
+        }
+      }, 120);
+      return true;
     }
-  }, [supported, listening, lang, onFinal, onError, startMeter, stopMeter, stop]);
+  }, [supported, lang]);
 
-  useEffect(
-    () => () => {
-      try {
-        recRef.current && recRef.current.abort();
-      } catch (_) {
-        // ignore
-      }
-      stopMeter();
-    },
-    [stopMeter]
-  );
-
-  return { supported, listening, interim, level, start, stop, setInterim };
+  return { supported, listening, interim, level: listening ? 0.6 : 0, start, stop, setInterim };
 }
 
 export function useSpeechSynthesis() {
   const supported = typeof window !== "undefined" && "speechSynthesis" in window;
   const [speaking, setSpeaking] = useState(false);
+  const doneRef = useRef(null);
+
+  // Voices load asynchronously in Chrome; warm the list so the first reply isn't delayed.
+  useEffect(() => {
+    if (!supported) return undefined;
+    window.speechSynthesis.getVoices();
+    const warm = () => window.speechSynthesis.getVoices();
+    window.speechSynthesis.addEventListener?.("voiceschanged", warm);
+    return () => window.speechSynthesis.removeEventListener?.("voiceschanged", warm);
+  }, [supported]);
+
+  const finish = useCallback(() => {
+    setSpeaking(false);
+    const cb = doneRef.current;
+    doneRef.current = null;
+    if (cb) cb();
+  }, []);
 
   const cancel = useCallback(() => {
     if (!supported) return;
+    doneRef.current = null;
     window.speechSynthesis.cancel();
     setSpeaking(false);
   }, [supported]);
 
+  /** Speaks `text`; `onDone` runs when speech ends (or immediately if it can't speak). */
   const speak = useCallback(
-    (text, lang = "en-IN") => {
-      if (!supported || !text) return;
-      const clean = String(text)
+    (text, lang = "en-IN", onDone) => {
+      const clean = String(text || "")
         .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "")
         .replace(/₹/g, "rupees ")
         .replace(/\s+/g, " ")
         .trim()
         .slice(0, 320);
-      if (!clean) return;
+      if (!supported || !clean) {
+        if (onDone) onDone();
+        return;
+      }
       window.speechSynthesis.cancel();
+      doneRef.current = onDone || null;
       const u = new SpeechSynthesisUtterance(clean);
       u.lang = lang;
-      u.rate = 1.03;
-      u.pitch = 1;
+      u.rate = 1.08;
       const voices = window.speechSynthesis.getVoices();
       const prefix = lang.split("-")[0];
       const voice = voices.find((v) => v.lang === lang) || voices.find((v) => v.lang && v.lang.startsWith(prefix));
       if (voice) u.voice = voice;
       u.onstart = () => setSpeaking(true);
-      u.onend = () => setSpeaking(false);
-      u.onerror = () => setSpeaking(false);
+      u.onend = finish;
+      u.onerror = finish;
       window.speechSynthesis.speak(u);
     },
-    [supported]
+    [supported, finish]
   );
 
   useEffect(() => () => supported && window.speechSynthesis.cancel(), [supported]);

@@ -109,7 +109,7 @@ export default function PartnerAiLeads() {
     <Box sx={{ mb: 5 }}>
       <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ md: "center" }} sx={{ mb: 2 }}>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 1 }}>
-          <Box sx={{ width: 34, height: 34, borderRadius: "10px", display: "grid", placeItems: "center", background: "linear-gradient(135deg,#22d3ee,#3b82f6,#8b5cf6)", color: "#fff" }}>
+          <Box sx={{ width: 34, height: 34, borderRadius: "10px", display: "grid", placeItems: "center", background: "#0f766e", color: "#fff" }}>
             <Bot size={18} />
           </Box>
           <Box>

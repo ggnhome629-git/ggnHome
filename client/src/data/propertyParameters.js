@@ -9,15 +9,15 @@ import { GraduationCap, HeartPulse, LayoutGrid, ShoppingBag, ShoppingBasket, Tra
  * never road distances — always render them as "approx.".
  */
 export const NEARBY_PARAMETERS = [
-  { key: "market", label: "Nearest market", short: "Market", icon: ShoppingBasket, color: "#F59E0B", query: /market|supermarket|grocery|convenience|bazaar|mart/i },
-  { key: "metro", label: "Metro station", short: "Metro", icon: TrainFront, color: "#0EA5E9", query: /metro|subway/i },
-  { key: "hospital", label: "Hospital / clinic", short: "Hospital", icon: HeartPulse, color: "#EF4444", query: /hospital|clinic|medical/i },
-  { key: "school", label: "School", short: "School", icon: GraduationCap, color: "#2563EB", query: /school|college|university|academy/i },
-  { key: "park", label: "Park / garden", short: "Park", icon: Trees, color: "#10B981", query: /park|garden|playground/i },
-  { key: "mall", label: "Shopping mall", short: "Mall", icon: ShoppingBag, color: "#A855F7", query: /mall|shopping cent|department store/i },
+  { key: "market", label: "Nearest market", short: "Market", icon: ShoppingBasket, color: "#C98A1B", query: /market|supermarket|grocery|convenience|bazaar|mart/i },
+  { key: "metro", label: "Metro station", short: "Metro", icon: TrainFront, color: "#1F6F8B", query: /metro|subway/i },
+  { key: "hospital", label: "Hospital / clinic", short: "Hospital", icon: HeartPulse, color: "#B83A2B", query: /hospital|clinic|medical/i },
+  { key: "school", label: "School", short: "School", icon: GraduationCap, color: "#2B4C7E", query: /school|college|university|academy/i },
+  { key: "park", label: "Park / garden", short: "Park", icon: Trees, color: "#2F855A", query: /park|garden|playground/i },
+  { key: "mall", label: "Shopping mall", short: "Mall", icon: ShoppingBag, color: "#8E4E6B", query: /mall|shopping cent|department store/i },
 ];
 
-export const POSITION_PARAMETER = { key: "corner", label: "Corner or middle", short: "Position", icon: LayoutGrid, color: "#14B8A6" };
+export const POSITION_PARAMETER = { key: "corner", label: "Corner or middle", short: "Position", icon: LayoutGrid, color: "#0F766E" };
 
 export const PROPERTY_PARAMETERS = [...NEARBY_PARAMETERS, POSITION_PARAMETER];
 

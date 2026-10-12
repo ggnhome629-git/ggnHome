@@ -102,9 +102,9 @@ export default function SearchScanner({ response, criteria, tips = [], onDone })
 
       <div className="gai-stages">
         <h3>
-          <Sparkles size={16} color="#22d3ee" /> AI is finding your best matches
+          <Sparkles size={16} color="#c2562e" /> AI is finding your best matches
         </h3>
-        {criteria ? <div className="gai-code">› match({criteria})</div> : null}
+        {criteria ? <div className="gai-code">Looking for: {criteria}</div> : null}
         <div className="gai-bar" aria-hidden="true">
           <i style={{ width: `${Math.max(6, pct)}%` }} />
         </div>

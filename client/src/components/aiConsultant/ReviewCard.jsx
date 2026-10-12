@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
 
-const CONFETTI_COLORS = ["#22d3ee", "#3b82f6", "#8b5cf6", "#34d399", "#fbbf24", "#f472b6"];
+const CONFETTI_COLORS = ["#0f766e", "#c2562e", "#c98a1b", "#2f855a", "#003366", "#e8b4a0"];
 
 /** Summary → consent → submit, with an idempotent retry-safe submit and a success state. */
 export default function ReviewCard({ summary, contact, consentText, onEdit, onEditContact, onSubmit, submitting, error, success }) {
@@ -20,7 +20,7 @@ export default function ReviewCard({ summary, contact, consentText, onEdit, onEd
           ))}
         </div>
         <h3>
-          <CheckCircle2 size={22} color="#34d399" /> Request submitted
+          <CheckCircle2 size={22} color="#2f855a" /> Request submitted
         </h3>
         <p style={{ color: "var(--ai-muted)", margin: "6px 0 0" }}>A GgnHome expert will call you shortly. Keep this reference:</p>
         <span className="gai-ref">{success.leadRef}</span>
@@ -31,7 +31,7 @@ export default function ReviewCard({ summary, contact, consentText, onEdit, onEd
   return (
     <section className="gai-review" aria-label="Review your request">
       <h3>
-        <ShieldCheck size={18} color="#22d3ee" /> Review your request
+        <ShieldCheck size={18} color="#0f766e" /> Review your request
       </h3>
       <dl>
         {summary.map((row) => (
@@ -66,7 +66,7 @@ export default function ReviewCard({ summary, contact, consentText, onEdit, onEd
         <span>{consentText}</span>
       </label>
       {error ? (
-        <p role="alert" style={{ color: "#fca5a5", fontSize: 13, margin: "0 0 12px" }}>
+        <p role="alert" style={{ color: "#b83a2b", fontSize: 13, margin: "0 0 12px" }}>
           {error}
         </p>
       ) : null}

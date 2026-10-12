@@ -52,7 +52,7 @@ export default function AiLeadCard({ lead, children, contactHidden }) {
   return (
     <Box sx={{ p: { xs: 3, md: 4 }, borderRadius: "14px", border: "1px solid", borderColor: "divider", backgroundColor: "background.paper", boxShadow: "0 2px 10px rgba(0,51,102,0.05)" }}>
       <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mb: 2 }}>
-        <Box sx={{ width: 30, height: 30, borderRadius: "10px", display: "grid", placeItems: "center", background: "linear-gradient(135deg,#22d3ee,#3b82f6,#8b5cf6)", color: "#fff" }}>
+        <Box sx={{ width: 30, height: 30, borderRadius: "10px", display: "grid", placeItems: "center", background: "#0f766e", color: "#fff" }}>
           <Bot size={16} />
         </Box>
         <Typography sx={{ fontWeight: 800, fontFamily: "ui-monospace, Menlo, monospace" }}>{lead.leadRef}</Typography>

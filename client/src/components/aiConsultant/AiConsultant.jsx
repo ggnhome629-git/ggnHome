@@ -80,7 +80,15 @@ export default function AiConsultant({ open, onClose }) {
   const [selected, setSelected] = useState([]);
   const [busy, setBusy] = useState(false);
   const [input, setInput] = useState("");
-  const [voiceOut, setVoiceOut] = useState(false);
+  // Hands-free voice: the mic opens by itself after each reply (once spoken)
+  // and closes by itself when the user stops talking. Defaults on wherever
+  // the browser supports speech recognition.
+  const speechCapable = typeof window !== "undefined" && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+  const [handsFree, setHandsFree] = useState(speechCapable);
+  const [voiceOut, setVoiceOut] = useState(speechCapable);
+  const [speechPending, setSpeechPending] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const silenceRef = useRef(0);
   const [aiAvailable, setAiAvailable] = useState(null);
   const [review, setReview] = useState({ submitting: false, error: "", success: persisted?.success || null });
   const idemRef = useRef(persisted?.idem || null);
@@ -120,7 +128,15 @@ export default function AiConsultant({ open, onClose }) {
     (messages, speechLang) => {
       if (!voiceOut || !messages?.length) return;
       const last = [...messages].reverse().find((m) => m.text && m.kind !== "listing");
-      if (last) tts.speak(last.text, speechLang || "en-IN");
+      if (!last) return;
+      // Hold the mic closed until the reply has been read out, so it never hears itself.
+      setSpeechPending(true);
+      const release = () => setSpeechPending(false);
+      const safety = setTimeout(release, Math.min(14000, 1500 + String(last.text).length * 75));
+      tts.speak(last.text, speechLang || "en-IN", () => {
+        clearTimeout(safety);
+        release();
+      });
     },
     [voiceOut, tts]
   );
@@ -128,6 +144,7 @@ export default function AiConsultant({ open, onClose }) {
   /* -------------------------------------------------------- server I/O */
 
   const runSearchRef = useRef(null);
+  const searchingRef = useRef(false);
 
   const handleResponse = useCallback(
     (r) => {
@@ -163,7 +180,8 @@ export default function AiConsultant({ open, onClose }) {
         removeTyping();
         pushItems({ id: uid(), type: "bot", kind: "error", text: err.message, retry: message ? { message } : action ? { action } : null });
       } finally {
-        setBusy(false);
+        // A turn that kicked off a search stays busy until the results land.
+        if (!searchingRef.current) setBusy(false);
       }
     },
     [handleResponse, pushItems, removeTyping]
@@ -174,6 +192,7 @@ export default function AiConsultant({ open, onClose }) {
       const scanId = uid();
       setChips(null);
       pushItems({ id: scanId, type: "scanner", response: null, criteria: criteriaLine(ui?.summary), tips: [] });
+      searchingRef.current = true;
       setBusy(true);
       try {
         const r = await consultantApi.search(state, more);
@@ -181,6 +200,7 @@ export default function AiConsultant({ open, onClose }) {
       } catch (err) {
         setItems((prev) => prev.filter((it) => it.id !== scanId));
         pushItems({ id: uid(), type: "bot", kind: "error", text: err.message, retry: { search: true, more } });
+        searchingRef.current = false;
         setBusy(false);
       }
     },
@@ -207,6 +227,7 @@ export default function AiConsultant({ open, onClose }) {
       const withChips = [...(r.messages || [])].reverse().find((m) => Array.isArray(m.chips));
       setChips(withChips ? { list: withChips.chips, multi: false } : null);
       speakIfOn(r.messages, r.ui?.speechLang);
+      searchingRef.current = false;
       setBusy(false);
     },
     [speakIfOn]
@@ -232,6 +253,8 @@ export default function AiConsultant({ open, onClose }) {
       if (!text || busy) return;
       clearTimeout(autoSendRef.current);
       tts.cancel();
+      setSpeechPending(false);
+      setTyping(false);
       pushItems({ id: uid(), type: "user", text: display || text });
       setInput("");
       setChips(null);
@@ -321,17 +344,41 @@ export default function AiConsultant({ open, onClose }) {
   const recognition = useSpeechRecognition({
     lang: ui?.speechLang || "en-IN",
     onFinal: (text) => {
-      setInput(text);
+      // Sent the instant speech is final — no confirmation delay.
+      silenceRef.current = 0;
+      setVoiceNote("");
       consultantApi.metric("voice_input_used");
-      // Brief pause so the user can see (and correct) what was heard.
-      clearTimeout(autoSendRef.current);
-      autoSendRef.current = setTimeout(() => send(text), 900);
+      send(text);
     },
     onError: (code) => {
-      setVoiceNote(VOICE_COPY[code] || VOICE_COPY.failed);
+      if (code === "noSpeech") {
+        // Quietly reopen; after a few silent rounds, pause instead of listening forever.
+        silenceRef.current += 1;
+        if (silenceRef.current >= 3) {
+          setHandsFree(false);
+          setVoiceNote("Voice paused while you're away — tap the mic to keep talking.");
+        }
+        return;
+      }
+      setHandsFree(false);
+      setVoiceNote(code === "denied" ? "Tap the mic once to allow voice, or just type." : VOICE_COPY[code] || VOICE_COPY.failed);
       consultantApi.metric(code === "unsupported" ? "speech_unsupported" : code === "denied" ? "speech_denied" : "speech_failed");
     },
   });
+
+  // Mic on: whenever the assistant is idle, not speaking and the user isn't typing.
+  const reviewOpen = convState?.phase === "review";
+  const { start: micStart, stop: micStop, listening: micOn } = recognition;
+  useEffect(() => {
+    if (!open || !handsFree || busy || speechPending || tts.speaking || typing || reviewOpen || micOn) return undefined;
+    const t = setTimeout(micStart, 60);
+    return () => clearTimeout(t);
+  }, [open, handsFree, busy, speechPending, tts.speaking, typing, reviewOpen, micOn, micStart]);
+
+  // Mic off: the moment the assistant starts working or the user starts typing.
+  useEffect(() => {
+    if ((busy || typing || !open || !handsFree) && micOn) micStop();
+  }, [busy, typing, open, handsFree, micOn, micStop]);
 
   const toggleMic = () => {
     setVoiceNote("");
@@ -340,8 +387,18 @@ export default function AiConsultant({ open, onClose }) {
       consultantApi.metric("speech_unsupported");
       return;
     }
+    if (handsFree) {
+      setHandsFree(false);
+      recognition.stop();
+      return;
+    }
+    silenceRef.current = 0;
+    setTyping(false);
+    setHandsFree(true);
     if (!voiceOut && tts.supported) setVoiceOut(true);
-    recognition.start();
+    tts.cancel();
+    setSpeechPending(false);
+    recognition.start(); // inside the tap, so the browser can ask for mic permission
   };
 
   useEffect(() => {
@@ -396,7 +453,7 @@ export default function AiConsultant({ open, onClose }) {
             const Icon = p.icon;
             return (
               <div key={p.key} className={`gai-param${on ? " on" : ""}`} style={{ "--pc": p.color }}>
-                <Icon size={16} color={on ? p.color : "#5b6f8f"} />
+                <Icon size={16} color={on ? p.color : "#b5ab9d"} />
                 <div>
                   {p.short}
                   <small>{on ? (priorities[p.key] ? `≤ ${formatDistance(priorities[p.key])}` : "nearby") : "—"}</small>
@@ -405,7 +462,7 @@ export default function AiConsultant({ open, onClose }) {
             );
           })}
           <div className={`gai-param${wantCorner && wantCorner !== "any" ? " on" : ""}`} style={{ "--pc": POSITION_PARAMETER.color }}>
-            <PositionIcon size={16} color={wantCorner && wantCorner !== "any" ? POSITION_PARAMETER.color : "#5b6f8f"} />
+            <PositionIcon size={16} color={wantCorner && wantCorner !== "any" ? POSITION_PARAMETER.color : "#b5ab9d"} />
             <div>
               Position
               <small>{wantCorner ? (wantCorner === "any" ? "any" : wantCorner) : "—"}</small>
@@ -429,7 +486,7 @@ export default function AiConsultant({ open, onClose }) {
       maxWidth={false}
       aria-labelledby="gai-title"
       slotProps={{
-        backdrop: { sx: { backgroundColor: "rgba(2,6,16,0.72)", backdropFilter: "blur(8px)" } },
+        backdrop: { sx: { backgroundColor: "rgba(30,42,47,0.45)", backdropFilter: "blur(4px)" } },
         paper: {
           sx: {
             width: { sm: "min(1180px, 96vw)" },
@@ -438,21 +495,15 @@ export default function AiConsultant({ open, onClose }) {
             m: { xs: 0, sm: 2 },
             borderRadius: { xs: 0, sm: "26px" },
             overflow: "hidden",
-            backgroundColor: "#050914",
+            backgroundColor: "#faf7f2",
             backgroundImage: "none",
-            border: { sm: "1px solid rgba(148,197,255,0.18)" },
-            boxShadow: "0 40px 120px rgba(0,0,0,0.6), 0 0 0 1px rgba(34,211,238,0.06)",
+            border: { sm: "1px solid #e6ded2" },
+            boxShadow: "0 30px 80px rgba(30,42,47,0.28)",
           },
         },
       }}
     >
       <div className="gai-root">
-        <div className="gai-aurora" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
-        <div className="gai-grid" aria-hidden="true" />
 
         <header className="gai-header">
           <div className={`gai-orb${busy ? " thinking" : ""}`} aria-hidden="true">
@@ -588,7 +639,7 @@ export default function AiConsultant({ open, onClose }) {
                       {it.hint && i === lastBotIndex ? <span className="gai-hint">{it.hint}</span> : null}
                       {it.listing ? (
                         <span className="gai-hint">
-                          <a href={it.listing.url} target="_blank" rel="noopener noreferrer" style={{ color: "#67e8f9" }}>
+                          <a href={it.listing.url} target="_blank" rel="noopener noreferrer" style={{ color: "#0f766e", fontWeight: 600 }}>
                             Open listing ↗
                           </a>
                         </span>
@@ -632,8 +683,8 @@ export default function AiConsultant({ open, onClose }) {
               send(input);
             }}
           >
-            <button type="button" className={`gai-mic${recognition.listening ? " listening" : ""}${recognition.supported ? "" : " unsupported"}`} onClick={toggleMic} aria-pressed={recognition.listening} aria-label={recognition.listening ? "Stop listening" : "Speak your answer"} title={recognition.supported ? (recognition.listening ? "Stop listening" : "Speak") : "Voice not supported in this browser"}>
-              {recognition.supported ? <Mic size={22} /> : <MicOff size={20} />}
+            <button type="button" className={`gai-mic${recognition.listening ? " listening" : ""}${recognition.supported && handsFree ? "" : " unsupported"}`} onClick={toggleMic} aria-pressed={handsFree} aria-label={handsFree ? "Pause hands-free voice" : "Turn on hands-free voice"} title={!recognition.supported ? "Voice not supported in this browser" : handsFree ? "Hands-free voice is on — tap to pause" : "Tap to talk hands-free"}>
+              {recognition.supported && handsFree ? <Mic size={22} /> : <MicOff size={20} />}
             </button>
             <div className="gai-input-wrap">
               {recognition.listening && !input ? (
@@ -649,9 +700,10 @@ export default function AiConsultant({ open, onClose }) {
                 value={input}
                 onChange={(e) => {
                   clearTimeout(autoSendRef.current);
+                  setTyping(true);
                   setInput(e.target.value);
                 }}
-                onFocus={() => clearTimeout(autoSendRef.current)}
+                onKeyDown={() => setTyping(true)}
                 placeholder={recognition.listening ? "Listening…" : PLACEHOLDER[lang] || PLACEHOLDER.en}
                 aria-label="Message the AI consultant"
                 maxLength={600}
@@ -666,12 +718,12 @@ export default function AiConsultant({ open, onClose }) {
             </div>
           </form>
           {voiceNote ? (
-            <div role="alert" className="gai-composer-foot" style={{ color: "#fcd34d" }}>
+            <div role="alert" className="gai-composer-foot" style={{ color: "#8a5a12" }}>
               {voiceNote}
             </div>
           ) : null}
           <div className="gai-composer-foot">
-            <span>Speak or type in English, हिन्दी or Hinglish · change any answer anytime</span>
+            <span>{recognition.listening ? "Listening… just talk, I'll send it when you pause" : handsFree ? "Hands-free on — the mic opens by itself after each reply" : "Speak or type in English, हिन्दी or Hinglish · change any answer anytime"}</span>
             <span>Real listings only — never invented</span>
           </div>
         </footer>
