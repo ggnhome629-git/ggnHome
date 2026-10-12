@@ -10,6 +10,7 @@ const { verifyToken, verifyTokenOptional } = require("../middleware/auth");
 const { checkAdminEmail } = require("../middleware/adminOnly");
 const { getRecommendations } = require("../services/appRecommender");
 const { runPopularPush, runPersonalPush } = require("../jobs/popularPush");
+const { runSmartNotifications } = require("../services/smartNotifications");
 const push = require("../services/push");
 const Notification = require("../models/Notification.model");
 
@@ -35,7 +36,7 @@ router.post("/devices", appOnly, verifyTokenOptional, async (req, res) => {
       },
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
-    res.json({ success: true, popularPushes: doc.popularPushes, personalPushes: doc.personalPushes });
+    res.json({ success: true, popularPushes: doc.popularPushes, personalPushes: doc.personalPushes, generalPushes: doc.generalPushes });
   } catch (err) {
     res.status(500).json({ message: "Could not register device" });
   }
@@ -47,9 +48,10 @@ router.patch("/devices/prefs", appOnly, async (req, res) => {
     const set = {};
     if (typeof req.body?.popularPushes === "boolean") set.popularPushes = req.body.popularPushes;
     if (typeof req.body?.personalPushes === "boolean") set.personalPushes = req.body.personalPushes;
+    if (typeof req.body?.generalPushes === "boolean") set.generalPushes = req.body.generalPushes;
     const doc = await DeviceToken.findOneAndUpdate({ token }, { $set: set }, { new: true });
     if (!doc) return res.status(404).json({ message: "Device not registered" });
-    res.json({ success: true, popularPushes: doc.popularPushes, personalPushes: doc.personalPushes });
+    res.json({ success: true, popularPushes: doc.popularPushes, personalPushes: doc.personalPushes, generalPushes: doc.generalPushes });
   } catch (err) {
     res.status(500).json({ message: "Could not update preferences" });
   }
@@ -142,6 +144,14 @@ router.post("/push/popular", verifyToken, checkAdminEmail, async (req, res) => {
 router.post("/push/personal", verifyToken, checkAdminEmail, async (req, res) => {
   try {
     res.json(await runPersonalPush());
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.post("/push/smart", verifyToken, checkAdminEmail, async (req, res) => {
+  try {
+    res.json(await runSmartNotifications({ dryRun: Boolean(req.body?.dryRun), max: req.body?.max }));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
