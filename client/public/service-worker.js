@@ -50,6 +50,28 @@ self.addEventListener("message", (event) => {
   if (event.data === "skip-waiting") self.skipWaiting();
 });
 
+// Cache writes can fail when the browser's storage quota is full. Evict a
+// small number of oldest entries and retry once; caching is optional and must
+// never break page loads or create unhandled promise rejections.
+async function safeCachePut(cacheName, request, response) {
+  try {
+    let cache = await caches.open(cacheName);
+    try {
+      await cache.put(request, response);
+      return;
+    } catch (error) {
+      if (error?.name !== "QuotaExceededError") return;
+    }
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+    const removeCount = Math.max(1, Math.ceil(keys.length * 0.1));
+    await Promise.all(keys.slice(0, removeCount).map((key) => cache.delete(key)));
+    await (await caches.open(cacheName)).put(request, response);
+  } catch (_) {
+    // Ignore storage failures. The network response remains usable.
+  }
+}
+
 async function trim(name) {
   const max = LIMITS[name];
   if (!max) return;
@@ -79,7 +101,7 @@ async function networkFirst(request, cacheName, ms, fallbackUrl) {
   try {
     const res = await withTimeout(fetch(request), ms);
     if (res && res.ok) {
-      cache.put(request, res.clone()).then(() => trim(cacheName));
+      safeCachePut(cacheName, request, res.clone()).then(() => trim(cacheName)).catch(() => {});
     }
     return res;
   } catch (err) {
@@ -98,7 +120,7 @@ async function staleWhileRevalidate(request, cacheName) {
   const hit = await cache.match(request);
   const refresh = fetch(request)
     .then((res) => {
-      if (res && (res.ok || res.type === "opaque")) cache.put(request, res.clone()).then(() => trim(cacheName));
+      if (res && (res.ok || res.type === "opaque")) safeCachePut(cacheName, request, res.clone()).then(() => trim(cacheName)).catch(() => {});
       return res;
     })
     .catch(() => null);
@@ -110,7 +132,7 @@ async function cacheFirst(request, cacheName) {
   const hit = await cache.match(request);
   if (hit) return hit;
   const res = await fetch(request);
-  if (res && res.ok) cache.put(request, res.clone());
+  if (res && res.ok) await safeCachePut(cacheName, request, res.clone());
   return res;
 }
 
