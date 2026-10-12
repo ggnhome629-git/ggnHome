@@ -1,9 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, LayoutDashboard, Users, MessageSquare, Home, TrendingUp, ArrowRight, Settings, LockKeyhole, Unlock, EyeOff } from 'lucide-react';
+import { Sparkles, LayoutDashboard, Users, MessageSquare, Home, ArrowRight, Settings, LockKeyhole, Unlock, EyeOff, Megaphone, CreditCard } from 'lucide-react';
 import { Box, Button, Card, CardContent, TextField, Typography, Alert, Chip, IconButton, Tooltip, Divider, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
 import './admin.css';
+import { ADMIN_NAV } from "./shell/adminNav";
+
+// Card icon for each side-nav group on the landing page.
+const GROUP_ICONS = {
+  Overview: LayoutDashboard,
+  Listings: Home,
+  People: Users,
+  Leads: MessageSquare,
+  Marketing: Megaphone,
+  Money: CreditCard,
+  System: Settings,
+};
 
 const AdminLandingPage = () => {
   const theme = useTheme();
@@ -190,72 +202,18 @@ const AdminLandingPage = () => {
     }
   };
 
-  // Grouped so the landing page shows a few cards instead of seventeen.
-  const adminGroups = [
-    {
-      id: 'overview',
-      title: 'Overview',
-      icon: LayoutDashboard,
-      color: '#003366',
-      links: [{ label: 'Dashboard', route: '/admin/Dashboard' }],
-    },
-    {
-      id: 'leads',
-      title: 'Leads & Requests',
-      icon: MessageSquare,
-      color: '#10B981',
-      links: [
-        { label: 'Enquiries', route: '/admin/enquiries' },
-        { label: 'Callback Requests', route: '/admin/callback' },
-        { label: 'Preference Forms', route: '/admin/userpreferenceformresponses' },
-        { label: 'Services', route: '/admin/services' },
-      ],
-    },
-    {
-      id: 'properties',
-      title: 'Properties',
-      icon: Home,
-      color: '#EF4444',
-      links: [
-        { label: 'Property Manager', route: '/admin/propertymanager' },
-        { label: 'All Properties', route: '/admin/rewardsproperties' },
-        { label: 'Add Property', route: '/admin/add-property' },
-      ],
-    },
-    {
-      id: 'people',
-      title: 'Users & Agents',
-      icon: Users,
-      color: '#8B5CF6',
-      links: [
-        { label: 'User Management', route: '/admin/UserManagement' },
-        { label: 'Agents Management', route: '/admin/agentsmanagement' },
-        { label: 'Register Agent', route: '/admin/agent-registration' },
-        { label: 'Register Partner', route: '/admin/partner-access' },
-        { label: 'Partner Portal', route: '/partner/dashboard' },
-      ],
-    },
-    {
-      id: 'money',
-      title: 'Rewards & Payments',
-      icon: TrendingUp,
-      color: '#00A79D',
-      links: [
-        { label: 'Rewards', route: '/admin/rewards', notSetUp: true },
-        { label: 'Payments', route: '/admin/payments', notSetUp: true },
-      ],
-    },
-    {
-      id: 'system',
-      title: 'System',
-      icon: Settings,
-      color: '#64748B',
-      links: [
-        { label: 'Settings', route: '/admin/settings' },
-        { label: 'Usage Tracker', route: '/admin/usagetrack' },
-      ],
-    },
-  ];
+  // Built from ADMIN_NAV — the same list as the left side nav — so every
+  // section and shortcut appears in both places and they can't drift apart.
+  // "Home" is this page itself, so it isn't repeated as a shortcut.
+  const adminGroups = ADMIN_NAV.map((section) => ({
+    id: section.group.toLowerCase(),
+    title: section.group,
+    icon: GROUP_ICONS[section.group] || section.items[0]?.icon || LayoutDashboard,
+    color: section.color,
+    links: section.items
+      .filter((item) => item.route !== "/admin/Landingpage")
+      .map((item) => ({ label: item.label, route: item.route, notSetUp: item.notSetUp })),
+  })).filter((group) => group.links.length > 0);
 
   const visibleAdminGroups = adminGroups
     .map((group) => ({ ...group, links: group.links.filter((link) => !hiddenRoutes.includes(link.route)) }))
