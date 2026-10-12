@@ -127,7 +127,7 @@ const verifyTokenOrAgent = async (req, res, next) => {
 
       const decodedAgent = jwt.verify(token, agentSecret, { algorithms: ["HS256"] });
 
-      if (decodedAgent?.role === "Agent" && decodedAgent.agentId) {
+      if (["Agent", "Partner"].includes(decodedAgent?.role) && decodedAgent.agentId) {
         const agent = await Agent.findById(decodedAgent.agentId);
         if (!agent || agent.status !== "active") {
           return res.status(403).json({ message: "Agent access denied." });
@@ -136,7 +136,7 @@ const verifyTokenOrAgent = async (req, res, next) => {
         req.agent = {
           _id: agent._id,
           userId: agent.userId, // 🔑 critical for ownership queries
-          role: "Agent",
+          role: decodedAgent.role,
         };
         return next();
       }
