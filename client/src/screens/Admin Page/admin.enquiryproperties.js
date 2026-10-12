@@ -245,7 +245,7 @@ export default function AdminEnquiryProperties() {
                         </>
                       ) : (
                         <Typography variant="body2" color="text.disabled" style={{ fontStyle: "italic" }}>
-                          {(enquiry.property?.sourcePortal || enquiry.sourcePortal) ? "Scraped – admin only" : "No owner found"}
+                          {(enquiry.property?.sourcePortal || enquiry.sourcePortal) ? "Scraped – admin only" : enquiry.ownerName ? "Owner contact not linked" : "No owner found"}
                         </Typography>
                       )}
                     </td>
