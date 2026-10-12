@@ -34,7 +34,7 @@ import { Trash2 } from "lucide-react";
 /**
  * SMS Service console — hidden page (/sms-service/app/manage). Opened with the shared SMS key; it manages both services:
  * phones (which service each one sends for), limits, Shine One sending times, per-sheet message + Auto-send, a log
- * and a test send. The Android app only shows status; everything is changed here.
+ * and a test send. GGN Home OTP delivery can be switched between SMS and app display here.
  */
 const BASE = process.env.REACT_APP_Base_API;
 const TOKEN_KEY = "smsConsoleToken";
@@ -288,8 +288,8 @@ function GgnhomeTab({ data, reload, notify }) {
   const s = data.ggnhome.settings;
   const [form, setForm] = useState(null);
   useEffect(() => {
-    setForm({ mode: s.mode, dailyLimit: s.dailyLimit ?? s.effective.dailyLimit, hourlyLimit: s.hourlyLimit ?? s.effective.hourlyLimit, gapMinSec: s.gapMinSec ?? s.effective.gapMinSec, gapMaxSec: s.gapMaxSec ?? s.effective.gapMaxSec });
-  }, [s.mode, s.dailyLimit, s.hourlyLimit, s.gapMinSec, s.gapMaxSec, s.effective]);
+    setForm({ showOtpOnAndroid: !!s.showOtpOnAndroid, mode: s.mode, dailyLimit: s.dailyLimit ?? s.effective.dailyLimit, hourlyLimit: s.hourlyLimit ?? s.effective.hourlyLimit, gapMinSec: s.gapMinSec ?? s.effective.gapMinSec, gapMaxSec: s.gapMaxSec ?? s.effective.gapMaxSec });
+  }, [s.showOtpOnAndroid, s.mode, s.dailyLimit, s.hourlyLimit, s.gapMinSec, s.gapMaxSec, s.effective]);
   if (!form) return null;
   const save = async () => {
     try {
@@ -303,9 +303,16 @@ function GgnhomeTab({ data, reload, notify }) {
   const eff = s.effective;
   return (
     <Stack spacing={2}>
-      <Typography color="text.secondary">Login OTPs for the ggnHome website and app are sent from these phones, straight away at any hour.</Typography>
+      <Typography color="text.secondary">Choose how GGN Home login codes are delivered. SMS mode keeps the existing SMS gateway and SIM sending. App mode shows OTPs in the Android app instead of sending SMS.</Typography>
       <Paper sx={{ p: 2.5 }}>
         <Stack spacing={2}>
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+            <Typography fontWeight={600}>OTP delivery</Typography>
+            <FormControlLabel
+              control={<Switch checked={!!form.showOtpOnAndroid} onChange={(e) => setForm({ ...form, showOtpOnAndroid: e.target.checked })} />}
+              label={form.showOtpOnAndroid ? "Show OTP in app (no SMS)" : "Send OTP as SMS"}
+            />
+          </Stack>
           <Stack direction="row" spacing={2} alignItems="center">
             <Typography fontWeight={600}>Limits</Typography>
             <ModeSwitch mode={form.mode} setMode={(mode) => setForm({ ...form, mode })} />

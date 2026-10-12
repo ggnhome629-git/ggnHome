@@ -155,9 +155,10 @@ router.post("/auth/set-password", verifyToken, setPassword);
 router.post("/auth/check-mobile", otpRequestIpLimiter, checkMobile);
 
 // ================== SMS GATEWAY (Android app polls these) ==================
-const { verifyGatewayDevice, claimNext, reportResult, reportDelivery, adminListDevices, adminUpdateDevice, adminDeleteDevice, adminTestSend, adminSmsLog, status: gatewayStatus } = require("../controllers/smsGateway.controller");
+const { verifyGatewayDevice, claimNext, reportResult, reportDelivery, adminListDevices, adminUpdateDevice, adminDeleteDevice, adminTestSend, adminSmsLog, status: gatewayStatus, otpPreview } = require("../controllers/smsGateway.controller");
 router.get("/sms-gateway/next", verifyGatewayDevice, claimNext);
 router.get("/sms-gateway/status", verifyGatewayDevice, gatewayStatus);
+router.get("/sms-gateway/otp-preview", verifyGatewayDevice, otpPreview);
 router.post("/sms-gateway/:id/result", verifyGatewayDevice, reportResult);
 router.post("/sms-gateway/:id/delivery", verifyGatewayDevice, reportDelivery);
 // Admin: see/enable/disable phones, send a test SMS

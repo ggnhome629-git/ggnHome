@@ -84,10 +84,16 @@ async function ggnhomeOverview() {
     SmsDevice.find().sort({ createdAt: 1 }).lean(),
     SmsQueue.countDocuments({ status: { $in: ["pending", "sending"] } }),
   ]);
+  const previews = await SmsQueue.find({
+    status: "preview",
+    kind: "otp",
+    createdAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) },
+  }).select("phoneNumber message createdAt").sort({ createdAt: -1 }).limit(50).lean();
   const today = todayKey();
   return {
-    settings: { mode: (doc && doc.mode) || "auto", dailyLimit: doc && doc.dailyLimit, hourlyLimit: doc && doc.hourlyLimit, gapMinSec: doc && doc.gapMinSec, gapMaxSec: doc && doc.gapMaxSec, effective: limits, hardCaps: HARD_CAPS },
+    settings: { showOtpOnAndroid: !!(doc && doc.showOtpOnAndroid), mode: (doc && doc.mode) || "auto", dailyLimit: doc && doc.dailyLimit, hourlyLimit: doc && doc.hourlyLimit, gapMinSec: doc && doc.gapMinSec, gapMaxSec: doc && doc.gapMaxSec, effective: limits, hardCaps: HARD_CAPS },
     pending,
+    previewMessages: previews.map((p) => ({ id: String(p._id), phoneNumber: p.phoneNumber, message: p.message, createdAt: p.createdAt })),
     devices: devices.map((d) => ({
       deviceId: d.deviceId,
       name: d.name,
@@ -141,6 +147,7 @@ exports.overview = async (req, res) => {
 exports.saveGgnhomeSettings = async (req, res) => {
   const b = req.body || {};
   const update = {};
+  if (typeof b.showOtpOnAndroid === "boolean") update.showOtpOnAndroid = b.showOtpOnAndroid;
   if (b.mode === "auto" || b.mode === "custom") update.mode = b.mode;
   for (const k of ["dailyLimit", "hourlyLimit", "gapMinSec", "gapMaxSec"]) {
     if (b[k] === undefined) continue;
@@ -150,7 +157,7 @@ exports.saveGgnhomeSettings = async (req, res) => {
   }
   const doc = await SmsSetting.findOneAndUpdate({ key: "ggnhome" }, { $set: update, $setOnInsert: { key: "ggnhome" } }, { upsert: true, new: true });
   dropLimitsCache();
-  res.json({ settings: { mode: doc.mode, dailyLimit: doc.dailyLimit, hourlyLimit: doc.hourlyLimit, gapMinSec: doc.gapMinSec, gapMaxSec: doc.gapMaxSec, effective: effectiveLimits(doc), hardCaps: HARD_CAPS } });
+  res.json({ settings: { showOtpOnAndroid: !!doc.showOtpOnAndroid, mode: doc.mode, dailyLimit: doc.dailyLimit, hourlyLimit: doc.hourlyLimit, gapMinSec: doc.gapMinSec, gapMaxSec: doc.gapMaxSec, effective: effectiveLimits(doc), hardCaps: HARD_CAPS } });
 };
 
 // PATCH /api/sms-console/phones/:deviceId { name?, ggnhome?: bool, shine?: bool }

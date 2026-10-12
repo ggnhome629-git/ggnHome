@@ -7,7 +7,7 @@ const SmsLogSchema = new mongoose.Schema({
   queueId: { type: String, index: true },
   phoneNumber: { type: String, required: true },
   kind: { type: String, default: "otp" }, // "otp" | "test"
-  status: { type: String, enum: ["queued", "sending", "sent", "failed", "expired"], default: "queued" },
+  status: { type: String, enum: ["queued", "sending", "sent", "failed", "expired", "preview"], default: "queued" },
   assignedDevice: { type: String },
   deviceId: { type: String }, // phone that actually sent it
   deviceName: { type: String },

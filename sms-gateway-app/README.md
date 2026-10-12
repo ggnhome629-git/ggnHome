@@ -1,37 +1,16 @@
-# SMS Service (Android)
+# SMS Service — Android SMS Gateway and OTP Viewer
 
-Sends SMS from this phone's SIM for two services — **GGN Home** (login OTPs) and **Shine One Estate** (lead messages
-from the We Three app). The app is a **sender with a read-only status screen**: nothing is configured in it.
+The Android app supports two GGN Home OTP delivery modes, controlled from the web console. Normal SMS delivery remains the default.
 
-Everything is managed on the website console, a hidden page at **`/sms-service/app/manage`** on the ggnHome site
-(opened with the SMS key): which service each phone works for, the limits, the Shine One sending times (lunch / night), and the
-per-sheet message and Auto-send switch.
+## Choose OTP delivery mode
+1. Open https://www.ggnhome.com/sms-service/app/manage.
+2. Sign in with the SMS key.
+3. Open the GGN Home tab.
+4. Leave the switch off (**Send OTP as SMS**) to keep the existing delivery flow: the Android phone sends the OTP by SMS through its SIM (or the configured third-party gateway is used).
+5. Enable **Show OTP in app (no SMS)** to display GGN Home login OTPs in the Android app and notification instead of sending those OTPs as SMS.
+6. Keep the Android service running. Manual test SMS messages continue to use the normal SMS delivery flow in either mode.
 
-## How it works
-Each service has its own polling thread. The phone asks its server for the next message
-(`GET /sms-gateway/next` on GGN Home, `GET /api/sms-gateway/next` on the Shine One server), sends it with
-`SmsManager`, then reports `result` and, later, the carrier `delivery` report. The **server** decides when a phone may
-send (gap between messages, hourly/daily limits, lunch/night windows), so the app has no pacing of its own.
-
-## One key
-Everything uses a single shared secret, **`SMS_KEY`** — the same value in four places:
-
-1. the **ggnHome server** env (`SMS_KEY`)
-2. the **We Three (Render) server** env (`SMS_KEY`)
-3. the **GitHub repo secret** `SMS_KEY` (baked into the APK at build time)
-4. you type it once to open the console
-
-It is used by the phones to reach each server, by the ggnHome server to reach the We Three server, and as the
-console sign-in. If it is not set on a production server, that server refuses all SMS requests. (`SMS_DEVICE_KEY`
-is the older name and is still read.) Optional: `SHINE_API_URL` on the ggnHome server (defaults to
-`https://we-three-api.onrender.com`).
+The preview endpoint only returns OTPs while app-display mode is enabled. OTP previews expire after four minutes. Shine One Estate retains its existing SMS sending behavior.
 
 ## Build
-`.github/workflows/sms-gateway-apk.yml` builds the APK on every push to `main` that touches this folder, or by hand
-(Actions → Run workflow). Optional build env: `SMS_GGNHOME_URL`, `SMS_SHINE_URL`.
-
-Limits (auto defaults, hard caps 60/hour and 200/day) are edited in the console, not through env vars.
-
-## Phone setup
-Install the APK, tap **Start service**, allow SMS and background running. The phone appears in the console within seconds,
-and you choose there which service(s) it sends for.
+The `.github/workflows/build-all-apks.yml` workflow builds the Android APKs and publishes `sms-service.apk` to the existing `latest-apks` GitHub Release alongside the other Android APKs.

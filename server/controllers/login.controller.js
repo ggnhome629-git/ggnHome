@@ -189,11 +189,13 @@ exports.requestOtp = async (req, res) => {
 
     // SMS channel
     let smsQueued = false;
+    let smsPreview = false;
     let noPhoneOnline = false;
     if (isSmsConfigured()) {
       try {
         noPhoneOnline = !(await hasOnlineDevice());
-        await sendOtpSms(user.mobileNumber, otp);
+        const smsResult = await sendOtpSms(user.mobileNumber, otp);
+        smsPreview = !!(smsResult && smsResult.preview);
         smsQueued = true;
       } catch (smsError) {
         console.error("OTP SMS failed:", smsError.response?.data || smsError.message);
@@ -203,7 +205,7 @@ exports.requestOtp = async (req, res) => {
     // Safety net: no gateway phone online (or queueing failed) and the account
     // has an email -> also deliver by email so the user isn't locked out.
     let emailFallback = false;
-    if ((!smsQueued || noPhoneOnline) && user.email) {
+    if (!smsPreview && (!smsQueued || noPhoneOnline) && user.email) {
       try {
         await sendOtpEmail(user, otp);
         emailFallback = true;
@@ -217,13 +219,16 @@ exports.requestOtp = async (req, res) => {
     }
 
     return res.status(200).json({
-      message: emailFallback && !smsQueued
-        ? "SMS is unavailable right now, so we emailed your code instead."
-        : emailFallback
-          ? "OTP sent to your mobile number (and emailed as a backup)"
-          : "OTP sent to your mobile number",
+      message: smsPreview
+        ? "SMS is not sent automatically. Your login code is available in the SMS Service Android OTP Viewer."
+        : emailFallback && !smsQueued
+          ? "SMS is unavailable right now, so we emailed your code instead."
+          : emailFallback
+            ? "OTP sent to your mobile number (and emailed as a backup)"
+            : "OTP sent to your mobile number",
       channel: "sms",
-      smsSent: smsQueued,
+      smsSent: smsQueued && !smsPreview,
+      smsPreview,
       emailFallback,
       maskedMobile: maskMobile(user.mobileNumber),
       maskedEmail: emailFallback ? maskEmail(user.email) : null,

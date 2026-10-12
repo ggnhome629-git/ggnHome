@@ -113,7 +113,7 @@ class MainActivity : Activity() {
             setTypeface(typeface, Typeface.BOLD)
         })
         titles.addView(TextView(this).apply {
-            text = "Status only · managed from the website"
+            text = "SMS sending or OTP display · managed from the website"
             setTextColor(Color.parseColor("#B8D4E8"))
             textSize = 12f
         })

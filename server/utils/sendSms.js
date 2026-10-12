@@ -32,10 +32,23 @@ function toE164(mobileNumber) {
 async function sendSms(mobileNumber, message, kind = "otp") {
   if (!isSmsConfigured()) throw new Error("SMS gateway is not configured");
 
+  // The admin can temporarily switch GGN Home OTPs to app-only preview mode.
+  // Otherwise preserve the existing SMS delivery path (Android SIM or third-party gateway).
+  const SmsSetting = require("../models/SmsSetting.model");
+  const setting = await SmsSetting.findOne({ key: "ggnhome" }).lean();
+  if (kind === "otp" && setting && setting.showOtpOnAndroid === true) {
+    const SmsQueue = require("../models/SmsQueue.model");
+    const SmsLog = require("../models/SmsLog.model");
+    const phoneNumber = toE164(mobileNumber);
+    const queued = await SmsQueue.create({ phoneNumber, message, kind, status: "preview", assignedDevice: null });
+    await SmsLog.create({ queueId: String(queued._id), phoneNumber, kind, status: "preview" }).catch(() => {});
+    return { ...queued.toObject(), preview: true };
+  }
+
   if (!useThirdParty()) {
     const SmsQueue = require("../models/SmsQueue.model");
     const { pickDevice } = require("../controllers/smsGateway.controller");
-    // Random online phone, so no single SIM carries all the traffic.
+    // Existing behaviour: randomly assign an online phone when possible; otherwise leave it open.
     const assignedDevice = await pickDevice();
     const SmsLog = require("../models/SmsLog.model");
     const phoneNumber = toE164(mobileNumber);
