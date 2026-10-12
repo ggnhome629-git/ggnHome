@@ -229,9 +229,11 @@ export default function AdminEnquiryProperties() {
                       {enquiry.property?.sourceUrl && <Typography component="a" href={enquiry.property.sourceUrl} target="_blank" rel="noreferrer" variant="caption" sx={{ display: "block", mt: 0.75, overflowWrap: "anywhere", color: "primary.main" }}>Open source listing</Typography>}
                     </td>
                     <td>
+                      {(enquiry.ownerName || enquiry.owner?.name || enquiry.owner?.fullName) && (
+                        <Typography variant="body2" sx={{ fontWeight: 800, mb: 0.75 }}>{enquiry.ownerName || enquiry.owner?.name || enquiry.owner?.fullName}</Typography>
+                      )}
                       {enquiry.owner ? (
                         <>
-                          <Typography variant="body2" sx={{ fontWeight: 800, mb: 0.75 }}>{enquiry.ownerName || enquiry.owner.name || enquiry.owner.fullName || "Owner"}</Typography>
                           <Box className="admin-flex admin-gap-2 admin-mb-1">
                             <Mail size={13} color="#94a3b8" />
                             <Typography variant="body2">{enquiry.owner.email || "N/A"}</Typography>
