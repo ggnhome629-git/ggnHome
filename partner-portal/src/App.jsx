@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   ArrowDownToLine, ArrowLeft, ArrowRight, BadgeCheck, Building2, CheckCircle2,
   ChevronRight, CircleUserRound, ClipboardList, Download, Home, LogOut, Menu,
-  MessageSquare, Plus, RefreshCw, ShieldCheck, Smartphone, UploadCloud, X,
+  MessageSquare, Plus, RefreshCw, ShieldCheck, Smartphone, Sparkles, UploadCloud, X,
 } from "lucide-react";
 
 const API = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
@@ -124,6 +124,7 @@ function App() {
     { id: "overview", label: "Overview", icon: Home },
     { id: "properties", label: "My properties", icon: Building2 },
     { id: "add", label: "Add property", icon: Plus },
+    { id: "ai-leads", label: "AI leads", icon: Sparkles },
     { id: "leads", label: "Leads", icon: ClipboardList },
     { id: "enquiries", label: "Enquiries", icon: MessageSquare },
     { id: "downloads", label: "App downloads", icon: Download },
@@ -241,6 +242,7 @@ function App() {
             <div className="form-actions"><button type="button" className="secondary" onClick={() => setPage("properties")}>Cancel</button><button type="submit" className="primary" disabled={publishing}>{publishing ? "Publishing…" : "Publish property"} <ArrowRight size={16} /></button></div>
           </form></section>}
 
+          {page === "ai-leads" && <AiLeadsPage token={token} />}
           {page === "leads" && <section className="section-stack"><div className="section-heading"><div><h3>Customer leads</h3><p>Preference and search leads made available to your partner account.</p></div><button className="icon-button" onClick={() => loadPage("leads")}><RefreshCw size={17} /></button></div>{listLeads.length ? <div className="data-grid">{listLeads.map((item, i) => <div className="data-card" key={item._id || i}><div className="data-card-top"><span className="pill">Lead</span><small>{displayDate(item.createdAt || item.updatedAt)}</small></div><h4>{item.name || item.user?.name || item.customerName || item.title || "Customer preference"}</h4><p>{item.sector || item.location || item.message || item.description || "Property search preference"}</p><div className="data-card-bottom">{item.email || item.user?.email || "Preference lead"} <span>{item.mobileNumber || item.user?.mobileNumber || ""}</span></div></div>)}</div> : <EmptyState icon={ClipboardList} title="No leads to show" text="New preference and search leads will appear here when available." />}</section>}
 
           {page === "enquiries" && <section className="section-stack"><div className="section-heading"><div><h3>Property enquiries</h3><p>Customer requests and contact details. Source-platform metadata is not shown here.</p></div><button className="icon-button" onClick={() => loadPage("enquiries")}><RefreshCw size={17} /></button></div>{listEnquiries.length ? <div className="table-wrap"><table><thead><tr><th>Customer</th><th>Mobile</th><th>Property</th><th>Owner</th><th>Received</th></tr></thead><tbody>{listEnquiries.map((item, i) => <tr key={item._id || i}><td><strong>{item.customerName || item.userName || item.customer?.name || "Customer"}</strong><small>{item.userEmail || item.customer?.email || ""}</small></td><td>{item.userMobile || item.customer?.mobileNumber || "—"}</td><td>{item.property?.title || item.propertyAddress || item.property?.address || "Property enquiry"}</td><td>{item.ownerName || "No owner of this property present."}</td><td>{displayDate(item.createdAt)}</td></tr>)}</tbody></table></div> : <EmptyState icon={MessageSquare} title="No enquiries yet" text="Enquiries will appear here as customers contact GgnHome about properties." />}</section>}
@@ -264,6 +266,138 @@ function QuickAction({ icon: Icon, title, text, onClick }) {
 function Field({ label, required, wide, children }) {
   return <label className={`field ${wide ? "wide" : ""}`}><span>{label}{required && <i> *</i>}</span>{React.cloneElement(children, { required: Boolean(required) })}</label>;
 }
+/* ---------------------------------------------------------- AI leads */
+// Buyers and tenants who finished the GgnHome AI Property Consultant and
+// agreed to be contacted. Every active partner sees the requirements; phone
+// and email unlock once the partner is assigned (automatically when their
+// listing matched, or by tapping "Take this lead" while slots are left).
+const LEAD_STATUS = {
+  submitted: "Submitted", pending_assignment: "Pending assignment", assigned: "Assigned", contacted: "Contacted",
+  viewing_scheduled: "Viewing scheduled", converted: "Converted", closed: "Closed", lost: "Lost",
+};
+const PARTNER_STATUSES = ["contacted", "viewing_scheduled", "converted", "lost"];
+const NEARBY = { market: "Market", metro: "Metro", hospital: "Hospital", school: "School", park: "Park", mall: "Mall" };
+const compactMoney = (n) => {
+  const v = Number(n) || 0;
+  if (v >= 1e7) return `₹${Math.round((v / 1e7) * 100) / 100} Cr`;
+  if (v >= 1e5) return `₹${Math.round((v / 1e5) * 100) / 100} L`;
+  return `₹${v.toLocaleString("en-IN")}`;
+};
+const metres = (m) => (m >= 1000 ? `${Math.round(m / 100) / 10} km` : `${m} m`);
+
+function leadFacts(lead) {
+  const r = lead.requirements || {};
+  const facts = [];
+  const where = r.anywhere ? "Anywhere in Gurgaon" : [...(r.sectors || []).map((x) => `Sector ${x}`), ...(r.localities || [])].join(", ");
+  if (where) facts.push(["Location", where]);
+  if (r.budgetFlexible) facts.push(["Budget", "Flexible"]);
+  else if (r.budgetMax || r.budgetMin) facts.push(["Budget", `${r.budgetApprox ? "~" : ""}${r.budgetMin && r.budgetMax ? `${compactMoney(r.budgetMin)}–${compactMoney(r.budgetMax)}` : r.budgetMax ? `up to ${compactMoney(r.budgetMax)}` : `from ${compactMoney(r.budgetMin)}`}${lead.mode === "rent" ? "/month" : ""}`]);
+  if ((r.bhk || []).length) facts.push(["BHK", r.bhk.map((n) => (n === 0 ? "1 RK" : `${n} BHK`)).join(" / ")]);
+  if ((r.propertyTypes || []).length) facts.push(["Type", r.propertyTypes.join(", ")]);
+  if (r.furnishing) facts.push(["Furnishing", r.furnishing]);
+  if (r.moveInLabel) facts.push(["Move-in", r.moveInLabel]);
+  if (r.occupancy) facts.push(["Occupants", r.occupancy.replace(/_/g, " ") + (r.people ? ` · ${r.people} people` : "")]);
+  if (r.possession) facts.push(["Possession", r.possession]);
+  if (r.purpose) facts.push(["Purpose", r.purpose]);
+  const near = (r.priorities || []).map((p) => `${NEARBY[p.category] || p.category}${p.maxMeters ? ` ≤ ${metres(p.maxMeters)}` : ""}`);
+  if (r.corner === "corner" || r.corner === "middle") near.push(r.corner === "corner" ? "Corner home" : "Middle position");
+  if (near.length) facts.push(["Wants nearby", near.join(", ")]);
+  return facts;
+}
+
+function AiLeadCard({ lead, token, onChange }) {
+  const [status, setStatus] = useState(PARTNER_STATUSES.includes(lead.status) ? lead.status : "");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  async function act(path, method, body) {
+    setBusy(true); setError("");
+    try {
+      const res = await request(path, { method, body: body ? JSON.stringify(body) : undefined }, token);
+      onChange(res.data); setNote("");
+    } catch (e) { setError(e.message); }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <div className="data-card ai-lead">
+      <div className="data-card-top">
+        <span className="pill">{lead.mode === "sale" ? "Buy" : lead.mode === "rent" ? "Rent" : "Callback"}</span>
+        <span className={`pill status-pill ${lead.status}`}>{LEAD_STATUS[lead.status] || lead.status}</span>
+        <small>{displayDate(lead.createdAt)}</small>
+      </div>
+      <h4>{lead.leadRef}</h4>
+      <dl className="ai-facts">{leadFacts(lead).map(([k, v]) => <React.Fragment key={k}><dt>{k}</dt><dd>{v}</dd></React.Fragment>)}</dl>
+      {(lead.matches || []).length > 0 && <p className="ai-matches">Matched {lead.matches.length} listing{lead.matches.length > 1 ? "s" : ""}: {lead.matches.slice(0, 3).map((m) => m.title || m.sector).join(" · ")}</p>}
+      <div className="data-card-bottom">
+        <span>{lead.contact?.name || "Customer"}</span>
+        {lead.assignedToMe ? <a href={`tel:+91${lead.contact?.phone}`}>+91 {lead.contact?.phone}</a> : <span>{lead.contact?.phone}</span>}
+      </div>
+      {lead.assignedToMe && lead.contact?.email && <p className="ai-email"><a href={`mailto:${lead.contact.email}`}>{lead.contact.email}</a></p>}
+      {error && <div className="alert error">{error}</div>}
+      {lead.assignedToMe ? (
+        <div className="ai-actions">
+          <select value={status} onChange={(e) => setStatus(e.target.value)} aria-label="Update status">
+            <option value="">Update status…</option>
+            {PARTNER_STATUSES.map((s) => <option key={s} value={s}>{LEAD_STATUS[s]}</option>)}
+          </select>
+          <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={1000} placeholder="Note, e.g. call outcome" />
+          <button className="primary" disabled={busy || (!status && !note.trim())} onClick={() => act(`/api/partner/ai-leads/${lead._id}`, "PATCH", { ...(status ? { status } : {}), ...(note.trim() ? { note } : {}) })}>{busy ? "Saving…" : "Save"}</button>
+        </div>
+      ) : (
+        <div className="ai-actions">
+          <small>Contact details unlock when you take this lead · {lead.slotsLeft} of 3 partner slots left</small>
+          <button className="primary" disabled={busy || lead.slotsLeft === 0} onClick={() => act(`/api/partner/ai-leads/${lead._id}/claim`, "POST")}>{lead.slotsLeft === 0 ? "Lead is full" : busy ? "Taking…" : "Take this lead"}</button>
+        </div>
+      )}
+      {lead.assignedToMe && (lead.followUps || []).slice(-3).map((f, i) => <p key={i} className="ai-followup">{displayDate(f.at)} · {f.byName || f.byType}{f.status ? ` → ${LEAD_STATUS[f.status] || f.status}` : ""}{f.note ? ` — ${f.note}` : ""}</p>)}
+    </div>
+  );
+}
+
+function AiLeadsPage({ token }) {
+  const [scope, setScope] = useState("all");
+  const [mode, setMode] = useState("");
+  const [page, setPage] = useState(1);
+  const [items, setItems] = useState([]);
+  const [meta, setMeta] = useState({ total: 0, totalPages: 1 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  async function load() {
+    setLoading(true); setError("");
+    try {
+      const qs = new URLSearchParams({ page: String(page), limit: "12", scope, ...(mode ? { mode } : {}) });
+      const res = await request(`/api/partner/ai-leads?${qs}`, {}, token);
+      setItems(res.data || []); setMeta(res.meta || { total: 0, totalPages: 1 });
+    } catch (e) { setError(e.message || "Could not load AI leads."); }
+    finally { setLoading(false); }
+  }
+  useEffect(() => { load(); }, [scope, mode, page]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <section className="section-stack">
+      <div className="section-heading">
+        <div><h3>AI Consultant leads</h3><p>Buyers and tenants who used the GgnHome AI consultant and agreed to be contacted · {meta.total || 0} total</p></div>
+        <button className="icon-button" onClick={load} aria-label="Refresh"><RefreshCw size={17} /></button>
+      </div>
+      <div className="ai-filters">
+        <button className={scope === "all" ? "chip active" : "chip"} onClick={() => { setScope("all"); setPage(1); }}>All open</button>
+        <button className={scope === "mine" ? "chip active" : "chip"} onClick={() => { setScope("mine"); setPage(1); }}>Assigned to me</button>
+        <select value={mode} onChange={(e) => { setMode(e.target.value); setPage(1); }} aria-label="Rent or buy">
+          <option value="">Rent &amp; buy</option><option value="rent">Rent</option><option value="sale">Buy</option>
+        </select>
+      </div>
+      {error && <div className="alert error">{error}</div>}
+      {loading ? <p className="muted">Loading…</p> : items.length ? (
+        <div className="data-grid">{items.map((lead) => <AiLeadCard key={lead._id} lead={lead} token={token} onChange={(fresh) => setItems((prev) => prev.map((l) => (l._id === fresh._id ? fresh : l)))} />)}</div>
+      ) : <EmptyState icon={Sparkles} title={scope === "mine" ? "No AI leads assigned to you yet" : "No open AI leads right now"} text="New requirements from the AI consultant will appear here." />}
+      {meta.totalPages > 1 && <div className="ai-pager"><button className="chip" disabled={page <= 1} onClick={() => setPage(page - 1)}>← Prev</button><span>Page {page} of {meta.totalPages}</span><button className="chip" disabled={page >= meta.totalPages} onClick={() => setPage(page + 1)}>Next →</button></div>}
+    </section>
+  );
+}
+
 function EmptyState({ icon: Icon, title, text, action, onAction }) {
   return <div className="empty-state"><div className="empty-icon"><Icon size={24} /></div><h3>{title}</h3><p>{text}</p>{action && <button className="primary" onClick={onAction}>{action} <ArrowRight size={15} /></button>}</div>;
 }
