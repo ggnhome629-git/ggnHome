@@ -1,0 +1,39 @@
+name: Server Notification Checks
+
+on:
+  push:
+    branches: ["feat/**", "fix/**", "main"]
+    paths:
+      - "server/**"
+      - ".github/workflows/server-notification-check.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "server/**"
+      - ".github/workflows/server-notification-check.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Install server dependencies
+        working-directory: server
+        run: npm ci --no-audit --no-fund
+      - name: Check notification server syntax
+        run: |
+          node --check server/services/smartNotifications.js
+          node --check server/Route/appRoutes.js
+          node --check server/index.js
+      - name: Validate notification template library
+        run: node server/scripts/validate-notification-templates.js

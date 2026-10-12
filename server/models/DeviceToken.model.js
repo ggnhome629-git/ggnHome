@@ -12,6 +12,8 @@ const deviceTokenSchema = new mongoose.Schema(
     appVersion: { type: String, trim: true },
     popularPushes: { type: Boolean, default: true },
     personalPushes: { type: Boolean, default: true },
+    generalPushes: { type: Boolean, default: true },
+    lastGeneralPushAt: { type: Date, default: null },
     lastSeenAt: { type: Date, default: Date.now },
     lastPersonalPushAt: { type: Date, default: null },
   },
