@@ -1,0 +1,1767 @@
+{
+  "version": 1,
+  "locale": "en-IN",
+  "description": "GgnHome server-side push copy library; placeholders are populated from active property records.",
+  "templates": [
+    {
+      "id": "new_property_01",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore",
+      "body": "A new listing is available: in your preferred area. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_02",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore · 2",
+      "body": "A new listing is available: with fresh listing details. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_03",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore",
+      "body": "A new listing is available: to compare with your shortlist. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_04",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore · 4",
+      "body": "A new listing is available: with photos and key features. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_05",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore",
+      "body": "A new listing is available: for your next home search. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_06",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore · 6",
+      "body": "A new listing is available: worth reviewing today. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_07",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore",
+      "body": "A new listing is available: to check against your budget. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_08",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore · 8",
+      "body": "A new listing is available: with details ready to explore. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_09",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore",
+      "body": "A new listing is available: that may fit your search. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_10",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore · 10",
+      "body": "A new listing is available: to consider before a visit. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_11",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore",
+      "body": "A new listing is available: for your saved search area. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_12",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore · 12",
+      "body": "A new listing is available: to add to your comparison list. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_13",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore",
+      "body": "A new listing is available: with its current asking price. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_14",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore · 14",
+      "body": "A new listing is available: for a closer look. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_15",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore",
+      "body": "A new listing is available: to review at your pace. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_16",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore · 16",
+      "body": "A new listing is available: that just appeared on GgnHome. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_17",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore",
+      "body": "A new listing is available: with location and price details. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_18",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore · 18",
+      "body": "A new listing is available: to browse when you have a moment. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_19",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore",
+      "body": "A new listing is available: for your property shortlist. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "new_property_20",
+      "category": "new_property",
+      "requiresProperty": true,
+      "title": "New home to explore · 20",
+      "body": "A new listing is available: to explore before enquiring. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_01",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you",
+      "body": "We found a possible match: based on your recent activity. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_02",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you · 2",
+      "body": "We found a possible match: for your preferred location. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_03",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you",
+      "body": "We found a possible match: to compare with your requirements. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_04",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you · 4",
+      "body": "We found a possible match: that may suit your budget. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_05",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you",
+      "body": "We found a possible match: for your next shortlist. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_06",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you · 6",
+      "body": "We found a possible match: with details ready to review. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_07",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you",
+      "body": "We found a possible match: for a closer look today. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_08",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you · 8",
+      "body": "We found a possible match: that aligns with some preferences. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_09",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you",
+      "body": "We found a possible match: to consider alongside saved homes. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_10",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you · 10",
+      "body": "We found a possible match: for your home search. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_11",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you",
+      "body": "We found a possible match: in an area you explored. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_12",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you · 12",
+      "body": "We found a possible match: to review at your pace. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_13",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you",
+      "body": "We found a possible match: that may fit your filters. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_14",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you · 14",
+      "body": "We found a possible match: with price and location details. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_15",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you",
+      "body": "We found a possible match: for your next property comparison. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_16",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you · 16",
+      "body": "We found a possible match: to consider before planning a visit. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_17",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you",
+      "body": "We found a possible match: that is worth exploring. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_18",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you · 18",
+      "body": "We found a possible match: to help refine your shortlist. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_19",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you",
+      "body": "We found a possible match: for your next search session. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "property_match_20",
+      "category": "property_match",
+      "requiresProperty": true,
+      "title": "A property picked for you · 20",
+      "body": "We found a possible match: selected from active listings. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_01",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update",
+      "body": "The listing has a pricing update: check the latest asking price. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_02",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update · 2",
+      "body": "The listing has a pricing update: compare it with similar homes. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_03",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update",
+      "body": "The listing has a pricing update: review the current property details. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_04",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update · 4",
+      "body": "The listing has a pricing update: confirm the price with the advertiser. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_05",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update",
+      "body": "The listing has a pricing update: see whether it fits your budget. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_06",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update · 6",
+      "body": "The listing has a pricing update: revisit your shortlist. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_07",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update",
+      "body": "The listing has a pricing update: check current availability too. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_08",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update · 8",
+      "body": "The listing has a pricing update: review the updated listing information. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_09",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update",
+      "body": "The listing has a pricing update: compare location and total cost. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_10",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update · 10",
+      "body": "The listing has a pricing update: open the property page. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_11",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update",
+      "body": "The listing has a pricing update: check the latest price label. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_12",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update · 12",
+      "body": "The listing has a pricing update: reassess this option. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_13",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update",
+      "body": "The listing has a pricing update: look at photos and specifications. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_14",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update · 14",
+      "body": "The listing has a pricing update: confirm details before enquiring. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_15",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update",
+      "body": "The listing has a pricing update: compare against your saved options. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_16",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update · 16",
+      "body": "The listing has a pricing update: review it at your convenience. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_17",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update",
+      "body": "The listing has a pricing update: check whether the listing suits you. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_18",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update · 18",
+      "body": "The listing has a pricing update: revisit the property details. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_19",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update",
+      "body": "The listing has a pricing update: verify all costs before committing. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "price_drop_20",
+      "category": "price_drop",
+      "requiresProperty": true,
+      "title": "Property price update · 20",
+      "body": "The listing has a pricing update: see the latest information. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_01",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore",
+      "body": "A rental listing is ready: check monthly rent and deposit. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_02",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore · 2",
+      "body": "A rental listing is ready: review furnishing and amenities. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_03",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore",
+      "body": "A rental listing is ready: confirm availability with the lister. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_04",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore · 4",
+      "body": "A rental listing is ready: compare it with your requirements. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_05",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore",
+      "body": "A rental listing is ready: check location and commute. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_06",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore · 6",
+      "body": "A rental listing is ready: review house rules before visiting. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_07",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore",
+      "body": "A rental listing is ready: compare total monthly costs. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_08",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore · 8",
+      "body": "A rental listing is ready: check the latest listing details. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_09",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore",
+      "body": "A rental listing is ready: review photos and specifications. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_10",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore · 10",
+      "body": "A rental listing is ready: confirm visit arrangements. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_11",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore",
+      "body": "A rental listing is ready: consider it for your shortlist. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_12",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore · 12",
+      "body": "A rental listing is ready: check included maintenance charges. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_13",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore",
+      "body": "A rental listing is ready: verify terms before committing. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_14",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore · 14",
+      "body": "A rental listing is ready: explore the property details. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_15",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore",
+      "body": "A rental listing is ready: compare location and value. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_16",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore · 16",
+      "body": "A rental listing is ready: review the monthly rent. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_17",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore",
+      "body": "A rental listing is ready: confirm availability before planning. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_18",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore · 18",
+      "body": "A rental listing is ready: check the details on GgnHome. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_19",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore",
+      "body": "A rental listing is ready: consider it alongside other rentals. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "rental_20",
+      "category": "rental",
+      "requiresProperty": true,
+      "title": "Rental option to explore · 20",
+      "body": "A rental listing is ready: review the listing at your pace. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_01",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option",
+      "body": "A sale listing is ready: compare price and location. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_02",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option · 2",
+      "body": "A sale listing is ready: review specifications and photos. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_03",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option",
+      "body": "A sale listing is ready: check details before planning a visit. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_04",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option · 4",
+      "body": "A sale listing is ready: verify ownership and documents independently. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_05",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option",
+      "body": "A sale listing is ready: compare with your buying shortlist. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_06",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option · 6",
+      "body": "A sale listing is ready: review current asking price. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_07",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option",
+      "body": "A sale listing is ready: confirm all details with the advertiser. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_08",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option · 8",
+      "body": "A sale listing is ready: consider it alongside other homes. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_09",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option",
+      "body": "A sale listing is ready: check location and amenities. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_10",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option · 10",
+      "body": "A sale listing is ready: review details at your pace. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_11",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option",
+      "body": "A sale listing is ready: compare value, not only price. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_12",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option · 12",
+      "body": "A sale listing is ready: check the full property description. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_13",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option",
+      "body": "A sale listing is ready: verify legal details before paying. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_14",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option · 14",
+      "body": "A sale listing is ready: consider it for your shortlist. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_15",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option",
+      "body": "A sale listing is ready: review available listing information. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_16",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option · 16",
+      "body": "A sale listing is ready: check configuration and area. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_17",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option",
+      "body": "A sale listing is ready: confirm availability before visiting. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_18",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option · 18",
+      "body": "A sale listing is ready: compare nearby options. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_19",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option",
+      "body": "A sale listing is ready: explore the property details. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "sale_20",
+      "category": "sale",
+      "requiresProperty": true,
+      "title": "Home-buying option · 20",
+      "body": "A sale listing is ready: make an informed comparison. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_01",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore",
+      "body": "A shared-living option is available: check rent and house rules. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_02",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore · 2",
+      "body": "A shared-living option is available: review the location and amenities. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_03",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore",
+      "body": "A shared-living option is available: confirm the room is still available. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_04",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore · 4",
+      "body": "A shared-living option is available: compare the setup with your needs. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_05",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore",
+      "body": "A shared-living option is available: review details before contacting the lister. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_06",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore · 6",
+      "body": "A shared-living option is available: check monthly costs and deposit. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_07",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore",
+      "body": "A shared-living option is available: explore photos and listing details. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_08",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore · 8",
+      "body": "A shared-living option is available: consider it for your room shortlist. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_09",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore",
+      "body": "A shared-living option is available: confirm visit arrangements. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_10",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore · 10",
+      "body": "A shared-living option is available: check house rules before deciding. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_11",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore",
+      "body": "A shared-living option is available: review location and commute. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_12",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore · 12",
+      "body": "A shared-living option is available: compare with other room listings. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_13",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore",
+      "body": "A shared-living option is available: confirm terms directly with the lister. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_14",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore · 14",
+      "body": "A shared-living option is available: check availability before planning. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_15",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore",
+      "body": "A shared-living option is available: review the shared-living setup. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_16",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore · 16",
+      "body": "A shared-living option is available: consider it at your pace. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_17",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore",
+      "body": "A shared-living option is available: check amenities and monthly rent. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_18",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore · 18",
+      "body": "A shared-living option is available: open the full listing details. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_19",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore",
+      "body": "A shared-living option is available: review the room requirements. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "flatmate_20",
+      "category": "flatmate",
+      "requiresProperty": true,
+      "title": "Room listing to explore · 20",
+      "body": "A shared-living option is available: explore the option on GgnHome. {{propertyTitle}} · {{priceLabel}}.",
+      "deepLink": "{{propertyPath}}"
+    },
+    {
+      "id": "saved_search_01",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update",
+      "body": "Revisit your saved criteria to: browse the latest listings.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_02",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update · 2",
+      "body": "Revisit your saved criteria to: compare options by price and area.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_03",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update",
+      "body": "Revisit your saved criteria to: refine your preferred locations.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_04",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update · 4",
+      "body": "Revisit your saved criteria to: review fresh search results.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_05",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update",
+      "body": "Revisit your saved criteria to: adjust your budget if needed.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_06",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update · 6",
+      "body": "Revisit your saved criteria to: save promising properties.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_07",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update",
+      "body": "Revisit your saved criteria to: compare configurations and amenities.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_08",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update · 8",
+      "body": "Revisit your saved criteria to: find options for your shortlist.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_09",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update",
+      "body": "Revisit your saved criteria to: update your property filters.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_10",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update · 10",
+      "body": "Revisit your saved criteria to: continue your search at your pace.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_11",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update",
+      "body": "Revisit your saved criteria to: review what is available.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_12",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update · 12",
+      "body": "Revisit your saved criteria to: explore new options when ready.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_13",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update",
+      "body": "Revisit your saved criteria to: compare details side by side.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_14",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update · 14",
+      "body": "Revisit your saved criteria to: check your preferred areas.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_15",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update",
+      "body": "Revisit your saved criteria to: refresh your shortlist.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_16",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update · 16",
+      "body": "Revisit your saved criteria to: discover options you may have missed.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_17",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update",
+      "body": "Revisit your saved criteria to: narrow the results to your needs.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_18",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update · 18",
+      "body": "Revisit your saved criteria to: revisit your home search.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_19",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update",
+      "body": "Revisit your saved criteria to: keep your criteria up to date.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_search_20",
+      "category": "saved_search",
+      "requiresProperty": false,
+      "title": "Your search has an update · 20",
+      "body": "Revisit your saved criteria to: browse on GgnHome.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_01",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting",
+      "body": "Open your shortlist to: compare price and location.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_02",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting · 2",
+      "body": "Open your shortlist to: review current listing details.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_03",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting",
+      "body": "Open your shortlist to: remove options that no longer fit.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_04",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting · 4",
+      "body": "Open your shortlist to: continue where you left off.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_05",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting",
+      "body": "Open your shortlist to: compare amenities and size.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_06",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting · 6",
+      "body": "Open your shortlist to: check availability before enquiring.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_07",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting",
+      "body": "Open your shortlist to: organise your favourite homes.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_08",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting · 8",
+      "body": "Open your shortlist to: review your saved options.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_09",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting",
+      "body": "Open your shortlist to: compare your shortlisted properties.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_10",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting · 10",
+      "body": "Open your shortlist to: revisit details at your pace.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_11",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting",
+      "body": "Open your shortlist to: check current listing information.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_12",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting · 12",
+      "body": "Open your shortlist to: update your shortlist.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_13",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting",
+      "body": "Open your shortlist to: compare location and total cost.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_14",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting · 14",
+      "body": "Open your shortlist to: find the strongest fit for your needs.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_15",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting",
+      "body": "Open your shortlist to: review photos and features.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_16",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting · 16",
+      "body": "Open your shortlist to: continue your property search.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_17",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting",
+      "body": "Open your shortlist to: compare saved rentals or sale homes.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_18",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting · 18",
+      "body": "Open your shortlist to: check options before planning a visit.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_19",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting",
+      "body": "Open your shortlist to: keep track of properties you like.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "saved_listing_20",
+      "category": "saved_listing",
+      "requiresProperty": false,
+      "title": "Your saved homes are waiting · 20",
+      "body": "Open your shortlist to: browse your saved list.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_01",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you",
+      "body": "You can personalise your experience by: setting your preferred locations.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_02",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you · 2",
+      "body": "You can personalise your experience by: choosing a budget range.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_03",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you",
+      "body": "You can personalise your experience by: saving properties you like.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_04",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you · 4",
+      "body": "You can personalise your experience by: reviewing your notification preferences.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_05",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you",
+      "body": "You can personalise your experience by: updating your property type preference.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_06",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you · 6",
+      "body": "You can personalise your experience by: refining your home search.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_07",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you",
+      "body": "You can personalise your experience by: keeping your profile details current.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_08",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you · 8",
+      "body": "You can personalise your experience by: using filters that match your needs.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_09",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you",
+      "body": "You can personalise your experience by: building a useful shortlist.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_10",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you · 10",
+      "body": "You can personalise your experience by: exploring your app settings.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_11",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you",
+      "body": "You can personalise your experience by: choosing relevant alert preferences.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_12",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you · 12",
+      "body": "You can personalise your experience by: saving searches for later.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_13",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you",
+      "body": "You can personalise your experience by: reviewing your preferred configuration.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_14",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you · 14",
+      "body": "You can personalise your experience by: comparing listings at your pace.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_15",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you",
+      "body": "You can personalise your experience by: keeping track of favourite homes.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_16",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you · 16",
+      "body": "You can personalise your experience by: adjusting preferences when needs change.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_17",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you",
+      "body": "You can personalise your experience by: exploring available properties.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_18",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you · 18",
+      "body": "You can personalise your experience by: reviewing your search filters.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_19",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you",
+      "body": "You can personalise your experience by: organising your shortlist.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "account_20",
+      "category": "account",
+      "requiresProperty": false,
+      "title": "Make GgnHome work for you · 20",
+      "body": "You can personalise your experience by: starting with a location and budget.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_01",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip",
+      "body": "Before making a decision, remember to: compare location and total cost.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_02",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip · 2",
+      "body": "Before making a decision, remember to: confirm availability with the advertiser.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_03",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip",
+      "body": "Before making a decision, remember to: verify ownership and documents for purchases.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_04",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip · 4",
+      "body": "Before making a decision, remember to: review rent, deposit and maintenance terms.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_05",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip",
+      "body": "Before making a decision, remember to: compare amenities, size and commute.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_06",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip · 6",
+      "body": "Before making a decision, remember to: check that photos match the property.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_07",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip",
+      "body": "Before making a decision, remember to: arrange visits through trusted channels.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_08",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip · 8",
+      "body": "Before making a decision, remember to: avoid paying before verifying the recipient.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_09",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip",
+      "body": "Before making a decision, remember to: read the full listing details.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_10",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip · 10",
+      "body": "Before making a decision, remember to: compare similar properties nearby.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_11",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip",
+      "body": "Before making a decision, remember to: ask about additional charges.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_12",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip · 12",
+      "body": "Before making a decision, remember to: review the property in person where possible.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_13",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip",
+      "body": "Before making a decision, remember to: confirm the terms in writing.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_14",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip · 14",
+      "body": "Before making a decision, remember to: take time to compare your options.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_15",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip",
+      "body": "Before making a decision, remember to: check the latest information directly.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_16",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip · 16",
+      "body": "Before making a decision, remember to: use filters to narrow your search.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_17",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip",
+      "body": "Before making a decision, remember to: keep a shortlist for comparison.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_18",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip · 18",
+      "body": "Before making a decision, remember to: ask clear questions before visiting.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_19",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip",
+      "body": "Before making a decision, remember to: verify important claims independently.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "market_tip_20",
+      "category": "market_tip",
+      "requiresProperty": false,
+      "title": "A useful property-search tip · 20",
+      "body": "Before making a decision, remember to: make an informed decision at your pace.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_01",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome",
+      "body": "Whenever you're ready, you can: browse available listings.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_02",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome · 2",
+      "body": "Whenever you're ready, you can: save homes for comparison.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_03",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome",
+      "body": "Whenever you're ready, you can: refine your preferred area.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_04",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome · 4",
+      "body": "Whenever you're ready, you can: review your shortlist.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_05",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome",
+      "body": "Whenever you're ready, you can: update notification preferences.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_06",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome · 6",
+      "body": "Whenever you're ready, you can: compare prices and amenities.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_07",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome",
+      "body": "Whenever you're ready, you can: continue your property search.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_08",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome · 8",
+      "body": "Whenever you're ready, you can: explore the latest options.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_09",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome",
+      "body": "Whenever you're ready, you can: adjust filters to match your needs.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_10",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome · 10",
+      "body": "Whenever you're ready, you can: check your saved properties.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_11",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome",
+      "body": "Whenever you're ready, you can: review details before enquiring.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_12",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome · 12",
+      "body": "Whenever you're ready, you can: browse at your own pace.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_13",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome",
+      "body": "Whenever you're ready, you can: find options that suit your budget.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_14",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome · 14",
+      "body": "Whenever you're ready, you can: compare locations and commute.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_15",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome",
+      "body": "Whenever you're ready, you can: keep your preferences current.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_16",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome · 16",
+      "body": "Whenever you're ready, you can: explore GgnHome today.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_17",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome",
+      "body": "Whenever you're ready, you can: save promising listings.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_18",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome · 18",
+      "body": "Whenever you're ready, you can: revisit your search when ready.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_19",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome",
+      "body": "Whenever you're ready, you can: discover property options.",
+      "deepLink": "/search"
+    },
+    {
+      "id": "general_20",
+      "category": "general",
+      "requiresProperty": false,
+      "title": "A quick update from GgnHome · 20",
+      "body": "Whenever you're ready, you can: take the next step in your search.",
+      "deepLink": "/search"
+    }
+  ]
+}
