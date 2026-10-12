@@ -76,6 +76,7 @@ const AdminLayout = lazy(() => import("./screens/Admin Page/shell/AdminLayout"))
 const AdminPayments = lazy(() => import("./screens/Admin Page/admin.properties"));
 const FeatureTogglesAdmin = lazy(() => import("./screens/Admin Page/admin.featureToggles"));
 const AdminAppDownloads = lazy(() => import("./screens/Admin Page/admin.appDownloads"));
+const PublicAppDownloads = lazy(() => import("./screens/App/PublicAppDownloads"));
 const AdminSettings = lazy(() => import("./screens/Admin Page/admin.settings"));
 const AdminAiConsultantLeads = lazy(() => import("./screens/Admin Page/admin.aiConsultantLeads"));
 const AdminServiceCatalog = lazy(() => import("./screens/Admin Page/admin.serviceCatalog"));
@@ -161,6 +162,8 @@ function App() {
         <Routes location={location}>
       <Route path="/" element={<Dashboard />} />
       <Route path="/login" element={<LoginModal />} />
+      {/* Public APK listing page; download links are read-only here. */}
+      <Route path="/apps" element={<PublicAppDownloads />} />
       <Route path="/test" element={<SmsOtpTest />} />
       {/* Public status page, outside the admin gate (it is more specific than the /admin layout below) */}
       <Route path="/admin/ping" element={<AdminPing />} />
