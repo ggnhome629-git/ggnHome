@@ -85,6 +85,7 @@ const SalePropertyPageAgentMobile = lazy(() => import("./screens/Agent Page/Prop
 // PartnerHub (ggnHome Partner Portal for partners to manage properties and leads)
 const PartnerHubDashboard = lazy(() => import("./screens/PartnerHub/Dashboard/PartnerHubDashboard"));
 const PartnerHubProperties = lazy(() => import("./screens/PartnerHub/Properties/PartnerHubProperties"));
+const PartnerPropertyAdd = lazy(() => import("./screens/PartnerHub/Properties/PartnerPropertyAdd"));
 const PartnerHubLeads = lazy(() => import("./screens/PartnerHub/Leads/PartnerHubLeads"));
 const PartnerHubProfile = lazy(() => import("./screens/PartnerHub/Profile/PartnerHubProfile"));
 const PartnerHubProtectedRoute = lazy(() => import("./screens/PartnerHub/PartnerHubProtectedRoute"));
