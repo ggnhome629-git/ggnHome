@@ -369,6 +369,21 @@ export default function PropertyPostForm({
         method: "POST",
         body: (() => {
           const form = buildFormData(f, photos, panoramas);
+          if (mode === "partner") {
+            form.append("mobile", String(f.partnerMobile || "").replace(/[\\s-]/g, ""));
+            form.append("cornerPosition", f.cornerPosition || "not_sure");
+            if (f.partnerLatitude) form.append("latitude", f.partnerLatitude);
+            if (f.partnerLongitude) form.append("longitude", f.partnerLongitude);
+            form.append("amenities", JSON.stringify(nearbyAmenities
+              .filter((item) => item.name.trim() || item.distance !== "")
+              .map((item) => ({
+                category: item.category,
+                name: item.name,
+                distance: item.distance,
+                source: item.source,
+                edited: item.source === "locationiq",
+              }))));
+          }
           Object.entries(extraFormFields || {}).forEach(([k, v]) => form.append(k, v));
           return form;
         })(),
