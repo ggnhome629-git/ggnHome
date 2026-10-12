@@ -26,7 +26,7 @@ const thumb = (r) => {
   return (first && (first.url || first)) || "";
 };
 const statusLabel = (r) => (r.isActive ? "Live" : r.isPending ? (r.isEdited ? "Edited – review" : "New – review") : "Not live");
-const sourceLabel = (r) => (r.partnerAgentId ? "Partner-added" : r.origin === "scraped" ? (r.source === "nobroker" ? "NoBroker" : "99acres") : r.ownerType === "Partner" ? "Partner" : r.ownerType === "Partner" ? "Partner" : r.ownerType === "Agent" ? "Agent" : "Owner");
+const sourceLabel = (r) => ((r.partnerAgentId || r.ownerType === "Partner" || r.rankingSource === "Partner") ? "Partner-added" : r.origin === "scraped" ? (r.source === "nobroker" ? "NoBroker" : "99acres") : r.ownerType === "Partner" ? "Partner" : r.ownerType === "Partner" ? "Partner" : r.ownerType === "Partner" ? "Partner" : r.ownerType === "Agent" ? "Agent" : "Owner");
 
 const money = (r) => (r.price ? `₹${Number(r.price).toLocaleString("en-IN")}${r.listingType === "rent" ? "/mo" : ""}` : "—");
 
@@ -262,7 +262,7 @@ export default function AdminPropertyManager() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={tab === "partner" ? 9 : current.bulkOrigin ? 8 : 7} style={{ textAlign: "center", padding: 32 }}>Loading…</td></tr>
+                  <tr><td colSpan={tab === "partner" ? 10 : current.bulkOrigin ? 8 : 7} style={{ textAlign: "center", padding: 32 }}>Loading…</td></tr>
                 ) : rows.map((r) => (
                   <tr key={r._id} className="admin-table-row">
                     {current.bulkOrigin && (
