@@ -679,26 +679,14 @@
       "location",
       "budget",
       "bhk",
-      "propertyType",
-      "furnishing",
-      "moveIn",
-      "occupancy",
-      "priorities",
-      "distances",
-      "corner"
+      "priorities"
     ],
     "sale": [
       "mode",
       "location",
       "budget",
       "bhk",
-      "propertyType",
-      "area",
-      "possession",
-      "purpose",
-      "priorities",
-      "distances",
-      "corner"
+      "priorities"
     ],
     "contact": [
       "name",
@@ -712,11 +700,10 @@
       "budget"
     ],
     "notes": [
-      "A slot already answered (in any earlier message) is never asked again.",
-      "A skipped optional slot is not asked again unless the user brings it up.",
-      "bhk is skipped automatically when propertyType is plot.",
-      "distances expands into one follow-up per parameter the user picked in priorities.",
-      "The user may say 'show results' at any point once requiredBeforeSearch is satisfied."
+      "Five short questions at most, then results. Anything else the user mentions (furnishing, move-in, occupancy, area, possession, purpose, exact distances, corner) is understood and applied without being asked.",
+      "A slot already answered (in any earlier message) is never asked again; 'show homes now' works once rent/buy, location and budget are known.",
+      "Furnishing, move-in, possession and exact distances are offered as one-tap refinements after the results instead of extra questions.",
+      "bhk is skipped automatically when propertyType is plot."
     ]
   },
   "slots": {
@@ -733,19 +720,19 @@
       },
       "ask": {
         "en": [
-          "Are you looking to rent a home or buy one?",
-          "First things first — rent or buy?",
-          "Shall we find you a place to rent, or a home to buy?"
+          "Are you looking to rent or to buy?",
+          "Renting or buying — what's the plan?",
+          "Shall we look for a place to rent, or a home to buy?"
         ],
         "hinglish": [
-          "Aap ghar rent pe lena chahte hain ya khareedna?",
-          "Sabse pehle — rent ya buy?",
-          "Kiraye ka ghar dhoondhein ya khareedne ke liye?"
+          "Rent pe lena hai ya khareedna hai?",
+          "Kiraye ka ghar chahiye ya khareedna hai?",
+          "Rent ya buy — kya plan hai?"
         ],
         "hi": [
-          "आप घर किराये पर लेना चाहते हैं या ख़रीदना?",
-          "सबसे पहले — किराया या ख़रीद?",
-          "किराये का घर ढूँढें या ख़रीदने के लिए?"
+          "किराये पर लेना है या ख़रीदना है?",
+          "किराये का घर चाहिए या ख़रीदना है?",
+          "किराया या ख़रीद — क्या सोचा है?"
         ]
       },
       "askAgain": {
@@ -840,19 +827,19 @@
       },
       "ask": {
         "en": [
-          "Which sector or area in Gurgaon do you prefer? You can name more than one.",
-          "Where in Gurgaon would you like to live? A sector number or locality works.",
-          "Which part of Gurgaon — any sectors or localities in mind?"
+          "Which part of Gurgaon are you eyeing? A sector or area name is perfect.",
+          "Where would you like to live? Sector number or area — either works.",
+          "Got a sector or neighbourhood in mind?"
         ],
         "hinglish": [
-          "Gurgaon mein kaunsa sector ya area pasand hai? Ek se zyada bhi bata sakte hain.",
-          "Gurgaon mein kahan rehna chahenge? Sector number ya locality bataiye.",
-          "Gurgaon ka kaunsa hissa — koi sector ya area dimaag mein hai?"
+          "Gurgaon mein kahan dekh rahe hain? Sector ya area ka naam bata dijiye.",
+          "Kaunsa sector ya area pasand hai?",
+          "Kahan rehna chahenge — koi sector ya area?"
         ],
         "hi": [
-          "गुड़गाँव में कौन-सा सेक्टर या इलाका पसंद है? एक से ज़्यादा भी बता सकते हैं।",
-          "गुड़गाँव में कहाँ रहना चाहेंगे? सेक्टर नंबर या इलाका बताइए।",
-          "गुड़गाँव का कौन-सा हिस्सा — कोई सेक्टर या इलाका सोचा है?"
+          "गुड़गाँव में कहाँ देख रहे हैं? सेक्टर या इलाके का नाम बता दीजिए।",
+          "कौन-सा सेक्टर या इलाका पसंद है?",
+          "कहाँ रहना चाहेंगे — कोई सेक्टर या इलाका?"
         ]
       },
       "askAgain": {
@@ -978,19 +965,19 @@
       },
       "ack": {
         "en": [
-          "{location} — good choice.",
-          "Noted: {location}.",
-          "{location}, got it."
+          "{location} — lovely area.",
+          "{location}, nice.",
+          "Good pick — {location}."
         ],
         "hinglish": [
-          "{location} — achhi choice hai.",
-          "Note kar liya: {location}.",
-          "{location}, theek hai."
+          "{location} — badhiya area hai.",
+          "{location}, achha.",
+          "Achhi choice — {location}."
         ],
         "hi": [
-          "{location} — अच्छा चुनाव है।",
-          "नोट कर लिया: {location}।",
-          "{location}, ठीक है।"
+          "{location} — बढ़िया इलाका है।",
+          "{location}, अच्छा।",
+          "अच्छा चुनाव — {location}।"
         ]
       },
       "anywhereAck": {
@@ -1096,36 +1083,36 @@
       "ask": {
         "rent": {
           "en": [
-            "What's your maximum monthly rent?",
-            "How much rent per month are you comfortable with?",
-            "What monthly budget should I work with?"
+            "What monthly rent works for you?",
+            "And your monthly budget?",
+            "How much rent are you comfortable with each month?"
           ],
           "hinglish": [
-            "Maximum monthly rent kitna hai?",
             "Mahine ka kitna rent chalega?",
-            "Monthly budget kitna rakhein?"
+            "Monthly budget kitna hai?",
+            "Har mahine kitna rent theek rahega?"
           ],
           "hi": [
-            "महीने का अधिकतम किराया कितना है?",
-            "हर महीने कितना किराया ठीक रहेगा?",
-            "मासिक बजट कितना रखें?"
+            "महीने का कितना किराया चलेगा?",
+            "मासिक बजट कितना है?",
+            "हर महीने कितना किराया ठीक रहेगा?"
           ]
         },
         "sale": {
           "en": [
-            "What's your purchase budget?",
-            "How much are you planning to spend on the home?",
-            "What budget range should I search in?"
+            "What's your budget for the home?",
+            "Roughly how much are you looking to spend?",
+            "What budget should I keep in mind?"
           ],
           "hinglish": [
-            "Purchase budget kitna hai?",
-            "Ghar pe kitna kharch karne ka plan hai?",
-            "Kis budget range mein dhoondhun?"
+            "Ghar ka budget kitna hai?",
+            "Lagbhag kitna kharch karna hai?",
+            "Kitna budget rakhein?"
           ],
           "hi": [
-            "ख़रीद का बजट कितना है?",
-            "घर पर कितना ख़र्च करने का प्लान है?",
-            "किस बजट रेंज में ढूँढूँ?"
+            "घर का बजट कितना है?",
+            "लगभग कितना ख़र्च करना है?",
+            "कितना बजट रखें?"
           ]
         }
       },
@@ -1259,19 +1246,19 @@
       },
       "ack": {
         "en": [
-          "Budget set to {budget}.",
+          "{budget}, got it.",
           "Okay, {budget}.",
           "{budget} — noted."
         ],
         "hinglish": [
-          "Budget {budget} set kar diya.",
-          "Theek hai, {budget}.",
-          "{budget} — note kar liya."
+          "{budget}, theek hai.",
+          "Okay, {budget}.",
+          "{budget} — note kiya."
         ],
         "hi": [
-          "बजट {budget} रख दिया।",
-          "ठीक है, {budget}।",
-          "{budget} — नोट कर लिया।"
+          "{budget}, ठीक है।",
+          "ठीक, {budget}।",
+          "{budget} — नोट किया।"
         ]
       },
       "followUps": [
@@ -1401,18 +1388,18 @@
       },
       "ask": {
         "en": [
-          "How many bedrooms do you need?",
-          "Which configuration — 1, 2, 3 BHK or more?",
-          "How many BHK are you looking for?"
+          "How many bedrooms?",
+          "How many BHK do you need?",
+          "And how many bedrooms would be ideal?"
         ],
         "hinglish": [
+          "Kitne BHK chahiye?",
           "Kitne bedroom chahiye?",
-          "Kaunsa configuration — 1, 2, 3 BHK ya zyada?",
           "Kitne BHK ka ghar chahiye?"
         ],
         "hi": [
+          "कितने BHK चाहिए?",
           "कितने बेडरूम चाहिए?",
-          "कौन-सा कॉन्फ़िगरेशन — 1, 2, 3 BHK या ज़्यादा?",
           "कितने BHK का घर चाहिए?"
         ]
       },
@@ -1487,19 +1474,19 @@
       ],
       "ack": {
         "en": [
-          "{bhk} — noted.",
-          "Looking for {bhk}.",
-          "{bhk}, perfect."
+          "{bhk} it is.",
+          "{bhk}, noted.",
+          "{bhk} — perfect."
         ],
         "hinglish": [
-          "{bhk} — note kar liya.",
-          "{bhk} dhoondhte hain.",
-          "{bhk}, perfect."
+          "{bhk}, theek hai.",
+          "{bhk} — perfect.",
+          "{bhk}, note kiya."
         ],
         "hi": [
-          "{bhk} — नोट कर लिया।",
-          "{bhk} ढूँढते हैं।",
-          "{bhk}, बढ़िया।"
+          "{bhk}, ठीक है।",
+          "{bhk} — बढ़िया।",
+          "{bhk}, नोट किया।"
         ]
       },
       "followUps": [
@@ -1789,15 +1776,15 @@
       "ack": {
         "en": [
           "{value} — noted.",
-          "Okay, {value}."
+          "{value}, sure."
         ],
         "hinglish": [
           "{value} — theek hai.",
-          "Okay, {value}."
+          "{value}, zaroor."
         ],
         "hi": [
           "{value} — ठीक है।",
-          "ठीक, {value}।"
+          "{value}, ज़रूर।"
         ]
       },
       "examples": [
@@ -1883,16 +1870,13 @@
       ],
       "ack": {
         "en": [
-          "Move-in: {value}.",
-          "{value} — noted."
+          "Move-in: {value} — noted."
         ],
         "hinglish": [
-          "Shift: {value}.",
-          "{value} — note kar liya."
+          "Shift {value} — note kiya."
         ],
         "hi": [
-          "शिफ़्ट: {value}।",
-          "{value} — नोट कर लिया।"
+          "शिफ़्ट {value} — नोट किया।"
         ]
       },
       "examples": [
@@ -1990,15 +1974,13 @@
       "ack": {
         "en": [
           "{value} — noted.",
-          "Got it, {value}."
+          "{value}, got it."
         ],
         "hinglish": [
-          "{value} — note kar liya.",
-          "Theek hai, {value}."
+          "{value} — note kiya."
         ],
         "hi": [
-          "{value} — नोट कर लिया।",
-          "ठीक है, {value}।"
+          "{value} — नोट किया।"
         ]
       },
       "followUps": [
@@ -2321,35 +2303,27 @@
       },
       "ask": {
         "en": [
-          "Which of these should be close to your home? Pick as many as you like.",
-          "What matters nearby — market, metro, hospital, school, park or mall?",
-          "Tap everything you'd like within easy reach."
+          "Last one — anything you'd like close by? Tap all that matter, or I'll show homes right away.",
+          "One last thing: should anything be nearby? Pick any, or just see the homes.",
+          "Almost done! Anything important nearby? Tap as many as you like."
         ],
         "hinglish": [
-          "Ghar ke paas kya-kya hona chahiye? Jitne chahein choose kijiye.",
-          "Paas mein kya zaroori hai — market, metro, hospital, school, park ya mall?",
-          "Jo bhi paas chahiye sab tap kijiye."
+          "Aakhri sawaal — paas mein kya chahiye? Jo zaroori ho tap kijiye, ya seedha ghar dekhiye.",
+          "Bas ek aur — paas mein kuch zaroori? Chuniye ya seedha ghar dekhiye.",
+          "Lagbhag ho gaya! Paas mein kya hona chahiye?"
         ],
         "hi": [
-          "घर के पास क्या-क्या होना चाहिए? जितने चाहें चुनिए।",
-          "पास में क्या ज़रूरी है — बाज़ार, मेट्रो, अस्पताल, स्कूल, पार्क या मॉल?",
-          "जो भी पास चाहिए, सब चुनिए।"
+          "आख़िरी सवाल — पास में क्या चाहिए? जो ज़रूरी हो चुनिए, या सीधे घर देखिए।",
+          "बस एक और — पास में कुछ ज़रूरी? चुनिए या सीधे घर देखिए।",
+          "लगभग हो गया! पास में क्या होना चाहिए?"
         ]
       },
       "hint": {
-        "en": "Distances come from partner and map data and are straight-line estimates — I'll always say when something isn't verified.",
-        "hinglish": "Distance partner aur map data se aati hai aur seedhi line ka andaaza hoti hai — verified na ho to main bata dunga.",
-        "hi": "दूरी पार्टनर और मैप डेटा से आती है और सीधी रेखा का अनुमान होती है — सत्यापित न हो तो मैं बता दूँगा।"
+        "en": "Distances are approx. estimates — I'll always say when one isn't verified.",
+        "hinglish": "Distance andaaza hai — verified na ho to main bata dunga.",
+        "hi": "दूरी अनुमान है — सत्यापित न हो तो मैं बता दूँगा।"
       },
       "chips": [
-        {
-          "value": "market",
-          "label": {
-            "en": "🛒 Market",
-            "hinglish": "🛒 Market",
-            "hi": "🛒 बाज़ार"
-          }
-        },
         {
           "value": "metro",
           "label": {
@@ -2359,19 +2333,11 @@
           }
         },
         {
-          "value": "hospital",
+          "value": "market",
           "label": {
-            "en": "🏥 Hospital",
-            "hinglish": "🏥 Hospital",
-            "hi": "🏥 अस्पताल"
-          }
-        },
-        {
-          "value": "school",
-          "label": {
-            "en": "🎓 School",
-            "hinglish": "🎓 School",
-            "hi": "🎓 स्कूल"
+            "en": "🛒 Market",
+            "hinglish": "🛒 Market",
+            "hi": "🛒 बाज़ार"
           }
         },
         {
@@ -2383,6 +2349,22 @@
           }
         },
         {
+          "value": "school",
+          "label": {
+            "en": "🎓 School",
+            "hinglish": "🎓 School",
+            "hi": "🎓 स्कूल"
+          }
+        },
+        {
+          "value": "hospital",
+          "label": {
+            "en": "🏥 Hospital",
+            "hinglish": "🏥 Hospital",
+            "hi": "🏥 अस्पताल"
+          }
+        },
+        {
           "value": "mall",
           "label": {
             "en": "🛍️ Mall",
@@ -2391,25 +2373,33 @@
           }
         },
         {
+          "value": "corner",
+          "label": {
+            "en": "📐 Corner home",
+            "hinglish": "📐 Corner ghar",
+            "hi": "📐 कॉर्नर घर"
+          }
+        },
+        {
           "value": "none of these",
           "label": {
-            "en": "None needed",
-            "hinglish": "Zaroorat nahi",
-            "hi": "ज़रूरत नहीं"
+            "en": "Show homes now →",
+            "hinglish": "Ghar dikhao →",
+            "hi": "घर दिखाओ →"
           }
         }
       ],
       "ack": {
         "en": [
-          "I'll prioritise homes near {value}.",
-          "Noted — close to {value}."
+          "Noted — close to {value}.",
+          "Got it, near {value}."
         ],
         "hinglish": [
-          "{value} ke paas wale ghar pehle dikhaunga.",
+          "Theek hai — {value} ke paas.",
           "Note kiya — {value} ke paas."
         ],
         "hi": [
-          "{value} के पास वाले घर पहले दिखाऊँगा।",
+          "ठीक है — {value} के पास।",
           "नोट किया — {value} के पास।"
         ]
       },
@@ -4430,13 +4420,13 @@
   "responses": {
     "welcome": {
       "en": [
-        "Hi, I'm your GgnHome AI property consultant 👋 Tell me what you're looking for — speak or type — and I'll find the best-matching homes in Gurgaon."
+        "Hi! I'm GgnHome's property assistant 👋 Tell me what you're after in your own words, or just answer a few quick questions."
       ],
       "hinglish": [
-        "Namaste, main aapka GgnHome AI property consultant hoon 👋 Batayiye kya chahiye — bol kar ya likh kar — main Gurgaon mein sabse sahi ghar dhoondh dunga."
+        "Namaste! Main GgnHome ka property assistant hoon 👋 Apne shabdon mein bataiye kya chahiye, ya bas kuch chhote sawaalon ka jawab dijiye."
       ],
       "hi": [
-        "नमस्ते, मैं आपका GgnHome AI प्रॉपर्टी सलाहकार हूँ 👋 बताइए क्या चाहिए — बोलकर या लिखकर — मैं गुड़गाँव में सबसे सही घर ढूँढ दूँगा।"
+        "नमस्ते! मैं GgnHome का प्रॉपर्टी सहायक हूँ 👋 अपने शब्दों में बताइए क्या चाहिए, या बस कुछ छोटे सवालों के जवाब दीजिए।"
       ]
     },
     "welcomeBack": {
@@ -4452,16 +4442,16 @@
     },
     "understoodMany": {
       "en": [
-        "Got all that: {value}.",
-        "Perfect — I've noted {value}."
+        "Got it — {value}.",
+        "Great, that helps: {value}."
       ],
       "hinglish": [
-        "Sab samajh gaya: {value}.",
-        "Perfect — note kar liya: {value}."
+        "Samajh gaya — {value}.",
+        "Badhiya: {value}."
       ],
       "hi": [
-        "सब समझ गया: {value}।",
-        "बढ़िया — नोट कर लिया: {value}।"
+        "समझ गया — {value}।",
+        "बढ़िया: {value}।"
       ]
     },
     "updated": {
@@ -4519,16 +4509,16 @@
     },
     "readyToSearch": {
       "en": [
-        "That's everything I need. Finding your best matches now…",
-        "All set — let me search GgnHome's live listings for you."
+        "Perfect — let me find your best matches…",
+        "Lovely, finding homes for you now…"
       ],
       "hinglish": [
-        "Bas itna hi chahiye tha. Ab best matches dhoondhta hoon…",
-        "Sab set — GgnHome ki live listings mein dhoondhta hoon."
+        "Perfect — ab aapke liye best ghar dhoondhta hoon…",
+        "Badhiya, abhi ghar dhoondh raha hoon…"
       ],
       "hi": [
-        "बस इतना ही चाहिए था। अब सबसे अच्छे मिलान ढूँढता हूँ…",
-        "सब तैयार — GgnHome की लाइव लिस्टिंग में ढूँढता हूँ।"
+        "बढ़िया — अब आपके लिए सबसे अच्छे घर ढूँढता हूँ…",
+        "ठीक है, अभी घर ढूँढ रहा हूँ…"
       ]
     },
     "needMoreBeforeSearch": {
@@ -4569,13 +4559,13 @@
     },
     "afterResults": {
       "en": [
-        "Want a GgnHome expert to arrange visits for these? Or refine — e.g. “increase budget to 35k” or “only furnished”."
+        "Like any of these? I can have an expert set up visits — or fine-tune: “only furnished”, “up to 35k”, “near metro”."
       ],
       "hinglish": [
-        "Kya GgnHome expert inke visits arrange kare? Ya refine kijiye — jaise “budget 35k kar do” ya “sirf furnished”."
+        "Koi pasand aaya? Expert visit arrange kar dega — ya badlav kijiye: “sirf furnished”, “35k tak”, “metro ke paas”."
       ],
       "hi": [
-        "क्या GgnHome विशेषज्ञ इनकी विज़िट तय करें? या बदलाव कीजिए — जैसे “बजट 35 हज़ार कर दो” या “सिर्फ़ फ़र्निश्ड”।"
+        "कोई पसंद आया? विशेषज्ञ विज़िट तय कर देंगे — या बदलाव कीजिए: “सिर्फ़ फ़र्निश्ड”, “35 हज़ार तक”, “मेट्रो के पास”।"
       ]
     },
     "afterResultsChips": [
@@ -4682,7 +4672,7 @@
     "noMatchReason": {
       "budget": {
         "en": [
-          "The budget is the tightest limit — {count} homes match if I go up to {value}. Shall I?"
+          "The budget is the tightest limit — at up to {value} I can show you {homes}. Shall I?"
         ],
         "hinglish": [
           "Budget sabse tight hai — {value} tak jaaun to {count} ghar milte hain. Kar doon?"
@@ -4693,7 +4683,7 @@
       },
       "location": {
         "en": [
-          "There's nothing in {location} right now, but {count} homes match elsewhere in Gurgaon. Want to see them?"
+          "Nothing in {location} right now, but I can show you {homes} elsewhere in Gurgaon. Want to see them?"
         ],
         "hinglish": [
           "{location} mein abhi kuch nahi hai, par Gurgaon mein baaki jagah {count} ghar match karte hain. Dikhaun?"
@@ -4704,7 +4694,7 @@
       },
       "bhk": {
         "en": [
-          "{bhk} is the limiting factor — {count} homes match with other configurations. Open it up?"
+          "{bhk} is what's limiting it — with other configurations I can show you {homes}. Open it up?"
         ],
         "hinglish": [
           "{bhk} ki wajah se match nahi mil raha — dusre configuration mein {count} ghar hain. Khol doon?"
@@ -4715,7 +4705,7 @@
       },
       "type": {
         "en": [
-          "The property type is narrowing it down — {count} homes match if any type is fine. Include them?"
+          "The property type is narrowing it down — if any type is fine, I can show you {homes}. Include them?"
         ],
         "hinglish": [
           "Property type ki wajah se kam hai — koi bhi type chale to {count} ghar hain. Shaamil karun?"
@@ -5114,6 +5104,75 @@
       ],
       "hi": [
         "धन्यवाद! यह रहा आपकी रिक्वेस्ट का सारांश।"
+      ]
+    },
+    "refineChipsRent": [
+      {
+        "value": "fully furnished",
+        "label": {
+          "en": "🛋️ Furnished only",
+          "hinglish": "🛋️ Sirf furnished",
+          "hi": "🛋️ सिर्फ़ फ़र्निश्ड"
+        }
+      },
+      {
+        "value": "semi furnished",
+        "label": {
+          "en": "Semi-furnished",
+          "hinglish": "Semi-furnished",
+          "hi": "सेमी-फ़र्निश्ड"
+        }
+      },
+      {
+        "value": "immediately",
+        "label": {
+          "en": "⚡ Move in now",
+          "hinglish": "⚡ Turant shift",
+          "hi": "⚡ तुरंत शिफ़्ट"
+        }
+      }
+    ],
+    "refineChipsSale": [
+      {
+        "value": "ready to move",
+        "label": {
+          "en": "✅ Ready to move",
+          "hinglish": "✅ Ready to move",
+          "hi": "✅ रेडी-टू-मूव"
+        }
+      },
+      {
+        "value": "under construction",
+        "label": {
+          "en": "🏗️ Under construction",
+          "hinglish": "🏗️ Under construction",
+          "hi": "🏗️ निर्माणाधीन"
+        }
+      }
+    ],
+    "notedSide": {
+      "en": [
+        "Noted.",
+        "Got it."
+      ],
+      "hinglish": [
+        "Note kar liya.",
+        "Theek hai."
+      ],
+      "hi": [
+        "नोट कर लिया।",
+        "ठीक है।"
+      ]
+    },
+    "noHomesOnScreen": {
+      "en": [
+        "There aren't any homes on screen right now — try “show results” or change a filter."
+      ],
+      "hinglish": [
+        "Abhi screen pe koi ghar nahi hai — “results dikhao” boliye ya filter badliye."
+      ],
+      "hi": [
+        "अभी स्क्रीन पर कोई घर नहीं है — “नतीजे दिखाओ” बोलिए या फ़िल्टर बदलिए।"
       ]
     }
   },

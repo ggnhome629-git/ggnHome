@@ -21,6 +21,7 @@ const CONTACT_SLOTS = ["name", "phone", "email", "review"];
 const REQUIRED = bank.flows.requiredBeforeSearch;
 const FOLLOW_UPS = ["location.strict", "budget.strict", "bhk.familySize", "occupancy.pets"];
 const MAX_SHOWN = 30;
+const FOLLOW_UPS_ENABLED = false;
 
 /* ------------------------------------------------------------- state */
 
@@ -234,7 +235,7 @@ function questionFor(s, slot) {
   if (!def.required && slot !== "email" && !def.chips?.some?.((c) => c.value === "skip")) {
     if (!out.chips.some((c) => c.value === "skip" || /^any|none|no preference|budget is flexible/.test(c.value))) out.chips.push(skipChip(lang));
   }
-  if (s.phase === "collect" && !requiredMissing(s).length && !["mode", "location", "budget"].includes(slot)) out.chips.push(showNowChip(lang));
+  if (s.phase === "collect" && !requiredMissing(s).length && !["mode", "location", "budget", "priorities"].includes(slot)) out.chips.push(showNowChip(lang));
   if (slot === "phone") out.inputType = "tel";
   if (slot === "email") out.inputType = "email";
   return out;
@@ -249,6 +250,10 @@ function followUpQuestion(s, id) {
 }
 
 function dueFollowUp(s, justAnswered) {
+  // Kept deliberately quiet: the five-question flow never stops to ask
+  // follow-ups. Strictness and distances use sensible defaults, and the
+  // no-match diagnosis offers to relax anything that empties the results.
+  if (FOLLOW_UPS_ENABLED !== true) return null;
   const r = s.req;
   const candidates = [];
   if (justAnswered.includes("location") && (r.sectors || []).length + (r.localities || []).length === 1 && !r.anywhere && !r.locationScope) candidates.push("location.strict");
@@ -537,7 +542,8 @@ function askNext(s, messages, prefix = "") {
 
 function reAsk(s, messages, prefix) {
   if (s.phase === "results" || s.phase === "done") {
-    messages.push({ text: [prefix, say(bank.responses.afterResults, s.lang, s.turn)].filter(Boolean).join(" "), chips: chips(bank.responses.afterResultsChips, s.lang), kind: "info" });
+    const resultChips = bank.responses.afterResultsChips.filter((c) => c.value !== "show more" || (s.lastResultCount || 0) > s.shown.length);
+    messages.push({ text: [prefix, say(bank.responses.afterResults, s.lang, s.turn)].filter(Boolean).join(" "), chips: chips(resultChips, s.lang), kind: "info" });
     return null;
   }
   if (s.pending && s.pending.type === "followUp") {
@@ -560,7 +566,10 @@ function startContact(s, messages, prefix) {
 async function describeListing(s, index, nearbyOnly) {
   const idx = index === "last" ? s.shown.length : Number(index);
   const ref = s.shown[idx - 1];
-  if (!ref) return { text: say(bank.responses[s.shown.length ? "propertyNotFound" : "noResultsYet"], s.lang, s.turn, { index: idx }) };
+  if (!ref) {
+    const key = s.shown.length ? "propertyNotFound" : s.phase === "collect" ? "noResultsYet" : "noHomesOnScreen";
+    return { text: say(bank.responses[key], s.lang, s.turn, { index: idx }) };
+  }
   const doc = await matcher.findListing(ref.id, ref.listingType);
   if (!doc) return { text: say(bank.responses.propertyNotFound, s.lang, s.turn, { index: idx }) };
   const card = matcher.cardFor(doc, { ...s.req, mode: ref.listingType === "sale" ? "sale" : "rent" }, matcher.scoreListing(doc, { ...s.req, mode: ref.listingType === "sale" ? "sale" : "rent" }, s.lang, Date.now()), s.lang);
@@ -743,7 +752,8 @@ async function handleTurn({ state: rawState, message, action }) {
     return handleTurn({ state: s, action: { type: "edit", slot } });
   }
   if (lower === "refine") {
-    messages.push({ text: say(bank.responses.refinePrompt, lang, s.turn), chips: chips(bank.responses.refineChips, lang), kind: "question" });
+    const extra = s.req.mode === "sale" ? bank.responses.refineChipsSale : bank.responses.refineChipsRent;
+    messages.push({ text: say(bank.responses.refinePrompt, lang, s.turn), chips: chips([...(extra || []), ...bank.responses.refineChips], lang), kind: "question" });
     return { state: s, messages, next: null, ui: ui(s) };
   }
   if ((hasIntent("propertyDetail") || hasIntent("propertyNearby")) && parsed.ordinal && parsed.fieldCount === 0) {
@@ -759,7 +769,12 @@ async function handleTurn({ state: rawState, message, action }) {
   // ---- fields
   const distanceParamBefore = s.slot === "distances" ? s.distanceParam : null;
   let touched = applyFields(s, parsed, { message: text });
-  let understood = touched.length > 0 || Boolean(s.pending) || Boolean(parsed.phone || parsed.email || (parsed.name && s.slot === "name"));
+  // "Corner home" is one of the nearby-question options, so it answers it.
+  if (s.slot === "priorities" && touched.some((t) => t.slot === "corner") && !s.answered.includes("priorities")) markAnswered(s, "priorities");
+  // Side details (pets, head-count, "nearby areas are fine") aren't questions of
+  // their own but are still understood and saved.
+  const sideInfo = Boolean(parsed.locationScope || typeof parsed.pets === "boolean" || parsed.people);
+  let understood = touched.length > 0 || sideInfo || Boolean(s.pending) || Boolean(parsed.phone || parsed.email || (parsed.name && s.slot === "name"));
 
   // Optional model assistance when rules understood nothing.
   if (!understood && !parsed.yes && !parsed.no && !parsed.skip && !intents.length && text.length >= 4 && /[a-zऀ-ॿ]/i.test(text)) {
@@ -880,6 +895,12 @@ async function handleTurn({ state: rawState, message, action }) {
     }
   }
 
+  if (!understood && (s.phase === "results" || s.phase === "done" || !s.slot)) {
+    // Nothing pending to re-ask: keep the next-step buttons on screen.
+    next = reAsk(s, messages, say(bank.responses.notUnderstood, lang, s.turn));
+    return { state: s, messages, next, ui: ui(s) };
+  }
+
   if (!understood) {
     s.strikes += 1;
     const slot = s.slot;
@@ -898,7 +919,7 @@ async function handleTurn({ state: rawState, message, action }) {
   }
 
   s.strikes = 0;
-  let ack = ackFor(s, touched);
+  let ack = ackFor(s, touched) || (sideInfo ? say(bank.responses.notedSide, lang, s.turn) : "");
   if (distanceParamBefore && touched.length === 1 && touched[0].slot === "priorities" && s.distanceAsked.includes(distanceParamBefore)) {
     const meters = s.req.priorities[distanceParamBefore];
     const param = fmt.paramLabel(distanceParamBefore, lang);
@@ -1016,7 +1037,9 @@ async function handleSearch({ state: rawState, more = false }) {
     messages.push({ text: say(bank.responses.noMoreResults, lang, s.turn), chips: chips(bank.responses.afterResultsChips.filter((c) => c.value !== "show more"), lang), kind: "info" });
   } else {
     const d = diagnosis || { reason: "none" };
+    const homes = { en: d.count === 1 ? "1 home" : `${d.count} homes`, hinglish: `${d.count} ghar`, hi: `${d.count} घर` }[lang];
     const reasonText = say(bank.responses.noMatchReason[d.reason] || bank.responses.noMatchReason.none, lang, s.turn, {
+      homes,
       count: d.count,
       value: d.suggestion ? fmt.formatBudget({ budgetMax: d.suggestion }, s.req.mode, lang) : "",
       location: locationLabel(s),

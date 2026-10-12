@@ -72,13 +72,13 @@ describe("engine", () => {
   });
 
   test("corrections update one answer and keep the rest", async () => {
-    const r = await converse(["rent", "sohna road", "nearby is fine", "25k", "nahi 30k kar do"]);
+    const r = await converse(["rent", "sohna road", "25k", "nahi 30k kar do"]);
     expect(r.state.req.budgetMax).toBe(30000);
     expect(r.state.req.localities).toEqual(["Sohna Road"]);
   });
 
   test("an ambiguous bare budget is confirmed, not guessed", async () => {
-    let r = await converse(["rent", "sector 46", "nearby is fine", "25"]);
+    let r = await converse(["rent", "sector 46", "25"]);
     expect(r.state.pending).toMatchObject({ type: "confirmBudget", value: 25000 });
     expect(r.state.req.budgetMax).toBeUndefined();
     r = await engine.handleTurn({ state: r.state, message: "yes" });
@@ -86,7 +86,7 @@ describe("engine", () => {
   });
 
   test("a rental budget in crores asks whether the user wants to buy", async () => {
-    let r = await converse(["rent", "dlf phase 4", "only this area", "2 crore"]);
+    let r = await converse(["rent", "dlf phase 4", "2 crore"]);
     expect(r.state.pending).toMatchObject({ type: "switchMode", to: "sale" });
     r = await engine.handleTurn({ state: r.state, message: "yes" });
     expect(r.state.req).toMatchObject({ mode: "sale", budgetMax: 20000000 });
@@ -99,11 +99,29 @@ describe("engine", () => {
     expect(r.next).toBe("search");
   });
 
-  test("full conversation reaches search with the 7 parameters captured", async () => {
-    const r = await converse(["2 bhk for rent in sector 57 under 30k near metro and park", "nearby is fine", "apartment", "semi furnished", "next month", "family of 4", "no pets", "1 km", "park facing", "corner"]);
+  test("one sentence goes straight to search", async () => {
+    const r = await converse(["2 bhk for rent in sector 57 under 30k near metro"]);
     expect(r.next).toBe("search");
-    expect(r.state.req.priorities).toEqual({ metro: 1000, park: 100 });
+  });
+
+  test("step-by-step takes at most five questions and captures the 7 parameters", async () => {
+    let r = await engine.handleTurn({ state: null, action: { type: "start" } });
+    let questions = r.messages.filter((m) => m.kind === "question").length;
+    for (const message of ["rent", "Sector 57", "under 40k", "2 BHK", "metro and park and corner"]) {
+      r = await engine.handleTurn({ state: JSON.parse(JSON.stringify(r.state)), message });
+      questions += r.messages.filter((m) => m.kind === "question").length;
+    }
+    expect(questions).toBeLessThanOrEqual(5);
+    expect(r.next).toBe("search");
+    expect(Object.keys(r.state.req.priorities).sort()).toEqual(["metro", "park"]);
     expect(r.state.req.corner).toBe("corner");
+  });
+
+  test("details mentioned in passing are still applied without being asked", async () => {
+    const r = await converse(["rent a fully furnished 2 bhk in sector 57 under 40k for a family, moving next month, near a school"]);
+    expect(r.state.req).toMatchObject({ furnishing: "furnished", occupancy: "family", priorities: { school: null } });
+    expect(r.state.req.moveIn.days).toBe(30);
+    expect(r.next).toBe("search");
   });
 
   test("Hindi conversation replies in Hindi", async () => {
@@ -183,5 +201,37 @@ describe("listing parameters", () => {
     expect(rows).toEqual([expect.objectContaining({ category: "metro", name: "HUDA", distanceMeters: 650, source: "partner" })]);
     expect(sanitizeCornerPosition("Corner")).toBe("corner");
     expect(sanitizeCornerPosition("junk")).toBe("not_sure");
+  });
+});
+
+describe("robustness", () => {
+  const junk = [
+    "", " ", "?????", "🙂🙂🙂", "asdfghjkl", "x".repeat(600), "<script>alert(1)</script>", "{$gt: ''}", "sector 999", "₹₹₹",
+    "0", "-5", "1e99", "null", "undefined", "DROP TABLE users;", "मुझे", "haan nahi", "yes no", "sector", "bhk", "near", "show more",
+    "tell me about #9", "what is near the first one", "change budget", "refine", "start over", "call me", "हिंदी में", "in english",
+    "budget 0", "under 0k", "2 crore per month", "1 rk", "plot", "corner", "skip", "skip", "skip", "show results",
+  ];
+
+  test("random and hostile messages never crash and always get a reply", async () => {
+    let state = null;
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+    for (let i = 0; i < 400; i += 1) {
+      const message = junk[Math.floor(rnd() * junk.length)];
+      const r = await engine.handleTurn({ state, message });
+      expect(Array.isArray(r.messages)).toBe(true);
+      expect(r.messages.length).toBeGreaterThan(0);
+      r.messages.forEach((m) => expect(typeof m.text).toBe("string"));
+      expect(JSON.stringify(r.state).length).toBeLessThan(20000);
+      // occasionally simulate a client that mangles its state
+      state = rnd() < 0.1 ? { ...r.state, req: { mode: "x", sectors: "57", budgetMax: -1 }, slot: "nope", turn: "a" } : r.state;
+    }
+  });
+
+  test("actions with bad input are ignored safely", async () => {
+    for (const action of [{ type: "edit", slot: "__proto__" }, { type: "setLanguage", lang: "fr" }, { type: "nope" }, null, "start"]) {
+      const r = await engine.handleTurn({ state: null, action, message: "rent" });
+      expect(r.messages.length).toBeGreaterThan(0);
+    }
   });
 });
