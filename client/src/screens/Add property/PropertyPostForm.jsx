@@ -567,6 +567,18 @@ export default function PropertyPostForm({
       <FormSection title="Parking">
         <ChoiceChips ariaLabel="Parking" options={PARKING} value={f.parking} onChange={set("parking")} />
       </FormSection>
+      {mode === "partner" && (
+        <>
+          <FormSection title="Position in the building">
+            <ChoiceChips ariaLabel="Position" options={[{ value: "corner", label: "Corner" }, { value: "middle", label: "Middle" }, { value: "not_sure", label: "Not sure" }]} value={f.cornerPosition || "not_sure"} onChange={set("cornerPosition")} />
+          </FormSection>
+          {rent && (
+            <FormSection title="Pet Policy">
+              <ChoiceChips ariaLabel="Pet policy" options={[{ value: "allowed", label: "Pets allowed" }, { value: "not-allowed", label: "Pets not allowed" }, { value: "not_sure", label: "Not sure" }]} value={f.petPolicy || "not_sure"} onChange={set("petPolicy")} />
+            </FormSection>
+          )}
+        </>
+      )}
       {!isPlot(f) && (
         <FormSection title="Features & Amenities" hint="Tick everything that's included">
           <ChoiceChips multiple size="sm" ariaLabel="Features" options={FEATURES} value={f.appliances} onChange={set("appliances")} />
