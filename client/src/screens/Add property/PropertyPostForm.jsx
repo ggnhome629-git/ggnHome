@@ -340,7 +340,7 @@ export default function PropertyPostForm({
     } catch (e) {
       // ignore
     }
-    setF({ ...INITIAL });
+    setF({ ...INITIAL, partnerRequired: mode === "partner" });
     setPhotos([]);
     setPanoramas([]);
     setStep(0);
