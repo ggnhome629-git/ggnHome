@@ -834,6 +834,7 @@ export default function PropertyPostForm({
         privacyNotice="For your safety, please don't upload photos that show the front of your house or your house number. Photos of rooms, kitchen, bathrooms and the view work best."
         tips={["Shoot in daylight with lights on", "Hold the phone horizontally and capture whole rooms", "The first photo is the cover — pick your best one"]}
       />
+      {partnerPhotoError && <Alert severity="error" sx={{ mt: 2 }}>{partnerPhotoError}</Alert>}
       <Box sx={{ mt: 6, p: 5, borderRadius: `${radii.md}px`, border: "1.5px dashed #A9C7E6", backgroundColor: "#F7FBFF" }}>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={3} justifyContent="space-between" alignItems={{ sm: "center" }}>
           <Box>
