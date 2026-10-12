@@ -213,6 +213,7 @@ export default function PropertyPostForm({
   const [nearbyAmenities, setNearbyAmenities] = useState(() => PARTNER_AMENITIES.map((a) => ({ category: a.key, label: a.label, name: "", distance: "", source: "partner" })));
   const [findingAmenities, setFindingAmenities] = useState(false);
   const [amenityMessage, setAmenityMessage] = useState("");
+  const [partnerPhotoError, setPartnerPhotoError] = useState("");
   const [panoOpen, setPanoOpen] = useState(false);
   const [errors, setErrors] = useState({});
   const [declared, setDeclared] = useState(false);
