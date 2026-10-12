@@ -36,6 +36,7 @@ import {
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../../Context/AuthContext";
 import { ADMIN_NAV, ADMIN_NAV_ITEMS, adminCrumb } from "./adminNav";
+import { useHiddenTools, visibleNav } from "./hiddenTools";
 import { NotSetUpBanner } from "./adminUi";
 
 // Shared "alive" button treatment for every admin screen: gradient primary
@@ -97,10 +98,13 @@ const writeCollapsed = (value) => {
 function NavList({ compact, onNavigate }) {
   const location = useLocation();
   const navigate = useNavigate();
+  // Tools locked on the Home page are hidden here too.
+  const hidden = useHiddenTools();
+  const sections = useMemo(() => visibleNav(ADMIN_NAV, hidden), [hidden]);
 
   return (
     <Box sx={{ flex: 1, overflowY: "auto", py: 2 }}>
-      {ADMIN_NAV.map((section) => (
+      {sections.map((section) => (
         <Box key={section.group} sx={{ mb: 2 }}>
           {!compact && (
             <Typography
@@ -189,8 +193,9 @@ function BottomTabs({ onMore }) {
   const location = useLocation();
   const navigate = useNavigate();
   const SHORT = { properties: "Listings" };
+  const hidden = useHiddenTools();
   const tabs = TAB_IDS.map((id) => ADMIN_NAV_ITEMS.find((i) => i.id === id))
-    .filter(Boolean)
+    .filter((t) => t && !hidden.includes(t.route))
     .map((t) => ({ ...t, label: SHORT[t.id] || t.label }));
   const onTab = tabs.some((t) => location.pathname.startsWith(t.route));
   return (

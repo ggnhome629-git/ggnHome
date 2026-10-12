@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 
 import './admin.css';
 import { ADMIN_NAV } from "./shell/adminNav";
+import { readHiddenTools, writeHiddenTools } from "./shell/hiddenTools";
 
 // Card icon for each side-nav group on the landing page.
 const GROUP_ICONS = {
@@ -80,25 +81,15 @@ const AdminLandingPage = () => {
 
   // Dashboard tool locks: applied instantly, saved to the server, and cached
   // in this browser so they still show if the server is briefly unreachable.
-  const TOOLS_CACHE_KEY = "ggn:adminHiddenTools";
+  // Shared with the sidebar (shell/hiddenTools.js): locking here hides the
+  // tool from the left nav at the same moment.
   const hiddenRef = useRef([]);
   const saveSeq = useRef(0);
-  const readCache = () => {
-    try {
-      const v = JSON.parse(localStorage.getItem(TOOLS_CACHE_KEY) || "[]");
-      return Array.isArray(v) ? v.filter((r) => typeof r === "string") : [];
-    } catch (_) {
-      return [];
-    }
-  };
+  const readCache = readHiddenTools;
   const applyHidden = (list) => {
     hiddenRef.current = list;
     setHiddenRoutes(list);
-    try {
-      localStorage.setItem(TOOLS_CACHE_KEY, JSON.stringify(list));
-    } catch (_) {
-      // storage blocked — server copy still applies
-    }
+    writeHiddenTools(list);
   };
   const authHeaders = (json) => {
     const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
@@ -303,7 +294,7 @@ const AdminLandingPage = () => {
                           )}
                         </Box>
                         <ArrowRight size={16} />
-                        <Tooltip title="Hide this tool from the main dashboard">
+                        <Tooltip title="Hide this tool from Home and the sidebar">
                           <span>
                             <IconButton size="small" disabled={toolsLoading} aria-label={"Hide " + link.label + " from dashboard"} onClick={(e) => { e.stopPropagation(); toggleToolVisibility(link.route); }} onKeyDown={(e) => e.stopPropagation()} sx={{ ml: 0.5, mr: -0.5, color: '#64748b' }}>
                               <LockKeyhole size={15} />
@@ -328,7 +319,7 @@ const AdminLandingPage = () => {
               <Typography variant="h2" sx={{ fontSize: { xs: 18, md: 21 }, fontWeight: 800, color: '#102a43' }}>Hidden tools</Typography>
               <Chip label={hiddenTools.length} size="small" />
             </Box>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>These shortcuts are hidden from the main dashboard only. Restore a tool to show it in its original card again.</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>These tools are hidden from Home and the left sidebar (Ctrl/Cmd+K search still finds them). Restore a tool to show it in both places again.</Typography>
             <Divider sx={{ mb: 1 }} />
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: 1 }}>
               {hiddenTools.map((tool) => (
