@@ -46,6 +46,7 @@ export const ADMIN_NAV = [
       { id: "properties", label: "Property Manager", route: "/admin/propertymanager", icon: Building2 },
       { id: "browse", label: "All Properties", route: "/admin/rewardsproperties", icon: Home },
       { id: "add-property", label: "Add Property", route: "/admin/add-property", icon: Building2 },
+      { id: "partner-workspace", label: "Partner Workspace", route: "/partner/dashboard", icon: UserPlus },
     ],
   },
   {
