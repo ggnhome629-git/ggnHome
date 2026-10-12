@@ -74,7 +74,7 @@ const PartnerHubDashboard = () => {
         <Skeleton variant="rounded" height={210} sx={{ borderRadius: 5, mb: 3 }} />
         <Grid container spacing={2}>{[1, 2, 3, 4].map((n) => <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={n}><Skeleton variant="rounded" height={116} /></Grid>)}</Grid>
         <Skeleton variant="text" width={220} height={44} sx={{ mt: 4 }} />
-        <Grid container spacing={2}>{[1, 2, 3, 4].map((n) => <Grid item xs={12} sm={6} lg={3} key={n}><Skeleton variant="rounded" height={150} /></Grid>)}</Grid>
+        <Grid container spacing={2}>{[1, 2, 3, 4].map((n) => <Grid size={{ xs: 12, sm: 6, lg: 3 }} key={n}><Skeleton variant="rounded" height={150} /></Grid>)}</Grid>
       </Container>
     );
   }
