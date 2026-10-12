@@ -98,6 +98,7 @@ class GatewayService : Service() {
         while (running) {
             try {
                 var previewMode = false
+                var allowSmsSend = svc.id != "ggnhome"
                 if (svc.id == "ggnhome") {
                     // This endpoint reports whether the admin selected app-only OTP display.
                     val preview = request("GET", svc.url("/otp-preview"), svc.key, null, deviceId, deviceName)
@@ -105,6 +106,7 @@ class GatewayService : Service() {
                         prefs.edit().putLong(Config.beatKey(svc), System.currentTimeMillis()).apply()
                         val payload = JSONObject(preview.body)
                         previewMode = payload.optBoolean("enabled", false)
+                        allowSmsSend = !previewMode
                         val messages = payload.optJSONArray("messages")
                         if (previewMode && messages != null) {
                             for (i in 0 until messages.length()) {
@@ -128,7 +130,7 @@ class GatewayService : Service() {
                 }
 
                 // In preview mode, never claim/send GGN Home messages. Otherwise keep the original SMS flow.
-                if (!previewMode) {
+                if (allowSmsSend) {
                     val next = request("GET", svc.url("/next"), svc.key, null, deviceId, deviceName)
                     failures = 0
                     if (next.code == 200 || next.code == 204) {
@@ -155,8 +157,10 @@ class GatewayService : Service() {
                         }
                     }
                     if (next.code == 401) note(svc, "Wrong device key")
-                } else {
+                } else if (previewMode) {
                     note(svc, "App OTP display enabled by admin")
+                } else {
+                    note(svc, "Could not confirm OTP mode; SMS sending paused")
                 }
 
                 if (System.currentTimeMillis() - lastStatusAt > 20_000L) {
