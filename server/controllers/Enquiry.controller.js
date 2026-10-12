@@ -59,7 +59,12 @@ const createEnquiry = async (req, res) => {
     let enquiryFor = null;
 
     // ✅ Agent-owned property
-    if (property.ownerType === "Agent") {
+    if (property.ownerType === "Partner") {
+      enquiryFor = "Partner";
+      agentUserId = property.agentUserId;
+    }
+    // Agent-owned property
+    else if (property.ownerType === "Agent") {
       enquiryFor = "Agent";
       agentUserId = property.agentUserId;
     }
@@ -84,6 +89,13 @@ const createEnquiry = async (req, res) => {
     }
 
     // 5️⃣ Create enquiry
+    const ownerIdForSnapshot = propertyType === "rental" ? (property.owner || null) : (property.ownerId || property.owner || null);
+    let ownerName = String(property.ownerName || "").trim();
+    if (!ownerName && ownerIdForSnapshot) {
+      const ownerRecord = await User.findById(ownerIdForSnapshot).select("name fullName").lean();
+      ownerName = ownerRecord?.name || ownerRecord?.fullName || "";
+    }
+
     const enquiryData = {
       propertyId: property._id,
       propertyType,
@@ -95,8 +107,13 @@ const createEnquiry = async (req, res) => {
           ? property.monthlyRent
           : property.price) || 0,
       userId: user._id,
-      userEmail: user.email,
+      userEmail: user.email || "",
       userMobile: user.mobileNumber || "N/A",
+      customerName: user.name || user.fullName || "Customer",
+      ownerName,
+      sourcePortal: property.sourcePortal || undefined,
+      sourceUrl: property.sourcePortal ? (property.sourceUrl || undefined) : undefined,
+      enquiryFor: enquiryFor || "Admin",
       message: message || "",
       brokerage
     };
@@ -105,7 +122,7 @@ const createEnquiry = async (req, res) => {
     await enquiry.save();
 
     // Auto-recalculate ranking asynchronously with debounce (engagement metric changed)
-    const rankingSource = property.ownerType === "Agent" ? "Agent" : "Own";
+    const rankingSource = property.ownerType === "Partner" ? "Partner" : property.ownerType === "Agent" ? "Agent" : "Own";
     debouncedRankingCalculation(propertyId, propertyType, rankingSource, 5000);
 
     return res.status(201).json({
@@ -175,14 +192,23 @@ const getEnquiries = async (req, res) => {
     }
 
     // 8) Build enriched enquiries array by mapping properties & owners back to enquiries
+    const enquiryUsers = await User.find({ _id: { $in: enquiries.map(e => e.userId).filter(Boolean) } }).select("_id name fullName email mobileNumber").lean();
+    const enquiryUserMap = new Map(enquiryUsers.map(u => [String(u._id), u]));
+
     const enriched = enquiries.map(enq => {
       const pid = enq.propertyId ? enq.propertyId.toString() : null;
       const prop = enq.propertyType === 'rental' ? rentalMap.get(pid) : saleMap.get(pid);
       const ownerId = prop ? (prop.owner || prop.ownerId || null) : null;
       const owner = ownerId ? ownerMap.get(ownerId.toString()) : null;
 
+      const customer = enquiryUserMap.get(String(enq.userId || "")) || null;
       return {
         ...enq.toObject(),
+        customerName: enq.customerName || customer?.name || customer?.fullName || "Customer",
+        customer: customer ? { _id: customer._id, name: customer.name || customer.fullName || "Customer", email: customer.email || enq.userEmail || "", mobileNumber: customer.mobileNumber || enq.userMobile || "" } : { name: enq.customerName || "Customer", email: enq.userEmail || "", mobileNumber: enq.userMobile || "" },
+        ownerName: enq.ownerName || prop?.ownerName || owner?.name || owner?.fullName || "",
+        sourcePortal: enq.sourcePortal || prop?.sourcePortal || "",
+        sourceUrl: enq.sourceUrl || prop?.sourceUrl || "",
         property: prop || null,
         owner: owner || null,
       };
@@ -363,8 +389,93 @@ const deleteEnquiry = async (req, res) => {
 };
 
 
+
+/**
+ * PartnerHub enquiries are scoped to properties belonging to the authenticated
+ * partner. Internal scraped-source metadata is deliberately omitted from this
+ * response; admins can see sourcePortal/sourceUrl in the admin enquiries view.
+ */
+const getPartnerEnquiries = async (req, res) => {
+  try {
+    const Agent = require("../models/Agent.model");
+    if (!req.agent) return res.status(401).json({ success: false, message: "Partner authentication required" });
+    const agent = await Agent.findById(req.agent._id).lean();
+    if (!agent || agent.status !== "active") return res.status(403).json({ success: false, message: "Partner account is not active" });
+
+    const ownership = agent.roleType === "Partner"
+      ? { $or: [
+          { partnerAgentId: agent._id },
+          { agentUserId: agent.userId, ownerType: "Agent", "ranking.source": "Partner" },
+        ] }
+      : { agentUserId: agent.userId, ownerType: "Agent" };
+
+    const [rentalProps, saleProps] = await Promise.all([
+      RentalProperty.find(ownership).select("_id title address Sector monthlyRent owner ownerName ownernumber images").lean(),
+      SaleProperty.find(ownership).select("_id title address location Sector price ownerId owner ownerName ownernumber images").lean(),
+    ]);
+    const propertyMap = new Map();
+    rentalProps.forEach(p => propertyMap.set(String(p._id), { ...p, propertyType: "rental", price: p.monthlyRent }));
+    saleProps.forEach(p => propertyMap.set(String(p._id), { ...p, propertyType: "sale", price: p.price }));
+    const propertyIds = [...propertyMap.keys()];
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    const query = propertyIds.length ? { propertyId: { $in: propertyIds } } : { _id: null };
+    const [totalEnquiries, enquiries] = await Promise.all([
+      Enquiry.countDocuments(query),
+      Enquiry.find(query).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+    ]);
+    const userIds = [...new Set(enquiries.map(e => String(e.userId || "")).filter(Boolean))];
+    const ownerIds = [...new Set(enquiries.map(e => {
+      const p = propertyMap.get(String(e.propertyId));
+      return p ? String(p.owner || p.ownerId || "") : "";
+    }).filter(Boolean))];
+    const [users, owners] = await Promise.all([
+      userIds.length ? User.find({ _id: { $in: userIds } }).select("_id name fullName email mobileNumber").lean() : [],
+      ownerIds.length ? User.find({ _id: { $in: ownerIds } }).select("_id name fullName").lean() : [],
+    ]);
+    const userMap = new Map(users.map(u => [String(u._id), u]));
+    const ownerMap = new Map(owners.map(u => [String(u._id), u]));
+    const enriched = enquiries.map(e => {
+      const p = propertyMap.get(String(e.propertyId));
+      const customer = userMap.get(String(e.userId || ""));
+      const ownerId = p ? String(p.owner || p.ownerId || "") : "";
+      const owner = ownerMap.get(ownerId);
+      const ownerName = e.ownerName || p?.ownerName || owner?.name || owner?.fullName || "";
+      return {
+        _id: e._id,
+        propertyId: e.propertyId,
+        propertyType: e.propertyType,
+        customerName: e.customerName || customer?.name || customer?.fullName || "Customer",
+        userName: e.customerName || customer?.name || customer?.fullName || "Customer",
+        userEmail: e.userEmail || customer?.email || "",
+        userMobile: e.userMobile || customer?.mobileNumber || "",
+        message: e.message || "",
+        brokerage: e.brokerage,
+        createdAt: e.createdAt,
+        ownerName: ownerName || "No owner of this property present.",
+        property: p ? {
+          _id: p._id,
+          title: p.title,
+          address: p.address || p.location || p.Sector || "",
+          Sector: p.Sector || "",
+          price: p.price,
+          monthlyRent: p.monthlyRent,
+          propertyType: p.propertyType,
+          images: p.images || [],
+        } : null,
+        // Intentionally no sourcePortal/sourceUrl/sourceListingId in partner responses.
+      };
+    });
+    return res.json({ success: true, page, limit, totalEnquiries, totalPages: Math.ceil(totalEnquiries / limit), enquiries: enriched });
+  } catch (error) {
+    console.error("getPartnerEnquiries error:", error);
+    return res.status(500).json({ success: false, message: "Failed to fetch partner enquiries" });
+  }
+};
+
 module.exports = {
   createEnquiry,
+  getPartnerEnquiries,
   getEnquiries,
   getAgentEnquiries,
   unlockEnquiryContact,
