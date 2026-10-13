@@ -80,7 +80,8 @@ SARVAM_LANGS = {"en": "en-IN", "hi": "hi-IN", "hinglish": "hi-IN"}
 
 # Rewrite each reply into natural spoken wording with a small Groq model. The
 # rewrite is checked (no new numbers/contacts) and falls back to the plain text.
-VOICE_REWRITE = os.getenv("VOICE_REWRITE", "on").lower() != "off" and bool(GROQ_SPEECH_KEY)
+# Keep the speech path low-latency by default. Enable rewriting explicitly only if desired.
+VOICE_REWRITE = os.getenv("VOICE_REWRITE", "off").lower() == "on" and bool(GROQ_SPEECH_KEY)
 
 STT_BASE_URL = os.getenv("LOCAL_STT_BASE_URL", "http://127.0.0.1:8000/v1")
 STT_API_KEY = os.getenv("LOCAL_STT_API_KEY", "local")
