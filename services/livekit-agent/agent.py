@@ -54,13 +54,28 @@ AGENT_NAME = os.getenv("LIVEKIT_AGENT_NAME", "ggnhome-property-voice")
 # OpenAI-compatible servers). Hosted Groq is the default because small CPU
 # Whisper + CPU Kokoro were the main source of lag.
 STT_PROVIDER = os.getenv("VOICE_STT_PROVIDER", "groq").lower()
-TTS_PROVIDER = os.getenv("VOICE_TTS_PROVIDER", "groq").lower()
+# Default to the most natural streaming voice whose key is present.
+TTS_PROVIDER = os.getenv(
+    "VOICE_TTS_PROVIDER",
+    "deepgram" if os.getenv("DEEPGRAM_API_KEY") else "cartesia" if os.getenv("CARTESIA_API_KEY") else "groq",
+).lower()
 # Use a dedicated Groq key for speech, never the consultant's GROQ_API_KEY_* set,
 # so voice traffic cannot exhaust the text fallback's quota.
 GROQ_SPEECH_KEY = os.getenv("GROQ_SPEECH_API_KEY", "")
 GROQ_STT_MODEL = os.getenv("GROQ_STT_MODEL", "whisper-large-v3-turbo")
 GROQ_TTS_MODEL = os.getenv("GROQ_TTS_MODEL", "canopylabs/orpheus-v1-english")
 GROQ_TTS_VOICE = os.getenv("GROQ_TTS_VOICE", "autumn")
+
+# Natural-voice providers (each reads its own key from the environment):
+#   deepgram -> DEEPGRAM_API_KEY  (Aura-2 voices, ~$200 signup credit)
+#   cartesia -> CARTESIA_API_KEY  (Sonic-3, low latency, emotion control)
+#   sarvam   -> SARVAM_API_KEY    (Bulbul v3, Indian-accented English/Hindi)
+DEEPGRAM_TTS_MODEL = os.getenv("DEEPGRAM_TTS_MODEL", "aura-2-thalia-en")
+CARTESIA_TTS_MODEL = os.getenv("CARTESIA_TTS_MODEL", "sonic-3")
+CARTESIA_VOICE = os.getenv("CARTESIA_VOICE_ID", "")
+SARVAM_TTS_MODEL = os.getenv("SARVAM_TTS_MODEL", "bulbul:v3")
+SARVAM_SPEAKER = os.getenv("SARVAM_SPEAKER", "") or None
+SARVAM_LANGS = {"en": "en-IN", "hi": "hi-IN", "hinglish": "hi-IN"}
 
 STT_BASE_URL = os.getenv("LOCAL_STT_BASE_URL", "http://127.0.0.1:8000/v1")
 STT_API_KEY = os.getenv("LOCAL_STT_API_KEY", "local")
@@ -121,6 +136,19 @@ class GgnHomeVoiceAgent(Agent):
             yield ""
 
 
+# Short acknowledgements ("hmm", "okay") are not questions. Treating them as turns
+# makes the consultant answer a nod; ignore them (LiveKit issue #4450).
+FILLER_WORDS = {
+    "hmm", "hm", "mm", "mhm", "uh", "um", "umm", "uhh", "ah", "oh", "haan", "han", "hanji",
+    "ok", "okay", "okk", "yeah", "yes", "yep", "right", "achha", "accha", "theek", "hmmm",
+}
+
+
+def is_filler_only(text: str) -> bool:
+    words = normalise(text).split()
+    return bool(words) and len(words) <= 2 and all(w in FILLER_WORDS for w in words)
+
+
 class TranscriptFilter:
     """Drops duplicate transcripts and echoes of the assistant's own voice."""
 
@@ -136,7 +164,7 @@ class TranscriptFilter:
     def accept(self, text: str) -> bool:
         now = time.monotonic()
         norm = normalise(text)
-        if not norm:
+        if not norm or is_filler_only(text):
             return False
         if norm == self.last_text and now - self.last_at < DUPLICATE_WINDOW_S:
             return False
@@ -165,7 +193,20 @@ def build_speech_services() -> tuple[Any, Any]:
             language="en",
             use_realtime=False,
         )
-    if TTS_PROVIDER == "groq":
+    if TTS_PROVIDER == "deepgram":
+        from livekit.plugins import deepgram
+
+        tts = deepgram.TTS(model=DEEPGRAM_TTS_MODEL)
+    elif TTS_PROVIDER == "cartesia":
+        from livekit.plugins import cartesia
+
+        kwargs = {"voice": CARTESIA_VOICE} if CARTESIA_VOICE else {}
+        tts = cartesia.TTS(model=CARTESIA_TTS_MODEL, language="en", speed=1.0, emotion="content", **kwargs)
+    elif TTS_PROVIDER == "sarvam":
+        from livekit.plugins import sarvam
+
+        tts = sarvam.TTS(target_language_code="en-IN", model=SARVAM_TTS_MODEL, speaker=SARVAM_SPEAKER)
+    elif TTS_PROVIDER == "groq":
         if not GROQ_SPEECH_KEY:
             raise RuntimeError("GROQ_SPEECH_API_KEY is required when VOICE_TTS_PROVIDER=groq")
         from livekit.plugins import groq
@@ -240,6 +281,8 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
         try:
             if TTS_PROVIDER == "local":
                 tts.update_options(voice=TTS_VOICES[lang])
+            elif TTS_PROVIDER == "sarvam":
+                tts.update_options(target_language_code=SARVAM_LANGS[lang])
             stt_lang = STT_LANGUAGES[lang]
             if stt_lang:
                 stt.update_options(language=stt_lang, detect_language=False)

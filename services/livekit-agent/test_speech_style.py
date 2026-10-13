@@ -26,3 +26,14 @@ def test_contractions_and_no_opener_on_greeting():
 def test_facts_not_added():
     src = "I found 3 homes in Sector 57."
     assert "3 homes" in humanize(src, allow_opener=False)
+
+
+def test_filler_only_transcripts_ignored():
+    import sys, types
+    sys.path.insert(0, ".")
+    from agent import is_filler_only, TranscriptFilter
+
+    assert is_filler_only("Hmm") and is_filler_only("okay okay") and is_filler_only("haan")
+    assert not is_filler_only("okay show me two bhk") and not is_filler_only("yes I want to rent")
+    f = TranscriptFilter()
+    assert not f.accept("hmm") and f.accept("show me flats in sector 57")

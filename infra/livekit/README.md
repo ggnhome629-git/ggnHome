@@ -67,3 +67,12 @@ The public config endpoint reports whether LiveKit credentials are configured. T
 ## Current implementation boundary
 
 This code is the repo-side integration. It does not create DNS, VM resources, firewall rules, model servers, or Render environment variables. Until those are configured and a real browser-to-agent conversation is tested, the live site must not be described as LiveKit-connected. Browser voice and text chat remain available as fallbacks.
+
+## Voice quality and speed (recommended providers)
+
+Small CPU Whisper plus CPU Kokoro was laggy and sounded flat, so the worker now picks providers from `services/livekit-agent/.env`:
+
+- STT: `VOICE_STT_PROVIDER=groq` (Whisper large-v3-turbo, hosted) or `local`.
+- TTS: `VOICE_TTS_PROVIDER=deepgram` (Aura-2), `cartesia` (Sonic-3), `sarvam` (Bulbul v3, Indian English/Hindi), `groq` (Orpheus, English, non-streaming) or `local`. Deepgram, Cartesia and Sarvam stream audio, so speech starts sooner.
+- Spoken text is rewritten by `speech_style.py` (spoken numbers, contractions, no markup) and filler-only turns such as "hmm" or "okay" are ignored.
+- Free allowances change often; check each vendor's pricing page before launch. Self-hosted Chatterbox (MIT) is the most natural open model in the comparisons we found but wants a GPU, so it is not set up here.
