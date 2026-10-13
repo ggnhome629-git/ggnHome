@@ -394,6 +394,14 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
         // already gone
       }
     }
+    const ticket = queueTicketRef.current;
+    queueTicketRef.current = null;
+    if (ticket) {
+      fetch(`${API_BASE}/api/ai-consultant/voice-queue/leave`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticket }), keepalive: true,
+      }).catch(() => {});
+    }
   }, []);
 
   /* --------------------------------------------------------------- session */
@@ -407,11 +415,6 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
       stopRecognition();
       if (synthesisSupported) window.speechSynthesis.cancel();
       await teardownRoom();
-      if (queueTicketRef.current) {
-        const ticket = queueTicketRef.current;
-        queueTicketRef.current = null;
-        fetch(`${API_BASE}/api/ai-consultant/voice-queue/leave`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticket }), keepalive: true }).catch(() => {});
-      }
       setActiveEngine(null);
       setMuted(false);
       mutedRef.current = false;
@@ -516,10 +519,6 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
     if (!activeRef.current) return;
     if (!tokenResult.ok || !tokenResult.data?.token) {
       await teardownRoom();
-      if (queueTicketRef.current) {
-        const ticket = queueTicketRef.current; queueTicketRef.current = null;
-        fetch(`${API_BASE}/api/ai-consultant/voice-queue/leave`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticket }), keepalive: true }).catch(() => {});
-      }
       metric("voice_browser_fallback");
       await startBrowser("Real-time voice is busy right now, so I'm using your browser's voice instead.");
       return;
