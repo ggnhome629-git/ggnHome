@@ -407,7 +407,24 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
 
     @ctx.room.on("participant_disconnected")
     def on_participant_disconnected(participant: rtc.RemoteParticipant) -> None:
-        logger.info("Visitor left room %s", ctx.room.name)
+        # A visitor closing the consultant screen must release the agent job
+        # immediately; the agent itself would otherwise keep the room occupied.
+        if not str(getattr(participant, "identity", "")).startswith("visitor_"):
+            return
+        logger.info("Visitor left room %s; ending voice session immediately", ctx.room.name)
+
+        async def close_session_and_room() -> None:
+            try:
+                await session.aclose()
+            except Exception:
+                logger.exception("Failed to close voice session after visitor disconnect")
+            try:
+                await ctx.delete_room()
+            except Exception:
+                # The room may already have been removed during shutdown.
+                logger.debug("Room cleanup after visitor disconnect was unnecessary")
+
+        spawn(close_session_and_room())
 
     await session.start(room=ctx.room, agent=GgnHomeVoiceAgent())
     await send({"type": "voice_status", "status": "ready"})
