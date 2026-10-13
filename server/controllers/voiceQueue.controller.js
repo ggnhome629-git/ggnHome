@@ -11,7 +11,8 @@ const unavailable = (res) => res.status(503).json({
 
 exports.join = async (_req, res) => {
   const livekitUrl = String(process.env.LIVEKIT_URL || "").trim();
-  const livekitReady = /^wss:\/\//i.test(livekitUrl) && Boolean(process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET);
+  const secureLivekitUrl = /^wss:\/\//i.test(livekitUrl) || /^ws:\/\/(localhost|127\\.0\\.0\\.1)(:|$)/i.test(livekitUrl);
+  const livekitReady = secureLivekitUrl && Boolean(process.env.LIVEKIT_API_KEY && process.env.LIVEKIT_API_SECRET);
   if (!livekitReady) return res.status(503).json({ success: false, code: "LIVEKIT_NOT_CONFIGURED", message: "Real-time voice is not available yet. You can continue with the standard consultant." });
   if (!queue.available()) return unavailable(res);
   const ticket = crypto.randomBytes(24).toString("hex");
