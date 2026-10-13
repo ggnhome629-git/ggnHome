@@ -86,7 +86,7 @@ class SharedStore {
 
   async decrement(key) {
     const redisKey = `ratelimit:${this.prefix}:${key}`;
-    const redisClient = redisCache.isConnected() ? redisCache.getClient() : null;
+    const redisClient = useRedisForRateLimits() && redisCache.isConnected() ? redisCache.getClient() : null;
     if (redisClient) {
       try {
         const n = await redisClient.decr(redisKey);
@@ -106,7 +106,7 @@ class SharedStore {
 
   async resetKey(key) {
     const redisKey = `ratelimit:${this.prefix}:${key}`;
-    const redisClient = redisCache.isConnected() ? redisCache.getClient() : null;
+    const redisClient = useRedisForRateLimits() && redisCache.isConnected() ? redisCache.getClient() : null;
     if (redisClient) {
       try {
         await redisClient.del(redisKey);
