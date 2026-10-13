@@ -15,7 +15,7 @@ function parseMessage(payload) {
   }
 }
 
-export default function LiveKitVoiceSession({ assistantText, onTranscript, onStatus, onError }) {
+export default function LiveKitVoiceSession({ enabled = true, assistantText, onTranscript, onStatus, onError }) {
   const roomRef = useRef(null);
   const micRef = useRef(null);
   const assistantTextRef = useRef("");
@@ -139,6 +139,10 @@ export default function LiveKitVoiceSession({ assistantText, onTranscript, onSta
     publishText("speak_text", text);
   }, [assistantText, status]);
 
+  useEffect(() => {
+    if (!enabled) disconnect();
+  }, [enabled, disconnect]);
+
   useEffect(() => () => {
     const room = roomRef.current;
     roomRef.current = null;
@@ -153,7 +157,7 @@ export default function LiveKitVoiceSession({ assistantText, onTranscript, onSta
     const mic = micRef.current;
     if (!mic) return;
     const next = !muted;
-    await mic.mute(next);
+    if (next) await mic.mute(); else await mic.unmute();
     setMuted(next);
   };
 
