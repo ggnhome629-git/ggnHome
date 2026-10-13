@@ -12,11 +12,14 @@ function sleep(ms) {
  */
 async function retry(fn, options = {}) {
   const {
-    maxAttempts = 3,
-    delay = 1000,
+    maxAttempts: requestedAttempts = 3,
+    delay: requestedDelay = 2000,
     backoff = 2,
     onRetry = null
   } = options;
+  // Keep standalone scraping conservative even if env/options request more.
+  const maxAttempts = Math.min(2, Math.max(1, Number(requestedAttempts) || 3));
+  const delay = Math.max(2000, Number(requestedDelay) || 2000);
 
   let lastError;
 
@@ -25,6 +28,10 @@ async function retry(fn, options = {}) {
       return await fn();
     } catch (error) {
       lastError = error;
+      // Never retry explicit rate limits, access blocks, or CAPTCHA responses.
+      if ([403, 429].includes(Number(error?.response?.status)) || /captcha|rate.?limit|blocked/i.test(String(error?.message || ""))) {
+        throw error;
+      }
 
       if (attempt < maxAttempts) {
         const waitTime = delay * Math.pow(backoff, attempt - 1);
