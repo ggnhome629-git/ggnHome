@@ -70,6 +70,8 @@ jobs:
           node --check server/models/ProviderUsageCounter.model.js
           node --check server/controllers/partnerAuth.controller.js
           node --check server/models/AdminDashboardPreferences.model.js
+          node --check scraper/index.js
+          node --check server/scripts/runNobrokerSync.js
           node --check scraper/scrapers/nobroker.js
           node --check scraper/scrapers/99acres.js
           node --check scraper/utils/helpers.js
