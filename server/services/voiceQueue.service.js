@@ -142,7 +142,7 @@ async function claimToken(ticket) {
   if (!c) return false;
   const s = keys();
   const claimKey = s.prefix + ":issued:" + ticket;
-  return Number(await c.eval(CLAIM_SCRIPT, 2, s.activeKey, claimKey, Date.now(), ticket, s.leaseSeconds)) === 1;
+  return Number(await c.eval(CLAIM_SCRIPT, 2, s.activeKey, claimKey, Date.now(), ticket, 86400)) === 1;
 }
 async function heartbeat(ticket) {
   const c = client();
