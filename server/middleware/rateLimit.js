@@ -4,6 +4,10 @@ const mongoose = require("mongoose");
 const redisCache = require("../utils/redisCache");
 const RateLimitHit = require("../models/RateLimitHit.model");
 
+// Keep Redis free-tier commands for the voice queue/cache. MongoDB is the
+// default shared rate-limit store; opt into Redis only when its quota is known.
+const useRedisForRateLimits = () => process.env.RATE_LIMIT_USE_REDIS === "true";
+
 // Render runs multiple instances of this service, each with its own process
 // memory. express-rate-limit's default store counts hits in that memory, so
 // "15 per 15 min" really means ~15 per instance -- an attacker's requests
@@ -33,7 +37,7 @@ class SharedStore {
 
   async increment(key) {
     const redisKey = `ratelimit:${this.prefix}:${key}`;
-    const redisClient = redisCache.isConnected() ? redisCache.getClient() : null;
+    const redisClient = useRedisForRateLimits() && redisCache.isConnected() ? redisCache.getClient() : null;
 
     if (redisClient) {
       try {
