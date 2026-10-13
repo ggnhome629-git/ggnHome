@@ -93,6 +93,9 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   const sendRef = useRef(null);
   const stageVisibleRef = useRef(false);
   const [aiAvailable, setAiAvailable] = useState(null);
+  const [basicMode, setBasicMode] = useState(Boolean(persisted?.basicMode));
+  const [queue, setQueue] = useState({ state: "idle" });
+  const [queueTicket, setQueueTicket] = useState(null);
   const [review, setReview] = useState({ submitting: false, error: "", success: persisted?.success || null });
   const idemRef = useRef(persisted?.idem || null);
   const stateRef = useRef(convState);
@@ -139,9 +142,10 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
       chips,
       idem: idemRef.current,
       success: review.success,
+      basicMode,
       items: items.filter((it) => it.type !== "typing" && it.type !== "scanner").slice(-MAX_ITEMS),
     });
-  }, [convState, items, ui, chips, review.success]);
+  }, [convState, items, ui, chips, review.success, basicMode]);
 
   useEffect(() => {
     const el = streamRef.current;
@@ -192,7 +196,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
       setBusy(true);
       pushItems({ id: uid(), type: "typing" });
       try {
-        const r = await consultantApi.turn(stateRef.current, message, action, options.disableLLM === true);
+        const r = await consultantApi.turn(stateRef.current, message, action, options.disableLLM === true || basicMode);
         removeTyping();
         handleResponse(r);
       } catch (err) {
@@ -331,6 +335,10 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   const restart = () => {
     if (busy) return;
     clearStore();
+    setBasicMode(false);
+    if (queueTicket) consultantApi.leaveVoiceQueue(queueTicket).catch(() => {});
+    setQueueTicket(null);
+    setQueue({ state: "idle" });
     idemRef.current = null;
     setItems([]);
     setChips(null);
@@ -375,11 +383,87 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   // Don't listen while the visitor is typing or filling in the contact form.
   useEffect(() => setHold((typing && input.trim().length > 0) || reviewOpen), [typing, input, reviewOpen, setHold]);
 
+  const joinVoiceQueue = useCallback(async () => {
+    if (queue.state === "joining" || queue.state === "waiting" || queue.state === "ready" || queue.state === "in_session") return;
+    setQueue({ state: "joining", message: "Joining the voice queue…" });
+    try {
+      const result = await consultantApi.joinVoiceQueue();
+      setQueueTicket(result.ticket);
+      setQueue({ state: result.state || "waiting", position: result.position || 0, waiting: result.waiting || 0, active: result.active || 0, maxActive: result.maxActive || 0 });
+    } catch (err) {
+      setQueue({ state: "error", message: err.message || "The voice queue is unavailable." });
+    }
+  }, [queue.state]);
+
+  const leaveVoiceQueue = useCallback(() => {
+    if (queueTicket) consultantApi.leaveVoiceQueue(queueTicket).catch(() => {});
+    setQueueTicket(null);
+    setQueue({ state: "idle" });
+  }, [queueTicket]);
+
+  const useBasicConsultant = useCallback(() => {
+    leaveVoiceQueue();
+    setBasicMode(true);
+    setStageDismissed(true);
+    if (!convState) callTurn(undefined, { type: "start", lang, langLocked: true }, { disableLLM: true });
+  }, [leaveVoiceQueue, convState, callTurn, lang]);
+
+  useEffect(() => {
+    if (!queueTicket || !["waiting", "ready"].includes(queue.state)) return undefined;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const result = await consultantApi.voiceQueueStatus(queueTicket);
+        if (cancelled) return;
+        setQueue((current) => ({ ...current, ...result, message: "" }));
+        if (result.state === "expired") {
+          setQueue({ state: "error", message: "Your queue reservation expired. Please rejoin." });
+          setQueueTicket(null);
+        }
+      } catch (err) {
+        if (!cancelled) setQueue((current) => ({ ...current, message: err.message || "Checking queue status…" }));
+      }
+    };
+    poll();
+    const timer = setInterval(poll, 5000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [queueTicket, queue.state]);
+
+  useEffect(() => {
+    if (queue.state === "in_session" && voice.phase === "off") {
+      if (queueTicket) consultantApi.leaveVoiceQueue(queueTicket).catch(() => {});
+      setQueueTicket(null);
+      setQueue({ state: "idle" });
+    } else if (queue.state === "in_session" && voice.phase === "error") {
+      void voice.end({ silent: true });
+      if (queueTicket) consultantApi.leaveVoiceQueue(queueTicket).catch(() => {});
+      setQueueTicket(null);
+      setQueue({ state: "error", message: "The real-time session stopped. You can retry or use the standard consultant." });
+    }
+  }, [queue.state, queueTicket, voice.phase, voice.end]);
+
   const startVoice = useCallback(() => {
     setStageDismissed(true);
     const greeting = [...items].reverse().find((it) => it.type === "bot" && it.text && it.kind !== "error");
+    if (voiceRef.current.engine === "livekit") {
+      if (queueTicket && queue.state === "ready") {
+        setQueue((current) => ({ ...current, state: "in_session" }));
+        voiceRef.current.start(greeting ? greeting.text : "", queueTicket);
+      } else if (!queueTicket || ["idle", "error"].includes(queue.state)) {
+        joinVoiceQueue();
+      }
+      return;
+    }
     voiceRef.current.start(greeting ? greeting.text : "");
-  }, [items]);
+  }, [items, queueTicket, queue.state, joinVoiceQueue]);
+
+  const startQueuedVoice = useCallback(() => {
+    if (!queueTicket || queue.state !== "ready") return;
+    setStageDismissed(true);
+    setQueue((current) => ({ ...current, state: "in_session" }));
+    const greeting = [...items].reverse().find((it) => it.type === "bot" && it.text && it.kind !== "error");
+    voiceRef.current.start(greeting ? greeting.text : "", queueTicket);
+  }, [items, queueTicket, queue.state]);
 
   const toggleMic = () => {
     if (!voice.active) startVoice();
@@ -396,9 +480,10 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
       chips,
       idem: idemRef.current,
       success: review.success,
+      basicMode,
       items: items.filter((it) => it.type !== "typing" && it.type !== "scanner").slice(-MAX_ITEMS),
     });
-  }, [convState, ui, chips, review.success, items]);
+  }, [convState, ui, chips, review.success, items, basicMode]);
 
   const close = (reason) => {
     persistConversation();
@@ -552,7 +637,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
             <strong id="gai-title">GgnHome AI Consultant</strong>
             <small>
               <span className={`gai-live-dot${aiAvailable === false ? " offline" : ""}`} />
-              {aiAvailable === false ? "Fast rule-based mode · live listings" : "Rule engine + AI · live Gurgaon listings"}
+              {basicMode || aiAvailable === false ? "Basic rule-based mode · live listings" : "Rule engine + AI · live Gurgaon listings"}
             </small>
           </div>
           <div className="gai-spacer" />
@@ -603,7 +688,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
           <div className="gai-stream" ref={streamRef}>
             <div className="gai-stream-inner" aria-live="polite" aria-relevant="additions">
               {stageVisible ? (
-                <VoiceStage voice={voice} onStart={startVoice} onTypeInstead={() => { setStageDismissed(true); setTimeout(() => inputRef.current && inputRef.current.focus(), 50); }} />
+                <VoiceStage voice={voice} queue={queue} onStart={startVoice} onJoinQueue={joinVoiceQueue} onStartQueued={startQueuedVoice} onLeaveQueue={leaveVoiceQueue} onUseBasic={useBasicConsultant} onTypeInstead={() => { setStageDismissed(true); setTimeout(() => inputRef.current && inputRef.current.focus(), 50); }} />
               ) : (
                 <div className="gai-voicebar-slot">
                   <VoiceBar voice={voice} onStart={startVoice} />
