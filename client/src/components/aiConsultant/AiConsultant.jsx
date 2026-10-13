@@ -172,11 +172,11 @@ export default function AiConsultant({ open, onClose }) {
   );
 
   const callTurn = useCallback(
-    async (message, action) => {
+    async (message, action, options = {}) => {
       setBusy(true);
       pushItems({ id: uid(), type: "typing" });
       try {
-        const r = await consultantApi.turn(stateRef.current, message, action);
+        const r = await consultantApi.turn(stateRef.current, message, action, options.disableLLM === true);
         removeTyping();
         handleResponse(r);
       } catch (err) {
@@ -251,7 +251,7 @@ export default function AiConsultant({ open, onClose }) {
   /* ------------------------------------------------------------ actions */
 
   const send = useCallback(
-    (value, display) => {
+    (value, display, options = {}) => {
       const text = String(value || "").trim();
       if (!text || busy) return;
       clearTimeout(autoSendRef.current);
@@ -261,7 +261,7 @@ export default function AiConsultant({ open, onClose }) {
       pushItems({ id: uid(), type: "user", text: display || text });
       setInput("");
       setChips(null);
-      callTurn(text);
+      callTurn(text, undefined, options);
     },
     [busy, callTurn, pushItems, tts]
   );
@@ -623,7 +623,7 @@ export default function AiConsultant({ open, onClose }) {
                   <LiveKitVoiceSession
                     enabled={open}
                     assistantText={items.slice().reverse().find((item) => item.type === "bot" && item.text)?.text || ""}
-                    onTranscript={(text) => send(text, text)}
+                    onTranscript={(text) => send(text, text, { disableLLM: true })}
                     onStatus={setLiveKitStatus}
                     onError={setVoiceSetupError}
                   />
