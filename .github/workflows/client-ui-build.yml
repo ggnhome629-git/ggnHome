@@ -59,6 +59,7 @@ jobs:
           node --check server/services/voiceQueue.service.js
           node --check server/services/providerQuota.js
           node --check server/services/cloudinaryQuota.js
+          node --check server/services/push.js
           node --check server/services/aiConsultant/groqClient.js
           node --check server/utils/sendEmail.js
           node --check server/utils/sendSms.js
