@@ -107,6 +107,8 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
   const lastTranscriptRef = useRef({ text: "", at: 0 });
   const thinkingTimerRef = useRef(null);
   const helloTimerRef = useRef(null);
+  const queueHeartbeatRef = useRef(null);
+  const queueTicketRef = useRef(null);
   const readyRef = useRef(null);
   const greetingRef = useRef("");
   const endedByUserRef = useRef(false);
@@ -378,6 +380,8 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
 
   const teardownRoom = useCallback(async () => {
     clearInterval(helloTimerRef.current);
+    clearInterval(queueHeartbeatRef.current);
+    queueHeartbeatRef.current = null;
     const room = roomRef.current;
     roomRef.current = null;
     agentRef.current = null;
@@ -403,6 +407,11 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
       stopRecognition();
       if (synthesisSupported) window.speechSynthesis.cancel();
       await teardownRoom();
+      if (queueTicketRef.current) {
+        const ticket = queueTicketRef.current;
+        queueTicketRef.current = null;
+        fetch(`${API_BASE}/api/ai-consultant/voice-queue/leave`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticket }), keepalive: true }).catch(() => {});
+      }
       setActiveEngine(null);
       setMuted(false);
       mutedRef.current = false;
@@ -497,7 +506,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
         method: "POST",
         credentials: "omit",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ accepted: true, lang: cbRef.current.lang }),
+        body: JSON.stringify({ accepted: true, lang: cbRef.current.lang, queueTicket: queueTicketRef.current }),
       });
     } catch (_) {
       tokenResult = { ok: false, data: {} };
@@ -507,9 +516,20 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
     if (!activeRef.current) return;
     if (!tokenResult.ok || !tokenResult.data?.token) {
       await teardownRoom();
+      if (queueTicketRef.current) {
+        const ticket = queueTicketRef.current; queueTicketRef.current = null;
+        fetch(`${API_BASE}/api/ai-consultant/voice-queue/leave`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticket }), keepalive: true }).catch(() => {});
+      }
       metric("voice_browser_fallback");
       await startBrowser("Real-time voice is busy right now, so I'm using your browser's voice instead.");
       return;
+    }
+
+    if (queueTicketRef.current) {
+      const ticket = queueTicketRef.current;
+      queueHeartbeatRef.current = setInterval(() => {
+        fetch(`${API_BASE}/api/ai-consultant/voice-queue/heartbeat`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ticket }) }).catch(() => {});
+      }, 25000);
     }
 
     room
@@ -641,7 +661,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
 
   /** Must be called from a click/tap: it may prompt for the microphone. */
   const start = useCallback(
-    async (greeting) => {
+    async (greeting, queueTicket = null) => {
       if (activeRef.current) return;
       if (typeof window !== "undefined" && window.isSecureContext === false) {
         setError({ code: "insecure", message: VOICE_ERRORS.insecure });
@@ -649,6 +669,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
         return;
       }
       greetingRef.current = String(greeting || "").trim();
+      queueTicketRef.current = queueTicket;
       endedByUserRef.current = false;
       activeRef.current = true;
       setError(null);
@@ -656,6 +677,12 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
       setCaption(null);
       metric("voice_session_started");
       if (engine === "livekit") {
+        if (!queueTicketRef.current) {
+          activeRef.current = false;
+          setError({ code: "agent", message: "Join the real-time voice queue before starting." });
+          setPhase("error");
+          return;
+        }
         setPhase("connecting");
         await startLiveKit();
         return;
