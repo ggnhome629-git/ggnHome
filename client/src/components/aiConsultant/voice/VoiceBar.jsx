@@ -46,7 +46,7 @@ export default function VoiceBar({ voice, onStart, compact = false }) {
           </button>
         ) : failed ? (
           <>
-            <button type="button" className="gvb-btn primary" onClick={voice.retry}>
+            <button type="button" className="gvb-btn primary" onClick={onStart}>
               <RotateCcw size={15} /> Retry
             </button>
             <button type="button" className="gvb-btn" onClick={() => voice.end()} aria-label="Turn voice off">
