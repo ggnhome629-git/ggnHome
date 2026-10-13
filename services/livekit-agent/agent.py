@@ -13,7 +13,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 from livekit import agents, rtc
-from livekit.agents import Agent, AgentServer, AgentSession
+from livekit.agents import Agent, AgentServer, AgentSession, TurnHandlingOptions
 from livekit.plugins import openai, silero
 
 load_dotenv(".env")
@@ -24,7 +24,7 @@ logger = logging.getLogger("ggnhome-livekit")
 VOICE_TOPIC = "ggnhome-voice"
 STT_BASE_URL = os.getenv("LOCAL_STT_BASE_URL", "http://127.0.0.1:8000/v1")
 STT_API_KEY = os.getenv("LOCAL_STT_API_KEY", "local")
-STT_MODEL = os.getenv("LOCAL_STT_MODEL", "whisper-1")
+STT_MODEL = os.getenv("LOCAL_STT_MODEL", "Systran/faster-whisper-small")
 TTS_BASE_URL = os.getenv("LOCAL_TTS_BASE_URL", "http://127.0.0.1:8880/v1")
 TTS_API_KEY = os.getenv("LOCAL_TTS_API_KEY", "local")
 TTS_MODEL = os.getenv("LOCAL_TTS_MODEL", "kokoro")
@@ -51,6 +51,13 @@ class GgnHomeVoiceAgent(Agent):
             )
         )
 
+    async def llm_node(self, chat_ctx: Any, tools: Any, model_settings: Any):
+        # No LLM is intentionally configured: the React app's deterministic
+        # GgnHome engine owns every reply. Yielding no model output prevents the
+        # default Agent pipeline from inventing a parallel answer.
+        if False:
+            yield ""
+
 
 server = AgentServer()
 
@@ -74,6 +81,8 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
         ),
         # Whisper-style STT is non-streaming; VAD segments the audio into turns.
         vad=silero.VAD.load(),
+        # Use local VAD only; do not invoke LiveKit's hosted turn-detector inference.
+        turn_handling=TurnHandlingOptions(turn_detection="vad"),
     )
 
     # The transcript is forwarded to the existing React consultant, which calls
