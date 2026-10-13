@@ -449,7 +449,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
       }
     };
     poll();
-    // A 60-second cadence materially reduces free Redis command burn. The initial\n    // poll is immediate; queue position can be approximate between refreshes.\n    const timer = setInterval(poll, 60000);
+    // Waiting clients poll slowly to protect the free Redis command budget. Once a\n    // reservation is ready, poll faster so the short lease does not expire before\n    // the visitor starts voice. The initial poll is immediate.\n    const timer = setInterval(poll, queue.state === "ready" ? 20000 : 120000);
     return () => { cancelled = true; clearInterval(timer); };
   }, [queueTicket, queue.state]);
 
