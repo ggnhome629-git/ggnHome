@@ -39,6 +39,8 @@ from typing import Any
 from dotenv import load_dotenv
 from livekit import agents, rtc
 from livekit.agents import Agent, AgentServer, AgentSession
+from livekit.agents import APIConnectOptions
+from livekit.agents.voice.agent_session import SessionConnectOptions
 from livekit.plugins import openai, silero
 
 from idle_watch import IdleWatch
@@ -267,6 +269,16 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
             "preemptive_generation": {"enabled": False},
         },
         user_away_timeout=60.0,
+        # By default the SDK closes the whole session after 3 failed speeches in a
+        # row, which would leave the visitor with a dead assistant if the voice
+        # provider has an outage or quota problem. Keep the session alive: each
+        # failed reply is reported with its id and the browser speaks it instead.
+        conn_options=SessionConnectOptions(
+            max_unrecoverable_errors=1000,
+            # One quick retry instead of three 2-second ones, so a provider
+            # outage hands over to the browser voice within a couple of seconds.
+            tts_conn_options=APIConnectOptions(max_retry=1, retry_interval=0.5, timeout=8.0),
+        ),
     )
     rewrite_client = None
     if VOICE_REWRITE:
@@ -275,6 +287,7 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
         rewrite_client = openai_sdk.AsyncOpenAI(
             base_url="https://api.groq.com/openai/v1", api_key=GROQ_SPEECH_KEY, timeout=4.0, max_retries=0
         )
+    speaking = {"id": None, "failed": False}
     last_opener = {"value": ""}
     idle = IdleWatch(IDLE_WARN_S, IDLE_END_S)
     transcripts = TranscriptFilter()
@@ -337,13 +350,24 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
             idle.touch()  # even a filler like "hmm" proves the visitor is there
         if not text or not transcripts.accept(text):
             return
+        logger.info("user transcript chars=%d", len(text))
         spawn(send({"type": "user_transcript", "id": uuid.uuid4().hex[:12], "text": text}))
 
     @session.on("error")
     def on_error(event: Any) -> None:
         source = type(getattr(event, "source", None)).__name__.lower()
-        status = "stt_error" if "stt" in source else "tts_error" if "tts" in source else "agent_error"
-        logger.warning("Voice pipeline error from %s", source or "unknown")
+        err = getattr(event, "error", None)
+        recoverable = bool(getattr(err, "recoverable", False))
+        inner = getattr(err, "error", err)
+        # Class and message only; provider errors never include our API keys.
+        logger.warning("Voice pipeline error source=%s recoverable=%s %s: %s", source or "unknown", recoverable, type(inner).__name__, str(inner)[:160])
+        if "tts" in source:
+            if speaking["id"] and not recoverable:
+                speaking["failed"] = True  # reported with the message id when speak() finishes
+            elif not speaking["id"]:
+                spawn(send({"type": "voice_status", "status": "tts_error"}))
+            return
+        status = "stt_error" if "stt" in source else "agent_error"
         spawn(send({"type": "voice_status", "status": status}))
 
     async def speak(message_id: str, text: str, interruptible: bool) -> None:
@@ -354,15 +378,28 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
             if not interruptible:
                 session.input.set_audio_enabled(False)
             await send({"type": "speech_started", "id": message_id})
+            speaking.update(id=message_id, failed=False)
+            started = time.monotonic()
+            logger.info("speak start id=%s chars=%d interruptible=%s tts=%s", message_id, len(text), interruptible, TTS_PROVIDER)
             interrupted = False
             try:
                 handle = session.say(text, allow_interruptions=interruptible, add_to_chat_ctx=False)
                 await handle
                 interrupted = bool(handle.interrupted)
-            except Exception:
-                logger.exception("Local TTS failed for a voice response")
+                if speaking["failed"]:
+                    # The SDK swallowed a provider failure: tell the browser which
+                    # message got no audio so it can speak it instead.
+                    logger.error("speak FAILED id=%s tts=%s (provider error, see warning above)", message_id, TTS_PROVIDER)
+                    await send({"type": "voice_status", "status": "tts_error", "id": message_id})
+                else:
+                    logger.info("speak done id=%s interrupted=%s took=%.1fs", message_id, interrupted, time.monotonic() - started)
+            except Exception as error:
+                # Name the provider and error class (never keys) so the id can be
+                # matched with the browser's pending request.
+                logger.error("speak FAILED id=%s tts=%s error=%s: %s", message_id, TTS_PROVIDER, type(error).__name__, str(error)[:200])
                 await send({"type": "voice_status", "status": "tts_error", "id": message_id})
             finally:
+                speaking.update(id=None, failed=False)
                 if not interruptible:
                     # Let the last audio frames leave the speaker before listening.
                     await asyncio.sleep(0.35)

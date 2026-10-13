@@ -364,7 +364,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
           settle(id, { spoken: true, timeout: true });
           afterSpeech();
         }, Math.min(45000, 6000 + clean.length * 90));
-        pendingRef.current.set(id, { resolve, timer });
+        pendingRef.current.set(id, { resolve, timer, text: clean, greeting });
         setPhase(greeting ? "greeting" : "speaking");
         const sent = publish({
           type: "speak_text",
@@ -473,7 +473,21 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
       switch (message.type) {
         case "voice_status":
           if (message.status === "ready") readyRef.current?.();
-          else if (message.status === "tts_error") setNotice("The assistant's voice hiccupped — the reply is shown in the chat.");
+          else if (message.status === "tts_error") {
+            // The service's voice failed for this message: say it with the
+            // browser's own voice instead of leaving the visitor in silence.
+            let failedId = String(message.id || "");
+            if (!pendingRef.current.has(failedId)) failedId = [...pendingRef.current.keys()].pop() || "";
+            const entry = pendingRef.current.get(failedId);
+            metric("voice_browser_fallback");
+            if (entry?.text && synthesisSupported) {
+              settle(failedId, { spoken: false, fallback: true });
+              setNotice("The assistant's voice had a problem, so I'm reading this with your browser's voice.");
+              browserSpeak(entry.text, { greeting: Boolean(entry.greeting) });
+            } else {
+              setNotice("The assistant's voice had a problem — the reply is shown in the chat.");
+            }
+          }
           else if (message.status === "stt_error") setNotice("I couldn't catch that — please say it again.");
           break;
         case "user_state":
@@ -502,7 +516,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
           break;
       }
     },
-    [afterSpeech, deliverTranscript, setPhase, settle]
+    [afterSpeech, browserSpeak, deliverTranscript, metric, setPhase, settle]
   );
 
   const startLiveKit = useCallback(async () => {
