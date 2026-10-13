@@ -61,6 +61,17 @@ function speechFor(r) {
   return (lines.length > 2 ? [lines[0], lines[lines.length - 1]] : lines).join(" ");
 }
 
+/** What the assistant says when voice starts: the latest run of bot messages (hello line, then the question). */
+function voiceOpening(items) {
+  const parts = [];
+  for (let i = items.length - 1; i >= 0; i -= 1) {
+    const it = items[i];
+    if (it.type !== "bot") break;
+    if (it.text && it.kind !== "error") parts.unshift(it.text);
+  }
+  return parts.join(" ");
+}
+
 function criteriaLine(summary) {
   return (summary || [])
     .filter((s) => s.slot !== "mode")
@@ -468,19 +479,19 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
 
   const startVoice = useCallback(() => {
     setStageDismissed(true);
-    const greeting = [...items].reverse().find((it) => it.type === "bot" && it.text && it.kind !== "error");
+    const greeting = voiceOpening(items);
     if (voiceRef.current.engine === "livekit") {
       if (queueTicket && queue.state === "ready") {
         forgetStoredQueueTicket();
         setQueue((current) => ({ ...current, state: "in_session" }));
-        voiceRef.current.start(greeting ? greeting.text : "", queueTicket);
+        voiceRef.current.start(greeting, queueTicket);
       } else if (!queueTicket || ["idle", "error"].includes(queue.state)) {
         joinVoiceQueue();
       }
       return;
     }
     leaveVoiceQueue();
-    voiceRef.current.start(greeting ? greeting.text : "");
+    voiceRef.current.start(greeting);
   }, [items, queueTicket, queue.state, joinVoiceQueue, leaveVoiceQueue, forgetStoredQueueTicket]);
 
   const startQueuedVoice = useCallback(() => {
@@ -488,8 +499,8 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
     setStageDismissed(true);
     forgetStoredQueueTicket();
     setQueue((current) => ({ ...current, state: "in_session" }));
-    const greeting = [...items].reverse().find((it) => it.type === "bot" && it.text && it.kind !== "error");
-    voiceRef.current.start(greeting ? greeting.text : "", queueTicket);
+    const greeting = voiceOpening(items);
+    voiceRef.current.start(greeting, queueTicket);
   }, [items, queueTicket, queue.state, forgetStoredQueueTicket]);
 
   const toggleMic = () => {

@@ -195,7 +195,12 @@ def build_speech_services() -> tuple[Any, Any]:
 # LiveKit Agents marks a worker "full" above a CPU load threshold (0.7 by default
 # in production) and LiveKit then drops new visitors' jobs. This worker does no
 # model inference itself, so allow a higher load before refusing a visitor.
-server = AgentServer(load_threshold=float(os.getenv("LIVEKIT_LOAD_THRESHOLD", "0.92")))
+# Idle processes are pre-spawned with the VAD already loaded, so a new visitor's
+# job starts at once instead of waiting ~3s for a process to boot.
+server = AgentServer(
+    load_threshold=float(os.getenv("LIVEKIT_LOAD_THRESHOLD", "0.92")),
+    num_idle_processes=int(os.getenv("VOICE_IDLE_PROCESSES", "2")),
+)
 
 
 def prewarm(proc: agents.JobProcess) -> None:
@@ -208,10 +213,17 @@ server.setup_fnc = prewarm
 
 @server.rtc_session(agent_name=AGENT_NAME)
 async def ggn_home_voice(ctx: agents.JobContext) -> None:
-    await ctx.connect()
     VAD = ctx.proc.userdata["vad"]
 
     stt, tts = build_speech_services()
+    # Open the STT/TTS connections now, in parallel with joining the room, so the
+    # greeting and the first reply do not pay for a cold TLS handshake.
+    for service in (stt, tts):
+        try:
+            service.prewarm()
+        except Exception:
+            logger.debug("Speech prewarm skipped", exc_info=True)
+    await ctx.connect()
     session = AgentSession(
         stt=stt,
         tts=tts,
