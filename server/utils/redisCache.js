@@ -32,7 +32,7 @@ async function initialize() {
         return delay;
       },
       enableReadyCheck: false,
-      enableOfflineQueue: true,
+      // Do not accumulate commands while the free-tier Redis is unavailable.\n      // Callers must degrade gracefully instead of replaying a burst after reconnect.\n      enableOfflineQueue: false,
       connectTimeout: 5000
     });
 
