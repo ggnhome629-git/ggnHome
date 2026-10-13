@@ -7,6 +7,12 @@
  * rest of the server runs unchanged.
  */
 const DeviceToken = require("../models/DeviceToken.model");
+const { reserveWindow } = require("./providerQuota");
+
+// Application safety cap for fan-out bursts. FCM itself is no-cost, but project
+// quotas and downstream traffic still apply; this cap prevents accidental blasts.
+const FCM_WINDOW_MS = 6 * 60 * 60 * 1000;
+const FCM_WINDOW_LIMIT = Math.min(1000, Math.max(1, Number.parseInt(process.env.FCM_RECIPIENTS_PER_6H_LIMIT || "1000", 10) || 1000));
 
 let messaging = null;
 let initTried = false;
@@ -57,10 +63,19 @@ async function sendToTokens(tokens, { title, body, link = "/", image, data = {} 
 
   let sent = 0;
   let failed = 0;
+  let quotaBlocked = false;
   const dead = [];
 
   for (let i = 0; i < tokens.length; i += 500) {
     const batch = tokens.slice(i, i + 500);
+    if (process.env.NODE_ENV !== "test") {
+      const quota = await reserveWindow({ provider: "fcm-recipients", windowMs: FCM_WINDOW_MS, limit: FCM_WINDOW_LIMIT, amount: batch.length });
+      if (!quota.allowed) {
+        quotaBlocked = true;
+        failed += tokens.length - i;
+        break;
+      }
+    }
     const res = await fcm.sendEachForMulticast({
       tokens: batch,
       notification: { title, body, ...(image ? { imageUrl: image } : {}) },
@@ -78,7 +93,7 @@ async function sendToTokens(tokens, { title, body, link = "/", image, data = {} 
   }
 
   if (dead.length) await DeviceToken.deleteMany({ token: { $in: dead } });
-  return { sent, failed };
+  return { sent, failed, ...(quotaBlocked ? { quotaBlocked: true } : {}) };
 }
 
 module.exports = { isConfigured, sendToTokens };
