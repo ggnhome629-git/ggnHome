@@ -106,7 +106,7 @@ async function ensureUnderLimit(srcPath, maxBytesTarget = NORMAL_MAX_BYTES) {
 }
 
 // -------------------------
-// Upload to Cloudinary with round-robin + fallback
+// Upload to Cloudinary using the primary account and quota guard
 // -------------------------
 async function uploadWithFallbackAgent(localPath, folder = 'agents', preferredIndex = null, subfolder = null) {
   if (!localPath) throw new Error('No localPath passed to uploadWithFallbackAgent');
