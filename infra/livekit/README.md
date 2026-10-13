@@ -29,9 +29,9 @@ Configure these on the **GgnHome API service** (the same `REDIS_URL` is also use
 ```env
 REDIS_URL=rediss://default:YOUR_REDIS_PASSWORD@YOUR_REDIS_HOST:YOUR_REDIS_PORT
 VOICE_QUEUE_ENABLED=true
-VOICE_QUEUE_MAX_ACTIVE=3
-VOICE_QUEUE_MAX_WAITING=50
-VOICE_QUEUE_LEASE_SECONDS=90
+VOICE_QUEUE_MAX_ACTIVE=2
+VOICE_QUEUE_MAX_WAITING=2
+VOICE_QUEUE_LEASE_SECONDS=180
 VOICE_QUEUE_WAIT_TTL_SECONDS=900
 VOICE_QUEUE_KEY_PREFIX=ggnhome:voice:v1
 ```
@@ -107,3 +107,8 @@ On LiveKit Cloud's free plan only a few agent conversations (sessions) can run a
 - **Idle timeout:** a quiet session warns after `VOICE_IDLE_WARN_S` (default 120s) and the agent hangs up after `VOICE_IDLE_END_S` (default 150s). Any speech, typed message or reply resets the clock; the time the assistant spends talking does not count. Browser voice applies the same rule.
 - **Visitor leaves:** the agent ends its session a few seconds after the visitor disconnects, instead of waiting for the room to expire.
 - **Cloud hosting ignores `LIVEKIT_LOAD_THRESHOLD`** (the SDK reverts to its default there). The setting only matters on a self-hosted worker, where a crowded machine can make the worker refuse visitors.
+
+
+## Free-tier safeguards
+
+The application enforces conservative defaults for shared provider quotas. See [../docs/FREE_TIER_GUARDS.env.example](../../docs/FREE_TIER_GUARDS.env.example) and [FREE_TIER_SERVICES_AUDIT.md](../../docs/FREE_TIER_SERVICES_AUDIT.md). In particular, queue admission is capped at two active and two waiting visitors, waiting clients poll every 120 seconds, and real-time voice sessions are limited to two per six-hour bucket. MongoDB must be connected for shared quota reservations; quota-dependent LLM, voice and third-party SMS operations fail closed if the quota store is unavailable.
