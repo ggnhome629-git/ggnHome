@@ -30,6 +30,8 @@ const JOIN_SCRIPT = `
   local now = tonumber(ARGV[1])
   local ticket = ARGV[2]
   local maxWaiting = tonumber(ARGV[3])
+  local waitingCutoff = now - tonumber(ARGV[4]) * 1000
+  redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', waitingCutoff)
   redis.call('ZREMRANGEBYSCORE', KEYS[2], '-inf', now)
   if redis.call('ZSCORE', KEYS[1], ticket) or redis.call('ZSCORE', KEYS[2], ticket) then
     return {1, redis.call('ZCARD', KEYS[1]), redis.call('ZCARD', KEYS[2])}
@@ -95,7 +97,7 @@ async function join(ticket) {
   const c = client();
   if (!c) return { available: false };
   const s = keys();
-  const result = await c.eval(JOIN_SCRIPT, 2, s.queueKey, s.activeKey, Date.now(), ticket, s.maxWaiting);
+  const result = await c.eval(JOIN_SCRIPT, 2, s.queueKey, s.activeKey, Date.now(), ticket, s.maxWaiting, s.waitTtlSeconds);
   if (Number(result[0]) !== 1) return { available: true, full: true, waiting: Number(result[1]) };
   return status(ticket);
 }
