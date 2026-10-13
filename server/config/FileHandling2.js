@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const cloudinary = require('cloudinary').v2;
+const { assertCloudinaryHeadroom, recordCloudinaryUpload } = require('../services/cloudinaryQuota');
 let sharp = null;
 try { sharp = require('sharp'); } catch (_) { console.warn("⚠️ 'sharp' not installed — image compression disabled. Install with: npm i sharp"); }
 
@@ -58,9 +59,16 @@ if (!cloudAccounts || cloudAccounts.length === 0) {
   console.log(`🔧 Agent Cloudinary: loaded ${cloudAccounts.length} account(s)`);
 }
 
-// Round-robin index
+// Keep agent uploads on one account by default; only opt in to multiple accounts
+// when the setup is intentional. Each selected account is checked for headroom.
+const uploadAccounts = process.env.AGENT_CLOUDINARY_MULTI_ACCOUNT_UPLOADS_ENABLED === 'true'
+  ? cloudAccounts
+  : cloudAccounts.slice(0, 1);
+if (cloudAccounts.length > 1 && uploadAccounts.length === 1) {
+  console.warn('[Cloudinary] Multiple agent accounts configured; using primary account only unless AGENT_CLOUDINARY_MULTI_ACCOUNT_UPLOADS_ENABLED=true.');
+}
 let rrIndex = 0;
-const getNextStartIndex = () => { const idx = rrIndex; rrIndex = (rrIndex + 1) % cloudAccounts.length; return idx; };
+const getNextStartIndex = () => { const idx = rrIndex; rrIndex = (rrIndex + 1) % uploadAccounts.length; return idx; };
 
 // -------------------------
 // Compression helper (uses sharp if available)
@@ -120,14 +128,15 @@ async function uploadWithFallbackAgent(localPath, folder = 'agents', preferredIn
   const uploadPath = prepared.path;
   const tempToUnlink = prepared.temp;
 
-  const attempts = Math.max(1, cloudAccounts.length);
-  const start = (Number.isInteger(preferredIndex) && preferredIndex >= 0) ? (preferredIndex % attempts) : (cloudAccounts.length ? getNextStartIndex() : 0);
+  const attempts = Math.max(1, uploadAccounts.length);
+  const start = (Number.isInteger(preferredIndex) && preferredIndex >= 0) ? (preferredIndex % attempts) : (uploadAccounts.length ? getNextStartIndex() : 0);
   let lastError = null;
 
   for (let attempt = 0; attempt < attempts; attempt++) {
     const i = (start + attempt) % attempts;
-    const acct = cloudAccounts[i];
+    const acct = uploadAccounts[i];
     try {
+      if (acct) await assertCloudinaryHeadroom(acct);
       if (acct) cloudinary.config(acct);
       const result = await cloudinary.uploader.upload(uploadPath, {
         resource_type: 'auto',
@@ -135,6 +144,7 @@ async function uploadWithFallbackAgent(localPath, folder = 'agents', preferredIn
         unique_filename: true,
         overwrite: false
       });
+      if (acct) recordCloudinaryUpload(acct);
 
       // cleanup temp and local after success (best-effort)
       try { if (tempToUnlink && fs.existsSync(tempToUnlink)) fs.unlinkSync(tempToUnlink); } catch(_){}
