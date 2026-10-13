@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - 'services/livekit-agent/**'
-      - '!services/livekit-agent/livekit.toml'
       - '!services/livekit-agent/README.md'
       - '!services/livekit-agent/**/*.md'
   workflow_dispatch:
