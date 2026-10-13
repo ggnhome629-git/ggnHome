@@ -105,10 +105,11 @@ export default function LiveKitVoiceSession({ enabled = true, assistantText, onT
       });
       micRef.current = mic;
       await room.localParticipant.publishTrack(mic);
-      updateStatus("connected");
-
-      // Replay the current greeting once the agent room is ready.
+      // Replay the current greeting once the agent room is ready. Remember it
+      // before changing status so the assistantText effect doesn't send it twice.
       const greeting = assistantTextRef.current.trim();
+      if (greeting) lastSpokenRef.current = greeting;
+      updateStatus("connected");
       if (greeting) {
         window.setTimeout(() => {
           if (roomRef.current === room) publishText("speak_text", greeting);
