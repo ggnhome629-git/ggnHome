@@ -1,5 +1,5 @@
 import React from "react";
-import { Keyboard, Mic, RotateCcw, ShieldCheck, Clock, Users } from "lucide-react";
+import { Keyboard, Mic, ShieldCheck, Clock, Users } from "lucide-react";
 import VoiceOrb from "./VoiceOrb";
 
 /**
