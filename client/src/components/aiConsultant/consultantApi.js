@@ -49,7 +49,7 @@ async function post(path, body, { auth = false, timeoutMs = 20000 } = {}) {
 }
 
 export const consultantApi = {
-  turn: (state, message, action) => post("/api/ai-consultant/turn", { state, message, action }),
+  turn: (state, message, action, disableLLM = false) => post("/api/ai-consultant/turn", { state, message, action, disableLLM }),
   search: (state, more = false) => post("/api/ai-consultant/search", { state, more }, { timeoutMs: 25000 }),
   enquiry: (payload) => post("/api/ai-consultant/enquiry", payload, { auth: true }),
   metric: (name) => post("/api/ai-consultant/metric", { name }).catch(() => {}),
