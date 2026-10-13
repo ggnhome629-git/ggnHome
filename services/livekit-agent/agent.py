@@ -1,9 +1,11 @@
 """GgnHome's LiveKit voice bridge.
 
 Audio stays on the self-hosted LiveKit server. Speech recognition and synthesis
-use OpenAI-compatible local endpoints (for example faster-whisper and
-Kokoro-FastAPI); no hosted LLM is used. The existing GgnHome API remains the
-source of truth for the conversation and property data.
+use OpenAI-compatible self-hosted endpoints (for example faster-whisper and
+Kokoro-FastAPI). This worker does not run a local LLM: transcripts go to the
+GgnHome API, where rule-based parsing and database-backed property search are
+authoritative, with the existing optional server-side Groq fallback used only
+for messages the rules cannot handle.
 """
 import asyncio
 import json
