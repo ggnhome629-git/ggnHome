@@ -9,6 +9,7 @@
  * room or agent job outlives the conversation.
  */
 const crypto = require("crypto");
+const voiceQueue = require("../services/voiceQueue.service");
 
 const TOKEN_TTL_SECONDS = 10 * 60;
 const ROOM_EMPTY_TIMEOUT_SECONDS = 60;
@@ -40,17 +41,22 @@ function withTimeout(promise, ms, label) {
 exports._sdk = () => require("livekit-server-sdk");
 
 exports.getConfig = (_req, res) => {
-  const { url, enabled, secure } = livekitSettings();
+  const { url, enabled: livekitConfigured, secure } = livekitSettings();
+  const queueEnabled = voiceQueue.available();
+  const enabled = livekitConfigured && queueEnabled;
   res.set("Cache-Control", "no-store");
   res.json({
     success: true,
     enabled,
+    queueEnabled,
     url: enabled ? url : null,
     provider: "self-hosted",
     message: enabled
       ? "Real-time voice is configured."
       : url && !secure
         ? "Real-time voice needs a secure wss:// address."
+        : livekitConfigured && !queueEnabled
+        ? "Real-time voice queue requires a connected Redis instance. Use the standard consultant meanwhile."
         : "Real-time voice has not been configured on this server yet.",
   });
 };
@@ -68,6 +74,13 @@ exports.createToken = async (req, res) => {
       message: "Real-time voice isn't set up yet. You can keep going by typing, or use your browser's voice.",
     });
   }
+
+  const queueTicket = req.body?.queueTicket;
+  if (!voiceQueue.available()) return res.status(503).json({ success: false, code: "VOICE_QUEUE_UNAVAILABLE", message: "Real-time voice queue is unavailable. Please use the standard consultant." });
+  if (typeof queueTicket !== "string" || !/^[a-f0-9]{48}$/.test(queueTicket) || !(await voiceQueue.isActive(queueTicket))) {
+    return res.status(409).json({ success: false, code: "VOICE_QUEUE_RESERVATION_REQUIRED", message: "Join the voice queue and wait until your turn before starting real-time voice." });
+  }
+  await voiceQueue.heartbeat(queueTicket);
 
   const { AccessToken, RoomServiceClient, AgentDispatchClient } = exports._sdk();
   const host = apiHost(url);
@@ -91,6 +104,7 @@ exports.createToken = async (req, res) => {
       "createRoom"
     );
   } catch (error) {
+    await voiceQueue.leave(queueTicket).catch(() => {});
     console.error("LiveKit room creation failed:", error?.code || error?.name || "error");
     return res.status(503).json({ success: false, code: "LIVEKIT_UNREACHABLE", message: "The voice server isn't responding right now. Please type instead, or try again in a minute." });
   }
@@ -100,6 +114,8 @@ exports.createToken = async (req, res) => {
     const dispatch = new AgentDispatchClient(host, apiKey, apiSecret);
     await withTimeout(dispatch.createDispatch(roomName, agentName, { metadata }), API_TIMEOUT_MS, "createDispatch");
   } catch (error) {
+    try { await new RoomServiceClient(host, apiKey, apiSecret).deleteRoom(roomName); } catch (_) {}
+    await voiceQueue.leave(queueTicket).catch(() => {});
     console.error("LiveKit agent dispatch failed:", error?.code || error?.name || "error");
     return res.status(503).json({ success: false, code: "VOICE_AGENT_UNAVAILABLE", message: "The voice assistant is busy or offline. Please type instead, or try again in a minute." });
   }
@@ -112,6 +128,8 @@ exports.createToken = async (req, res) => {
     res.set("Cache-Control", "no-store");
     return res.json({ success: true, url, token: jwt, identity, roomName, expiresIn: TOKEN_TTL_SECONDS });
   } catch (error) {
+    try { await new RoomServiceClient(host, apiKey, apiSecret).deleteRoom(roomName); } catch (_) {}
+    await voiceQueue.leave(queueTicket).catch(() => {});
     console.error("LiveKit token signing failed:", error?.name || "error");
     return res.status(503).json({ success: false, code: "LIVEKIT_TOKEN_UNAVAILABLE", message: "The voice session couldn't start. Please type instead." });
   }
