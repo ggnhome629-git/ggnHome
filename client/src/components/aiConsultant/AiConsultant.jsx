@@ -449,7 +449,10 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
       }
     };
     poll();
-    // Waiting clients poll slowly to protect the free Redis command budget. Once a\n    // reservation is ready, poll faster so the short lease does not expire before\n    // the visitor starts voice. The initial poll is immediate.\n    const timer = setInterval(poll, queue.state === "ready" ? 20000 : 120000);
+    // Waiting clients poll slowly to protect the free Redis command budget. Once a
+    // reservation is ready, poll faster so the short lease does not expire before
+    // the visitor starts voice. The initial poll is immediate.
+    const timer = setInterval(poll, queue.state === "ready" ? 20000 : 120000);
     return () => { cancelled = true; clearInterval(timer); };
   }, [queueTicket, queue.state]);
 
