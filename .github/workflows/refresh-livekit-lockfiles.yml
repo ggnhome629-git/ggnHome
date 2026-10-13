@@ -1,9 +1,9 @@
 name: Refresh LiveKit dependency lockfiles
 
 on:
-  push:
+  pull_request:
     branches:
-      - feature/ggnhome-livekit-agent
+      - main
     paths:
       - client/package.json
       - server/package.json
