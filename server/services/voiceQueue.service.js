@@ -118,6 +118,18 @@ async function status(ticket) {
     leaseSeconds: s.leaseSeconds,
   };
 }
+async function stats() {
+  const c = client();
+  if (!c) return { available: false };
+  const s = keys();
+  const now = Date.now();
+  await Promise.all([
+    c.zremrangebyscore(s.queueKey, '-inf', now - s.waitTtlSeconds * 1000),
+    c.zremrangebyscore(s.activeKey, '-inf', now),
+  ]);
+  const counts = await Promise.all([c.zcard(s.queueKey), c.zcard(s.activeKey)]);
+  return { available: true, waiting: Number(counts[0]), active: Number(counts[1]), maxActive: s.maxActive, maxWaiting: s.maxWaiting, leaseSeconds: s.leaseSeconds, waitTtlSeconds: s.waitTtlSeconds };
+}
 async function isActive(ticket) {
   const c = client();
   if (!c) return false;
@@ -147,4 +159,4 @@ async function leave(ticket) {
   await c.eval(LEAVE_SCRIPT, 3, s.activeKey, s.queueKey, claimKey, ticket);
   return true;
 }
-module.exports = { available, join, status, isActive, claimToken, heartbeat, leave, settings };
+module.exports = { available, join, status, stats, isActive, claimToken, heartbeat, leave, settings };
