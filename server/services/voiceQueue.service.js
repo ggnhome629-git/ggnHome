@@ -60,6 +60,13 @@ const STATUS_SCRIPT = `
   local rank = redis.call('ZRANK', KEYS[1], ticket)
   return {active and 1 or 0, rank and (rank + 1) or 0, redis.call('ZCARD', KEYS[1]), redis.call('ZCARD', KEYS[2])}
 `;
+const CLAIM_SCRIPT = `
+  local now = tonumber(ARGV[1])
+  local ticket = ARGV[2]
+  local score = redis.call("ZSCORE", KEYS[1], ticket)
+  if not score or tonumber(score) <= now then return 0 end
+  return redis.call("SET", KEYS[2], "1", "EX", ARGV[3], "NX") and 1 or 0
+`;
 const HEARTBEAT_SCRIPT = `
   local now = tonumber(ARGV[1])
   local ticket = ARGV[2]
@@ -71,11 +78,13 @@ const HEARTBEAT_SCRIPT = `
   end
   redis.call('ZADD', KEYS[1], expiry, ticket)
   redis.call('EXPIRE', KEYS[1], 86400)
+  redis.call('EXPIRE', KEYS[2], tonumber(ARGV[3]))
   return 1
 `;
 const LEAVE_SCRIPT = `
   local a = redis.call('ZREM', KEYS[1], ARGV[1])
   local b = redis.call('ZREM', KEYS[2], ARGV[1])
+  redis.call('DEL', KEYS[3])
   return a + b
 `;
 
@@ -114,17 +123,26 @@ async function isActive(ticket) {
   const score = await c.zscore(s.activeKey, ticket);
   return score !== null && Number(score) > Date.now();
 }
+async function claimToken(ticket) {
+  const c = client();
+  if (!c) return false;
+  const s = keys();
+  const claimKey = s.prefix + ":issued:" + ticket;
+  return Number(await c.eval(CLAIM_SCRIPT, 2, s.activeKey, claimKey, Date.now(), ticket, s.leaseSeconds)) === 1;
+}
 async function heartbeat(ticket) {
   const c = client();
   if (!c) return false;
   const s = keys();
-  return Number(await c.eval(HEARTBEAT_SCRIPT, 1, s.activeKey, Date.now(), ticket, s.leaseSeconds * 1000)) === 1;
+  const claimKey = s.prefix + ":issued:" + ticket;
+  return Number(await c.eval(HEARTBEAT_SCRIPT, 2, s.activeKey, claimKey, Date.now(), ticket, s.leaseSeconds * 1000)) === 1;
 }
 async function leave(ticket) {
   const c = client();
   if (!c) return false;
   const s = keys();
-  await c.eval(LEAVE_SCRIPT, 2, s.activeKey, s.queueKey, ticket);
+  const claimKey = s.prefix + ":issued:" + ticket;
+  await c.eval(LEAVE_SCRIPT, 3, s.activeKey, s.queueKey, claimKey, ticket);
   return true;
 }
-module.exports = { available, join, status, isActive, heartbeat, leave, settings };
+module.exports = { available, join, status, isActive, claimToken, heartbeat, leave, settings };
