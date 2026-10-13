@@ -26,6 +26,7 @@ const {
 } = require("../middleware/rateLimit");
 const aiConsultant = require("../controllers/aiConsultant.controller");
 const livekitVoice = require("../controllers/livekitVoice.controller");
+const voiceQueue = require("../controllers/voiceQueue.controller");
 
 // Controllers
 const { requestOtp, verifyOtp, loginWithPassword, setPassword, checkMobile , setRecoveryEmail , changePasswordDirect } = require("../controllers/login.controller");
@@ -352,6 +353,10 @@ router.get("/api/chatbot/initial-questions", getInitialQuestions);
 // held by the client and re-validated on every call; leads are written only
 // on a consented, idempotent submit.
 router.get("/api/ai-consultant/livekit/config", livekitVoice.getConfig);
+router.post("/api/ai-consultant/voice-queue/join", aiTurnLimiter, voiceQueue.join);
+router.get("/api/ai-consultant/voice-queue/status", aiTurnLimiter, voiceQueue.status);
+router.post("/api/ai-consultant/voice-queue/heartbeat", aiTurnLimiter, voiceQueue.heartbeat);
+router.post("/api/ai-consultant/voice-queue/leave", aiTurnLimiter, voiceQueue.leave);
 router.post("/api/ai-consultant/livekit/token", aiTurnLimiter, livekitVoice.createToken);
 router.get("/api/admin/ai-consultant/livekit/health", verifyToken, checkAdminEmail, livekitVoice.health);
 router.get("/api/ai-consultant/config", aiConsultant.getConfig);

@@ -55,14 +55,16 @@ jobs:
           node --check server/controllers/adminDashboardPreferences.controller.js
           node --check server/controllers/appDownload.controller.js
           node --check server/controllers/livekitVoice.controller.js
+          node --check server/controllers/voiceQueue.controller.js
+          node --check server/services/voiceQueue.service.js
           node --check server/controllers/partnerAuth.controller.js
           node --check server/models/AdminDashboardPreferences.model.js
       - name: Test LiveKit consent and configuration guards
         working-directory: server
-        run: npx jest tests/livekitVoice.controller.test.js tests/aiConsultant.test.js tests/aiConsultantFallback.test.js --runInBand
+        run: npx jest tests/livekitVoice.controller.test.js tests/voiceQueue.controller.test.js tests/aiConsultant.test.js tests/aiConsultantFallback.test.js --runInBand
       - name: Check self-hosted LiveKit worker Python syntax
         run: |
-          python3 -m py_compile services/livekit-agent/agent.py services/livekit-agent/idle_watch.py services/livekit-agent/speech_style.py services/livekit-agent/voice_rewrite.py
+          python3 -m py_compile services/livekit-agent/agent.py services/livekit-agent/idle_watch.py services/livekit-agent/speech_style.py services/livekit-agent/voice_rewrite.py services/livekit-agent/transcript_filter.py
           python3 -m pip install -q pytest
           cd services/livekit-agent && python3 -m pytest -q test_speech_style.py
       - name: Validate notification templates

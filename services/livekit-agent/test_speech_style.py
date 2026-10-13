@@ -31,7 +31,7 @@ def test_facts_not_added():
 def test_filler_only_transcripts_ignored():
     import sys, types
     sys.path.insert(0, ".")
-    from agent import is_filler_only, TranscriptFilter
+    from transcript_filter import is_filler_only, TranscriptFilter
 
     assert is_filler_only("Hmm") and is_filler_only("okay okay") and is_filler_only("haan")
     assert not is_filler_only("okay show me two bhk") and not is_filler_only("yes I want to rent")
