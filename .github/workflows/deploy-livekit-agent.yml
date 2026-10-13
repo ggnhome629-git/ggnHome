@@ -1,0 +1,44 @@
+name: Deploy GgnHome LiveKit Agent
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/livekit-agent/**'
+      - '!services/livekit-agent/livekit.toml'
+      - '!services/livekit-agent/README.md'
+      - '!services/livekit-agent/**/*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-ggnhome-livekit-agent
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify agent configuration
+        shell: bash
+        run: |
+          test -f services/livekit-agent/livekit.toml || { echo "::error::Missing services/livekit-agent/livekit.toml. Run LiveKit Agent Setup with operation=create and merge the generated config PR first."; exit 1; }
+          test -f services/livekit-agent/Dockerfile || { echo "::error::Missing services/livekit-agent/Dockerfile."; exit 1; }
+          test -f services/livekit-agent/agent.py || { echo "::error::Missing services/livekit-agent/agent.py."; exit 1; }
+
+      - name: Deploy to LiveKit Cloud
+        uses: livekit/deploy-action@v2.12.2
+        env:
+          LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
+          LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+          SECRET_LIST: ${{ secrets.SECRET_LIST }}
+        with:
+          OPERATION: deploy
+          WORKING_DIRECTORY: services/livekit-agent
