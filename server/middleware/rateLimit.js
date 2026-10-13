@@ -15,16 +15,9 @@ const useRedisForRateLimits = () => process.env.RATE_LIMIT_USE_REDIS === "true";
 // counter resets independently. Confirmed live: RateLimit-Remaining jumped
 // backwards across sequential requests in production.
 //
-// This store shares hit counts across every instance instead, in order of
-// preference:
-//   1. Redis, if configured and connected (atomic INCR) -- not provisioned
-//      today, but used automatically the moment REDIS_URL is set, no code
-//      change needed.
-//   2. MongoDB, already connected from every instance -- an atomic
-//      findOneAndUpdate($inc) against models/RateLimitHit.model.js, which
-//      self-expires via a TTL index.
-//   3. A local in-memory Map, only if both of the above are unreachable --
-//      today's pre-fix behavior, never worse than before this change.
+// This store shares hit counts across instances. MongoDB is preferred to
+// conserve Redis free-tier commands; Redis is opt-in via RATE_LIMIT_USE_REDIS.
+// If both shared stores are unreachable, a local Map is the last-resort fallback.
 class SharedStore {
   constructor(prefix) {
     this.prefix = prefix;
