@@ -15,7 +15,8 @@ const DEFAULT_COUNTRY_CODE = process.env.SMS_DEFAULT_COUNTRY_CODE || "+91";
 function useThirdParty() {
   const credentialsPresent = Boolean(process.env.SMS_GATEWAY_USER && process.env.SMS_GATEWAY_PASSWORD);
   if (credentialsPresent && process.env.SMS_GATEWAY_FREE_TIER_CONFIRMED !== "true") {
-    throw new Error("Third-party SMS gateway is paused until its free-tier plan and quota are explicitly confirmed. Use the configured Android SIM gateway or verify the provider plan.");
+    console.warn("[sms] Third-party gateway credentials are present but the free-tier plan is unconfirmed; using the Android SIM gateway instead.");
+    return false;
   }
   return credentialsPresent;
 }
