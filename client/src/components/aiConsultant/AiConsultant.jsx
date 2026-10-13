@@ -386,11 +386,45 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
     else voice.toggleMute();
   };
 
+  // Persist the current conversation before closing voice or hiding the UI.
+  // Voice is ephemeral; visitor preferences and progress are not.
+  const persistConversation = useCallback(() => {
+    if (!convState) return;
+    saveStore({
+      state: convState,
+      ui,
+      chips,
+      idem: idemRef.current,
+      success: review.success,
+      items: items.filter((it) => it.type !== "typing" && it.type !== "scanner").slice(-MAX_ITEMS),
+    });
+  }, [convState, ui, chips, review.success, items]);
+
   const close = (reason) => {
-    voice.end();
+    persistConversation();
     clearTimeout(autoSendRef.current);
+    // Disconnect immediately; do not wait for an idle timeout.
+    void voice.end({ silent: true });
     onClose && onClose(reason);
   };
+
+  const minimize = () => {
+    persistConversation();
+    clearTimeout(autoSendRef.current);
+    // The full voice screen is closing. Keep the saved chat/preferences,
+    // but release the live microphone and LiveKit session immediately.
+    void voice.end({ silent: true });
+    onMinimize && onMinimize();
+  };
+
+  // Also cover parent-driven close/unmount transitions, not only the X button.
+  useEffect(() => {
+    if (open && !minimized) return;
+    persistConversation();
+    if (voiceRef.current.active || voiceRef.current.phase !== "off") {
+      void voiceRef.current.end({ silent: true });
+    }
+  }, [open, minimized, persistConversation]);
 
   /* ------------------------------------------------------------ render */
 
@@ -532,7 +566,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
             </div>
           )}
           {onMinimize ? (
-            <button type="button" className="gai-icon-btn" onClick={onMinimize} aria-label="Minimise to a floating chat and keep browsing" title="Keep chatting while you browse">
+            <button type="button" className="gai-icon-btn" onClick={minimize} aria-label="Minimise consultant and end voice session" title="Pause voice and keep chatting while you browse">
               <Minimize2 size={17} />
             </button>
           ) : null}
