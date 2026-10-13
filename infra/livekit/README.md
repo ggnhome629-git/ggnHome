@@ -10,6 +10,8 @@ This folder and `services/livekit-agent` adapt the official LiveKit Agents SDK i
 - GgnHome agent worker: LiveKit Agents with local OpenAI-compatible STT/TTS endpoints.
 - Existing React consultant: receives final transcripts and continues to call `/api/ai-consultant/turn`, `/search`, and `/enquiry`. The rule parser/question bank and database-backed property search remain authoritative. If a transcript is not understood by the rules, the existing server-side Groq fallback may be used when `AI_CONSULTANT_LLM` is enabled and Groq keys are configured; it is not used to invent listing facts. The same lead-consent and validation rules apply to voice and text. The LiveKit worker itself does not run a local LLM.
 
+- Each visitor has a dedicated room. Closing or minimizing the consultant immediately disconnects the browser voice session; the agent detects visitor departure, closes its `AgentSession`, and deletes the room. The consultant's saved conversation, language, property preferences, and progress are preserved in browser storage so the visitor can continue later without keeping a microphone or agent session active.
+
 ## Required environment
 
 Set these server-only values on the GgnHome API host:
