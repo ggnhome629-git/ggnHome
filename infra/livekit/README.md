@@ -23,17 +23,18 @@ Set `LIVEKIT_URL=wss://voice.example.com` on the GgnHome API host. For the worke
 ## Self-hosted server
 
 1. Copy `livekit.yaml.example` to `livekit.yaml` in this folder and replace the example secret with a long random value.
-2. Point a DNS record (for example `voice.example.com`) at the voice VM's public IP.
-3. From the repository root, start the server and Caddy TLS proxy:
+2. Copy `services/livekit-agent/.env.example` to `services/livekit-agent/.env`. Set its LiveKit key/secret to match `livekit.yaml`; keep the worker's `LIVEKIT_URL=ws://127.0.0.1:7880` when it runs on this same VM.
+3. Point a DNS record (for example `voice.example.com`) at the voice VM's public IP.
+4. From the repository root, start the server, local speech models, agent worker and Caddy TLS proxy:
 
    ```bash
    export LIVEKIT_DOMAIN=voice.example.com
-   docker compose -f infra/livekit/docker-compose.yml up -d
+   docker compose -f infra/livekit/docker-compose.yml up -d --build
    ```
 
    Caddy obtains the HTTPS certificate and proxies HTTPS/WSS signalling to the local LiveKit API port. Keep public TCP 7880 blocked at the VM firewall; Caddy reaches it locally.
-4. Open TCP 80/443 for Caddy, TCP 7881 and UDP 50000-60000 for LiveKit media. Follow the current official ports guide for TURN and network-specific requirements: https://docs.livekit.io/transport/self-hosting/ports-firewall/
-5. Do not point the public browser at `127.0.0.1` or an internal Docker hostname. Set the backend and worker `LIVEKIT_URL=wss://voice.example.com`. The API key/secret in `livekit.yaml` must exactly match `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` on both services.
+5. Open TCP 80/443 for Caddy, TCP 7881 and UDP 50000-60000 for LiveKit media. Follow the current official ports guide for TURN and network-specific requirements: https://docs.livekit.io/transport/self-hosting/ports-firewall/
+6. Do not point the public browser at `127.0.0.1` or an internal Docker hostname. Set the backend and worker `LIVEKIT_URL=wss://voice.example.com`. The API key/secret in `livekit.yaml` must exactly match `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` on both services.
 
 Render's small web-service instance should keep serving the existing GgnHome API; it is not the recommended place to run the UDP/WebRTC media server.
 
@@ -46,17 +47,9 @@ The agent expects OpenAI-compatible local endpoints:
 
 The provided Compose file includes CPU services for Speaches/faster-whisper on port 8000 and Kokoro-FastAPI on port 8880. They use host networking so the worker can reach them at the default localhost URLs. Block public inbound access to ports 8000 and 8880 in the VM firewall; only the worker should use them. The STT model is downloaded on first use and cached in the `stt_cache` volume; TTS model files are supplied by the image. CPU inference may have noticeable latency under load.
 
-## Run the agent
+## Run the agent separately (optional)
 
-```bash
-cd services/livekit-agent
-python -m venv .venv
-. .venv/bin/activate
-pip install -r requirements.txt
-cp .env.example .env
-# Edit .env with the real LiveKit and local-model URLs.
-python agent.py start
-```
+The Compose stack builds and starts `services/livekit-agent/Dockerfile` automatically. If you prefer to run the worker directly, use a Python 3.11 virtual environment, install `services/livekit-agent/requirements.txt`, and start `python agent.py start` from `services/livekit-agent` after setting the same environment values.
 
 Check the current LiveKit Agents CLI/runtime documentation before production deployment: https://docs.livekit.io/agents/start/voice-ai/
 
