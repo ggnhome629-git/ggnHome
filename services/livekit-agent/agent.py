@@ -429,15 +429,23 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
 
     @ctx.room.on("participant_disconnected")
     def on_participant_disconnected(participant: rtc.RemoteParticipant) -> None:
-        logger.info("Visitor left room %s", ctx.room.name)
-        # Free the slot right away instead of waiting for the room to expire.
-        # A short grace period covers a quick page refresh or reconnect.
-        async def leave_if_still_alone() -> None:
-            await asyncio.sleep(VISITOR_LEFT_GRACE_S)
-            if not any(not p.is_agent for p in ctx.room.remote_participants.values()):
-                await shutdown_later("visitor left", 0)
+        identity = str(getattr(participant, "identity", ""))
+        if not identity.startswith("visitor_"):
+            return
+        logger.info("Visitor left room %s; ending voice session immediately", ctx.room.name)
 
-        spawn(leave_if_still_alone())
+        async def close_session_and_room() -> None:
+            try:
+                await session.aclose()
+            except Exception:
+                logger.exception("Failed to close voice session after visitor disconnect")
+            try:
+                await ctx.delete_room()
+            except Exception:
+                logger.debug("Room cleanup after visitor disconnect was unnecessary")
+            ctx.shutdown(reason="visitor left")
+
+        spawn(close_session_and_room())
 
     async def idle_watchdog() -> None:
         while True:
