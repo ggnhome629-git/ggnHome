@@ -171,7 +171,7 @@ export default function LiveKitVoiceSession({ enabled = true, assistantText, onT
         <span className={`gai-livekit-mark ${status}`}><Radio size={19} /></span>
         <div>
           <strong>Real-time voice</strong>
-          <small>{status === "connected" ? "Connected to GgnHome voice" : status === "connecting" ? "Connecting to your self-hosted voice server…" : status === "error" ? "Voice connection unavailable" : "Self-hosted LiveKit · microphone starts only when you connect"}</small>
+          <small aria-live="polite">{status === "connected" ? "Connected to GgnHome voice" : status === "connecting" ? "Connecting to your self-hosted voice server…" : status === "error" ? "Voice connection unavailable" : "Self-hosted LiveKit · microphone starts only when you connect"}</small>
         </div>
       </div>
       {error ? <p className="gai-livekit-error" role="alert">{error}</p> : null}
