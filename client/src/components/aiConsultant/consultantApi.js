@@ -48,7 +48,22 @@ async function post(path, body, { auth = false, timeoutMs = 20000 } = {}) {
   }
 }
 
+async function get(path, { timeoutMs = 10000 } = {}) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${BASE}${path}`, { credentials: "omit", signal: controller.signal });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { const err = new Error(data.message || "Voice queue is unavailable."); err.status = res.status; err.code = data.code; throw err; }
+    return data;
+  } finally { clearTimeout(timer); }
+}
+
 export const consultantApi = {
+  joinVoiceQueue: () => post("/api/ai-consultant/voice-queue/join", {}),
+  voiceQueueStatus: (ticket) => get(`/api/ai-consultant/voice-queue/status?ticket=${encodeURIComponent(ticket)}`),
+  voiceQueueHeartbeat: (ticket) => post("/api/ai-consultant/voice-queue/heartbeat", { ticket }),
+  leaveVoiceQueue: (ticket) => post("/api/ai-consultant/voice-queue/leave", { ticket }),
   turn: (state, message, action, disableLLM = false) => post("/api/ai-consultant/turn", { state, message, action, disableLLM }),
   search: (state, more = false) => post("/api/ai-consultant/search", { state, more }, { timeoutMs: 25000 }),
   enquiry: (payload) => post("/api/ai-consultant/enquiry", payload, { auth: true }),
