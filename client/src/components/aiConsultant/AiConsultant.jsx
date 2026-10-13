@@ -82,7 +82,6 @@ export default function AiConsultant({ open, onClose }) {
   const [input, setInput] = useState("");
   // Voice is deliberately opt-in: permission prompts must follow a clear user
   // action, and the first greeting must not compete with a browser permission dialog.
-  const speechCapable = typeof window !== "undefined" && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
   const [handsFree, setHandsFree] = useState(false);
   const [voiceOut, setVoiceOut] = useState(false);
   const [audioPermission, setAudioPermission] = useState("idle");
@@ -412,7 +411,11 @@ export default function AiConsultant({ open, onClose }) {
     const greeting = [...items].reverse().find((item) => item.type === "bot" && item.text);
     const releaseMic = () => setSpeechPending(false);
     if (greeting && tts.supported) {
-      tts.speak(greeting.text, ui?.speechLang || "en-IN", releaseMic);
+      const safety = setTimeout(releaseMic, 15000);
+      tts.speak(greeting.text, ui?.speechLang || "en-IN", () => {
+        clearTimeout(safety);
+        releaseMic();
+      });
     } else {
       releaseMic();
     }
@@ -616,7 +619,7 @@ export default function AiConsultant({ open, onClose }) {
                       : "First allow microphone access. We won't start listening or speak over the browser permission prompt."}
                   </p>
                   {audioPermission !== "granted" ? (
-                    <button type="button" className="gai-voice-primary" onClick={enableMicrophone} disabled={audioPermission === "requesting"}>
+                    <button type="button" className="gai-voice-primary" onClick={enableMicrophone} disabled={audioPermission === "requesting" || !recognition.supported}>
                       <Mic size={20} />
                       {audioPermission === "requesting" ? "Waiting for permission…" : "Enable microphone"}
                     </button>
