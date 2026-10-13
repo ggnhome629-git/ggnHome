@@ -14,7 +14,7 @@ from typing import Any
 from dotenv import load_dotenv
 from livekit import agents, rtc
 from livekit.agents import Agent, AgentServer, AgentSession
-from livekit.plugins import openai
+from livekit.plugins import openai, silero
 
 load_dotenv(".env")
 
@@ -72,6 +72,8 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
             api_key=TTS_API_KEY,
             response_format="wav",
         ),
+        # Whisper-style STT is non-streaming; VAD segments the audio into turns.
+        vad=silero.VAD.load(),
     )
 
     # The transcript is forwarded to the existing React consultant, which calls
