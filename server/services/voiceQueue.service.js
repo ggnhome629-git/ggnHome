@@ -11,8 +11,8 @@ const intEnv = (name, fallback, min, max) => {
 };
 const settings = () => ({
   enabled: process.env.VOICE_QUEUE_ENABLED !== "false" && Boolean(process.env.REDIS_URL),
-  maxActive: intEnv("VOICE_QUEUE_MAX_ACTIVE", 3, 1, 10),
-  maxWaiting: intEnv("VOICE_QUEUE_MAX_WAITING", 50, 1, 100),
+  maxActive: intEnv("VOICE_QUEUE_MAX_ACTIVE", 2, 1, 2),
+  maxWaiting: intEnv("VOICE_QUEUE_MAX_WAITING", 5, 1, 5),
   leaseSeconds: intEnv("VOICE_QUEUE_LEASE_SECONDS", 90, 60, 300),
   waitTtlSeconds: intEnv("VOICE_QUEUE_WAIT_TTL_SECONDS", 900, 120, 3600),
   prefix: String(process.env.VOICE_QUEUE_KEY_PREFIX || "ggnhome:voice:v1").replace(/[^a-zA-Z0-9:_-]/g, "").slice(0, 80),
