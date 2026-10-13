@@ -13,6 +13,7 @@ export default function VoiceStage({ voice, onStart, onJoinQueue, onStartQueued,
   const needsPermission = permission !== "granted";
   const requesting = phase === "requesting";
   const starting = ["connecting", "requesting"].includes(phase) && !needsPermission;
+  const joining = queue.state === "joining";
   const queued = queue.state === "waiting";
   const ready = queue.state === "ready";
   const queueError = queue.state === "error";
@@ -34,6 +35,10 @@ export default function VoiceStage({ voice, onStart, onJoinQueue, onStartQueued,
       ? "Allow the microphone from the lock icon in your browser's address bar, then try again."
       : "Your browser will ask for permission. Nothing listens until you choose to start, and you can stop anytime.";
     action = { label: requesting ? "Waiting for permission…" : permission === "denied" ? "Try again" : "Allow microphone", onClick: () => voice.requestPermission(), disabled: requesting };
+  } else if (realTime && joining) {
+    title = "Joining the voice queue…";
+    body = "Reserving your place in the queue."; 
+    action = { label: "Joining queue…", onClick: onJoinQueue, disabled: true };
   } else if (realTime && ready) {
     title = "You're at the front of the queue";
     body = "Your real-time voice slot is reserved. Tap start now to connect.";
