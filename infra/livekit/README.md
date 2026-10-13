@@ -34,7 +34,7 @@ Set `LIVEKIT_URL=wss://voice.example.com` on the GgnHome API host. For the worke
 
    Caddy obtains the HTTPS certificate and proxies HTTPS/WSS signalling to the local LiveKit API port. Keep public TCP 7880 blocked at the VM firewall; Caddy reaches it locally.
 5. Open TCP 80/443 for Caddy, TCP 7881 and UDP 50000-60000 for LiveKit media. Follow the current official ports guide for TURN and network-specific requirements: https://docs.livekit.io/transport/self-hosting/ports-firewall/
-6. Do not point the public browser at `127.0.0.1` or an internal Docker hostname. Set the backend and worker `LIVEKIT_URL=wss://voice.example.com`. The API key/secret in `livekit.yaml` must exactly match `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` on both services.
+6. Do not point the public browser at `127.0.0.1` or an internal Docker hostname. Set the Render backend `LIVEKIT_URL=wss://voice.example.com`; the worker's `.env` should use `LIVEKIT_URL=ws://127.0.0.1:7880` when it runs on this same VM. The API key/secret in `livekit.yaml` must exactly match `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` on both services.
 
 Render's small web-service instance should keep serving the existing GgnHome API; it is not the recommended place to run the UDP/WebRTC media server.
 
