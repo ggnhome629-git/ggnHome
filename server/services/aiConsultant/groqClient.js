@@ -6,10 +6,9 @@
  *   - Groq rate limits apply to the ORGANIZATION, not the key. Keys are rotated
  *     for resilience (a revoked or failing key is skipped), never to multiply
  *     quota: a 429 puts every key on the same cooldown.
- *   - A local ledger keeps usage under configurable ceilings that default to
- *     just below the free-plan limits for openai/gpt-oss-120b
- *     (30 RPM · 1,000 RPD · 8,000 TPM · 200,000 TPD). Local numbers are
- *     estimates; provider headers and 429s are authoritative.
+ *   - Conservative local estimates plus shared MongoDB quota reservations
+ *     bound organization-wide usage across instances. Provider headers and
+ *     429s remain authoritative; quota storage failure disables this fallback.
  *   - Bounded: one request + at most one retry on a different key, with a
  *     timeout. Nothing here can enable paid usage.
  *   - AI_CONSULTANT_LLM=off disables the model entirely.
