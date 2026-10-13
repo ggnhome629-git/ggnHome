@@ -623,7 +623,7 @@ export default function AiConsultant({ open, onClose }) {
                   <LiveKitVoiceSession
                     enabled={open}
                     assistantText={items.slice().reverse().find((item) => item.type === "bot" && item.text)?.text || ""}
-                    onTranscript={(text) => send(text, text, { disableLLM: true })}
+                    onTranscript={(text) => send(text, text)}
                     onStatus={setLiveKitStatus}
                     onError={setVoiceSetupError}
                   />
