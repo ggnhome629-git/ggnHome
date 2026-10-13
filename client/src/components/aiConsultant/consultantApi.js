@@ -1,7 +1,7 @@
 /** Thin client for /api/ai-consultant/*. Every call degrades to a readable error. */
 const BASE = process.env.REACT_APP_Base_API || "";
 
-async function post(path, body, { auth = false, timeoutMs = 20000 } = {}) {
+async function post(path, body, { auth = false, timeoutMs = 20000, keepalive = false } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   const headers = { "Content-Type": "application/json" };
@@ -18,6 +18,7 @@ async function post(path, body, { auth = false, timeoutMs = 20000 } = {}) {
       method: "POST",
       headers,
       credentials: "include",
+      keepalive,
       body: JSON.stringify(body || {}),
       signal: controller.signal,
     });
@@ -63,7 +64,7 @@ export const consultantApi = {
   joinVoiceQueue: () => post("/api/ai-consultant/voice-queue/join", {}),
   voiceQueueStatus: (ticket) => get(`/api/ai-consultant/voice-queue/status?ticket=${encodeURIComponent(ticket)}`),
   voiceQueueHeartbeat: (ticket) => post("/api/ai-consultant/voice-queue/heartbeat", { ticket }),
-  leaveVoiceQueue: (ticket) => post("/api/ai-consultant/voice-queue/leave", { ticket }),
+  leaveVoiceQueue: (ticket, options) => post("/api/ai-consultant/voice-queue/leave", { ticket }, options),
   turn: (state, message, action, disableLLM = false) => post("/api/ai-consultant/turn", { state, message, action, disableLLM }),
   search: (state, more = false) => post("/api/ai-consultant/search", { state, more }, { timeoutMs: 25000 }),
   enquiry: (payload) => post("/api/ai-consultant/enquiry", payload, { auth: true }),
