@@ -59,14 +59,8 @@ if (!cloudAccounts || cloudAccounts.length === 0) {
   console.log(`🔧 Agent Cloudinary: loaded ${cloudAccounts.length} account(s)`);
 }
 
-// Keep agent uploads on one account by default; only opt in to multiple accounts
-// when the setup is intentional. Each selected account is checked for headroom.
-const uploadAccounts = process.env.AGENT_CLOUDINARY_MULTI_ACCOUNT_UPLOADS_ENABLED === 'true'
-  ? cloudAccounts
-  : cloudAccounts.slice(0, 1);
-if (cloudAccounts.length > 1 && uploadAccounts.length === 1) {
-  console.warn('[Cloudinary] Multiple agent accounts configured; using primary account only unless AGENT_CLOUDINARY_MULTI_ACCOUNT_UPLOADS_ENABLED=true.');
-}
+// Free-tier-safe mode: only the primary agent account is used.
+const uploadAccounts = cloudAccounts.slice(0, 1);
 let rrIndex = 0;
 const getNextStartIndex = () => { const idx = rrIndex; rrIndex = (rrIndex + 1) % uploadAccounts.length; return idx; };
 
