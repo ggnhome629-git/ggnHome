@@ -18,7 +18,7 @@ Set these server-only values on the GgnHome API host:
 - `LIVEKIT_API_KEY`: key configured in the LiveKit server.
 - `LIVEKIT_API_SECRET`: matching secret. Do not use a `REACT_APP_*` variable.
 
-Set the same LiveKit URL/key/secret for the worker in `services/livekit-agent/.env`. The worker needs a private network route to the local STT/TTS services.
+Set `LIVEKIT_URL=wss://voice.example.com` on the GgnHome API host. For the worker running on the same VM, use `LIVEKIT_URL=ws://127.0.0.1:7880` (or a private internal URL if it runs elsewhere); set the same API key/secret in both places. The worker needs a private network route to the local STT/TTS services.
 
 ## Self-hosted server
 
@@ -44,7 +44,7 @@ The agent expects OpenAI-compatible local endpoints:
 - STT: a self-hosted faster-whisper-compatible server exposing `/v1/audio/transcriptions`, default `http://127.0.0.1:8000/v1`.
 - TTS: a self-hosted Kokoro-FastAPI-compatible server exposing `/v1/audio/speech`, default `http://127.0.0.1:8880/v1`.
 
-Run those services on the same VM or private network and configure `LOCAL_STT_BASE_URL` and `LOCAL_TTS_BASE_URL`. Do not expose the model endpoints publicly. Model downloads and CPU/RAM requirements depend on the selected model; verify the endpoints independently before starting the worker. This repo does not embed model weights.
+The provided Compose file includes CPU services for Speaches/faster-whisper on port 8000 and Kokoro-FastAPI on port 8880. They use host networking so the worker can reach them at the default localhost URLs. Block public inbound access to ports 8000 and 8880 in the VM firewall; only the worker should use them. The STT model is downloaded on first use and cached in the `stt_cache` volume; TTS model files are supplied by the image. CPU inference may have noticeable latency under load.
 
 ## Run the agent
 
