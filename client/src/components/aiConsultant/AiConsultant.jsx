@@ -384,6 +384,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   useEffect(() => setHold((typing && input.trim().length > 0) || reviewOpen), [typing, input, reviewOpen, setHold]);
 
   const joinVoiceQueue = useCallback(async () => {
+    setStageDismissed(false);
     if (queue.state === "joining" || queue.state === "waiting" || queue.state === "ready" || queue.state === "in_session") return;
     setQueue({ state: "joining", message: "Joining the voice queue…" });
     try {
