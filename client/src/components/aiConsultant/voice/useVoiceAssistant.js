@@ -366,7 +366,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
           settle(id, { spoken: true, timeout: true });
           afterSpeech();
         }, Math.min(45000, 6000 + clean.length * 90));
-        pendingRef.current.set(id, { resolve, timer });
+        pendingRef.current.set(id, { resolve, timer, text: clean });
         setPhase(greeting ? "greeting" : "speaking");
         const sent = publish({
           type: "speak_text",
@@ -485,8 +485,17 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
       switch (message.type) {
         case "voice_status":
           if (message.status === "ready") readyRef.current?.();
-          else if (message.status === "tts_error") setNotice("The assistant's voice hiccupped — the reply is shown in the chat.");
-          else if (message.status === "stt_error") setNotice("I couldn't catch that — please say it again.");
+          else if (message.status === "tts_error") {
+            setNotice("The real-time voice couldn't speak that reply. Using your browser voice instead.");
+            // Keep replies audible even if the cloud TTS provider/key/model fails.
+            const failedId = String(message.id || "");
+            const pending = pendingRef.current.get(failedId);
+            if (pending?.text) {
+              clearTimeout(pending.timer);
+              pendingRef.current.delete(failedId);
+              browserSpeak(pending.text).then(pending.resolve).catch(() => pending.resolve({ spoken: false }));
+            }
+          } else if (message.status === "stt_error") setNotice("I couldn't catch that — please say it again.");
           break;
         case "user_state":
           if (message.state === "speaking" && phaseRef.current === "listening") setPhase("hearing");
@@ -514,7 +523,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
           break;
       }
     },
-    [afterSpeech, deliverTranscript, setPhase, settle]
+    [afterSpeech, browserSpeak, deliverTranscript, setPhase, settle]
   );
 
   const startLiveKit = useCallback(async () => {
