@@ -94,8 +94,8 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   const stageVisibleRef = useRef(false);
   const [aiAvailable, setAiAvailable] = useState(null);
   const [basicMode, setBasicMode] = useState(Boolean(persisted?.basicMode));
-  const [queue, setQueue] = useState({ state: "idle" });
-  const [queueTicket, setQueueTicket] = useState(null);
+  const [queueTicket, setQueueTicket] = useState(() => { try { return window.sessionStorage.getItem("ggn_voice_queue_ticket") || null; } catch (_) { return null; } });
+  const [queue, setQueue] = useState(() => { try { return window.sessionStorage.getItem("ggn_voice_queue_ticket") ? { state: "waiting" } : { state: "idle" }; } catch (_) { return { state: "idle" }; } });
   const [review, setReview] = useState({ submitting: false, error: "", success: persisted?.success || null });
   const idemRef = useRef(persisted?.idem || null);
   const stateRef = useRef(convState);
@@ -104,6 +104,13 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   const inputRef = useRef(null);
   const startedRef = useRef(false);
   const autoSendRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      if (queueTicket) window.sessionStorage.setItem("ggn_voice_queue_ticket", queueTicket);
+      else window.sessionStorage.removeItem("ggn_voice_queue_ticket");
+    } catch (_) { /* session storage is optional */ }
+  }, [queueTicket]);
 
   const lang = ui?.lang || convState?.lang || "en";
   busyRef.current = busy;
@@ -455,8 +462,9 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
       }
       return;
     }
+    leaveVoiceQueue();
     voiceRef.current.start(greeting ? greeting.text : "");
-  }, [items, queueTicket, queue.state, joinVoiceQueue]);
+  }, [items, queueTicket, queue.state, joinVoiceQueue, leaveVoiceQueue]);
 
   const startQueuedVoice = useCallback(() => {
     if (!queueTicket || queue.state !== "ready") return;
