@@ -8,7 +8,7 @@ This folder and `services/livekit-agent` adapt the official LiveKit Agents SDK i
 - GgnHome API: `POST /api/ai-consultant/livekit/token` issues a short-lived room-scoped token. The LiveKit API secret never reaches the browser.
 - LiveKit server: forwards WebRTC audio/data.
 - GgnHome agent worker: LiveKit Agents with local OpenAI-compatible STT/TTS endpoints.
-- Existing React consultant: receives final transcripts and continues to call `/api/ai-consultant/turn`, `/search`, and `/enquiry`. GgnHome's rule engine, property inventory, and explicit lead consent remain authoritative.
+- Existing React consultant: receives final transcripts and continues to call `/api/ai-consultant/turn`, `/search`, and `/enquiry`. Voice turns explicitly set `disableLLM: true`, so the optional Groq fallback is bypassed for LiveKit voice; GgnHome's rule engine, property inventory, and explicit lead consent remain authoritative. Normal text-chat behavior is unchanged.
 
 ## Required environment
 
