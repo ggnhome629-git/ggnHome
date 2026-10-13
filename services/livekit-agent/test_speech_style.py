@@ -37,3 +37,31 @@ def test_filler_only_transcripts_ignored():
     assert not is_filler_only("okay show me two bhk") and not is_filler_only("yes I want to rent")
     f = TranscriptFilter()
     assert not f.accept("hmm") and f.accept("show me flats in sector 57")
+
+
+def test_rewrite_safety_check():
+    from voice_rewrite import is_safe_rewrite
+
+    src = "I found 3 options in Sector 57 for ₹28k per month. Want to see them?"
+    assert is_safe_rewrite(src, "Got it. I found 3 in Sector 57 at ₹28k a month. Want a look?", 320)
+    assert not is_safe_rewrite(src, "I found 4 options in Sector 57.", 320)          # new number
+    assert not is_safe_rewrite(src, "Call 9876543210 now!", 320)                    # new contact
+    assert not is_safe_rewrite(src, "**Great** options!", 320)                      # markup
+    assert not is_safe_rewrite("Here you go.", "Here you go. Anything else?", 320)  # invented question
+    assert not is_safe_rewrite(src, "x " * 400, 320)                                 # too long
+
+
+def test_rewrite_falls_back_on_failure():
+    import asyncio
+    from voice_rewrite import rewrite_for_speech
+
+    class Boom:
+        class chat:
+            class completions:
+                @staticmethod
+                async def create(**_):
+                    raise RuntimeError("quota")
+
+    text = "I found three options in Sector 57. Do you want to see them now?"
+    assert asyncio.run(rewrite_for_speech(Boom, text, lang="en", last_opener="", max_chars=320)) is None
+    assert asyncio.run(rewrite_for_speech(None, text, lang="en", last_opener="", max_chars=320)) is None

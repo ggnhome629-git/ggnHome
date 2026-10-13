@@ -62,7 +62,7 @@ jobs:
         run: npx jest tests/livekitVoice.controller.test.js tests/aiConsultant.test.js --runInBand
       - name: Check self-hosted LiveKit worker Python syntax
         run: |
-          python3 -m py_compile services/livekit-agent/agent.py services/livekit-agent/speech_style.py
+          python3 -m py_compile services/livekit-agent/agent.py services/livekit-agent/speech_style.py services/livekit-agent/voice_rewrite.py
           python3 -m pip install -q pytest
           cd services/livekit-agent && python3 -m pytest -q test_speech_style.py
       - name: Validate notification templates

@@ -76,3 +76,7 @@ Small CPU Whisper plus CPU Kokoro was laggy and sounded flat, so the worker now 
 - TTS: `VOICE_TTS_PROVIDER=deepgram` (Aura-2), `cartesia` (Sonic-3), `sarvam` (Bulbul v3, Indian English/Hindi), `groq` (Orpheus, English, non-streaming) or `local`. Deepgram, Cartesia and Sarvam stream audio, so speech starts sooner.
 - Spoken text is rewritten by `speech_style.py` (spoken numbers, contractions, no markup) and filler-only turns such as "hmm" or "okay" are ignored.
 - Free allowances change often; check each vendor's pricing page before launch. Self-hosted Chatterbox (MIT) is the most natural open model in the comparisons we found but wants a GPU, so it is not set up here.
+
+## Groq-only speech and the human voice style
+
+With `VOICE_STT_PROVIDER=groq`, `VOICE_TTS_PROVIDER=groq` and one `GROQ_SPEECH_API_KEY`, the whole voice path uses Groq: Whisper for listening, Orpheus for speaking, and a small model (`VOICE_REWRITE_MODEL`) that rewrites each finished reply into natural spoken wording using `services/livekit-agent/voice_style_guide.md`. The rewrite is rejected if it adds any number, link or phone number, invents a question, is too long, or times out; the plain deterministic wording is spoken instead. The greeting is never rewritten. This does not change what the consultant says, only how.

@@ -42,6 +42,7 @@ from livekit.agents import Agent, AgentServer, AgentSession
 from livekit.plugins import openai, silero
 
 from speech_style import humanize
+from voice_rewrite import rewrite_for_speech
 
 load_dotenv(".env")
 
@@ -54,10 +55,10 @@ AGENT_NAME = os.getenv("LIVEKIT_AGENT_NAME", "ggnhome-property-voice")
 # OpenAI-compatible servers). Hosted Groq is the default because small CPU
 # Whisper + CPU Kokoro were the main source of lag.
 STT_PROVIDER = os.getenv("VOICE_STT_PROVIDER", "groq").lower()
-# Default to the most natural streaming voice whose key is present.
+# Groq is the default when its speech key is set; other providers are optional.
 TTS_PROVIDER = os.getenv(
     "VOICE_TTS_PROVIDER",
-    "deepgram" if os.getenv("DEEPGRAM_API_KEY") else "cartesia" if os.getenv("CARTESIA_API_KEY") else "groq",
+    "groq" if os.getenv("GROQ_SPEECH_API_KEY") else "deepgram" if os.getenv("DEEPGRAM_API_KEY") else "cartesia" if os.getenv("CARTESIA_API_KEY") else "groq",
 ).lower()
 # Use a dedicated Groq key for speech, never the consultant's GROQ_API_KEY_* set,
 # so voice traffic cannot exhaust the text fallback's quota.
@@ -76,6 +77,10 @@ CARTESIA_VOICE = os.getenv("CARTESIA_VOICE_ID", "")
 SARVAM_TTS_MODEL = os.getenv("SARVAM_TTS_MODEL", "bulbul:v3")
 SARVAM_SPEAKER = os.getenv("SARVAM_SPEAKER", "") or None
 SARVAM_LANGS = {"en": "en-IN", "hi": "hi-IN", "hinglish": "hi-IN"}
+
+# Rewrite each reply into natural spoken wording with a small Groq model. The
+# rewrite is checked (no new numbers/contacts) and falls back to the plain text.
+VOICE_REWRITE = os.getenv("VOICE_REWRITE", "on").lower() != "off" and bool(GROQ_SPEECH_KEY)
 
 STT_BASE_URL = os.getenv("LOCAL_STT_BASE_URL", "http://127.0.0.1:8000/v1")
 STT_API_KEY = os.getenv("LOCAL_STT_API_KEY", "local")
@@ -254,6 +259,14 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
         },
         user_away_timeout=60.0,
     )
+    rewrite_client = None
+    if VOICE_REWRITE:
+        import openai as openai_sdk  # the OpenAI-compatible SDK, pointed at Groq
+
+        rewrite_client = openai_sdk.AsyncOpenAI(
+            base_url="https://api.groq.com/openai/v1", api_key=GROQ_SPEECH_KEY, timeout=4.0, max_retries=0
+        )
+    last_opener = {"value": ""}
     transcripts = TranscriptFilter()
     current_lang = {"value": "en"}
     speak_lock = asyncio.Lock()
@@ -358,19 +371,32 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
         elif kind == "stop_speaking":
             session.interrupt(force=True)
         elif kind == "speak_text":
+            raw = str(message.get("text", ""))
             if message.get("lang"):
                 set_language(str(message["lang"]))
             message_id = str(message.get("id") or uuid.uuid4().hex[:12])[:40]
             interruptible = message.get("interruptible") is not False
-            text = clean_for_speech(
-                str(message.get("text", "")),
-                lang=current_lang["value"],
-                opener=interruptible and message.get("kind") != "greeting",
-                seed=message_id,
-            )
-            if not text:
-                return
-            spawn(speak(message_id, text, interruptible))
+            is_greeting = message.get("kind") == "greeting" or not interruptible
+
+            async def prepare_and_speak() -> None:
+                lang = current_lang["value"]
+                rewritten = None
+                if not is_greeting:  # the greeting is fixed copy; speak it without delay
+                    rewritten = await rewrite_for_speech(
+                        rewrite_client, raw, lang=lang, last_opener=last_opener["value"], max_chars=MAX_SPEAK_CHARS
+                    )
+                text = clean_for_speech(
+                    rewritten or raw,
+                    lang=lang,
+                    opener=not is_greeting and rewritten is None,
+                    seed=message_id,
+                )
+                if not text:
+                    return
+                last_opener["value"] = " ".join(text.split()[:2])
+                await speak(message_id, text, interruptible)
+
+            spawn(prepare_and_speak())
 
     @ctx.room.on("participant_connected")
     def on_participant_connected(participant: rtc.RemoteParticipant) -> None:
