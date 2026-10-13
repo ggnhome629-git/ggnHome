@@ -21,6 +21,18 @@ services:
     network_mode: host
     restart: unless-stopped
 
+  agent:
+    build:
+      context: ../../services/livekit-agent
+    network_mode: host
+    env_file:
+      - ../../services/livekit-agent/.env
+    restart: unless-stopped
+    depends_on:
+      - livekit
+      - stt
+      - tts
+
   caddy:
     image: caddy:2
     network_mode: host
