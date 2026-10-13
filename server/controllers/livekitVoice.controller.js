@@ -84,7 +84,7 @@ exports.createToken = async (req, res) => {
   // Two sessions per six-hour bucket keeps the worst case below ten sessions
   // in any rolling 24-hour period, leaving headroom for free-tier speech quotas.
   // Count only actual token claims; fail closed when shared quota storage is down.
-  if (process.env.NODE_ENV !== "test" && process.env.FREE_TIER_GUARDS_ENABLED !== "false") {
+  if (process.env.NODE_ENV !== "test") {
     const configuredLimit = Math.min(2, Math.max(1, Number.parseInt(process.env.VOICE_SESSIONS_PER_6H_LIMIT || "2", 10) || 2));
     const quota = await reserveWindow({ provider: "voice-session", windowMs: 6 * 60 * 60 * 1000, limit: configuredLimit });
     if (!quota.allowed) {
