@@ -66,6 +66,9 @@ GROQ_SPEECH_KEY = os.getenv("GROQ_SPEECH_API_KEY", "")
 GROQ_STT_MODEL = os.getenv("GROQ_STT_MODEL", "whisper-large-v3-turbo")
 GROQ_TTS_MODEL = os.getenv("GROQ_TTS_MODEL", "canopylabs/orpheus-v1-english")
 GROQ_TTS_VOICE = os.getenv("GROQ_TTS_VOICE", "autumn")
+# Free-tier safety ceilings; environment variables may lower, never raise them.
+MAX_TTS_PER_SESSION = min(8, max(1, int(os.getenv("VOICE_MAX_TTS_PER_SESSION", "8"))))
+MAX_STT_UTTERANCES_PER_SESSION = min(30, max(1, int(os.getenv("VOICE_MAX_STT_UTTERANCES_PER_SESSION", "30"))))
 
 # Natural-voice providers (each reads its own key from the environment):
 #   deepgram -> DEEPGRAM_API_KEY  (Aura-2 voices, ~$200 signup credit)
@@ -229,6 +232,8 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
     last_opener = {"value": ""}
     idle = IdleWatch(IDLE_WARN_S, IDLE_END_S)
     transcripts = TranscriptFilter()
+    speech_request_count = {"count": 0}
+    stt_utterance_count = {"count": 0}
     current_lang = {"value": "en"}
     speak_lock = asyncio.Lock()
     tasks: set[asyncio.Task[Any]] = set()
@@ -288,7 +293,13 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
             idle.touch()  # even a filler like "hmm" proves the visitor is there
         if not text or not transcripts.accept(text):
             return
+        stt_utterance_count["count"] += 1
         spawn(send({"type": "user_transcript", "id": uuid.uuid4().hex[:12], "text": text}))
+        if stt_utterance_count["count"] >= MAX_STT_UTTERANCES_PER_SESSION:
+            logger.info("Per-session STT budget reached for %s", ctx.room.name)
+            spawn(send({"type": "voice_status", "status": "session_quota_reached"}))
+            spawn(send({"type": "idle_end"}))
+            spawn(shutdown_later("per-session STT budget reached", 1.5))
 
     @session.on("error")
     def on_error(event: Any) -> None:
@@ -342,6 +353,13 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
         elif kind == "stop_speaking":
             session.interrupt(force=True)
         elif kind == "speak_text":
+            if speech_request_count["count"] >= MAX_TTS_PER_SESSION:
+                logger.info("Per-session TTS budget reached for %s", ctx.room.name)
+                spawn(send({"type": "voice_status", "status": "session_quota_reached"}))
+                spawn(send({"type": "idle_end"}))
+                spawn(shutdown_later("per-session TTS budget reached", 1.5))
+                return
+            speech_request_count["count"] += 1
             raw = str(message.get("text", ""))
             if message.get("lang"):
                 set_language(str(message["lang"]))
