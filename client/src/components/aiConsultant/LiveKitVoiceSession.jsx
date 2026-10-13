@@ -137,7 +137,7 @@ export default function LiveKitVoiceSession({ enabled = true, assistantText, onT
       updateStatus("connected");
       if (greeting) {
         window.setTimeout(() => {
-          if (roomRef.current === room) publishText("speak_text", greeting);
+          if (roomRef.current === room) publishText("speak_text", greeting, { kind: "greeting", interruptible: false });
         }, 600);
       }
     } catch (err) {
@@ -149,10 +149,10 @@ export default function LiveKitVoiceSession({ enabled = true, assistantText, onT
     }
   };
 
-  const publishText = useCallback((type, text) => {
+  const publishText = useCallback((type, text, extra = {}) => {
     const room = roomRef.current;
     if (!room || room.state !== "connected" || !text) return;
-    const encoded = new TextEncoder().encode(JSON.stringify({ type, text }));
+    const encoded = new TextEncoder().encode(JSON.stringify({ type, text, id: `m${Date.now().toString(36)}`, ...extra }));
     room.localParticipant.publishData(encoded, { reliable: true, topic: VOICE_TOPIC }).catch((err) => {
       callbacksRef.current.onError?.(err?.message || "Couldn't send voice text to the agent.");
     });

@@ -8,6 +8,7 @@ services:
       - ./livekit.yaml:/etc/livekit/livekit.yaml:ro
 
   stt:
+    profiles: [local-speech]
     image: ghcr.io/speaches-ai/speaches:latest-cpu
     network_mode: host
     restart: unless-stopped
@@ -17,6 +18,7 @@ services:
       - stt_cache:/home/ubuntu/.cache/huggingface/hub
 
   tts:
+    profiles: [local-speech]
     image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
     network_mode: host
     restart: unless-stopped
@@ -30,8 +32,6 @@ services:
     restart: unless-stopped
     depends_on:
       - livekit
-      - stt
-      - tts
 
   caddy:
     image: caddy:2

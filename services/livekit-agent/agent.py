@@ -41,6 +41,8 @@ from livekit import agents, rtc
 from livekit.agents import Agent, AgentServer, AgentSession
 from livekit.plugins import openai, silero
 
+from speech_style import humanize
+
 load_dotenv(".env")
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -48,6 +50,18 @@ logger = logging.getLogger("ggnhome-livekit")
 
 VOICE_TOPIC = "ggnhome-voice"
 AGENT_NAME = os.getenv("LIVEKIT_AGENT_NAME", "ggnhome-property-voice")
+# Providers: "groq" (hosted, fast, free tier) or "local" (self-hosted CPU/GPU
+# OpenAI-compatible servers). Hosted Groq is the default because small CPU
+# Whisper + CPU Kokoro were the main source of lag.
+STT_PROVIDER = os.getenv("VOICE_STT_PROVIDER", "groq").lower()
+TTS_PROVIDER = os.getenv("VOICE_TTS_PROVIDER", "groq").lower()
+# Use a dedicated Groq key for speech, never the consultant's GROQ_API_KEY_* set,
+# so voice traffic cannot exhaust the text fallback's quota.
+GROQ_SPEECH_KEY = os.getenv("GROQ_SPEECH_API_KEY", "")
+GROQ_STT_MODEL = os.getenv("GROQ_STT_MODEL", "whisper-large-v3-turbo")
+GROQ_TTS_MODEL = os.getenv("GROQ_TTS_MODEL", "canopylabs/orpheus-v1-english")
+GROQ_TTS_VOICE = os.getenv("GROQ_TTS_VOICE", "autumn")
+
 STT_BASE_URL = os.getenv("LOCAL_STT_BASE_URL", "http://127.0.0.1:8000/v1")
 STT_API_KEY = os.getenv("LOCAL_STT_API_KEY", "local")
 STT_MODEL = os.getenv("LOCAL_STT_MODEL", "Systran/faster-whisper-small")
@@ -63,7 +77,9 @@ TTS_VOICES = {
 # model detects it per utterance instead of being forced to one language.
 STT_LANGUAGES = {"en": "en", "hi": "hi", "hinglish": None}
 
-MAX_SPEAK_CHARS = 1800
+# Long answers are read in full on screen; speaking only the opening sentences
+# keeps replies snappy and the voice from rambling.
+MAX_SPEAK_CHARS = int(os.getenv("VOICE_MAX_SPEAK_CHARS", "320"))
 MAX_TRANSCRIPT_CHARS = 600
 DUPLICATE_WINDOW_S = 4.0
 ECHO_WINDOW_S = 6.0
@@ -77,10 +93,14 @@ def normalise(text: str) -> str:
     return re.sub(r"[^\wऀ-ॿ]+", " ", text.lower()).strip()
 
 
-def clean_for_speech(text: str) -> str:
-    text = re.sub(r"[\U0001F300-\U0001FAFF☀-➿]", "", text)
-    text = text.replace("₹", "rupees ").replace("≤", "within ").replace("→", "")
-    return re.sub(r"\s+", " ", text).strip()[:MAX_SPEAK_CHARS]
+def clean_for_speech(text: str, *, lang: str = "en", opener: bool = True, seed: str = "") -> str:
+    text = humanize(text, lang=lang, allow_opener=opener, seed=seed)
+    if len(text) <= MAX_SPEAK_CHARS:
+        return text
+    # Cut at the last sentence end inside the limit so speech never stops mid-word.
+    window = text[:MAX_SPEAK_CHARS]
+    cut = max(window.rfind(". "), window.rfind("? "), window.rfind("! "), window.rfind("। "))
+    return (window[: cut + 1] if cut > 60 else window.rsplit(" ", 1)[0]).strip()
 
 
 class GgnHomeVoiceAgent(Agent):
@@ -129,35 +149,68 @@ class TranscriptFilter:
         return True
 
 
+def build_speech_services() -> tuple[Any, Any]:
+    """Create STT and TTS for one session from environment configuration."""
+    if STT_PROVIDER == "groq":
+        if not GROQ_SPEECH_KEY:
+            raise RuntimeError("GROQ_SPEECH_API_KEY is required when VOICE_STT_PROVIDER=groq")
+        from livekit.plugins import groq
+
+        stt = groq.STT(model=GROQ_STT_MODEL, api_key=GROQ_SPEECH_KEY, language="en")
+    else:
+        stt = openai.STT(
+            model=STT_MODEL,
+            base_url=STT_BASE_URL,
+            api_key=STT_API_KEY,
+            language="en",
+            use_realtime=False,
+        )
+    if TTS_PROVIDER == "groq":
+        if not GROQ_SPEECH_KEY:
+            raise RuntimeError("GROQ_SPEECH_API_KEY is required when VOICE_TTS_PROVIDER=groq")
+        from livekit.plugins import groq
+
+        tts = groq.TTS(model=GROQ_TTS_MODEL, voice=GROQ_TTS_VOICE, api_key=GROQ_SPEECH_KEY)
+    else:
+        tts = openai.TTS(
+            model=TTS_MODEL,
+            voice=TTS_VOICES["en"],
+            base_url=TTS_BASE_URL,
+            api_key=TTS_API_KEY,
+            # Headerless PCM streams back faster than WAV.
+            response_format="pcm",
+        )
+    return stt, tts
+
+
 server = AgentServer()
+
+
+def prewarm(proc: agents.JobProcess) -> None:
+    # Load the VAD model once per worker process, not on every visitor's first turn.
+    proc.userdata["vad"] = silero.VAD.load()
+
+
+server.setup_fnc = prewarm
 
 
 @server.rtc_session(agent_name=AGENT_NAME)
 async def ggn_home_voice(ctx: agents.JobContext) -> None:
     await ctx.connect()
+    VAD = ctx.proc.userdata["vad"]
 
-    stt = openai.STT(
-        model=STT_MODEL,
-        base_url=STT_BASE_URL,
-        api_key=STT_API_KEY,
-        language="en",
-        detect_language=os.getenv("LOCAL_STT_DETECT_LANGUAGE", "false").lower() == "true",
-        use_realtime=False,
-    )
-    tts = openai.TTS(
-        model=TTS_MODEL,
-        voice=TTS_VOICES["en"],
-        base_url=TTS_BASE_URL,
-        api_key=TTS_API_KEY,
-        response_format="wav",
-    )
+    stt, tts = build_speech_services()
     session = AgentSession(
         stt=stt,
         tts=tts,
         # Whisper-style STT is not streaming; local Silero VAD segments turns.
-        vad=silero.VAD.load(),
+        vad=VAD,
         # VAD only: no hosted turn-detector inference.
-        turn_handling={"turn_detection": "vad"},
+        turn_handling={
+            "turn_detection": "vad",
+            "endpointing": {"min_delay": 0.35, "max_delay": 1.6},
+            "preemptive_generation": {"enabled": False},
+        },
         user_away_timeout=60.0,
     )
     transcripts = TranscriptFilter()
@@ -184,12 +237,16 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
         if lang == current_lang["value"]:
             return
         current_lang["value"] = lang
-        tts.update_options(voice=TTS_VOICES[lang])
-        stt_lang = STT_LANGUAGES[lang]
-        if stt_lang:
-            stt.update_options(language=stt_lang, detect_language=False)
-        else:
-            stt.update_options(detect_language=True)
+        try:
+            if TTS_PROVIDER == "local":
+                tts.update_options(voice=TTS_VOICES[lang])
+            stt_lang = STT_LANGUAGES[lang]
+            if stt_lang:
+                stt.update_options(language=stt_lang, detect_language=False)
+            else:
+                stt.update_options(detect_language=True)
+        except Exception:
+            logger.exception("Could not switch voice language to %s", lang)
 
     @session.on("agent_state_changed")
     def on_agent_state(event: Any) -> None:
@@ -258,13 +315,19 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
         elif kind == "stop_speaking":
             session.interrupt(force=True)
         elif kind == "speak_text":
-            text = clean_for_speech(str(message.get("text", "")))
-            if not text:
-                return
             if message.get("lang"):
                 set_language(str(message["lang"]))
             message_id = str(message.get("id") or uuid.uuid4().hex[:12])[:40]
-            spawn(speak(message_id, text, message.get("interruptible") is not False))
+            interruptible = message.get("interruptible") is not False
+            text = clean_for_speech(
+                str(message.get("text", "")),
+                lang=current_lang["value"],
+                opener=interruptible and message.get("kind") != "greeting",
+                seed=message_id,
+            )
+            if not text:
+                return
+            spawn(speak(message_id, text, interruptible))
 
     @ctx.room.on("participant_connected")
     def on_participant_connected(participant: rtc.RemoteParticipant) -> None:
