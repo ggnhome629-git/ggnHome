@@ -7,6 +7,20 @@ services:
     volumes:
       - ./livekit.yaml:/etc/livekit/livekit.yaml:ro
 
+  stt:
+    image: ghcr.io/speaches-ai/speaches:latest-cpu
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      WHISPER__MODEL: Systran/faster-whisper-small
+    volumes:
+      - stt_cache:/home/ubuntu/.cache/huggingface/hub
+
+  tts:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:latest
+    network_mode: host
+    restart: unless-stopped
+
   caddy:
     image: caddy:2
     network_mode: host
@@ -23,3 +37,4 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+  stt_cache:
