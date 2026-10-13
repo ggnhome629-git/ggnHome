@@ -103,7 +103,6 @@ STT_LANGUAGES = {"en": "en", "hi": "hi", "hinglish": None}
 # using plan minutes: warn first, then hang up.
 IDLE_WARN_S = float(os.getenv("VOICE_IDLE_WARN_S", "120"))
 IDLE_END_S = float(os.getenv("VOICE_IDLE_END_S", "150"))
-VISITOR_LEFT_GRACE_S = float(os.getenv("VOICE_VISITOR_LEFT_GRACE_S", "4"))
 MAX_SPEAK_CHARS = int(os.getenv("VOICE_MAX_SPEAK_CHARS", "320"))
 MAX_TRANSCRIPT_CHARS = 600
 
