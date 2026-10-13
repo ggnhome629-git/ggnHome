@@ -390,6 +390,14 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   // Don't listen while the visitor is typing or filling in the contact form.
   useEffect(() => setHold((typing && input.trim().length > 0) || reviewOpen), [typing, input, reviewOpen, setHold]);
 
+  useEffect(() => {
+    if (queueTicket && !voice.active) setStageDismissed(false);
+  }, [queueTicket, voice.active]);
+
+  const forgetStoredQueueTicket = () => {
+    try { window.sessionStorage.removeItem("ggn_voice_queue_ticket"); } catch (_) { /* optional */ }
+  };
+
   const joinVoiceQueue = useCallback(async () => {
     setStageDismissed(false);
     if (queue.state === "joining" || queue.state === "waiting" || queue.state === "ready" || queue.state === "in_session") return;
@@ -455,6 +463,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
     const greeting = [...items].reverse().find((it) => it.type === "bot" && it.text && it.kind !== "error");
     if (voiceRef.current.engine === "livekit") {
       if (queueTicket && queue.state === "ready") {
+        forgetStoredQueueTicket();
         setQueue((current) => ({ ...current, state: "in_session" }));
         voiceRef.current.start(greeting ? greeting.text : "", queueTicket);
       } else if (!queueTicket || ["idle", "error"].includes(queue.state)) {
@@ -469,6 +478,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   const startQueuedVoice = useCallback(() => {
     if (!queueTicket || queue.state !== "ready") return;
     setStageDismissed(true);
+    forgetStoredQueueTicket();
     setQueue((current) => ({ ...current, state: "in_session" }));
     const greeting = [...items].reverse().find((it) => it.type === "bot" && it.text && it.kind !== "error");
     voiceRef.current.start(greeting ? greeting.text : "", queueTicket);
@@ -684,7 +694,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
           <div className="gai-stream" ref={streamRef}>
             <div className="gai-stream-inner" aria-live="polite" aria-relevant="additions">
               {stageVisible ? (
-                <VoiceStage voice={voice} queue={queue} onStart={startVoice} onJoinQueue={joinVoiceQueue} onStartQueued={startQueuedVoice} onLeaveQueue={leaveVoiceQueue} onUseBasic={useBasicConsultant} onTypeInstead={() => { setStageDismissed(true); setTimeout(() => inputRef.current && inputRef.current.focus(), 50); }} />
+                <VoiceStage voice={voice} queue={queue} onStart={startVoice} onJoinQueue={joinVoiceQueue} onStartQueued={startQueuedVoice} onLeaveQueue={leaveVoiceQueue} onUseBasic={useBasicConsultant} onTypeInstead={() => { leaveVoiceQueue(); setStageDismissed(true); setTimeout(() => inputRef.current && inputRef.current.focus(), 50); }} />
               ) : (
                 <div className="gai-voicebar-slot">
                   <VoiceBar voice={voice} onStart={startVoice} />
