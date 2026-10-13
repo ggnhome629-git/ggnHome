@@ -329,3 +329,116 @@
   .gai-launch * { animation: none !important; transition: none !important; }
   .gai-blip { opacity: 0.8; }
 }
+
+
+/* -------------------------------------------------- explicit voice setup */
+.gai-voice-stage {
+  width: min(100%, 590px);
+  box-sizing: border-box;
+  margin: 12px auto 30px;
+  padding: clamp(24px, 4vw, 42px);
+  border: 1px solid var(--ai-border);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(15, 118, 110, 0.10), transparent 54%),
+    var(--ai-card);
+  box-shadow: 0 18px 48px rgba(34, 45, 45, 0.08);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.gai-voice-stage-orb {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: var(--ai-teal);
+  box-shadow: 0 0 0 10px var(--ai-teal-soft), 0 12px 28px rgba(15, 118, 110, 0.20);
+  margin: 0 0 26px;
+}
+.gai-voice-eyebrow {
+  margin: 0 0 8px;
+  color: var(--ai-teal);
+  font-size: 11px;
+  letter-spacing: .16em;
+  font-weight: 800;
+}
+.gai-voice-stage h2 {
+  margin: 0;
+  color: var(--ai-text);
+  font-size: clamp(23px, 3vw, 30px);
+  letter-spacing: -.035em;
+  line-height: 1.2;
+}
+.gai-voice-description {
+  max-width: 425px;
+  margin: 13px 0 22px;
+  color: var(--ai-muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+.gai-voice-primary {
+  min-height: 58px;
+  padding: 0 27px;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 11px;
+  color: #fff;
+  background: var(--ai-teal);
+  box-shadow: 0 8px 24px rgba(15, 118, 110, 0.22);
+  cursor: pointer;
+  font: 700 15px var(--ai-font);
+  transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+}
+.gai-voice-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(15, 118, 110, 0.30);
+}
+.gai-voice-primary:focus-visible {
+  outline: 3px solid rgba(15, 118, 110, 0.35);
+  outline-offset: 4px;
+}
+.gai-voice-primary:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.gai-voice-footnote {
+  margin: 17px 0 0;
+  color: var(--ai-dim);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.gai-voice-error {
+  margin: 14px 0 0;
+  color: #9a3412;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 450px;
+}
+.gai-mic:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+@media (max-width: 599px) {
+  .gai-voice-stage {
+    margin: 4px auto 22px;
+    border-radius: 22px;
+    padding: 24px 18px;
+  }
+  .gai-voice-stage-orb {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 22px;
+  }
+  .gai-voice-primary {
+    width: 100%;
+    max-width: 330px;
+  }
+}
