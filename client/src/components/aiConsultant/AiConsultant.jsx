@@ -639,7 +639,7 @@ export default function AiConsultant({ open, onClose }) {
                     </button>
                   )}
                   {!recognition.supported && (
-                    <p className="gai-voice-error">Voice recognition isn't supported by this browser. You can still use the text chat below.</p>
+                    <p className="gai-voice-error">Browser speech recognition isn't supported here. Try self-hosted LiveKit voice above, or use text chat.</p>
                   )}
                   {voiceSetupError ? <p className="gai-voice-error" role="alert">{voiceSetupError}</p> : null}
                   <p className="gai-voice-footnote">Your microphone is used only after you choose to start. You can pause it anytime.</p>
