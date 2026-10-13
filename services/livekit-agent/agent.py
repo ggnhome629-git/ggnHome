@@ -31,8 +31,6 @@ import asyncio
 import json
 import logging
 import os
-import re
-import time
 import uuid
 from typing import Any
 
@@ -44,6 +42,7 @@ from livekit.plugins import openai, silero
 from idle_watch import IdleWatch
 from speech_style import humanize
 from voice_rewrite import rewrite_for_speech
+from transcript_filter import TranscriptFilter, is_filler_only
 
 load_dotenv(".env")
 
@@ -107,16 +106,10 @@ IDLE_END_S = float(os.getenv("VOICE_IDLE_END_S", "150"))
 VISITOR_LEFT_GRACE_S = float(os.getenv("VOICE_VISITOR_LEFT_GRACE_S", "4"))
 MAX_SPEAK_CHARS = int(os.getenv("VOICE_MAX_SPEAK_CHARS", "320"))
 MAX_TRANSCRIPT_CHARS = 600
-DUPLICATE_WINDOW_S = 4.0
-ECHO_WINDOW_S = 6.0
 
 
 def data_packet(message: dict[str, Any]) -> bytes:
     return json.dumps(message, ensure_ascii=False).encode("utf-8")
-
-
-def normalise(text: str) -> str:
-    return re.sub(r"[^\wऀ-ॿ]+", " ", text.lower()).strip()
 
 
 def clean_for_speech(text: str, *, lang: str = "en", opener: bool = True, seed: str = "") -> str:
@@ -145,47 +138,6 @@ class GgnHomeVoiceAgent(Agent):
         # pipeline cannot produce a parallel, ungrounded answer.
         if False:  # pragma: no cover
             yield ""
-
-
-# Short acknowledgements ("hmm", "okay") are not questions. Treating them as turns
-# makes the consultant answer a nod; ignore them (LiveKit issue #4450).
-FILLER_WORDS = {
-    "hmm", "hm", "mm", "mhm", "uh", "um", "umm", "uhh", "ah", "oh", "haan", "han", "hanji",
-    "ok", "okay", "okk", "yeah", "yes", "yep", "right", "achha", "accha", "theek", "hmmm",
-}
-
-
-def is_filler_only(text: str) -> bool:
-    words = normalise(text).split()
-    return bool(words) and len(words) <= 2 and all(w in FILLER_WORDS for w in words)
-
-
-class TranscriptFilter:
-    """Drops duplicate transcripts and echoes of the assistant's own voice."""
-
-    def __init__(self) -> None:
-        self.last_text = ""
-        self.last_at = 0.0
-        self.spoken: list[tuple[float, str]] = []
-
-    def remember_spoken(self, text: str) -> None:
-        now = time.monotonic()
-        self.spoken = [(t, s) for t, s in self.spoken if now - t < 60] + [(now, normalise(text))]
-
-    def accept(self, text: str) -> bool:
-        now = time.monotonic()
-        norm = normalise(text)
-        if not norm or is_filler_only(text):
-            return False
-        if norm == self.last_text and now - self.last_at < DUPLICATE_WINDOW_S:
-            return False
-        # Echo guard: a transcript that is just a slice of what we said a moment
-        # ago is our own voice leaking past the browser's echo cancellation.
-        if len(norm) >= 12 and any(now - t < ECHO_WINDOW_S and norm in s for t, s in self.spoken):
-            logger.info("Dropped a transcript that matched the assistant's own speech")
-            return False
-        self.last_text, self.last_at = norm, now
-        return True
 
 
 def build_speech_services() -> tuple[Any, Any]:
