@@ -107,10 +107,16 @@ function sleep(ms) {
 async function syncNoBrokerListings({
   dryRun = false,
   hardDeleteOnRemove = false,
-  delayMs = 450,
+  delayMs = 2000,
 } = {}) {
+  // NoBroker has no guaranteed public scraping quota. Keep this run bounded and
+  // rotate through the oldest-checked records instead of hammering every listing.
+  const maxListingsPerRun = Math.min(50, Math.max(1, Number.parseInt(process.env.NOBROKER_SYNC_MAX_LISTINGS_PER_RUN || "50", 10) || 50));
+  const boundedDelayMs = Math.min(10000, Math.max(2000, Number.parseInt(process.env.NOBROKER_SYNC_DELAY_MS || String(delayMs), 10) || 2000));
   const docs = await RentalProperty.find({ sourceUrl: { $exists: true } })
-    .select("_id sourceUrl isActive isPostedNew sourceRemovalFlaggedAt")
+    .select("_id sourceUrl isActive isPostedNew sourceRemovalFlaggedAt sourceCheckedAt")
+    .sort({ sourceCheckedAt: 1, _id: 1 })
+    .limit(maxListingsPerRun)
     .lean();
 
   const now = new Date();
@@ -119,7 +125,7 @@ async function syncNoBrokerListings({
   for (const doc of docs) {
     const result = await checkListing(doc.sourceUrl);
     results.push({ doc, result });
-    await sleep(delayMs + Math.random() * 200);
+    await sleep(boundedDelayMs + Math.random() * 500);
   }
 
   const removedCount = results.filter((r) => r.result.status === "removed").length;
@@ -214,6 +220,11 @@ async function syncNoBrokerListings({
         }
       } else {
         summary.unknown++;
+        if (!dryRun) {
+          // Move transient failures to the back of the rotation; the next daily
+          // run can retry them without repeatedly hitting the same blocked URLs.
+          await RentalProperty.updateOne({ _id: doc._id }, { $set: { sourceCheckedAt: now } });
+        }
         if (result.reason) summary.errors.push({ id: doc._id, url: doc.sourceUrl, reason: result.reason });
       }
     } catch (err) {

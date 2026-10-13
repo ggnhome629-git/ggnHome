@@ -10,6 +10,7 @@
  */
 const crypto = require("crypto");
 const voiceQueue = require("../services/voiceQueue.service");
+const { reserveWindow } = require("../services/providerQuota");
 
 const TOKEN_TTL_SECONDS = 10 * 60;
 const ROOM_EMPTY_TIMEOUT_SECONDS = 60;
@@ -80,6 +81,25 @@ exports.createToken = async (req, res) => {
   if (typeof queueTicket !== "string" || !/^[a-f0-9]{48}$/.test(queueTicket) || !(await voiceQueue.claimToken(queueTicket))) {
     return res.status(409).json({ success: false, code: "VOICE_QUEUE_RESERVATION_REQUIRED", message: "Join the voice queue and wait until your turn before starting real-time voice. A reservation can only start one session." });
   }
+  // Two sessions per six-hour bucket keeps the worst case below ten sessions
+  // in any rolling 24-hour period, leaving headroom for free-tier speech quotas.
+  // Count only actual token claims; fail closed when shared quota storage is down.
+  if (process.env.NODE_ENV !== "test") {
+    const configuredLimit = Math.min(2, Math.max(1, Number.parseInt(process.env.VOICE_SESSIONS_PER_6H_LIMIT || "2", 10) || 2));
+    const quota = await reserveWindow({ provider: "voice-session", windowMs: 6 * 60 * 60 * 1000, limit: configuredLimit });
+    if (!quota.allowed) {
+      await voiceQueue.leave(queueTicket).catch(() => {});
+      const quotaStoreDown = quota.reason !== "quota_exceeded";
+      return res.status(quotaStoreDown ? 503 : 429).json({
+        success: false,
+        code: quotaStoreDown ? "VOICE_QUOTA_GUARD_UNAVAILABLE" : "VOICE_DAILY_LIMIT",
+        message: quotaStoreDown
+          ? "Voice quota protection is unavailable. Please use the standard consultant for now."
+          : "The free real-time voice allowance is temporarily used up. Please use the standard consultant and try again later.",
+      });
+    }
+  }
+
   if (!(await voiceQueue.heartbeat(queueTicket))) {
     await voiceQueue.leave(queueTicket).catch(() => {});
     return res.status(409).json({ success: false, code: "VOICE_QUEUE_LEASE_EXPIRED", message: "Your voice reservation expired. Please rejoin the queue." });

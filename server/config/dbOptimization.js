@@ -12,8 +12,8 @@ function configureMongoose(mongoose) {
   try {
     // Connection pool optimization
     const options = {
-      maxPoolSize: 10, // Max connection pool size
-      minPoolSize: 5, // Min connection pool size
+      maxPoolSize: 5, // Conservative per-process cap for free-tier clusters
+      minPoolSize: 0, // Avoid idle connections on free/low-traffic clusters
       maxIdleTimeMS: 45000, // Close idle connections after 45s
       serverSelectionTimeoutMS: 5000, // Timeout for server selection
       socketTimeoutMS: 45000, // Socket timeout
@@ -149,7 +149,7 @@ const optimizationChecklist = {
     "✅ Created for common filter combinations (price, bedrooms, sector)",
   "Sparse Indexes": "✅ Used for optional fields",
   "Background Indexing": "✅ All indexes created in background",
-  "Connection Pooling": "✅ min=5, max=10 connections",
+  "Connection Pooling": "✅ min=0, max=5 connections (free-tier safe default)",
   "Query Lean": "✅ Using .lean() for read-only queries",
   "Pagination": "✅ Skip/limit for large result sets",
   "Caching": "✅ L1 (in-memory) + L2 (Redis) caching",

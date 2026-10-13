@@ -487,6 +487,11 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
           if (message.status === "ready") readyRef.current?.();
           else if (message.status === "tts_error") setNotice("The assistant's voice hiccupped — the reply is shown in the chat.");
           else if (message.status === "stt_error") setNotice("I couldn't catch that — please say it again.");
+          else if (message.status === "session_quota_reached") {
+            endRef.current?.({ silent: true }).then(() => {
+              setNotice("The free real-time voice allowance for this session has been used. Your chat remains available; you can continue typing or restart voice in browser mode.");
+            });
+          }
           break;
         case "user_state":
           if (message.state === "speaking" && phaseRef.current === "listening") setPhase("hearing");
@@ -514,7 +519,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
           break;
       }
     },
-    [afterSpeech, deliverTranscript, setPhase, settle]
+    [afterSpeech, deliverTranscript, setNotice, setPhase, settle]
   );
 
   const startLiveKit = useCallback(async () => {

@@ -6,10 +6,9 @@
  *   - Groq rate limits apply to the ORGANIZATION, not the key. Keys are rotated
  *     for resilience (a revoked or failing key is skipped), never to multiply
  *     quota: a 429 puts every key on the same cooldown.
- *   - A local ledger keeps usage under configurable ceilings that default to
- *     just below the free-plan limits for openai/gpt-oss-120b
- *     (30 RPM · 1,000 RPD · 8,000 TPM · 200,000 TPD). Local numbers are
- *     estimates; provider headers and 429s are authoritative.
+ *   - Conservative local estimates plus shared MongoDB quota reservations
+ *     bound organization-wide usage across instances. Provider headers and
+ *     429s remain authoritative; quota storage failure disables this fallback.
  *   - Bounded: one request + at most one retry on a different key, with a
  *     timeout. Nothing here can enable paid usage.
  *   - AI_CONSULTANT_LLM=off disables the model entirely.
@@ -17,15 +16,20 @@
  * Keys never leave this module: not in logs, errors or responses.
  */
 
+const { reserveWindow } = require("../providerQuota");
+
 const ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
 const MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
 const num = (v, d) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : d);
+// Shared MongoDB buckets use half the documented free-tier ceiling. This leaves
+// headroom for adjacent fixed-window boundaries and any other org traffic.
+// Environment values may lower these limits, never raise them above these caps.
 const LIMITS = {
-  rpm: num(process.env.GROQ_RPM_LIMIT, 25),
-  rpd: num(process.env.GROQ_RPD_LIMIT, 900),
-  tpm: num(process.env.GROQ_TPM_LIMIT, 7000),
-  tpd: num(process.env.GROQ_TPD_LIMIT, 180000),
+  rpm: Math.min(12, num(process.env.GROQ_RPM_LIMIT, 12)),
+  rpd: Math.min(450, num(process.env.GROQ_RPD_LIMIT, 450)),
+  tpm: Math.min(3500, num(process.env.GROQ_TPM_LIMIT, 3500)),
+  tpd: Math.min(90000, num(process.env.GROQ_TPD_LIMIT, 90000)),
 };
 const TIMEOUT_MS = num(process.env.GROQ_TIMEOUT_MS, 5000);
 const KEY_COOLDOWN_MS = 30 * 1000;
@@ -157,6 +161,24 @@ async function complete({ messages, maxTokens = 400, json = false, temperature =
     const k = nextKey(Date.now(), tried);
     if (!k) break;
     tried.add(k.id);
+
+    // Enforce quota across all API instances and restarts. If the shared
+    // counter cannot be reached, the LLM fallback is skipped (rule-based mode
+    // remains available) rather than risking an unbounded provider bill.
+    if (process.env.NODE_ENV !== "test") {
+      const sharedQuota = await Promise.all([
+        reserveWindow({ provider: "groq-text-rpm", windowMs: 60_000, limit: LIMITS.rpm }),
+        reserveWindow({ provider: "groq-text-rpd", windowMs: 86_400_000, limit: LIMITS.rpd }),
+        reserveWindow({ provider: "groq-text-tpm", windowMs: 60_000, limit: LIMITS.tpm, amount: estimated }),
+        reserveWindow({ provider: "groq-text-tpd", windowMs: 86_400_000, limit: LIMITS.tpd, amount: estimated }),
+      ]);
+      const denied = sharedQuota.find((reservation) => !reservation.allowed);
+      if (denied) {
+        const reason = denied.reason || "quota_store_unavailable";
+        recordFallback(`shared_${reason}`);
+        return { ok: false, reason: `shared_quota_${reason}` };
+      }
+    }
 
     const body = { model: MODEL, messages, temperature, max_completion_tokens: maxTokens, stream: false };
     if (json) body.response_format = { type: "json_object" };

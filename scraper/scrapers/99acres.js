@@ -21,9 +21,9 @@ class NinetyNineAcresScraper {
   constructor() {
     this.baseUrl = process.env.NINETY_NINE_ACRES_API_BASE || 'https://www.99acres.com';
     this.searchUrl = process.env.NINETY_NINE_ACRES_SEARCH_URL || 'https://www.99acres.com/search/property/rent/in-gurugram';
-    this.pagesToScrape = parseInt(process.env.NINETY_NINE_ACRES_PAGES_TO_SCRAPE || '5');
-    this.delay = parseInt(process.env.SCRAPER_DELAY_MS || '2000');
-    this.timeout = parseInt(process.env.SCRAPER_TIMEOUT || '30000');
+    this.pagesToScrape = Math.min(2, Math.max(1, parseInt(process.env.NINETY_NINE_ACRES_PAGES_TO_SCRAPE || '1', 10) || 1));
+    this.delay = Math.min(10000, Math.max(3000, parseInt(process.env.SCRAPER_DELAY_MS || '3000', 10) || 3000));
+    this.timeout = Math.min(20000, Math.max(5000, parseInt(process.env.SCRAPER_TIMEOUT || '15000', 10) || 15000));
     this.affiliateId = process.env.AFFILIATE_99ACRES_ID || '';
     this.commission = parseInt(process.env.AFFILIATE_COMMISSION_99ACRES || '10');
 

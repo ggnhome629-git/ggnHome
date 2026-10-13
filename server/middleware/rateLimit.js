@@ -4,6 +4,10 @@ const mongoose = require("mongoose");
 const redisCache = require("../utils/redisCache");
 const RateLimitHit = require("../models/RateLimitHit.model");
 
+// Keep Redis free-tier commands for the voice queue/cache. MongoDB is the
+// default shared rate-limit store; opt into Redis only when its quota is known.
+const useRedisForRateLimits = () => process.env.RATE_LIMIT_USE_REDIS === "true";
+
 // Render runs multiple instances of this service, each with its own process
 // memory. express-rate-limit's default store counts hits in that memory, so
 // "15 per 15 min" really means ~15 per instance -- an attacker's requests
@@ -11,16 +15,9 @@ const RateLimitHit = require("../models/RateLimitHit.model");
 // counter resets independently. Confirmed live: RateLimit-Remaining jumped
 // backwards across sequential requests in production.
 //
-// This store shares hit counts across every instance instead, in order of
-// preference:
-//   1. Redis, if configured and connected (atomic INCR) -- not provisioned
-//      today, but used automatically the moment REDIS_URL is set, no code
-//      change needed.
-//   2. MongoDB, already connected from every instance -- an atomic
-//      findOneAndUpdate($inc) against models/RateLimitHit.model.js, which
-//      self-expires via a TTL index.
-//   3. A local in-memory Map, only if both of the above are unreachable --
-//      today's pre-fix behavior, never worse than before this change.
+// This store shares hit counts across instances. MongoDB is preferred to
+// conserve Redis free-tier commands; Redis is opt-in via RATE_LIMIT_USE_REDIS.
+// If both shared stores are unreachable, a local Map is the last-resort fallback.
 class SharedStore {
   constructor(prefix) {
     this.prefix = prefix;
@@ -33,7 +30,7 @@ class SharedStore {
 
   async increment(key) {
     const redisKey = `ratelimit:${this.prefix}:${key}`;
-    const redisClient = redisCache.isConnected() ? redisCache.getClient() : null;
+    const redisClient = useRedisForRateLimits() && redisCache.isConnected() ? redisCache.getClient() : null;
 
     if (redisClient) {
       try {
@@ -82,7 +79,7 @@ class SharedStore {
 
   async decrement(key) {
     const redisKey = `ratelimit:${this.prefix}:${key}`;
-    const redisClient = redisCache.isConnected() ? redisCache.getClient() : null;
+    const redisClient = useRedisForRateLimits() && redisCache.isConnected() ? redisCache.getClient() : null;
     if (redisClient) {
       try {
         const n = await redisClient.decr(redisKey);
@@ -102,7 +99,7 @@ class SharedStore {
 
   async resetKey(key) {
     const redisKey = `ratelimit:${this.prefix}:${key}`;
-    const redisClient = redisCache.isConnected() ? redisCache.getClient() : null;
+    const redisClient = useRedisForRateLimits() && redisCache.isConnected() ? redisCache.getClient() : null;
     if (redisClient) {
       try {
         await redisClient.del(redisKey);

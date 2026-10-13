@@ -11,9 +11,9 @@ const intEnv = (name, fallback, min, max) => {
 };
 const settings = () => ({
   enabled: process.env.VOICE_QUEUE_ENABLED !== "false" && Boolean(process.env.REDIS_URL),
-  maxActive: intEnv("VOICE_QUEUE_MAX_ACTIVE", 3, 1, 10),
-  maxWaiting: intEnv("VOICE_QUEUE_MAX_WAITING", 50, 1, 100),
-  leaseSeconds: intEnv("VOICE_QUEUE_LEASE_SECONDS", 90, 60, 300),
+  maxActive: intEnv("VOICE_QUEUE_MAX_ACTIVE", 2, 1, 2),
+  maxWaiting: intEnv("VOICE_QUEUE_MAX_WAITING", 2, 1, 2),
+  leaseSeconds: intEnv("VOICE_QUEUE_LEASE_SECONDS", 180, 180, 300),
   waitTtlSeconds: intEnv("VOICE_QUEUE_WAIT_TTL_SECONDS", 900, 120, 3600),
   prefix: String(process.env.VOICE_QUEUE_KEY_PREFIX || "ggnhome:voice:v1").replace(/[^a-zA-Z0-9:_-]/g, "").slice(0, 80),
 });
@@ -142,7 +142,7 @@ async function claimToken(ticket) {
   if (!c) return false;
   const s = keys();
   const claimKey = s.prefix + ":issued:" + ticket;
-  return Number(await c.eval(CLAIM_SCRIPT, 2, s.activeKey, claimKey, Date.now(), ticket, s.leaseSeconds)) === 1;
+  return Number(await c.eval(CLAIM_SCRIPT, 2, s.activeKey, claimKey, Date.now(), ticket, 86400)) === 1;
 }
 async function heartbeat(ticket) {
   const c = client();

@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const { syncNoBrokerListings } = require("./nobrokerSync");
 
 (async () => {
-  await mongoose.connect(process.env.MONGO_URI);
+  await mongoose.connect(process.env.MONGO_URI, { maxPoolSize: 2, minPoolSize: 0, maxConnecting: 1, serverSelectionTimeoutMS: 5000, socketTimeoutMS: 45000 });
   const summary = await syncNoBrokerListings();
   console.log("[nobrokerSync] finished:", JSON.stringify(summary));
   await mongoose.disconnect();

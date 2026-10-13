@@ -1,4 +1,5 @@
 const cloudinary = require("cloudinary").v2;
+const { assertCloudinaryHeadroom, recordCloudinaryUpload } = require("../services/cloudinaryQuota");
 const fs = require("fs");
 
 let sharp = null;
@@ -76,15 +77,17 @@ if (cloudAccounts.length === 0) {
   cloudinary.config(cloudAccounts[0]);
 }
 
-// Round-robin pointer for balancing uploads
+// Free-tier-safe mode: only the primary account is used. Additional free
+// accounts are not treated as quota multipliers.
+const uploadAccounts = cloudAccounts.slice(0, 1);
 let rrIndex = 0;
 const getNextStartIndex = () => {
   const idx = rrIndex;
-  rrIndex = (rrIndex + 1) % cloudAccounts.length;
+  rrIndex = (rrIndex + 1) % uploadAccounts.length;
   return idx;
 };
 
-// Backwards-compatible alias: always uses multi-account uploader
+// Backwards-compatible alias: always uses the quota-guarded uploader
 const uploadoncloudinary = async (path, sectorOrFolder) => {
   return uploadWithFallback(path, sectorOrFolder);
 };
@@ -155,12 +158,13 @@ const uploadWithFallback = async (path, sectorOrFolder, preferredIndex = null, a
   const uploadPath = prepared.path;
   tempToUnlink = prepared.temp; // cleanup after upload
 
-  const start = (Number.isInteger(preferredIndex) && preferredIndex >= 0) ? (preferredIndex % cloudAccounts.length) : getNextStartIndex();
+  const start = (Number.isInteger(preferredIndex) && preferredIndex >= 0) ? (preferredIndex % uploadAccounts.length) : getNextStartIndex();
 
-  for (let attempt = 0; attempt < cloudAccounts.length; attempt++) {
-    const i = (start + attempt) % cloudAccounts.length;
-    const acct = cloudAccounts[i];
+  for (let attempt = 0; attempt < uploadAccounts.length; attempt++) {
+    const i = (start + attempt) % uploadAccounts.length;
+    const acct = uploadAccounts[i];
     try {
+      await assertCloudinaryHeadroom(acct);
       cloudinary.config(acct);
       const result = await cloudinary.uploader.upload(uploadPath, {
         resource_type: 'auto',
@@ -168,6 +172,7 @@ const uploadWithFallback = async (path, sectorOrFolder, preferredIndex = null, a
         unique_filename: true,
         overwrite: false,
       });
+      recordCloudinaryUpload(acct);
       // Best-effort cleanup of temp/original files after successful upload
       try { if (tempToUnlink && fs.existsSync(tempToUnlink)) fs.unlinkSync(tempToUnlink); } catch (_) {}
       try { if (unlinkPath && fs.existsSync(unlinkPath) && unlinkPath !== tempToUnlink) fs.unlinkSync(unlinkPath); } catch (_) {}
