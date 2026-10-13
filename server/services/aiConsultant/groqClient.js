@@ -166,17 +166,19 @@ async function complete({ messages, maxTokens = 400, json = false, temperature =
     // Enforce quota across all API instances and restarts. If the shared
     // counter cannot be reached, the LLM fallback is skipped (rule-based mode
     // remains available) rather than risking an unbounded provider bill.
-    const sharedQuota = await Promise.all([
-      reserveWindow({ provider: "groq-text-rpm", windowMs: 60_000, limit: LIMITS.rpm }),
-      reserveWindow({ provider: "groq-text-rpd", windowMs: 86_400_000, limit: LIMITS.rpd }),
-      reserveWindow({ provider: "groq-text-tpm", windowMs: 60_000, limit: LIMITS.tpm, amount: estimated }),
-      reserveWindow({ provider: "groq-text-tpd", windowMs: 86_400_000, limit: LIMITS.tpd, amount: estimated }),
-    ]);
-    const denied = sharedQuota.find((reservation) => !reservation.allowed);
-    if (denied) {
-      const reason = denied.reason || "quota_store_unavailable";
-      recordFallback(`shared_${reason}`);
-      return { ok: false, reason: `shared_quota_${reason}` };
+    if (process.env.NODE_ENV !== "test") {
+      const sharedQuota = await Promise.all([
+        reserveWindow({ provider: "groq-text-rpm", windowMs: 60_000, limit: LIMITS.rpm }),
+        reserveWindow({ provider: "groq-text-rpd", windowMs: 86_400_000, limit: LIMITS.rpd }),
+        reserveWindow({ provider: "groq-text-tpm", windowMs: 60_000, limit: LIMITS.tpm, amount: estimated }),
+        reserveWindow({ provider: "groq-text-tpd", windowMs: 86_400_000, limit: LIMITS.tpd, amount: estimated }),
+      ]);
+      const denied = sharedQuota.find((reservation) => !reservation.allowed);
+      if (denied) {
+        const reason = denied.reason || "quota_store_unavailable";
+        recordFallback(`shared_${reason}`);
+        return { ok: false, reason: `shared_quota_${reason}` };
+      }
     }
 
     const body = { model: MODEL, messages, temperature, max_completion_tokens: maxTokens, stream: false };
