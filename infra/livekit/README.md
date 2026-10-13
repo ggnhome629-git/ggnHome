@@ -8,7 +8,7 @@ This folder and `services/livekit-agent` adapt the official LiveKit Agents SDK i
 - GgnHome API: `POST /api/ai-consultant/livekit/token` issues a short-lived room-scoped token. The LiveKit API secret never reaches the browser.
 - LiveKit server: forwards WebRTC audio/data.
 - GgnHome agent worker: LiveKit Agents with local OpenAI-compatible STT/TTS endpoints.
-- Existing React consultant: receives final transcripts and continues to call `/api/ai-consultant/turn`, `/search`, and `/enquiry`. Voice turns explicitly set `disableLLM: true`, so the optional Groq fallback is bypassed for LiveKit voice; GgnHome's rule engine, property inventory, and explicit lead consent remain authoritative. Normal text-chat behavior is unchanged.
+- Existing React consultant: receives final transcripts and continues to call `/api/ai-consultant/turn`, `/search`, and `/enquiry`. The rule parser/question bank and database-backed property search remain authoritative. If a transcript is not understood by the rules, the existing server-side Groq fallback may be used when `AI_CONSULTANT_LLM` is enabled and Groq keys are configured; it is not used to invent listing facts. The same lead-consent and validation rules apply to voice and text. The LiveKit worker itself does not run a local LLM.
 
 ## Required environment
 
@@ -56,6 +56,13 @@ Check the current LiveKit Agents CLI/runtime documentation before production dep
 ## GgnHome API
 
 The public config endpoint reports whether LiveKit credentials are configured. The token endpoint requires an explicit `accepted: true` request, creates a random room and identity, and grants only room join/publish/subscribe/data permissions for ten minutes. Never commit production secrets.
+
+## Rule-first answers and Groq fallback
+
+- Known intents, question flow, parameter parsing, and supported FAQs are handled by GgnHome's deterministic rule engine and question bank.
+- Property matches and listing facts come from the existing GgnHome database/search engine; Groq must not fabricate inventory or owner/contact details.
+- Only when rule parsing cannot interpret a message or an uncovered general real-estate process question needs an answer may the existing server-side Groq adapter be called. It respects `AI_CONSULTANT_LLM`, configured `GROQ_API_KEY` / `GROQ_API_KEY_1`…`GROQ_API_KEY_5` / `GROQ_API_KEYS`, timeouts and quota guards. Keep these secrets only on the API server, never in `REACT_APP_*` variables or the LiveKit worker.
+- If Groq is unavailable or rate-limited, the engine falls back to its safe deterministic response. Lead creation still requires explicit consent.
 
 ## Current implementation boundary
 
