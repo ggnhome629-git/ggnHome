@@ -24,6 +24,11 @@ const HELLO_INTERVAL_MS = 1000;
 const AGENT_READY_TIMEOUT_MS = 12000;
 const THINKING_TIMEOUT_MS = 30000;
 const DUPLICATE_WINDOW_MS = 3500;
+// Browser voice has no server to hang up, so it applies the same quiet-time rule:
+// warn, then pause so the mic doesn't stay open for someone who has walked away.
+const IDLE_WARN_MS = 120000;
+const IDLE_END_MS = 150000;
+const IDLE_MESSAGE = "Voice paused after a quiet while — tap the mic to talk again.";
 const Recognition = typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
 const synthesisSupported = typeof window !== "undefined" && "speechSynthesis" in window;
 
@@ -108,6 +113,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
   const thinkingTimerRef = useRef(null);
   const helloTimerRef = useRef(null);
   const readyRef = useRef(null);
+  const endRef = useRef(null);
   const greetingRef = useRef("");
   const endedByUserRef = useRef(false);
   const levelsRef = useRef(() => ({ mic: 0, agent: 0 }));
@@ -414,6 +420,8 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
     [setPhase, settleAll, stopRecognition, teardownRoom]
   );
 
+  endRef.current = end;
+
   const greetThenListen = useCallback(
     async (speakFn) => {
       const greeting = greetingRef.current;
@@ -429,6 +437,19 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
     },
     [metric, setPhase]
   );
+
+  // Browser voice: same quiet-time rule as the voice service.
+  useEffect(() => {
+    if (activeEngine !== "browser" || phase !== "listening") return undefined;
+    const warn = setTimeout(() => setNotice("Still there? I'll pause voice in about 30 seconds — just say something to keep going."), IDLE_WARN_MS);
+    const stop = setTimeout(() => {
+      endRef.current?.({ silent: true }).then(() => setNotice(IDLE_MESSAGE));
+    }, IDLE_END_MS);
+    return () => {
+      clearTimeout(warn);
+      clearTimeout(stop);
+    };
+  }, [activeEngine, phase]);
 
   const startBrowser = useCallback(
     async (fallbackNote) => {
@@ -464,6 +485,14 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
           break;
         case "user_transcript":
           if (typeof message.text === "string") deliverTranscript(message.text);
+          break;
+        case "idle_warning":
+          setNotice("Still there? I'll pause voice in about 30 seconds — just say something to keep going.");
+          break;
+        case "idle_end":
+          // The voice service hung up on purpose to free its slot: not an error.
+          endedByUserRef.current = true;
+          endRef.current?.({ silent: true }).then(() => setNotice(IDLE_MESSAGE));
           break;
         case "speech_done":
           settle(String(message.id || ""), { spoken: true, interrupted: Boolean(message.interrupted) });

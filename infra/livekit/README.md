@@ -80,3 +80,12 @@ Small CPU Whisper plus CPU Kokoro was laggy and sounded flat, so the worker now 
 ## Groq-only speech and the human voice style
 
 With `VOICE_STT_PROVIDER=groq`, `VOICE_TTS_PROVIDER=groq` and one `GROQ_SPEECH_API_KEY`, the whole voice path uses Groq: Whisper for listening, Orpheus for speaking, and a small model (`VOICE_REWRITE_MODEL`) that rewrites each finished reply into natural spoken wording using `services/livekit-agent/voice_style_guide.md`. The rewrite is rejected if it adds any number, link or phone number, invents a question, is too long, or times out; the plain deterministic wording is spoken instead. The greeting is never rewritten. This does not change what the consultant says, only how.
+
+## Free-plan limits, busy sessions and idle timeout
+
+On LiveKit Cloud's free plan only a few agent conversations (sessions) can run at once (5 at the time of writing) and monthly agent minutes are capped, so the app is built to use as few as possible:
+
+- **Busy or unavailable:** if no voice agent picks up (all slots busy, minutes used up, agent offline), the browser waits about 12 seconds and switches to the browser's own voice automatically. Text chat is never affected.
+- **Idle timeout:** a quiet session warns after `VOICE_IDLE_WARN_S` (default 120s) and the agent hangs up after `VOICE_IDLE_END_S` (default 150s). Any speech, typed message or reply resets the clock; the time the assistant spends talking does not count. Browser voice applies the same rule.
+- **Visitor leaves:** the agent ends its session a few seconds after the visitor disconnects, instead of waiting for the room to expire.
+- **Cloud hosting ignores `LIVEKIT_LOAD_THRESHOLD`** (the SDK reverts to its default there). The setting only matters on a self-hosted worker, where a crowded machine can make the worker refuse visitors.

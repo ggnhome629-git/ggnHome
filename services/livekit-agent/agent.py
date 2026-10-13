@@ -41,6 +41,7 @@ from livekit import agents, rtc
 from livekit.agents import Agent, AgentServer, AgentSession
 from livekit.plugins import openai, silero
 
+from idle_watch import IdleWatch
 from speech_style import humanize
 from voice_rewrite import rewrite_for_speech
 
@@ -99,6 +100,11 @@ STT_LANGUAGES = {"en": "en", "hi": "hi", "hinglish": None}
 
 # Long answers are read in full on screen; speaking only the opening sentences
 # keeps replies snappy and the voice from rambling.
+# Quiet sessions end themselves so they free a concurrent-session slot and stop
+# using plan minutes: warn first, then hang up.
+IDLE_WARN_S = float(os.getenv("VOICE_IDLE_WARN_S", "120"))
+IDLE_END_S = float(os.getenv("VOICE_IDLE_END_S", "150"))
+VISITOR_LEFT_GRACE_S = float(os.getenv("VOICE_VISITOR_LEFT_GRACE_S", "4"))
 MAX_SPEAK_CHARS = int(os.getenv("VOICE_MAX_SPEAK_CHARS", "320"))
 MAX_TRANSCRIPT_CHARS = 600
 DUPLICATE_WINDOW_S = 4.0
@@ -270,6 +276,7 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
             base_url="https://api.groq.com/openai/v1", api_key=GROQ_SPEECH_KEY, timeout=4.0, max_retries=0
         )
     last_opener = {"value": ""}
+    idle = IdleWatch(IDLE_WARN_S, IDLE_END_S)
     transcripts = TranscriptFilter()
     current_lang = {"value": "en"}
     speak_lock = asyncio.Lock()
@@ -309,10 +316,16 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
 
     @session.on("agent_state_changed")
     def on_agent_state(event: Any) -> None:
+        if event.new_state == "speaking":
+            idle.busy(True)
+        elif event.old_state == "speaking":
+            idle.busy(False)
         spawn(send({"type": "agent_state", "state": event.new_state}))
 
     @session.on("user_state_changed")
     def on_user_state(event: Any) -> None:
+        if event.new_state == "speaking":
+            idle.touch()
         spawn(send({"type": "user_state", "state": event.new_state}))
 
     @session.on("user_input_transcribed")
@@ -320,6 +333,8 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
         if not getattr(event, "is_final", False):
             return
         text = str(getattr(event, "transcript", "") or "").strip()[:MAX_TRANSCRIPT_CHARS]
+        if text:
+            idle.touch()  # even a filler like "hmm" proves the visitor is there
         if not text or not transcripts.accept(text):
             return
         spawn(send({"type": "user_transcript", "id": uuid.uuid4().hex[:12], "text": text}))
@@ -366,6 +381,8 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
         if not isinstance(message, dict):
             return
         kind = message.get("type")
+        if kind in ("hello", "speak_text", "keepalive"):
+            idle.touch()  # the visitor typed or the page is actively talking to us
         if kind == "hello":
             # The browser may join after our first "ready"; answer every hello.
             spawn(send({"type": "voice_status", "status": "ready"}))
@@ -405,9 +422,35 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
     def on_participant_connected(participant: rtc.RemoteParticipant) -> None:
         spawn(send({"type": "voice_status", "status": "ready"}))
 
+    async def shutdown_later(reason: str, delay: float) -> None:
+        await asyncio.sleep(delay)
+        logger.info("Ending voice session in %s: %s", ctx.room.name, reason)
+        ctx.shutdown(reason=reason)
+
     @ctx.room.on("participant_disconnected")
     def on_participant_disconnected(participant: rtc.RemoteParticipant) -> None:
         logger.info("Visitor left room %s", ctx.room.name)
+        # Free the slot right away instead of waiting for the room to expire.
+        # A short grace period covers a quick page refresh or reconnect.
+        async def leave_if_still_alone() -> None:
+            await asyncio.sleep(VISITOR_LEFT_GRACE_S)
+            if not any(not p.is_agent for p in ctx.room.remote_participants.values()):
+                await shutdown_later("visitor left", 0)
+
+        spawn(leave_if_still_alone())
+
+    async def idle_watchdog() -> None:
+        while True:
+            await asyncio.sleep(5)
+            action = idle.check()
+            if action == "warn":
+                await send({"type": "idle_warning", "seconds": int(IDLE_END_S - IDLE_WARN_S)})
+            elif action == "end":
+                await send({"type": "idle_end"})
+                await shutdown_later("idle timeout", 1.5)
+                return
+
+    spawn(idle_watchdog())
 
     await session.start(room=ctx.room, agent=GgnHomeVoiceAgent())
     await send({"type": "voice_status", "status": "ready"})

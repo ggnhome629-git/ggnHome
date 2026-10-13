@@ -65,3 +65,39 @@ def test_rewrite_falls_back_on_failure():
     text = "I found three options in Sector 57. Do you want to see them now?"
     assert asyncio.run(rewrite_for_speech(Boom, text, lang="en", last_opener="", max_chars=320)) is None
     assert asyncio.run(rewrite_for_speech(None, text, lang="en", last_opener="", max_chars=320)) is None
+
+
+def test_idle_watch_warns_then_ends_and_resets():
+    from idle_watch import IdleWatch
+
+    now = [0.0]
+    w = IdleWatch(120, 150, clock=lambda: now[0])
+    assert w.check() == "none"
+    now[0] = 119
+    assert w.check() == "none"
+    now[0] = 121
+    assert w.check() == "warn"
+    assert w.check() == "none"  # warns only once
+    now[0] = 140
+    w.touch()  # visitor spoke: starts over
+    now[0] = 150
+    assert w.check() == "none"
+    now[0] = 140 + 121
+    assert w.check() == "warn"
+    now[0] = 140 + 151
+    assert w.check() == "end"
+
+
+def test_idle_watch_not_idle_while_assistant_speaks():
+    from idle_watch import IdleWatch
+
+    now = [0.0]
+    w = IdleWatch(120, 150, clock=lambda: now[0])
+    w.busy(True)
+    now[0] = 1000
+    assert w.check() == "none"
+    w.busy(False)  # finishing a reply counts as activity
+    now[0] = 1100
+    assert w.check() == "none"
+    now[0] = 1000 + 151
+    assert w.check() == "end"
