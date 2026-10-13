@@ -106,6 +106,14 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   const autoSendRef = useRef(null);
 
   useEffect(() => {
+    const releaseOnPageHide = () => {
+      if (queueTicket) consultantApi.leaveVoiceQueue(queueTicket, { keepalive: true }).catch(() => {});
+    };
+    window.addEventListener("pagehide", releaseOnPageHide);
+    return () => window.removeEventListener("pagehide", releaseOnPageHide);
+  }, [queueTicket]);
+
+  useEffect(() => {
     try {
       if (queueTicket) window.sessionStorage.setItem("ggn_voice_queue_ticket", queueTicket);
       else window.sessionStorage.removeItem("ggn_voice_queue_ticket");
