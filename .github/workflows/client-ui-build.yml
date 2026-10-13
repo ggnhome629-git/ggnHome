@@ -57,11 +57,24 @@ jobs:
           node --check server/controllers/livekitVoice.controller.js
           node --check server/controllers/voiceQueue.controller.js
           node --check server/services/voiceQueue.service.js
+          node --check server/services/providerQuota.js
+          node --check server/services/cloudinaryQuota.js
+          node --check server/services/aiConsultant/groqClient.js
+          node --check server/utils/sendEmail.js
+          node --check server/utils/sendSms.js
+          node --check server/config/db.js
+          node --check server/config/FileHandling.js
+          node --check server/config/FileHandling2.js
+          node --check server/scripts/nobrokerSync.js
+          node --check server/models/ProviderUsageCounter.model.js
           node --check server/controllers/partnerAuth.controller.js
           node --check server/models/AdminDashboardPreferences.model.js
+          node --check scraper/scrapers/nobroker.js
+          node --check scraper/scrapers/99acres.js
+          node --check scraper/utils/helpers.js
       - name: Test LiveKit consent and configuration guards
         working-directory: server
-        run: npx jest tests/livekitVoice.controller.test.js tests/voiceQueue.controller.test.js tests/aiConsultant.test.js tests/aiConsultantFallback.test.js --runInBand
+        run: npx jest tests/livekitVoice.controller.test.js tests/voiceQueue.controller.test.js tests/providerQuota.test.js tests/aiConsultant.test.js tests/aiConsultantFallback.test.js --runInBand
       - name: Check self-hosted LiveKit worker Python syntax
         run: |
           python3 -m py_compile services/livekit-agent/agent.py services/livekit-agent/idle_watch.py services/livekit-agent/speech_style.py services/livekit-agent/voice_rewrite.py services/livekit-agent/transcript_filter.py
