@@ -60,5 +60,7 @@ jobs:
       - name: Test LiveKit consent and configuration guards
         working-directory: server
         run: npx jest tests/livekitVoice.controller.test.js tests/aiConsultant.test.js --runInBand
+      - name: Check self-hosted LiveKit worker Python syntax
+        run: python3 -m py_compile services/livekit-agent/agent.py
       - name: Validate notification templates
         run: node server/scripts/validate-notification-templates.js
