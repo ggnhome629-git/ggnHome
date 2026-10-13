@@ -87,7 +87,7 @@ const getNextStartIndex = () => {
   return idx;
 };
 
-// Backwards-compatible alias: always uses multi-account uploader
+// Backwards-compatible alias: always uses the quota-guarded uploader
 const uploadoncloudinary = async (path, sectorOrFolder) => {
   return uploadWithFallback(path, sectorOrFolder);
 };
