@@ -21,7 +21,21 @@ function response() {
 }
 
 describe("Redis voice queue controller", () => {
-  beforeEach(() => jest.clearAllMocks());
+  const originalEnv = { LIVEKIT_URL: process.env.LIVEKIT_URL, LIVEKIT_API_KEY: process.env.LIVEKIT_API_KEY, LIVEKIT_API_SECRET: process.env.LIVEKIT_API_SECRET };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    process.env.LIVEKIT_URL = "wss://voice.example.com";
+    process.env.LIVEKIT_API_KEY = "test-key";
+    process.env.LIVEKIT_API_SECRET = "test-secret";
+  });
+
+  afterAll(() => {
+    Object.entries(originalEnv).forEach(([key, value]) => {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    });
+  });
 
   test("fails closed when Redis is unavailable", async () => {
     queue.available.mockReturnValue(false);
