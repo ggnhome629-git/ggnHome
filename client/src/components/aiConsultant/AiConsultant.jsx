@@ -394,9 +394,9 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
     if (queueTicket && !voice.active) setStageDismissed(false);
   }, [queueTicket, voice.active]);
 
-  const forgetStoredQueueTicket = () => {
+  const forgetStoredQueueTicket = useCallback(() => {
     try { window.sessionStorage.removeItem("ggn_voice_queue_ticket"); } catch (_) { /* optional */ }
-  };
+  }, []);
 
   const joinVoiceQueue = useCallback(async () => {
     setStageDismissed(false);
@@ -473,7 +473,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
     }
     leaveVoiceQueue();
     voiceRef.current.start(greeting ? greeting.text : "");
-  }, [items, queueTicket, queue.state, joinVoiceQueue, leaveVoiceQueue]);
+  }, [items, queueTicket, queue.state, joinVoiceQueue, leaveVoiceQueue, forgetStoredQueueTicket]);
 
   const startQueuedVoice = useCallback(() => {
     if (!queueTicket || queue.state !== "ready") return;
@@ -482,7 +482,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
     setQueue((current) => ({ ...current, state: "in_session" }));
     const greeting = [...items].reverse().find((it) => it.type === "bot" && it.text && it.kind !== "error");
     voiceRef.current.start(greeting ? greeting.text : "", queueTicket);
-  }, [items, queueTicket, queue.state]);
+  }, [items, queueTicket, queue.state, forgetStoredQueueTicket]);
 
   const toggleMic = () => {
     if (!voice.active) startVoice();
