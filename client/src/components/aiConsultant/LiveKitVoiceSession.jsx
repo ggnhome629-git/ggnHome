@@ -66,6 +66,7 @@ export default function LiveKitVoiceSession({ enabled = true, assistantText, onT
       const room = new Room({ adaptiveStream: true, dynacast: true });
       roomRef.current = room;
       room.on(RoomEvent.TrackSubscribed, (track, _publication, participant) => {
+        void _publication;
         if (track.kind === Track.Kind.Audio) {
           const element = track.attach();
           element.autoplay = true;
@@ -81,6 +82,8 @@ export default function LiveKitVoiceSession({ enabled = true, assistantText, onT
         track.detach().forEach((element) => element.remove());
       });
       room.on(RoomEvent.DataReceived, (data, _participant, _kind, topic) => {
+        void _participant;
+        void _kind;
         if (topic && topic !== VOICE_TOPIC) return;
         const message = parseMessage(data);
         if (!message) return;
@@ -124,21 +127,21 @@ export default function LiveKitVoiceSession({ enabled = true, assistantText, onT
     }
   };
 
-  const publishText = (type, text) => {
+  const publishText = useCallback((type, text) => {
     const room = roomRef.current;
     if (!room || room.state !== "connected" || !text) return;
     const encoded = new TextEncoder().encode(JSON.stringify({ type, text }));
     room.localParticipant.publishData(encoded, { reliable: true, topic: VOICE_TOPIC }).catch((err) => {
       callbacksRef.current.onError?.(err?.message || "Couldn't send voice text to the agent.");
     });
-  };
+  }, []);
 
   useEffect(() => {
     const text = String(assistantText || "").trim();
     if (!text || status !== "connected" || text === lastSpokenRef.current) return;
     lastSpokenRef.current = text;
     publishText("speak_text", text);
-  }, [assistantText, status]);
+  }, [assistantText, status, publishText]);
 
   useEffect(() => {
     if (!enabled) disconnect();
