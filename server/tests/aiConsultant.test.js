@@ -265,7 +265,7 @@ describe("robustness", () => {
       expect(r.messages.length).toBeGreaterThan(0);
     }
   });
-  test("self-hosted voice turns bypass the optional LLM fallback", async () => {
+  test("explicit disableLLM opt-out bypasses fallback; default transcript path permits it", async () => {
     const llm = require("../services/aiConsultant/llm");
     const extractSpy = jest.spyOn(llm, "extract");
     const answerSpy = jest.spyOn(llm, "answerGeneral");
