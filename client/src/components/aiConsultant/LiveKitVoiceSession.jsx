@@ -22,6 +22,7 @@ export default function LiveKitVoiceSession({ enabled = true, assistantText, onT
   const lastSpokenRef = useRef("");
   const callbacksRef = useRef({ onTranscript, onStatus, onError });
   const [status, setStatus] = useState("idle");
+  const [configured, setConfigured] = useState(null);
   const [muted, setMuted] = useState(false);
   const [error, setError] = useState("");
 
@@ -32,6 +33,23 @@ export default function LiveKitVoiceSession({ enabled = true, assistantText, onT
     setStatus(next);
     callbacksRef.current.onStatus?.(next);
   }, []);
+
+  useEffect(() => {
+    if (!enabled) return undefined;
+    let cancelled = false;
+    fetch(API_BASE + "/api/ai-consultant/livekit/config", { credentials: "include" })
+      .then((response) => {
+        if (!response.ok) throw new Error("Voice configuration could not be checked.");
+        return response.json();
+      })
+      .then((payload) => {
+        if (!cancelled) setConfigured(payload.enabled === true);
+      })
+      .catch(() => {
+        if (!cancelled) setConfigured(false);
+      });
+    return () => { cancelled = true; };
+  }, [enabled]);
 
   const disconnect = useCallback(async () => {
     const room = roomRef.current;
@@ -175,14 +193,14 @@ export default function LiveKitVoiceSession({ enabled = true, assistantText, onT
         <span className={`gai-livekit-mark ${status}`}><Radio size={19} /></span>
         <div>
           <strong>Real-time voice</strong>
-          <small aria-live="polite">{status === "connected" ? "Connected to GgnHome voice" : status === "connecting" ? "Connecting to your self-hosted voice server…" : status === "error" ? "Voice connection unavailable" : "Self-hosted LiveKit · microphone starts only when you connect"}</small>
+          <small aria-live="polite">{configured === null ? "Checking self-hosted voice setup…" : configured === false ? "Voice server setup is still required; text chat remains available" : status === "connected" ? "Connected to GgnHome voice" : status === "connecting" ? "Connecting to your self-hosted voice server…" : status === "error" ? "Voice connection unavailable" : "Self-hosted LiveKit · microphone starts only when you connect"}</small>
         </div>
       </div>
       {error ? <p className="gai-livekit-error" role="alert">{error}</p> : null}
       <div className="gai-livekit-actions">
         {status !== "connected" ? (
-          <button type="button" className="gai-livekit-primary" onClick={connect} disabled={status === "connecting"}>
-            <Phone size={17} /> {status === "connecting" ? "Connecting…" : "Connect voice"}
+          <button type="button" className="gai-livekit-primary" onClick={connect} disabled={status === "connecting" || configured !== true}>
+            <Phone size={17} /> {status === "connecting" ? "Connecting…" : configured === null ? "Checking setup…" : configured === false ? "Setup required" : "Connect voice"}
           </button>
         ) : (
           <>
