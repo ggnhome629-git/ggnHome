@@ -78,7 +78,7 @@ const HEARTBEAT_SCRIPT = `
   end
   redis.call('ZADD', KEYS[1], expiry, ticket)
   redis.call('EXPIRE', KEYS[1], 86400)
-  redis.call('EXPIRE', KEYS[2], tonumber(ARGV[3]))
+  redis.call('EXPIRE', KEYS[2], math.ceil(tonumber(ARGV[3]) / 1000))
   return 1
 `;
 const LEAVE_SCRIPT = `
