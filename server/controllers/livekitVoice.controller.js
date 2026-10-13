@@ -148,6 +148,7 @@ exports.health = async (_req, res) => {
   try {
     const { RoomServiceClient } = exports._sdk();
     const rooms = await withTimeout(new RoomServiceClient(apiHost(url), apiKey, apiSecret).listRooms(), API_TIMEOUT_MS, "listRooms");
+    const queueStats = await voiceQueue.stats().catch(() => ({ available: false }));
     const voiceRooms = (rooms || []).filter((r) => String(r.name || "").startsWith("ggnhome-ai-"));
     return res.json({
       success: true,
@@ -156,6 +157,7 @@ exports.health = async (_req, res) => {
       latencyMs: Date.now() - started,
       activeVoiceRooms: voiceRooms.length,
       activeParticipants: voiceRooms.reduce((n, r) => n + Number(r.numParticipants || 0), 0),
+      queue: queueStats,
       note: "Agent worker health is visible in the worker logs; a dispatch failure on /token means no worker is registered.",
     });
   } catch (error) {
