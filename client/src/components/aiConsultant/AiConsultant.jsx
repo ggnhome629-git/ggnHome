@@ -426,7 +426,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
       }
     };
     poll();
-    const timer = setInterval(poll, 5000);
+    const timer = setInterval(poll, 8000);
     return () => { cancelled = true; clearInterval(timer); };
   }, [queueTicket, queue.state]);
 
