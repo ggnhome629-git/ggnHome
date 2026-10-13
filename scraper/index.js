@@ -43,8 +43,11 @@ class ScraperManager {
   async connectDB() {
     try {
       await mongoose.connect(MONGODB_URI, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
+        maxPoolSize: 2,
+        minPoolSize: 0,
+        maxConnecting: 1,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
       });
       logger.info('Database connected successfully');
       return true;
