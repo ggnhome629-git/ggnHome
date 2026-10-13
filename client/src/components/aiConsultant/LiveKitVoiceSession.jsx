@@ -37,7 +37,7 @@ export default function LiveKitVoiceSession({ enabled = true, assistantText, onT
   useEffect(() => {
     if (!enabled) return undefined;
     let cancelled = false;
-    fetch(API_BASE + "/api/ai-consultant/livekit/config", { credentials: "include" })
+    fetch(API_BASE + "/api/ai-consultant/livekit/config", { credentials: "omit" })
       .then((response) => {
         if (!response.ok) throw new Error("Voice configuration could not be checked.");
         return response.json();
@@ -72,7 +72,7 @@ export default function LiveKitVoiceSession({ enabled = true, assistantText, onT
     try {
       const response = await fetch(`${API_BASE}/api/ai-consultant/livekit/token`, {
         method: "POST",
-        credentials: "include",
+        credentials: "omit",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ accepted: true }),
       });
