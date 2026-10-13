@@ -54,7 +54,11 @@ jobs:
           node --check server/controllers/adminPartnerAccess.controller.js
           node --check server/controllers/adminDashboardPreferences.controller.js
           node --check server/controllers/appDownload.controller.js
+          node --check server/controllers/livekitVoice.controller.js
           node --check server/controllers/partnerAuth.controller.js
           node --check server/models/AdminDashboardPreferences.model.js
+      - name: Test LiveKit consent and configuration guards
+        working-directory: server
+        run: npx jest tests/livekitVoice.controller.test.js --runInBand
       - name: Validate notification templates
         run: node server/scripts/validate-notification-templates.js
