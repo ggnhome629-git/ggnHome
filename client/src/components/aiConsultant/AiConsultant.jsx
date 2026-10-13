@@ -5,6 +5,7 @@ import "./aiConsultant.css";
 import { consultantApi, newIdempotencyKey } from "./consultantApi";
 import { useSpeechRecognition, useSpeechSynthesis } from "./useSpeech";
 import SearchScanner from "./SearchScanner";
+import LiveKitVoiceSession from "./LiveKitVoiceSession";
 import ResultCard from "./ResultCard";
 import ReviewCard from "./ReviewCard";
 import { NEARBY_PARAMETERS, POSITION_PARAMETER, formatDistance } from "../../data/propertyParameters";
@@ -87,6 +88,7 @@ export default function AiConsultant({ open, onClose }) {
   const [audioPermission, setAudioPermission] = useState("idle");
   const [voiceSessionStarted, setVoiceSessionStarted] = useState(false);
   const [voiceSetupError, setVoiceSetupError] = useState("");
+  const [liveKitStatus, setLiveKitStatus] = useState("idle");
   const [speechPending, setSpeechPending] = useState(false);
   const [typing, setTyping] = useState(false);
   const silenceRef = useRef(0);
@@ -618,15 +620,22 @@ export default function AiConsultant({ open, onClose }) {
                       ? "Your microphone is ready. Start the conversation when you're comfortable — we'll speak the greeting first, then listen."
                       : "First allow microphone access. We won't start listening or speak over the browser permission prompt."}
                   </p>
+                  <LiveKitVoiceSession
+                    enabled={open}
+                    assistantText={items.slice().reverse().find((item) => item.type === "bot" && item.text)?.text || ""}
+                    onTranscript={(text) => send(text, text)}
+                    onStatus={setLiveKitStatus}
+                    onError={setVoiceSetupError}
+                  />
                   {audioPermission !== "granted" ? (
-                    <button type="button" className="gai-voice-primary" onClick={enableMicrophone} disabled={audioPermission === "requesting" || !recognition.supported}>
+                    <button type="button" className="gai-voice-primary" onClick={enableMicrophone} disabled={audioPermission === "requesting" || !recognition.supported || liveKitStatus === "connecting" || liveKitStatus === "connected"}>
                       <Mic size={20} />
                       {audioPermission === "requesting" ? "Waiting for permission…" : "Enable microphone"}
                     </button>
                   ) : (
-                    <button type="button" className="gai-voice-primary" onClick={startVoiceSession} disabled={!recognition.supported}>
+                    <button type="button" className="gai-voice-primary" onClick={startVoiceSession} disabled={!recognition.supported || liveKitStatus === "connecting" || liveKitStatus === "connected"}>
                       <Mic size={20} />
-                      Start voice conversation
+                      Start browser voice conversation
                     </button>
                   )}
                   {!recognition.supported && (
