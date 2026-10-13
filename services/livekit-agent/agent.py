@@ -11,7 +11,6 @@ import logging
 import os
 from typing import Any
 
-import httpx
 from dotenv import load_dotenv
 from livekit import agents, rtc
 from livekit.agents import Agent, AgentServer, AgentSession
