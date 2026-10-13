@@ -1,5 +1,6 @@
 const axios = require("axios");
 require("dotenv").config();
+const { reserveWindow } = require("../services/providerQuota");
 
 // Two ways to send, picked from env vars:
 //
@@ -12,7 +13,11 @@ require("dotenv").config();
 const DEFAULT_COUNTRY_CODE = process.env.SMS_DEFAULT_COUNTRY_CODE || "+91";
 
 function useThirdParty() {
-  return Boolean(process.env.SMS_GATEWAY_USER && process.env.SMS_GATEWAY_PASSWORD);
+  const credentialsPresent = Boolean(process.env.SMS_GATEWAY_USER && process.env.SMS_GATEWAY_PASSWORD);
+  if (credentialsPresent && process.env.SMS_GATEWAY_FREE_TIER_CONFIRMED !== "true") {
+    throw new Error("Third-party SMS gateway is paused until its free-tier plan and quota are explicitly confirmed. Use the configured Android SIM gateway or verify the provider plan.");
+  }
+  return credentialsPresent;
 }
 
 function isSmsConfigured() {
@@ -55,6 +60,14 @@ async function sendSms(mobileNumber, message, kind = "otp") {
     const queued = await SmsQueue.create({ phoneNumber, message, assignedDevice });
     await SmsLog.create({ queueId: String(queued._id), phoneNumber, kind, assignedDevice }).catch(() => {});
     return queued;
+  }
+
+  const smsLimit = Math.min(30, Math.max(1, Number.parseInt(process.env.SMS_GATEWAY_SENDS_PER_6H_LIMIT || "30", 10) || 30));
+  const quota = await reserveWindow({ provider: "sms-gate", windowMs: 6 * 60 * 60 * 1000, limit: smsLimit });
+  if (!quota.allowed) {
+    throw new Error(quota.reason === "quota_exceeded"
+      ? "Third-party SMS quota window is full; SMS sending is paused to protect the free-tier allowance."
+      : "SMS quota protection is unavailable; third-party SMS sending is paused.");
   }
 
   const baseUrl = (process.env.SMS_GATEWAY_URL || "https://api.sms-gate.app/3rdparty/v1").replace(/\/+$/, "");
