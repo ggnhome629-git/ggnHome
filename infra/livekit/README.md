@@ -22,6 +22,24 @@ Set these server-only values on the GgnHome API host:
 
 Set `LIVEKIT_URL=wss://voice.example.com` on the GgnHome API host. For the worker running on the same VM, use `LIVEKIT_URL=ws://127.0.0.1:7880` (or a private internal URL if it runs elsewhere); set the same API key/secret in both places. The worker needs a private network route to the local STT/TTS services.
 
+## Redis-backed fair-use voice queue
+
+The API only issues a LiveKit token after a visitor has a valid queue reservation. The FIFO queue and active-session leases use two Redis sorted sets; Redis stores opaque random tickets and timestamps only—never conversation text, property preferences, names, or phone numbers. Tickets waiting longer than the configured wait TTL expire; active slots renew while a session is connected and expire automatically if the browser disappears. Closing/minimizing explicitly releases the ticket.
+
+Configure these on the **GgnHome API service** (the same `REDIS_URL` is also used by existing caching/rate limiting):
+
+```env
+REDIS_URL=rediss://default:YOUR_REDIS_PASSWORD@YOUR_REDIS_HOST:YOUR_REDIS_PORT
+VOICE_QUEUE_ENABLED=true
+VOICE_QUEUE_MAX_ACTIVE=3
+VOICE_QUEUE_MAX_WAITING=50
+VOICE_QUEUE_LEASE_SECONDS=90
+VOICE_QUEUE_WAIT_TTL_SECONDS=900
+VOICE_QUEUE_KEY_PREFIX=ggnhome:voice:v1
+```
+
+Keep the queue deliberately small for a free Redis plan. Defaults cap active real-time sessions at 3, waiting tickets at 50, and queue wait at 15 minutes. The client polls every 8 seconds and heartbeats active leases every 25 seconds. Redis is shared with cache/rate-limit traffic, so check the provider's current command and memory limits. If Redis is unavailable, queued LiveKit voice is disabled and the normal text/browser consultant remains available; the API must not bypass the queue.
+
 ## Self-hosted server
 
 1. Copy `livekit.yaml.example` to `livekit.yaml` in this folder and replace the example secret with a long random value.
