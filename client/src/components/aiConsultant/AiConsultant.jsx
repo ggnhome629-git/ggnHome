@@ -129,7 +129,7 @@ export default function AiConsultant({ open, onClose }) {
 
   const speakIfOn = useCallback(
     (messages, speechLang) => {
-      if (!voiceOut || !messages?.length) return;
+      if (!voiceOut || liveKitStatus === "connected" || !messages?.length) return;
       const last = [...messages].reverse().find((m) => m.text && m.kind !== "listing");
       if (!last) return;
       // Hold the mic closed until the reply has been read out, so it never hears itself.
@@ -141,7 +141,7 @@ export default function AiConsultant({ open, onClose }) {
         release();
       });
     },
-    [voiceOut, tts]
+    [voiceOut, tts, liveKitStatus]
   );
 
   /* -------------------------------------------------------- server I/O */
