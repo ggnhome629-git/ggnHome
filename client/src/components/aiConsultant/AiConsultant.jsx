@@ -1,11 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, useMediaQuery } from "@mui/material";
-import { Bot, Mic, MicOff, RotateCcw, Search, SendHorizontal, Volume2, VolumeX, X } from "lucide-react";
+import { Bot, Mic, MicOff, Minimize2, RotateCcw, Search, SendHorizontal, X } from "lucide-react";
 import "./aiConsultant.css";
 import { consultantApi, newIdempotencyKey } from "./consultantApi";
-import { useSpeechRecognition, useSpeechSynthesis } from "./useSpeech";
 import SearchScanner from "./SearchScanner";
-import LiveKitVoiceSession from "./LiveKitVoiceSession";
+import FloatingConsultant from "./FloatingConsultant";
+import { useVoiceAssistant } from "./voice/useVoiceAssistant";
+import VoiceStage from "./voice/VoiceStage";
+import VoiceBar from "./voice/VoiceBar";
+import "./voice/voice.css";
 import ResultCard from "./ResultCard";
 import ReviewCard from "./ReviewCard";
 import { NEARBY_PARAMETERS, POSITION_PARAMETER, formatDistance } from "../../data/propertyParameters";
@@ -19,13 +22,6 @@ const LANGS = [
   { id: "hi", label: "हिं" },
   { id: "hinglish", label: "Hinglish" },
 ];
-const VOICE_COPY = {
-  unsupported: "Voice input isn't supported in this browser — typing works just as well.",
-  denied: "Microphone access was blocked. Allow it in your browser settings, or just type.",
-  noSpeech: "I didn't hear anything — tap the mic and try again.",
-  network: "Voice recognition needs a connection right now — please type instead.",
-  failed: "Voice input stopped unexpectedly — please try again or type.",
-};
 const PLACEHOLDER = {
   en: "Type or speak — e.g. “2 BHK near metro in Sector 57 under 30k”",
   hinglish: "Likhiye ya boliye — jaise “Sector 57 mein 30k tak 2 BHK, metro ke paas”",
@@ -58,6 +54,13 @@ function clearStore() {
   }
 }
 
+/** The spoken part of a reply: conversational lines only, never listing dumps. */
+function speechFor(r) {
+  if (r && typeof r.speech === "string" && r.speech.trim()) return r.speech.trim();
+  const lines = ((r && r.messages) || []).filter((m) => m && m.text && m.kind !== "listing").map((m) => m.text);
+  return (lines.length > 2 ? [lines[0], lines[lines.length - 1]] : lines).join(" ");
+}
+
 function criteriaLine(summary) {
   return (summary || [])
     .filter((s) => s.slot !== "mode")
@@ -67,11 +70,11 @@ function criteriaLine(summary) {
 }
 
 /**
- * GgnHome AI Property Consultant — full-screen conversational property search.
- * Props: open, onClose(reason) — reason is "manual" when the user wants to
- * switch to manual search.
+ * GgnHome AI Property Consultant — conversational property search by voice or text.
+ * Props: open (full view), minimized (floating chat on the right),
+ * onClose(reason) — "manual" when the user wants manual search — onMinimize, onExpand.
  */
-export default function AiConsultant({ open, onClose }) {
+export default function AiConsultant({ open, minimized = false, onClose, onMinimize, onExpand }) {
   const compact = useMediaQuery("(max-width:599px)");
   const persisted = useMemo(() => loadStore(), []);
   const [convState, setConvState] = useState(persisted?.state || null);
@@ -81,17 +84,13 @@ export default function AiConsultant({ open, onClose }) {
   const [selected, setSelected] = useState([]);
   const [busy, setBusy] = useState(false);
   const [input, setInput] = useState("");
-  // Voice is deliberately opt-in: permission prompts must follow a clear user
-  // action, and the first greeting must not compete with a browser permission dialog.
-  const [handsFree, setHandsFree] = useState(false);
-  const [voiceOut, setVoiceOut] = useState(false);
-  const [audioPermission, setAudioPermission] = useState("idle");
-  const [voiceSessionStarted, setVoiceSessionStarted] = useState(false);
-  const [voiceSetupError, setVoiceSetupError] = useState("");
-  const [liveKitStatus, setLiveKitStatus] = useState("idle");
-  const [speechPending, setSpeechPending] = useState(false);
   const [typing, setTyping] = useState(false);
-  const silenceRef = useRef(0);
+  // The centered voice screen shows until the visitor starts voice, chooses to
+  // type, or the conversation is under way.
+  const [stageDismissed, setStageDismissed] = useState(Boolean(persisted?.items?.some((it) => it.type === "user")));
+  const busyRef = useRef(false);
+  const queuedTranscriptRef = useRef(null);
+  const sendRef = useRef(null);
   const [aiAvailable, setAiAvailable] = useState(null);
   const [review, setReview] = useState({ submitting: false, error: "", success: persisted?.success || null });
   const idemRef = useRef(persisted?.idem || null);
@@ -101,9 +100,26 @@ export default function AiConsultant({ open, onClose }) {
   const inputRef = useRef(null);
   const startedRef = useRef(false);
   const autoSendRef = useRef(null);
-  const tts = useSpeechSynthesis();
 
   const lang = ui?.lang || convState?.lang || "en";
+  busyRef.current = busy;
+
+  // Voice: transcripts go through exactly the same path as typed messages.
+  const voice = useVoiceAssistant({
+    lang,
+    speechLang: ui?.speechLang || "en-IN",
+    onMetric: consultantApi.metric,
+    onTranscript: (text) => {
+      if (busyRef.current) {
+        // Still answering the last question: keep the newest thing they said.
+        queuedTranscriptRef.current = text;
+        return;
+      }
+      sendRef.current && sendRef.current(text, text, { voice: true });
+    },
+  });
+  const voiceRef = useRef(voice);
+  voiceRef.current = voice;
 
   // Persist the conversation so closing and reopening continues it.
   useEffect(() => {
@@ -127,22 +143,13 @@ export default function AiConsultant({ open, onClose }) {
   const replaceItem = useCallback((id, next) => setItems((prev) => prev.map((it) => (it.id === id ? (typeof next === "function" ? next(it) : next) : it))), []);
   const removeTyping = useCallback(() => setItems((prev) => prev.filter((it) => it.type !== "typing")), []);
 
-  const speakIfOn = useCallback(
-    (messages, speechLang) => {
-      if (!voiceOut || liveKitStatus === "connected" || !messages?.length) return;
-      const last = [...messages].reverse().find((m) => m.text && m.kind !== "listing");
-      if (!last) return;
-      // Hold the mic closed until the reply has been read out, so it never hears itself.
-      setSpeechPending(true);
-      const release = () => setSpeechPending(false);
-      const safety = setTimeout(release, Math.min(14000, 1500 + String(last.text).length * 75));
-      tts.speak(last.text, speechLang || "en-IN", () => {
-        clearTimeout(safety);
-        release();
-      });
-    },
-    [voiceOut, tts, liveKitStatus]
-  );
+  // Speak a reply when a voice session is running. The mic is managed by the
+  // voice controller, so the assistant never hears itself.
+  const speakReply = useCallback((r) => {
+    const v = voiceRef.current;
+    if (!v.active) return;
+    v.speak(speechFor(r));
+  }, []);
 
   /* -------------------------------------------------------- server I/O */
 
@@ -160,7 +167,7 @@ export default function AiConsultant({ open, onClose }) {
       const withChips = [...(r.messages || [])].reverse().find((m) => Array.isArray(m.chips));
       setChips(withChips && withChips.chips.length ? { list: withChips.chips, multi: Boolean(withChips.multi), inputType: withChips.inputType || null } : null);
       setSelected([]);
-      speakIfOn(r.messages, r.ui?.speechLang);
+      speakReply(r);
       if (r.next === "search" || r.next === "searchMore") runSearchRef.current && runSearchRef.current(r.state, r.next === "searchMore");
       if (r.next === "review") {
         if (!idemRef.current) idemRef.current = newIdempotencyKey();
@@ -168,7 +175,7 @@ export default function AiConsultant({ open, onClose }) {
         setItems((prev) => [...prev.filter((it) => it.type !== "review"), { id: uid(), type: "review", consentText: (r.messages || []).find((m) => m.consentText)?.consentText || "" }]);
       }
     },
-    [pushItems, speakIfOn]
+    [pushItems, speakReply]
   );
 
   const callTurn = useCallback(
@@ -182,12 +189,13 @@ export default function AiConsultant({ open, onClose }) {
       } catch (err) {
         removeTyping();
         pushItems({ id: uid(), type: "bot", kind: "error", text: err.message, retry: message ? { message } : action ? { action } : null });
+        speakReply({ speech: "Sorry, I couldn't reach the server just now. Please try that again." });
       } finally {
         // A turn that kicked off a search stays busy until the results land.
         if (!searchingRef.current) setBusy(false);
       }
     },
-    [handleResponse, pushItems, removeTyping]
+    [handleResponse, pushItems, removeTyping, speakReply]
   );
 
   const runSearch = useCallback(
@@ -203,11 +211,12 @@ export default function AiConsultant({ open, onClose }) {
       } catch (err) {
         setItems((prev) => prev.filter((it) => it.id !== scanId));
         pushItems({ id: uid(), type: "bot", kind: "error", text: err.message, retry: { search: true, more } });
+        speakReply({ speech: "Sorry, the search didn't go through. Please try again in a moment." });
         searchingRef.current = false;
         setBusy(false);
       }
     },
-    [pushItems, replaceItem, ui]
+    [pushItems, replaceItem, ui, speakReply]
   );
   runSearchRef.current = runSearch;
 
@@ -229,11 +238,11 @@ export default function AiConsultant({ open, onClose }) {
       setUi(r.ui);
       const withChips = [...(r.messages || [])].reverse().find((m) => Array.isArray(m.chips));
       setChips(withChips ? { list: withChips.chips, multi: false } : null);
-      speakIfOn(r.messages, r.ui?.speechLang);
+      speakReply(r);
       searchingRef.current = false;
       setBusy(false);
     },
-    [speakIfOn]
+    [speakReply]
   );
 
   // Greet on first open (or resume a saved conversation).
@@ -245,8 +254,7 @@ export default function AiConsultant({ open, onClose }) {
 
   useEffect(() => {
     if (open && !compact) setTimeout(() => inputRef.current && inputRef.current.focus({ preventScroll: true }), 250);
-    if (!open) tts.cancel();
-  }, [open, compact]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, compact]);
 
   /* ------------------------------------------------------------ actions */
 
@@ -255,16 +263,25 @@ export default function AiConsultant({ open, onClose }) {
       const text = String(value || "").trim();
       if (!text || busy) return;
       clearTimeout(autoSendRef.current);
-      tts.cancel();
-      setSpeechPending(false);
       setTyping(false);
-      pushItems({ id: uid(), type: "user", text: display || text });
+      setStageDismissed(true);
+      if (!options.voice && voiceRef.current.phase === "speaking") voiceRef.current.interrupt();
+      pushItems({ id: uid(), type: "user", text: display || text, voice: Boolean(options.voice) });
       setInput("");
       setChips(null);
       callTurn(text, undefined, options);
     },
-    [busy, callTurn, pushItems, tts]
+    [busy, callTurn, pushItems]
   );
+  sendRef.current = send;
+
+  // A transcript that arrived while the consultant was busy is answered next.
+  useEffect(() => {
+    if (busy || !queuedTranscriptRef.current) return;
+    const text = queuedTranscriptRef.current;
+    queuedTranscriptRef.current = null;
+    send(text, text, { voice: true });
+  }, [busy, send]);
 
   const onChip = (chip) => {
     if (chips?.multi && !["skip", "show results", "none of these"].includes(chip.value)) {
@@ -343,116 +360,25 @@ export default function AiConsultant({ open, onClose }) {
 
   /* -------------------------------------------------------------- voice */
 
-  const [voiceNote, setVoiceNote] = useState("");
-  const recognition = useSpeechRecognition({
-    lang: ui?.speechLang || "en-IN",
-    onFinal: (text) => {
-      // Sent the instant speech is final — no confirmation delay.
-      silenceRef.current = 0;
-      setVoiceNote("");
-      consultantApi.metric("voice_input_used");
-      send(text);
-    },
-    onError: (code) => {
-      if (code === "noSpeech") {
-        // Quietly reopen; after a few silent rounds, pause instead of listening forever.
-        silenceRef.current += 1;
-        if (silenceRef.current >= 3) {
-          setHandsFree(false);
-          setVoiceNote("Voice paused while you're away — tap the mic to keep talking.");
-        }
-        return;
-      }
-      setHandsFree(false);
-      setVoiceNote(code === "denied" ? "Tap the mic once to allow voice, or just type." : VOICE_COPY[code] || VOICE_COPY.failed);
-      consultantApi.metric(code === "unsupported" ? "speech_unsupported" : code === "denied" ? "speech_denied" : "speech_failed");
-    },
-  });
-
-  // Mic on: whenever the assistant is idle, not speaking and the user isn't typing.
   const reviewOpen = convState?.phase === "review";
-  const { start: micStart, stop: micStop, listening: micOn } = recognition;
-  useEffect(() => {
-    if (!open || !handsFree || busy || speechPending || tts.speaking || typing || reviewOpen || micOn) return undefined;
-    const t = setTimeout(micStart, 60);
-    return () => clearTimeout(t);
-  }, [open, handsFree, busy, speechPending, tts.speaking, typing, reviewOpen, micOn, micStart]);
+  const { setThinking, setHold } = voice;
+  useEffect(() => setThinking(busy), [busy, setThinking]);
+  // Don't listen while the visitor is typing or filling in the contact form.
+  useEffect(() => setHold((typing && input.trim().length > 0) || reviewOpen), [typing, input, reviewOpen, setHold]);
 
-  // Mic off: the moment the assistant starts working or the user starts typing.
-  useEffect(() => {
-    if ((busy || typing || !open || !handsFree) && micOn) micStop();
-  }, [busy, typing, open, handsFree, micOn, micStop]);
-
-  const enableMicrophone = async () => {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setVoiceSetupError("This browser can't request microphone access here. Use HTTPS or type your message instead.");
-      return;
-    }
-    setAudioPermission("requesting");
-    setVoiceSetupError("");
-    try {
-      const permissionStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      permissionStream.getTracks().forEach((track) => track.stop());
-      setAudioPermission("granted");
-    } catch (error) {
-      setAudioPermission("denied");
-      setVoiceSetupError(error?.name === "NotAllowedError"
-        ? "Microphone access was blocked. Allow it in your browser's site settings, then try again."
-        : "Couldn't access the microphone. Check that it's connected and not being used exclusively by another app.");
-    }
-  };
-
-  const startVoiceSession = () => {
-    if (audioPermission !== "granted" || !recognition.supported) return;
-    setVoiceSessionStarted(true);
-    setVoiceNote("");
-    setVoiceOut(Boolean(tts.supported));
-    setHandsFree(Boolean(recognition.supported));
-    setTyping(false);
-    setSpeechPending(Boolean(tts.supported));
-    const greeting = [...items].reverse().find((item) => item.type === "bot" && item.text);
-    const releaseMic = () => setSpeechPending(false);
-    if (greeting && tts.supported) {
-      const safety = setTimeout(releaseMic, 15000);
-      tts.speak(greeting.text, ui?.speechLang || "en-IN", () => {
-        clearTimeout(safety);
-        releaseMic();
-      });
-    } else {
-      releaseMic();
-    }
-    consultantApi.metric("voice_input_used");
-  };
+  const startVoice = useCallback(() => {
+    setStageDismissed(true);
+    const greeting = [...items].reverse().find((it) => it.type === "bot" && it.text && it.kind !== "error");
+    voiceRef.current.start(greeting ? greeting.text : "");
+  }, [items]);
 
   const toggleMic = () => {
-    if (!voiceSessionStarted) return;
-    setVoiceNote("");
-    if (!recognition.supported) {
-      setVoiceNote(VOICE_COPY.unsupported);
-      consultantApi.metric("speech_unsupported");
-      return;
-    }
-    if (handsFree) {
-      setHandsFree(false);
-      recognition.stop();
-      return;
-    }
-    silenceRef.current = 0;
-    setTyping(false);
-    setHandsFree(true);
-    if (!voiceOut && tts.supported) setVoiceOut(true);
-    tts.cancel();
-    setSpeechPending(false);
-    recognition.start(); // inside the tap, so the browser can ask for mic permission
+    if (!voice.active) startVoice();
+    else voice.toggleMute();
   };
 
-  useEffect(() => {
-    if (recognition.listening) setInput(recognition.interim);
-  }, [recognition.interim, recognition.listening]);
-
   const close = (reason) => {
-    recognition.stop();
-    tts.cancel();
+    voice.end();
     clearTimeout(autoSendRef.current);
     onClose && onClose(reason);
   };
@@ -523,9 +449,32 @@ export default function AiConsultant({ open, onClose }) {
     return -1;
   })();
 
+  const floating = minimized ? (
+    <FloatingConsultant
+      items={items}
+      chips={chips}
+      busy={busy}
+      input={input}
+      onInput={(value) => {
+        setTyping(true);
+        setInput(value);
+      }}
+      onSubmit={() => send(input)}
+      onChip={onChip}
+      onAsk={(n) => send(`tell me about #${n}`, `Tell me about #${n}`)}
+      onExpand={onExpand}
+      onClose={() => close("dismiss")}
+      voice={voice}
+      onStartVoice={startVoice}
+      placeholder={PLACEHOLDER[lang] || PLACEHOLDER.en}
+    />
+  ) : null;
+
   return (
+    <>
+    {floating}
     <Dialog
-      open={open}
+      open={open && !minimized}
       onClose={() => close("dismiss")}
       fullScreen={compact}
       maxWidth={false}
@@ -573,11 +522,11 @@ export default function AiConsultant({ open, onClose }) {
               ))}
             </div>
           )}
-          {tts.supported && (
-            <button type="button" className={`gai-icon-btn${voiceOut ? " on" : ""}`} onClick={() => (voiceOut ? (tts.cancel(), setVoiceOut(false)) : setVoiceOut(true))} aria-pressed={voiceOut} aria-label={voiceOut ? "Mute spoken replies" : "Read replies aloud"} title={voiceOut ? "Mute spoken replies" : "Read replies aloud"}>
-              {voiceOut ? <Volume2 size={18} /> : <VolumeX size={18} />}
+          {onMinimize ? (
+            <button type="button" className="gai-icon-btn" onClick={onMinimize} aria-label="Minimise to a floating chat and keep browsing" title="Keep chatting while you browse">
+              <Minimize2 size={17} />
             </button>
-          )}
+          ) : null}
           <button type="button" className="gai-icon-btn" onClick={restart} aria-label="Start over" title="Start over" disabled={busy}>
             <RotateCcw size={17} />
           </button>
@@ -610,46 +559,21 @@ export default function AiConsultant({ open, onClose }) {
         <div className="gai-body">
           <div className="gai-stream" ref={streamRef}>
             <div className="gai-stream-inner" aria-live="polite" aria-relevant="additions">
-              {!voiceSessionStarted && (
-                <section className="gai-voice-stage" aria-label="Set up voice assistant">
-                  <div className="gai-voice-stage-orb"><Bot size={28} /></div>
-                  <p className="gai-voice-eyebrow">VOICE PROPERTY ASSISTANT</p>
-                  <h2>{audioPermission === "granted" ? "Ready when you are" : "Let's get your voice ready"}</h2>
-                  <p className="gai-voice-description">
-                    {audioPermission === "granted"
-                      ? "Your microphone is ready. Start the conversation when you're comfortable — we'll speak the greeting first, then listen."
-                      : "First allow microphone access. We won't start listening or speak over the browser permission prompt."}
-                  </p>
-                  <LiveKitVoiceSession
-                    enabled={open}
-                    assistantText={items.slice().reverse().find((item) => item.type === "bot" && item.text)?.text || ""}
-                    onTranscript={(text) => send(text, text)}
-                    onStatus={setLiveKitStatus}
-                    onError={setVoiceSetupError}
-                  />
-                  {audioPermission !== "granted" ? (
-                    <button type="button" className="gai-voice-primary" onClick={enableMicrophone} disabled={audioPermission === "requesting" || !recognition.supported || liveKitStatus === "connecting" || liveKitStatus === "connected"}>
-                      <Mic size={20} />
-                      {audioPermission === "requesting" ? "Waiting for permission…" : "Enable microphone"}
-                    </button>
-                  ) : (
-                    <button type="button" className="gai-voice-primary" onClick={startVoiceSession} disabled={!recognition.supported || liveKitStatus === "connecting" || liveKitStatus === "connected"}>
-                      <Mic size={20} />
-                      Start browser voice conversation
-                    </button>
-                  )}
-                  {!recognition.supported && (
-                    <p className="gai-voice-error">Browser speech recognition isn't supported here. Try self-hosted LiveKit voice above, or use text chat.</p>
-                  )}
-                  {voiceSetupError ? <p className="gai-voice-error" role="alert">{voiceSetupError}</p> : null}
-                  <p className="gai-voice-footnote">Your microphone is used only after you choose to start. You can pause it anytime.</p>
-                </section>
+              {!stageDismissed && !voice.active ? (
+                <VoiceStage voice={voice} onStart={startVoice} onTypeInstead={() => { setStageDismissed(true); setTimeout(() => inputRef.current && inputRef.current.focus(), 50); }} />
+              ) : (
+                <div className="gai-voicebar-slot">
+                  <VoiceBar voice={voice} onStart={startVoice} />
+                </div>
               )}
               {items.map((it, i) => {
                 if (it.type === "user")
                   return (
                     <div key={it.id} className="gai-row user">
-                      <div className="gai-bubble user">{it.text}</div>
+                      <div className="gai-bubble user">
+                        {it.voice ? <Mic size={12} className="gai-voice-tag" aria-label="Said by voice" /> : null}
+                        {it.text}
+                      </div>
                     </div>
                   );
                 if (it.type === "typing")
@@ -763,12 +687,12 @@ export default function AiConsultant({ open, onClose }) {
               send(input);
             }}
           >
-            <button type="button" className={`gai-mic${recognition.listening ? " listening" : ""}${recognition.supported && handsFree ? "" : " unsupported"}`} onClick={toggleMic} disabled={!voiceSessionStarted} aria-pressed={handsFree} aria-label={handsFree ? "Pause hands-free voice" : "Turn on hands-free voice"} title={!voiceSessionStarted ? "Enable microphone and start the voice conversation above" : !recognition.supported ? "Voice not supported in this browser" : handsFree ? "Hands-free voice is on — tap to pause" : "Tap to talk hands-free"}>
-              {recognition.supported && handsFree ? <Mic size={22} /> : <MicOff size={20} />}
+            <button type="button" className={`gai-mic${voice.active && !voice.muted ? " listening" : ""}${voice.supported ? "" : " unsupported"}`} onClick={toggleMic} disabled={!voice.supported} aria-pressed={voice.active && !voice.muted} aria-label={!voice.active ? "Talk instead of typing" : voice.muted ? "Unmute microphone" : "Mute microphone"} title={!voice.supported ? "Voice isn't available in this browser" : !voice.active ? "Talk instead of typing" : voice.muted ? "Unmute" : "Mute"}>
+              {voice.active && !voice.muted ? <Mic size={22} /> : <MicOff size={20} />}
             </button>
             <div className="gai-input-wrap">
-              {recognition.listening && !input ? (
-                <div className="gai-wave" aria-hidden="true" style={{ opacity: 0.4 + recognition.level * 0.6 }}>
+              {(voice.phase === "listening" || voice.phase === "hearing") && !voice.muted && !input ? (
+                <div className="gai-wave" aria-hidden="true" style={{ opacity: voice.phase === "hearing" ? 1 : 0.55 }}>
                   {Array.from({ length: 14 }).map((_, k) => (
                     <i key={k} style={{ animationDelay: `${-k * 0.07}s` }} />
                   ))}
@@ -784,7 +708,7 @@ export default function AiConsultant({ open, onClose }) {
                   setInput(e.target.value);
                 }}
                 onKeyDown={() => setTyping(true)}
-                placeholder={recognition.listening ? "Listening…" : PLACEHOLDER[lang] || PLACEHOLDER.en}
+                placeholder={voice.phase === "listening" || voice.phase === "hearing" ? "Listening… or type here" : PLACEHOLDER[lang] || PLACEHOLDER.en}
                 aria-label="Message the AI consultant"
                 maxLength={600}
                 type="text"
@@ -797,17 +721,13 @@ export default function AiConsultant({ open, onClose }) {
               </button>
             </div>
           </form>
-          {voiceNote ? (
-            <div role="alert" className="gai-composer-foot" style={{ color: "#8a5a12" }}>
-              {voiceNote}
-            </div>
-          ) : null}
           <div className="gai-composer-foot">
-            <span>{recognition.listening ? "Listening… just talk, I'll send it when you pause" : handsFree ? "Hands-free on — the mic opens by itself after each reply" : "Speak or type in English, हिन्दी or Hinglish · change any answer anytime"}</span>
+            <span>{voice.active ? "Hands-free — just talk, I'll answer when you pause. Typing works too." : "Speak or type in English, हिन्दी or Hinglish · change any answer anytime"}</span>
             <span>Real listings only — never invented</span>
           </div>
         </footer>
       </div>
     </Dialog>
+    </>
   );
 }

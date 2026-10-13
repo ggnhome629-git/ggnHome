@@ -17,10 +17,9 @@ import RecentlyViewed from "../Property View/sections/RecentlyViewed";
 import { getRecentlyViewed } from "../../utils/propertyAnalytics";
 import FloatingActions from "./FloatingActions";
 import AiLaunchButton from "../../components/aiConsultant/AiLaunchButton";
-import { consultantApi } from "../../components/aiConsultant/consultantApi";
+import { useAiConsultant } from "../../components/aiConsultant/AiConsultantHost";
 
 // Code-split: the consultant (and its styles) only download when it opens.
-const AiConsultant = React.lazy(() => import("../../components/aiConsultant/AiConsultant"));
 // Opens by itself once per browser session, after the launch intro finishes.
 const AI_AUTO_OPEN_KEY = "ggn:aiConsultantAutoOpened";
 const AI_AUTO_OPEN_DELAY_MS = 2600;
@@ -94,18 +93,12 @@ export default function RealEstateDashboard() {
   const [areaError, setAreaError] = useState(false);
 
   const areaLoadingRef = useRef(false);
-  const [aiOpen, setAiOpen] = useState(false);
-  const [aiMounted, setAiMounted] = useState(false);
+  const aiConsultant = useAiConsultant();
   const [recentlyViewed] = useState(() => getRecentlyViewed().slice(0, 8));
 
   // ------------------------------------------------------- AI consultant --
 
-  const openAi = useCallback((source = "manual") => {
-    setAiMounted(true);
-    setAiOpen(true);
-    consultantApi.metric(source === "auto" ? "opened_auto" : "opened_manual");
-  }, []);
-
+  const { open: openAi, isActive: aiActive, onManualSearch } = aiConsultant;
   useEffect(() => {
     let seen = false;
     try {
@@ -344,13 +337,8 @@ export default function RealEstateDashboard() {
     }, 350);
   };
 
-  const closeAi = (reason) => {
-    setAiOpen(false);
-    if (reason === "manual") {
-      consultantApi.metric("closed_manual_search");
-      focusSearch();
-    }
-  };
+  // Leaving the consultant for manual search jumps to the search box.
+  useEffect(() => onManualSearch(focusSearch), [onManualSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Box className="dash-live" sx={{ backgroundColor: "background.paper", overflowX: "clip" }}>
@@ -555,12 +543,7 @@ export default function RealEstateDashboard() {
 
       <FloatingActions onOpenPreferences={goToPreferences} />
 
-      {!aiOpen && <AiLaunchButton floating onClick={() => openAi("fab")} />}
-      {aiMounted && (
-        <Suspense fallback={null}>
-          <AiConsultant open={aiOpen} onClose={closeAi} />
-        </Suspense>
-      )}
+      {!aiActive && <AiLaunchButton floating onClick={() => openAi("fab")} />}
 
       <Suspense fallback={null}>
         <Footer user={user} />

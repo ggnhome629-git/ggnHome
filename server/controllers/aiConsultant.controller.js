@@ -38,7 +38,28 @@ const METRIC_NAMES = new Set([
   "speech_denied",
   "tts_used",
   "result_clicked",
+  "voice_session_started",
+  "voice_session_failed",
+  "voice_greeting_played",
+  "voice_turn",
+  "voice_browser_fallback",
+  "voice_audio_blocked",
 ]);
+
+/**
+ * What the voice assistant should say for a set of engine messages: the
+ * conversational lines only (no listing dumps), at most two of them, so a
+ * spoken reply stays short while the full answer stays on screen.
+ */
+function spokenSummary(messages) {
+  const lines = (messages || [])
+    .filter((m) => m && typeof m.text === "string" && m.text.trim() && m.kind !== "listing")
+    .map((m) => m.text.trim());
+  if (!lines.length) return "";
+  const picked = lines.length > 2 ? [lines[0], lines[lines.length - 1]] : lines;
+  return picked.join(" ").replace(/\s+/g, " ").slice(0, 600);
+}
+exports._spokenSummary = spokenSummary;
 
 /* ------------------------------------------------------------ metrics */
 
@@ -85,7 +106,7 @@ exports.turn = async (req, res) => {
     if (out.state.aiUsed && !(state && state.aiUsed)) metrics.push("ai_assisted_conversations");
     if (out.next === "review" && !(state && state.phase === "review")) metrics.push("reached_review");
     bump(metrics);
-    res.json({ success: true, ...out, aiAvailable: groq.isAvailable() });
+    res.json({ success: true, ...out, speech: spokenSummary(out.messages), aiAvailable: groq.isAvailable() });
   } catch (err) {
     console.error("aiConsultant.turn failed:", err.message);
     bad(res, 500, "The assistant hit a snag. Please try again.");
@@ -97,7 +118,7 @@ exports.search = async (req, res) => {
     const { state, more } = req.body || {};
     const out = await engine.handleSearch({ state, more: more === true });
     if (out.stats) bump(["searches", out.results.length ? "searches_with_results" : "searches_no_match", more ? "show_more" : null]);
-    res.json({ success: true, ...out });
+    res.json({ success: true, ...out, speech: spokenSummary(out.messages) });
   } catch (err) {
     console.error("aiConsultant.search failed:", err.message);
     bad(res, 500, "Search is unavailable right now. Please try again in a moment.");

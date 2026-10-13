@@ -7,6 +7,7 @@ import { pageTransitionVariants } from "./theme/motion";
 import PageLoader from "./components/ui/PageLoader";
 import AppLaunchIntro from "./components/app/AppLaunchIntro";
 import Dashboard from "./screens/Dashboard/dashboard";
+import { AiConsultantProvider } from "./components/aiConsultant/AiConsultantHost";
 import LoginModal from "./screens/Login Page/login";
 const SmsOtpTest = lazy(() => import("./screens/Test Page/SmsOtpTest"));
 const PropertyCheckout = lazy(() => import("./screens/Visit Schedule/Clientvist"));
@@ -148,7 +149,7 @@ function App() {
   }, [location.pathname]);
 
   return (
-    <>
+    <AiConsultantProvider>
     <AppLaunchIntro />
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
@@ -278,7 +279,7 @@ function App() {
         </Suspense>
       </motion.div>
     </AnimatePresence>
-    </>
+    </AiConsultantProvider>
   );
 }
 

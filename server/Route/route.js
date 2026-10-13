@@ -353,6 +353,7 @@ router.get("/api/chatbot/initial-questions", getInitialQuestions);
 // on a consented, idempotent submit.
 router.get("/api/ai-consultant/livekit/config", livekitVoice.getConfig);
 router.post("/api/ai-consultant/livekit/token", aiTurnLimiter, livekitVoice.createToken);
+router.get("/api/admin/ai-consultant/livekit/health", verifyToken, checkAdminEmail, livekitVoice.health);
 router.get("/api/ai-consultant/config", aiConsultant.getConfig);
 router.post("/api/ai-consultant/turn", aiTurnLimiter, aiConsultant.turn);
 router.post("/api/ai-consultant/search", aiSearchLimiter, aiConsultant.search);

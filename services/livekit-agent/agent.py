@@ -229,7 +229,10 @@ def build_speech_services() -> tuple[Any, Any]:
     return stt, tts
 
 
-server = AgentServer()
+# LiveKit Agents marks a worker "full" above a CPU load threshold (0.7 by default
+# in production) and LiveKit then drops new visitors' jobs. This worker does no
+# model inference itself, so allow a higher load before refusing a visitor.
+server = AgentServer(load_threshold=float(os.getenv("LIVEKIT_LOAD_THRESHOLD", "0.92")))
 
 
 def prewarm(proc: agents.JobProcess) -> None:
