@@ -80,7 +80,10 @@ exports.createToken = async (req, res) => {
   if (typeof queueTicket !== "string" || !/^[a-f0-9]{48}$/.test(queueTicket) || !(await voiceQueue.claimToken(queueTicket))) {
     return res.status(409).json({ success: false, code: "VOICE_QUEUE_RESERVATION_REQUIRED", message: "Join the voice queue and wait until your turn before starting real-time voice. A reservation can only start one session." });
   }
-  await voiceQueue.heartbeat(queueTicket);
+  if (!(await voiceQueue.heartbeat(queueTicket))) {
+    await voiceQueue.leave(queueTicket).catch(() => {});
+    return res.status(409).json({ success: false, code: "VOICE_QUEUE_LEASE_EXPIRED", message: "Your voice reservation expired. Please rejoin the queue." });
+  }
 
   const { AccessToken, RoomServiceClient, AgentDispatchClient } = exports._sdk();
   const host = apiHost(url);
