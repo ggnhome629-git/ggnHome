@@ -57,7 +57,8 @@ exports.createToken = async (req, res) => {
 
     // Explicit dispatch is required because this worker uses a named agent.
     // The room name is random per session, preventing room reuse across visitors.
-    const livekitApi = new LiveKitAPI({ host: url, apiKey, secret: apiSecret });
+    const apiHost = url.replace(/^wss:/i, "https:").replace(/^ws:/i, "http:");
+    const livekitApi = new LiveKitAPI({ host: apiHost, apiKey, secret: apiSecret });
     try {
       await livekitApi.agentDispatch.createDispatch(roomName, "ggnhome-property-voice", {
         metadata: JSON.stringify({ app: "ggnhome", role: "visitor" }),
