@@ -605,7 +605,7 @@ async function describeListing(s, index, nearbyOnly) {
  * @param {{state:object, message?:string, action?:{type:string,slot?:string,lang?:string}}} input
  * @returns {Promise<{state, messages, next, ui}>}
  */
-async function handleTurn({ state: rawState, message, action }) {
+async function handleTurn({ state: rawState, message, action, disableLLM = false }) {
   let s = sanitizeState(rawState);
   const messages = [];
   let next = null;
@@ -804,7 +804,7 @@ async function handleTurn({ state: rawState, message, action }) {
   let understood = touched.length > 0 || sideInfo || Boolean(s.pending) || Boolean(parsed.phone || parsed.email || (parsed.name && s.slot === "name"));
 
   // Optional model assistance when rules understood nothing.
-  if (!understood && !parsed.yes && !parsed.no && !parsed.skip && !intents.length && text.length >= 4 && /[a-zऀ-ॿ]/i.test(text)) {
+  if (!disableLLM && !understood && !parsed.yes && !parsed.no && !parsed.skip && !intents.length && text.length >= 4 && /[a-zऀ-ॿ]/i.test(text)) {
     let ai = null;
     try {
       ai = await llm.extract(text, { slot: s.slot, mode: s.req.mode, lang });

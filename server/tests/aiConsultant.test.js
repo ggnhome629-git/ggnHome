@@ -265,4 +265,21 @@ describe("robustness", () => {
       expect(r.messages.length).toBeGreaterThan(0);
     }
   });
+  test("explicit disableLLM opt-out bypasses fallback; default transcript path permits it", async () => {
+    const llm = require("../services/aiConsultant/llm");
+    const extractSpy = jest.spyOn(llm, "extract");
+    const answerSpy = jest.spyOn(llm, "answerGeneral");
+    try {
+      await engine.handleTurn({ state: engine.emptyState("en"), message: "qzxv blorpt", disableLLM: true });
+      expect(extractSpy).not.toHaveBeenCalled();
+      expect(answerSpy).not.toHaveBeenCalled();
+
+      await engine.handleTurn({ state: engine.emptyState("en"), message: "qzxv blorpt" });
+      expect(extractSpy).toHaveBeenCalled();
+    } finally {
+      extractSpy.mockRestore();
+      answerSpy.mockRestore();
+    }
+  });
+
 });

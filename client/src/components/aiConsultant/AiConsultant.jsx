@@ -5,6 +5,7 @@ import "./aiConsultant.css";
 import { consultantApi, newIdempotencyKey } from "./consultantApi";
 import { useSpeechRecognition, useSpeechSynthesis } from "./useSpeech";
 import SearchScanner from "./SearchScanner";
+import LiveKitVoiceSession from "./LiveKitVoiceSession";
 import ResultCard from "./ResultCard";
 import ReviewCard from "./ReviewCard";
 import { NEARBY_PARAMETERS, POSITION_PARAMETER, formatDistance } from "../../data/propertyParameters";
@@ -87,6 +88,7 @@ export default function AiConsultant({ open, onClose }) {
   const [audioPermission, setAudioPermission] = useState("idle");
   const [voiceSessionStarted, setVoiceSessionStarted] = useState(false);
   const [voiceSetupError, setVoiceSetupError] = useState("");
+  const [liveKitStatus, setLiveKitStatus] = useState("idle");
   const [speechPending, setSpeechPending] = useState(false);
   const [typing, setTyping] = useState(false);
   const silenceRef = useRef(0);
@@ -127,7 +129,7 @@ export default function AiConsultant({ open, onClose }) {
 
   const speakIfOn = useCallback(
     (messages, speechLang) => {
-      if (!voiceOut || !messages?.length) return;
+      if (!voiceOut || liveKitStatus === "connected" || !messages?.length) return;
       const last = [...messages].reverse().find((m) => m.text && m.kind !== "listing");
       if (!last) return;
       // Hold the mic closed until the reply has been read out, so it never hears itself.
@@ -139,7 +141,7 @@ export default function AiConsultant({ open, onClose }) {
         release();
       });
     },
-    [voiceOut, tts]
+    [voiceOut, tts, liveKitStatus]
   );
 
   /* -------------------------------------------------------- server I/O */
@@ -170,11 +172,11 @@ export default function AiConsultant({ open, onClose }) {
   );
 
   const callTurn = useCallback(
-    async (message, action) => {
+    async (message, action, options = {}) => {
       setBusy(true);
       pushItems({ id: uid(), type: "typing" });
       try {
-        const r = await consultantApi.turn(stateRef.current, message, action);
+        const r = await consultantApi.turn(stateRef.current, message, action, options.disableLLM === true);
         removeTyping();
         handleResponse(r);
       } catch (err) {
@@ -249,7 +251,7 @@ export default function AiConsultant({ open, onClose }) {
   /* ------------------------------------------------------------ actions */
 
   const send = useCallback(
-    (value, display) => {
+    (value, display, options = {}) => {
       const text = String(value || "").trim();
       if (!text || busy) return;
       clearTimeout(autoSendRef.current);
@@ -259,7 +261,7 @@ export default function AiConsultant({ open, onClose }) {
       pushItems({ id: uid(), type: "user", text: display || text });
       setInput("");
       setChips(null);
-      callTurn(text);
+      callTurn(text, undefined, options);
     },
     [busy, callTurn, pushItems, tts]
   );
@@ -618,19 +620,26 @@ export default function AiConsultant({ open, onClose }) {
                       ? "Your microphone is ready. Start the conversation when you're comfortable — we'll speak the greeting first, then listen."
                       : "First allow microphone access. We won't start listening or speak over the browser permission prompt."}
                   </p>
+                  <LiveKitVoiceSession
+                    enabled={open}
+                    assistantText={items.slice().reverse().find((item) => item.type === "bot" && item.text)?.text || ""}
+                    onTranscript={(text) => send(text, text)}
+                    onStatus={setLiveKitStatus}
+                    onError={setVoiceSetupError}
+                  />
                   {audioPermission !== "granted" ? (
-                    <button type="button" className="gai-voice-primary" onClick={enableMicrophone} disabled={audioPermission === "requesting" || !recognition.supported}>
+                    <button type="button" className="gai-voice-primary" onClick={enableMicrophone} disabled={audioPermission === "requesting" || !recognition.supported || liveKitStatus === "connecting" || liveKitStatus === "connected"}>
                       <Mic size={20} />
                       {audioPermission === "requesting" ? "Waiting for permission…" : "Enable microphone"}
                     </button>
                   ) : (
-                    <button type="button" className="gai-voice-primary" onClick={startVoiceSession} disabled={!recognition.supported}>
+                    <button type="button" className="gai-voice-primary" onClick={startVoiceSession} disabled={!recognition.supported || liveKitStatus === "connecting" || liveKitStatus === "connected"}>
                       <Mic size={20} />
-                      Start voice conversation
+                      Start browser voice conversation
                     </button>
                   )}
                   {!recognition.supported && (
-                    <p className="gai-voice-error">Voice recognition isn't supported by this browser. You can still use the text chat below.</p>
+                    <p className="gai-voice-error">Browser speech recognition isn't supported here. Try self-hosted LiveKit voice above, or use text chat.</p>
                   )}
                   {voiceSetupError ? <p className="gai-voice-error" role="alert">{voiceSetupError}</p> : null}
                   <p className="gai-voice-footnote">Your microphone is used only after you choose to start. You can pause it anytime.</p>

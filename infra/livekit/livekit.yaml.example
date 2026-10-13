@@ -1,0 +1,19 @@
+# Copy to livekit.yaml on the voice VM and replace the development credentials.
+port: 7880
+log_level: info
+
+rtc:
+  tcp_port: 7881
+  port_range_start: 50000
+  port_range_end: 60000
+  use_external_ip: true
+
+# These values must match LIVEKIT_API_KEY and LIVEKIT_API_SECRET in the
+# GgnHome backend and agent environment. Never commit real production secrets.
+keys:
+  devkey: replace-with-a-long-random-secret
+
+# For production, terminate HTTPS/WSS with a reverse proxy such as Caddy and
+# use a DNS hostname. Open the LiveKit API port plus UDP 50000-60000 and TCP
+# 7881 on the VM firewall. Configure TURN separately if some client networks
+# cannot establish direct WebRTC connections.

@@ -75,10 +75,10 @@ exports.getConfig = (req, res) => {
 
 exports.turn = async (req, res) => {
   try {
-    const { state, message, action } = req.body || {};
+    const { state, message, action, disableLLM } = req.body || {};
     if (message !== undefined && typeof message !== "string") return bad(res, 400, "message must be text");
     if (typeof message === "string" && message.length > 600) return bad(res, 413, "Message is too long — please keep it under 600 characters.");
-    const out = await engine.handleTurn({ state, message, action });
+    const out = await engine.handleTurn({ state, message, action, disableLLM: disableLLM === true });
     const metrics = [];
     if (action?.type === "start" && (!state || !state.turn)) metrics.push("conversations_started");
     if (typeof message === "string" && message.trim()) metrics.push("turns");
