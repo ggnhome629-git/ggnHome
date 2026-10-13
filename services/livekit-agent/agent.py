@@ -67,8 +67,16 @@ GROQ_STT_MODEL = os.getenv("GROQ_STT_MODEL", "whisper-large-v3-turbo")
 GROQ_TTS_MODEL = os.getenv("GROQ_TTS_MODEL", "canopylabs/orpheus-v1-english")
 GROQ_TTS_VOICE = os.getenv("GROQ_TTS_VOICE", "autumn")
 # Free-tier safety ceilings; environment variables may lower, never raise them.
-MAX_TTS_PER_SESSION = min(8, max(1, int(os.getenv("VOICE_MAX_TTS_PER_SESSION", "8"))))
-MAX_STT_UTTERANCES_PER_SESSION = min(30, max(1, int(os.getenv("VOICE_MAX_STT_UTTERANCES_PER_SESSION", "30"))))
+def bounded_int_env(name: str, default: int, maximum: int) -> int:
+    try:
+        value = int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        value = default
+    return min(maximum, max(1, value))
+
+
+MAX_TTS_PER_SESSION = bounded_int_env("VOICE_MAX_TTS_PER_SESSION", 8, 8)
+MAX_STT_UTTERANCES_PER_SESSION = bounded_int_env("VOICE_MAX_STT_UTTERANCES_PER_SESSION", 30, 30)
 
 # Natural-voice providers (each reads its own key from the environment):
 #   deepgram -> DEEPGRAM_API_KEY  (Aura-2 voices, ~$200 signup credit)
