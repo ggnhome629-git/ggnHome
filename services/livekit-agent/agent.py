@@ -306,7 +306,6 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
         if stt_utterance_count["count"] >= MAX_STT_UTTERANCES_PER_SESSION:
             logger.info("Per-session STT budget reached for %s", ctx.room.name)
             spawn(send({"type": "voice_status", "status": "session_quota_reached"}))
-            spawn(send({"type": "idle_end"}))
             spawn(shutdown_later("per-session STT budget reached", 1.5))
 
     @session.on("error")
@@ -364,7 +363,6 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
             if speech_request_count["count"] >= MAX_TTS_PER_SESSION:
                 logger.info("Per-session TTS budget reached for %s", ctx.room.name)
                 spawn(send({"type": "voice_status", "status": "session_quota_reached"}))
-                spawn(send({"type": "idle_end"}))
                 spawn(shutdown_later("per-session TTS budget reached", 1.5))
                 return
             speech_request_count["count"] += 1
