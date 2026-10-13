@@ -13,7 +13,7 @@ FILLER_WORDS = {
 
 
 def normalise(text: str) -> str:
-    return re.sub(r"[^\\wऀ-ॿ]+", " ", text.lower()).strip()
+    return re.sub(r"[^\wऀ-ॿ]+", " ", text.lower()).strip()
 
 
 def is_filler_only(text: str) -> bool:
@@ -46,4 +46,3 @@ class TranscriptFilter:
             return False
         self.last_text, self.last_at = norm, now
         return True
-}
