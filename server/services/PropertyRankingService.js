@@ -15,7 +15,7 @@ class PropertyRankingService {
     const requiredFields = ['price', 'totalArea', 'Sector', 'propertyType'];
     const hasConfig = property.totalArea?.configuration || property.bedrooms != null;
     const completenessFields = [
-      property.price != null,
+      this.priceOf(property) != null,
       hasConfig,
       property.totalArea?.sqft != null,
       property.Sector,
@@ -107,6 +107,11 @@ class PropertyRankingService {
   /**
    * Gate checks - returns null if property fails any hard check
    */
+  /** Rentals store their price as monthlyRent; sales use price. */
+  static priceOf(property) {
+    return property.monthlyRent != null ? property.monthlyRent : property.price;
+  }
+
   static performGateChecks(property) {
     const checks = {
       missingCritical: !this.hasCriticalFields(property),
@@ -130,7 +135,7 @@ class PropertyRankingService {
    */
   static hasCriticalFields(property) {
     return (
-      property.price != null &&
+      this.priceOf(property) != null &&
       (property.totalArea?.configuration || property.bedrooms != null) &&
       property.totalArea?.sqft != null &&
       property.Sector &&
@@ -142,7 +147,7 @@ class PropertyRankingService {
    * Validate price is reasonable
    */
   static isInvalidPrice(property) {
-    const price = property.price;
+    const price = this.priceOf(property);
     const isRental = property.monthlyRent != null;
 
     if (isRental) {

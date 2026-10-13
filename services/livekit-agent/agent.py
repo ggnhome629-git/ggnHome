@@ -147,7 +147,12 @@ def build_speech_services() -> tuple[Any, Any]:
             raise RuntimeError("GROQ_SPEECH_API_KEY is required when VOICE_STT_PROVIDER=groq")
         from livekit.plugins import groq
 
-        stt = groq.STT(model=GROQ_STT_MODEL, api_key=GROQ_SPEECH_KEY, language="en")
+        stt = groq.STT(
+            model=GROQ_STT_MODEL,
+            api_key=GROQ_SPEECH_KEY,
+            language="en",
+            prompt="Indian real estate in Gurgaon (Gurugram). Terms: 2 BHK, 3 BHK, flat, sector, DLF, Golf Course Road, crore, lakh, rent, buy.",
+        )
     else:
         stt = openai.STT(
             model=STT_MODEL,
