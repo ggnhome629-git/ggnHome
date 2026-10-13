@@ -58,6 +58,7 @@ export default function AiLeadCard({ lead, children, contactHidden }) {
         <Typography sx={{ fontWeight: 800, fontFamily: "ui-monospace, Menlo, monospace" }}>{lead.leadRef}</Typography>
         <Chip size="small" label={lead.mode === "sale" ? "Buy" : lead.mode === "rent" ? "Rent" : "Callback"} sx={{ fontWeight: 700 }} color={lead.mode === "sale" ? "secondary" : "primary"} variant="outlined" />
         <Chip size="small" label={status.label} sx={{ fontWeight: 700, color: "#fff", backgroundColor: status.color }} />
+        {lead.stage === "captured" ? <Chip size="small" label="Phone captured · before search" color="warning" variant="outlined" sx={{ fontWeight: 600 }} /> : null}
         {lead.aiAssisted ? <Chip size="small" label="AI-assisted" variant="outlined" sx={{ fontWeight: 600 }} /> : null}
         <Box sx={{ flex: 1 }} />
         <Typography variant="caption" sx={{ color: "text.secondary" }}>

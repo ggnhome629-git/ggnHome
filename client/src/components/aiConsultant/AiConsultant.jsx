@@ -11,6 +11,8 @@ import VoiceBar from "./voice/VoiceBar";
 import "./voice/voice.css";
 import ResultCard from "./ResultCard";
 import ReviewCard from "./ReviewCard";
+import LeadGateCard from "./LeadGateCard";
+import { useAuth } from "../../Context/AuthContext";
 import { NEARBY_PARAMETERS, POSITION_PARAMETER, formatDistance } from "../../data/propertyParameters";
 
 const PositionIcon = POSITION_PARAMETER.icon;
@@ -72,6 +74,25 @@ function voiceOpening(items) {
   return parts.join(" ");
 }
 
+/** Digits from typed or spoken text ("98765 43210", "nine eight seven…", "double five"). */
+const DIGIT_WORDS = { zero: 0, oh: 0, o: 0, shunya: 0, one: 1, ek: 1, two: 2, do: 2, three: 3, teen: 3, four: 4, char: 4, chaar: 4, five: 5, paanch: 5, panch: 5, six: 6, chhe: 6, che: 6, seven: 7, saat: 7, eight: 8, aath: 8, nine: 9, nau: 9 };
+function spokenDigits(text) {
+  const words = String(text || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean);
+  let out = "";
+  for (let i = 0; i < words.length; i += 1) {
+    const w = words[i];
+    if (/^\d+$/.test(w)) out += w;
+    else if ((w === "double" || w === "triple") && words[i + 1] in DIGIT_WORDS) {
+      out += String(DIGIT_WORDS[words[i + 1]]).repeat(w === "double" ? 2 : 3);
+      i += 1;
+    } else if (w in DIGIT_WORDS && w !== "o" && w !== "do") out += DIGIT_WORDS[w];
+    else if ((w === "do" || w === "o") && /^(do|o)$/.test(w) && (/\d/.test(words[i - 1] || "") || words[i - 1] in DIGIT_WORDS)) out += DIGIT_WORDS[w];
+  }
+  return out.replace(/^(91|0)(?=\d{10}$)/, "");
+}
+const YES_RE = /^(yes|yeah|yep|correct|right|sahi|theek|thik|haan|han|ha|ok|okay|confirm|that'?s (right|correct))\b/i;
+const NO_RE = /^(no|nope|nah|wrong|galat|nahi|edit|change)\b/i;
+
 function criteriaLine(summary) {
   return (summary || [])
     .filter((s) => s.slot !== "mode")
@@ -102,6 +123,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   const busyRef = useRef(false);
   const queuedTranscriptRef = useRef(null);
   const sendRef = useRef(null);
+  const gateAnswerRef = useRef(null);
   const stageVisibleRef = useRef(false);
   const [aiAvailable, setAiAvailable] = useState(null);
   const [basicMode, setBasicMode] = useState(Boolean(persisted?.basicMode));
@@ -109,6 +131,15 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   const [queue, setQueue] = useState(() => { try { return window.sessionStorage.getItem("ggn_voice_queue_ticket") ? { state: "waiting" } : { state: "idle" }; } catch (_) { return { state: "idle" }; } });
   const [review, setReview] = useState({ submitting: false, error: "", success: persisted?.success || null });
   const idemRef = useRef(persisted?.idem || null);
+  const { user, loading: authLoading } = useAuth() || {};
+  const [leadCaptured, setLeadCaptured] = useState(Boolean(persisted?.leadCaptured));
+  const [gate, setGate] = useState(null);
+  const gateRef = useRef(null);
+  gateRef.current = gate;
+  const guestRef = useRef(true);
+  guestRef.current = !user && !authLoading;
+  const capturedRef = useRef(leadCaptured);
+  capturedRef.current = leadCaptured;
   const stateRef = useRef(convState);
   stateRef.current = convState;
   const streamRef = useRef(null);
@@ -169,9 +200,10 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
       idem: idemRef.current,
       success: review.success,
       basicMode,
-      items: items.filter((it) => it.type !== "typing" && it.type !== "scanner").slice(-MAX_ITEMS),
+      leadCaptured,
+      items: items.filter((it) => it.type !== "typing" && it.type !== "scanner" && it.type !== "leadgate").slice(-MAX_ITEMS),
     });
-  }, [convState, items, ui, chips, review.success, basicMode]);
+  }, [convState, items, ui, chips, review.success, basicMode, leadCaptured]);
 
   useEffect(() => {
     const el = streamRef.current;
@@ -206,6 +238,14 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
       const withChips = [...(r.messages || [])].reverse().find((m) => Array.isArray(m.chips));
       setChips(withChips && withChips.chips.length ? { list: withChips.chips, multi: Boolean(withChips.multi), inputType: withChips.inputType || null } : null);
       setSelected([]);
+      if (r.next === "search" && guestRef.current && !capturedRef.current) {
+        // Guests share a mobile number before the first search.
+        const ask = "Before I find your properties, may I have your mobile number? You can speak it or type it.";
+        setGate({ stage: "ask", phone: "", name: r.state?.contact?.name || "", error: "", saving: false, state: r.state });
+        pushItems({ id: uid(), type: "leadgate" });
+        speakReply({ speech: ask });
+        return;
+      }
       speakReply(r);
       if (r.next === "search" || r.next === "searchMore") runSearchRef.current && runSearchRef.current(r.state, r.next === "searchMore");
       if (r.next === "review") {
@@ -308,6 +348,10 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
       pushItems({ id: uid(), type: "user", text: display || text, voice: Boolean(options.voice) });
       setInput("");
       setChips(null);
+      if (gateRef.current && gateRef.current.stage !== "saving") {
+        gateAnswerRef.current && gateAnswerRef.current(text);
+        return;
+      }
       callTurn(text, undefined, options);
     },
     [busy, callTurn, pushItems]
@@ -366,6 +410,8 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
     setQueueTicket(null);
     setQueue({ state: "idle" });
     idemRef.current = null;
+    setLeadCaptured(false);
+    setGate(null);
     setItems([]);
     setChips(null);
     setReview({ submitting: false, error: "", success: null });
@@ -379,6 +425,91 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
     if (r.search) runSearch(stateRef.current, r.more);
     else if (r.message) callTurn(r.message);
     else if (r.action) callTurn(undefined, r.action);
+  };
+
+  const patchGate = useCallback((patch) => setGate((g) => (g ? { ...g, error: "", ...patch } : g)), []);
+  const say = useCallback((text) => speakReply({ speech: text }), [speakReply]);
+  const showBot = useCallback((text) => pushItems({ id: uid(), type: "bot", text, kind: "question" }), [pushItems]);
+
+  const gateToConfirm = (phone) => {
+    patchGate({ stage: "confirm", phone });
+    const spoken = phone.split("").join(" ");
+    showBot(`I have ${phone.slice(0, 5)} ${phone.slice(5)}. Is that correct?`);
+    say(`I have ${spoken}. Is that correct? Say yes, or tap edit to change it.`);
+  };
+
+  const continuePhone = () => {
+    const g = gateRef.current;
+    if (!g) return;
+    if (!/^[6-9]\d{9}$/.test(g.phone)) return patchGate({ error: "Enter a valid 10-digit Indian mobile number." });
+    gateToConfirm(g.phone);
+  };
+
+  // Typed or spoken replies while the number card is open stay local to the card.
+  gateAnswerRef.current = (text) => {
+    const g = gateRef.current;
+    if (!g) return;
+    const digits = spokenDigits(text);
+    if (digits.length >= 6) {
+      if (/^[6-9]\d{9}$/.test(digits)) return gateToConfirm(digits);
+      const msg = "That doesn't look like a 10-digit mobile number. Please say or type it again.";
+      patchGate({ error: msg, stage: g.stage === "confirm" ? "ask" : g.stage });
+      showBot(msg);
+      return say(msg);
+    }
+    if (g.stage === "confirm" || g.stage === "edit") {
+      if (YES_RE.test(text.trim()) && g.stage === "confirm") return void confirmGateRef.current && confirmGateRef.current();
+      if (NO_RE.test(text.trim())) {
+        patchGate({ stage: "edit" });
+        const msg = "Sure — tell me the correct number, or edit it on the card. You can also add your name.";
+        showBot(msg);
+        return say(msg);
+      }
+      const nm = text.replace(/^(my name is|i am|i'm|name is|mera naam)\s+/i, "").replace(/[^A-Za-zऀ-ॿ .'-]/g, "").trim();
+      if (nm.length >= 2) {
+        patchGate({ name: nm.slice(0, 60), stage: "confirm" });
+        const msg = `Thanks ${nm.split(" ")[0]}. Is the number ${g.phone.slice(0, 5)} ${g.phone.slice(5)} correct?`;
+        showBot(msg);
+        return say(msg);
+      }
+    }
+    const msg = "Please say or type your 10-digit mobile number.";
+    showBot(msg);
+    say(msg);
+  };
+
+  const confirmGate = async () => {
+    const g = gateRef.current;
+    if (!g || g.saving) return;
+    patchGate({ saving: true });
+    if (!idemRef.current) idemRef.current = newIdempotencyKey();
+    const contact = { phone: g.phone, ...(g.name.trim() ? { name: g.name.trim() } : {}) };
+    const next = { ...(g.state || stateRef.current || {}), contact };
+    try {
+      await consultantApi.lead({ state: next, contact, consent: true, idempotencyKey: idemRef.current });
+    } catch (err) {
+      patchGate({ saving: false, error: err.message });
+      say("Sorry, I couldn't save that. Please try again.");
+      return;
+    }
+    setLeadCaptured(true);
+    capturedRef.current = true;
+    setGate(null);
+    setItems((prev) => prev.filter((it) => it.type !== "leadgate"));
+    setConvState(next);
+    stateRef.current = next;
+    pushItems({ id: uid(), type: "bot", text: `Thanks! Saved +91 ${g.phone}. Finding your properties now…`, kind: "info" });
+    say("Thank you. Finding your properties now.");
+    runSearch(next, false);
+  };
+  const confirmGateRef = useRef(null);
+  confirmGateRef.current = confirmGate;
+
+  const saveGateEdit = () => {
+    const g = gateRef.current;
+    if (!g) return;
+    if (!/^[6-9]\d{9}$/.test(g.phone)) return patchGate({ error: "Enter a valid 10-digit Indian mobile number." });
+    patchGate({ stage: "confirm" });
   };
 
   const submitEnquiry = async () => {
@@ -510,8 +641,8 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
 
   const persistConversation = useCallback(() => {
     if (!convState) return;
-    saveStore({ state: convState, ui, chips, idem: idemRef.current, success: review.success, basicMode, items: items.filter((it) => it.type !== "typing" && it.type !== "scanner").slice(-MAX_ITEMS) });
-  }, [convState, ui, chips, review.success, basicMode, items]);
+    saveStore({ state: convState, ui, chips, idem: idemRef.current, success: review.success, basicMode, leadCaptured, items: items.filter((it) => it.type !== "typing" && it.type !== "scanner" && it.type !== "leadgate").slice(-MAX_ITEMS) });
+  }, [convState, ui, chips, review.success, basicMode, leadCaptured, items]);
 
   const close = (reason) => {
     leaveVoiceQueue();
@@ -771,6 +902,8 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
                       <div className="gai-disclaimer">Distances are approx. straight-line estimates from listing partners and map data — not road distances. “n/a” means not verified yet.</div>
                     </React.Fragment>
                   );
+                if (it.type === "leadgate")
+                  return gate ? <LeadGateCard key={it.id} gate={gate} onChange={patchGate} onContinue={continuePhone} onConfirm={confirmGate} onEdit={() => patchGate({ stage: "edit" })} onSave={saveGateEdit} /> : null;
                 if (it.type === "review")
                   return (
                     <ReviewCard

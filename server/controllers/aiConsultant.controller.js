@@ -160,8 +160,8 @@ exports.createEnquiry = async (req, res) => {
     if (consent !== true) return bad(res, 400, "Please tick the consent box to submit.", "CONSENT_REQUIRED");
     if (typeof idempotencyKey !== "string" || !/^[A-Za-z0-9_-]{16,80}$/.test(idempotencyKey)) return bad(res, 400, "Invalid submission key.");
 
-    const existing = await AiConsultantLead.findOne({ idempotencyKey }).select("leadRef status language").lean();
-    if (existing) return res.json({ success: true, duplicate: true, leadRef: existing.leadRef, status: existing.status, ...submittedReply(existing.language, existing.leadRef, true) });
+    const existing = await AiConsultantLead.findOne({ idempotencyKey }).select("leadRef status language stage").lean();
+    if (existing && existing.stage !== "captured") return res.json({ success: true, duplicate: true, leadRef: existing.leadRef, status: existing.status, ...submittedReply(existing.language, existing.leadRef, true) });
 
     const payload = engine.buildLeadPayload(state);
     const contact = payload.contact;
@@ -179,6 +179,38 @@ exports.createEnquiry = async (req, res) => {
       .slice(-40)
       .filter((t) => t && (t.role === "user" || t.role === "assistant") && typeof t.text === "string")
       .map((t) => ({ role: t.role, text: t.text.slice(0, 600) }));
+
+    const consentDoc = { given: true, text: bank.slots.review.consentText[lang] || bank.slots.review.consentText.en, at: new Date() };
+    if (existing) {
+      // Upgrade the lead captured before the search into the full reviewed request.
+      const upgraded = await AiConsultantLead.findOneAndUpdate(
+        { idempotencyKey, stage: "captured" },
+        {
+          $set: {
+            stage: "enquiry",
+            userId: req.user?._id || null,
+            mode: payload.mode || null,
+            requirements: payload.requirements,
+            summaryText: payload.summaryText,
+            contact: { name: contact.name, phone: contact.phone, email: contact.email || "" },
+            consent: consentDoc,
+            matches,
+            language: lang,
+            aiAssisted: payload.aiAssisted,
+            transcript: cleanTranscript,
+            status: assigned.length ? "assigned" : "pending_assignment",
+            assignedPartners: assigned,
+            assignment: assigned.length ? { by: "auto", at: new Date() } : { by: null, at: null },
+          },
+          $push: { followUps: { at: new Date(), byType: "system", status: assigned.length ? "assigned" : "pending_assignment", note: "Visitor reviewed and submitted the full request." } },
+        },
+        { new: true }
+      ).lean();
+      if (upgraded) {
+        bump(["enquiries"]);
+        return res.status(201).json({ success: true, leadRef: upgraded.leadRef, status: upgraded.status, matches: matches.length, ...submittedReply(lang, upgraded.leadRef, false) });
+      }
+    }
 
     let lead;
     try {
@@ -212,6 +244,58 @@ exports.createEnquiry = async (req, res) => {
   } catch (err) {
     console.error("aiConsultant.createEnquiry failed:", err.message);
     bad(res, 500, "We couldn't submit your request. Your details are still here — please try again.");
+  }
+};
+
+/**
+ * Guest phone capture: before the first property search the assistant confirms the
+ * visitor's mobile number (and optional name) and saves it as a lead right away.
+ * The same idempotency key is reused by the later full enquiry, which upgrades it.
+ */
+exports.captureLead = async (req, res) => {
+  try {
+    const { state, contact, idempotencyKey, consent } = req.body || {};
+    if (typeof idempotencyKey !== "string" || !/^[A-Za-z0-9_-]{16,80}$/.test(idempotencyKey)) return bad(res, 400, "Invalid submission key.");
+    const phone = String(contact?.phone || "").replace(/\D/g, "").replace(/^(91|0)(?=\d{10}$)/, "");
+    if (!/^[6-9]\d{9}$/.test(phone)) return bad(res, 400, "Please enter a valid 10-digit mobile number.", "PHONE_INVALID");
+    const name = String(contact?.name || "").replace(/[^A-Za-zऀ-ॿ .'-]/g, "").trim().slice(0, 60);
+
+    const existing = await AiConsultantLead.findOne({ idempotencyKey }).select("leadRef stage").lean();
+    const payload = engine.buildLeadPayload({ ...(state || {}), contact: { name: name || "Guest", phone } });
+    const lang = payload.language;
+    const consentText = bank.slots.review.consentText[lang] || bank.slots.review.consentText.en;
+    const fields = {
+      userId: req.user?._id || null,
+      mode: payload.mode || null,
+      requirements: payload.requirements,
+      summaryText: payload.summaryText,
+      contact: { name: name || "Guest", phone, email: "" },
+      language: lang,
+      aiAssisted: payload.aiAssisted,
+    };
+
+    if (existing) {
+      // Re-confirmation (e.g. the visitor edited the number): refresh the captured lead.
+      if (existing.stage === "captured") await AiConsultantLead.updateOne({ idempotencyKey }, { $set: fields });
+      else await AiConsultantLead.updateOne({ idempotencyKey }, { $set: { "contact.name": fields.contact.name, "contact.phone": phone } });
+      return res.json({ success: true, leadRef: existing.leadRef });
+    }
+
+    const lead = await AiConsultantLead.create({
+      leadRef: newLeadRef(),
+      idempotencyKey,
+      ...fields,
+      stage: "captured",
+      consent: { given: consent !== false, text: consentText, at: new Date() },
+      status: "pending_assignment",
+      followUps: [{ byType: "system", status: "pending_assignment", note: "Phone number confirmed by the visitor in the AI assistant before searching." }],
+    });
+    bump(["leads_captured"]);
+    res.status(201).json({ success: true, leadRef: lead.leadRef });
+  } catch (err) {
+    if (err && err.code === 11000) return res.json({ success: true });
+    console.error("aiConsultant.captureLead failed:", err.message);
+    bad(res, 500, "We couldn't save your number just now. Please try again.");
   }
 };
 
@@ -345,6 +429,7 @@ function partnerView(lead, agentId) {
     matches: lead.matches,
     language: lead.language,
     status: lead.status,
+    stage: lead.stage,
     createdAt: lead.createdAt,
     assignedToMe: mine,
     slotsLeft: Math.max(0, MAX_PARTNERS - (lead.assignedPartners || []).length),

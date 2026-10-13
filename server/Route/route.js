@@ -363,6 +363,7 @@ router.get("/api/ai-consultant/config", aiConsultant.getConfig);
 router.post("/api/ai-consultant/turn", aiTurnLimiter, aiConsultant.turn);
 router.post("/api/ai-consultant/search", aiSearchLimiter, aiConsultant.search);
 router.post("/api/ai-consultant/enquiry", verifyTokenOptional, guestFormLimiter, aiConsultant.createEnquiry);
+router.post("/api/ai-consultant/lead", verifyTokenOptional, guestFormLimiter, aiConsultant.captureLead);
 router.post("/api/ai-consultant/metric", aiTurnLimiter, aiConsultant.metric);
 router.get("/api/admin/ai-consultant/leads", verifyToken, checkAdminEmail, aiConsultant.adminListLeads);
 router.patch("/api/admin/ai-consultant/leads/:id", verifyToken, checkAdminEmail, aiConsultant.adminUpdateLead);

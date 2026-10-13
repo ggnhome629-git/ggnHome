@@ -51,6 +51,13 @@ function micErrorCode(error) {
   return "failed";
 }
 
+/** True when what the mic heard is mostly the assistant's own voice coming back through the speakers. */
+function isEcho(heard, spoken) {
+  const h = normalise(heard).split(" ").filter(Boolean);
+  if (!h.length) return true;
+  const pool = new Set(normalise(spoken).split(" "));
+  return h.filter((w) => pool.has(w)).length / h.length >= 0.6;
+}
 const normalise = (text) => String(text || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 const newId = () => `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 
@@ -108,6 +115,8 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
   const agentRef = useRef(null);
   const recRef = useRef(null);
   const recActiveRef = useRef(false);
+  const spokenRef = useRef("");
+  const interruptRef = useRef(null);
   const pendingRef = useRef(new Map()); // id -> { resolve, timer }
   const lastTranscriptRef = useRef({ text: "", at: 0 });
   const thinkingTimerRef = useRef(null);
@@ -240,6 +249,12 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
         if (r.isFinal) final += r[0].transcript;
         else interim += r[0].transcript;
       }
+      // The visitor talks over the assistant: ignore our own voice, otherwise stop speaking and listen.
+      if (phaseRef.current === "speaking") {
+        const heard = (final || interim).trim();
+        if (!heard || isEcho(heard, spokenRef.current)) return;
+        interruptRef.current && interruptRef.current();
+      }
       if (final.trim()) {
         try {
           rec.stop();
@@ -281,7 +296,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
   const [loopTick, setLoopTick] = useState(0);
   useEffect(() => {
     if (activeEngine !== "browser" || !activeRef.current) return undefined;
-    const canListen = (phase === "listening" || phase === "hearing") && !holdRef.current && !muted;
+    const canListen = (phase === "listening" || phase === "hearing" || phase === "speaking") && !holdRef.current && !muted;
     if (!canListen) {
       stopRecognition();
       return undefined;
@@ -310,7 +325,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
           resolve({ spoken: false });
           return;
         }
-        stopRecognition();
+        spokenRef.current = clean;
         const id = newId();
         const utterance = new SpeechSynthesisUtterance(clean);
         utterance.lang = cbRef.current.speechLang || "en-IN";
@@ -339,7 +354,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
         window.speechSynthesis.cancel();
         window.speechSynthesis.speak(utterance);
       }),
-    [afterSpeech, setPhase, settle, stopRecognition]
+    [afterSpeech, setPhase, settle]
   );
 
   /* --------------------------------------------------------- LiveKit engine */
@@ -361,6 +376,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
           resolve({ spoken: false });
           return;
         }
+        spokenRef.current = clean;
         const id = newId();
         const timer = setTimeout(() => {
           settle(id, { spoken: true, timeout: true });
@@ -498,6 +514,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
           } else if (message.status === "stt_error") setNotice("I couldn't catch that — please say it again.");
           break;
         case "user_state":
+          if (message.state === "speaking" && phaseRef.current === "speaking") interruptRef.current && interruptRef.current();
           if (message.state === "speaking" && phaseRef.current === "listening") setPhase("hearing");
           if (message.state === "listening" && phaseRef.current === "hearing") setPhase("listening");
           break;
@@ -773,6 +790,8 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
     settleAll({ spoken: true, interrupted: true });
     if (activeRef.current) setPhase("listening");
   }, [activeEngine, publish, setPhase, settleAll]);
+
+  interruptRef.current = interrupt;
 
   const applyMic = useCallback(() => {
     const room = roomRef.current;

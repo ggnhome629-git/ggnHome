@@ -364,4 +364,20 @@ async function findListing(id, listingType) {
   return Model.findOne({ _id: id, ...baseFilter() }).select(listingType === "sale" ? SALE_FIELDS : RENTAL_FIELDS).lean();
 }
 
-module.exports = { search, diagnose, buildQuery, scoreListing, cardFor, findListing, WEIGHTS, PAGE_SIZE };
+/** Average / typical price of live listings in the requested location (and BHK, when given). */
+async function marketStats(req) {
+  const mode = req.mode === "sale" ? "sale" : "rent";
+  const field = priceField(mode);
+  const match = { ...baseFilter(), [field]: { $gt: 0 } };
+  const loc = locationClause(req);
+  if (loc) Object.assign(match, loc);
+  const bhk = bhkClause(req);
+  if (bhk) Object.assign(match, bhk);
+  const rows = await modelFor(mode).find(match).select(field).limit(2000).lean();
+  const prices = rows.map((r) => Number(r[field])).filter((n) => n > 0).sort((a, b) => a - b);
+  if (prices.length < 3) return { mode, count: prices.length };
+  const at = (q) => prices[Math.min(prices.length - 1, Math.floor(q * prices.length))];
+  return { mode, count: prices.length, avg: prices.reduce((a, b) => a + b, 0) / prices.length, min: at(0.1), max: at(0.9) };
+}
+
+module.exports = { marketStats, search, diagnose, buildQuery, scoreListing, cardFor, findListing, WEIGHTS, PAGE_SIZE };

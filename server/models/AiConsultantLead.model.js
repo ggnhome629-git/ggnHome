@@ -92,6 +92,8 @@ const aiConsultantLeadSchema = new mongoose.Schema(
       type: [{ _id: false, role: { type: String, enum: ["user", "assistant"] }, text: { type: String, maxlength: 600 } }],
       default: [],
     },
+    // "captured": phone confirmed by a guest before the property search; "enquiry": full reviewed request.
+    stage: { type: String, enum: ["captured", "enquiry"], default: "enquiry", index: true },
     status: { type: String, enum: STATUSES, default: "submitted", index: true },
     assignedPartners: [{ type: mongoose.Schema.Types.ObjectId, ref: "Agent", index: true }],
     assignment: {

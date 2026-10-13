@@ -67,6 +67,7 @@ export const consultantApi = {
   leaveVoiceQueue: (ticket, options) => post("/api/ai-consultant/voice-queue/leave", { ticket }, options),
   turn: (state, message, action, disableLLM = false) => post("/api/ai-consultant/turn", { state, message, action, disableLLM }),
   search: (state, more = false) => post("/api/ai-consultant/search", { state, more }, { timeoutMs: 25000 }),
+  lead: (payload) => post("/api/ai-consultant/lead", payload, { auth: true }),
   enquiry: (payload) => post("/api/ai-consultant/enquiry", payload, { auth: true }),
   metric: (name) => post("/api/ai-consultant/metric", { name }).catch(() => {}),
 };

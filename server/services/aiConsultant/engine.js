@@ -788,6 +788,25 @@ async function handleTurn({ state: rawState, message, action, disableLLM = false
     messages.push({ text: d.text, listing: d.listing, chips: chips(resultsChipsFor(s), lang), kind: "listing" });
     return { state: s, messages, next: null, ui: ui(s) };
   }
+  if (hasIntent("marketRate") && !parsed.budgetMax && !parsed.budgetMin) {
+    const req = { ...s.req, mode: parsed.mode || s.req.mode || "rent" };
+    if (parsed.sectors || parsed.localities) {
+      req.sectors = parsed.sectors || [];
+      req.localities = parsed.localities || [];
+      req.anywhere = false;
+    }
+    if (!req.anywhere && !(req.sectors || []).length && !(req.localities || []).length) {
+      messages.push({ text: say(bank.responses.marketRate.askLocation, lang, s.turn), kind: "question" });
+      return { state: s, messages, next: null, ui: ui(s) };
+    }
+    const stats = await matcher.marketStats(req);
+    const location = fmt.formatLocation(req, lang);
+    const text = stats.avg
+      ? say(bank.responses.marketRate[stats.mode === "sale" ? "sale" : "rent"], lang, s.turn, { count: stats.count, location, avg: fmt.rupees(stats.avg), min: fmt.rupees(stats.min), max: fmt.rupees(stats.max) })
+      : say(bank.responses.marketRate.none, lang, s.turn, { location });
+    next = reAsk(s, messages, text);
+    return { state: s, messages, next, ui: ui(s) };
+  }
   if (hasIntent("moreResults") && (s.phase === "results" || s.phase === "done") && parsed.fieldCount === 0) {
     s.offset += matcher.PAGE_SIZE;
     return { state: s, messages, next: "searchMore", ui: ui(s) };

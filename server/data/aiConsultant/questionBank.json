@@ -3114,6 +3114,29 @@
           "ज़रूर!"
         ]
       }
+    },
+    "marketRate": {
+      "priority": 58,
+      "patterns": [
+        "\\b(average|avg|typical|usual|normal|going|market|approx)\\b.*\\b(rent|rental|price|rate|cost)\\b",
+        "\\b(rent|price|rate|cost)\\b.*\\b(average|avg|typically|usually|generally|normally)\\b",
+        "\\bhow much\\b.*\\b(rent|rents|cost|costs|price)\\b.*\\b(there|that|here|area|place|sector|road)\\b",
+        "\\b(rent|rate|price|bhaav|kiraya|kiraaya)\\b.*\\b(kitna|kya chal raha|kya hai)\\b.*\\b(wahan|yahan|us|is)\\b",
+        "\\b(average|avg|aam)\\b.*\\b(kiraya|kiraaya|rent|daam)\\b",
+        "औसत.*(किराया|किराये|दाम|कीमत)",
+        "(किराया|दाम|कीमत).*औसत"
+      ],
+      "reply": {
+        "en": [
+          "Here's what live listings show."
+        ],
+        "hinglish": [
+          "Live listings ke hisaab se ye hai."
+        ],
+        "hi": [
+          "लाइव लिस्टिंग के अनुसार यह है।"
+        ]
+      }
     }
   },
   "answers": {
@@ -5241,6 +5264,52 @@
       "hi": [
         "आपने सब कुछ बता दिया है — ये आपके सबसे व्यक्तिगत मिलान हैं।"
       ]
+    },
+    "marketRate": {
+      "rent": {
+        "en": [
+          "Across {count} live rental listings in {location}, the average rent is about {avg}/month (most are between {min} and {max}). It varies with size and furnishing."
+        ],
+        "hinglish": [
+          "{location} mein {count} live rental listings ka average rent lagbhag {avg}/month hai (zyada-tar {min} se {max} ke beech). Size aur furnishing ke hisaab se badalta hai."
+        ],
+        "hi": [
+          "{location} में {count} लाइव किराये की लिस्टिंग का औसत किराया लगभग {avg}/माह है (ज़्यादातर {min} से {max} के बीच)। यह साइज़ और फ़र्निशिंग पर निर्भर करता है।"
+        ]
+      },
+      "sale": {
+        "en": [
+          "Across {count} live sale listings in {location}, the average asking price is about {avg} (most are between {min} and {max})."
+        ],
+        "hinglish": [
+          "{location} mein {count} live sale listings ka average asking price lagbhag {avg} hai (zyada-tar {min} se {max} ke beech)."
+        ],
+        "hi": [
+          "{location} में {count} लाइव बिक्री लिस्टिंग का औसत मूल्य लगभग {avg} है (ज़्यादातर {min} से {max} के बीच)।"
+        ]
+      },
+      "none": {
+        "en": [
+          "I don't have enough live listings in {location} to quote an average yet. Share your budget and I'll show real options."
+        ],
+        "hinglish": [
+          "{location} mein average batane ke liye abhi kaafi live listings nahi hain. Apna budget batayein, main asli options dikhaunga."
+        ],
+        "hi": [
+          "{location} का औसत बताने के लिए अभी पर्याप्त लाइव लिस्टिंग नहीं हैं। अपना बजट बताइए, मैं असली विकल्प दिखाऊँगा।"
+        ]
+      },
+      "askLocation": {
+        "en": [
+          "Which area or sector should I check the average for?"
+        ],
+        "hinglish": [
+          "Kis area ya sector ka average dekhna hai?"
+        ],
+        "hi": [
+          "किस इलाके या सेक्टर का औसत देखना है?"
+        ]
+      }
     }
   },
   "searchStages": [
