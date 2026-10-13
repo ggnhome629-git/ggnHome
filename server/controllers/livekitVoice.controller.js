@@ -77,8 +77,8 @@ exports.createToken = async (req, res) => {
 
   const queueTicket = req.body?.queueTicket;
   if (!voiceQueue.available()) return res.status(503).json({ success: false, code: "VOICE_QUEUE_UNAVAILABLE", message: "Real-time voice queue is unavailable. Please use the standard consultant." });
-  if (typeof queueTicket !== "string" || !/^[a-f0-9]{48}$/.test(queueTicket) || !(await voiceQueue.isActive(queueTicket))) {
-    return res.status(409).json({ success: false, code: "VOICE_QUEUE_RESERVATION_REQUIRED", message: "Join the voice queue and wait until your turn before starting real-time voice." });
+  if (typeof queueTicket !== "string" || !/^[a-f0-9]{48}$/.test(queueTicket) || !(await voiceQueue.claimToken(queueTicket))) {
+    return res.status(409).json({ success: false, code: "VOICE_QUEUE_RESERVATION_REQUIRED", message: "Join the voice queue and wait until your turn before starting real-time voice. A reservation can only start one session." });
   }
   await voiceQueue.heartbeat(queueTicket);
 
