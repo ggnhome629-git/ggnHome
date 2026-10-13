@@ -77,14 +77,9 @@ if (cloudAccounts.length === 0) {
   cloudinary.config(cloudAccounts[0]);
 }
 
-// Use one account by default: free accounts must not be treated as quota multipliers.
-// Multi-account rotation is available only as an explicit configuration choice.
-const uploadAccounts = process.env.CLOUDINARY_MULTI_ACCOUNT_UPLOADS_ENABLED === "true"
-  ? cloudAccounts
-  : cloudAccounts.slice(0, 1);
-if (cloudAccounts.length > 1 && uploadAccounts.length === 1) {
-  console.warn("[Cloudinary] Multiple accounts configured; using primary account only unless CLOUDINARY_MULTI_ACCOUNT_UPLOADS_ENABLED=true.");
-}
+// Free-tier-safe mode: only the primary account is used. Additional free
+// accounts are not treated as quota multipliers.
+const uploadAccounts = cloudAccounts.slice(0, 1);
 let rrIndex = 0;
 const getNextStartIndex = () => {
   const idx = rrIndex;
