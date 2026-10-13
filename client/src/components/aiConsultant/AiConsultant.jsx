@@ -80,12 +80,13 @@ export default function AiConsultant({ open, onClose }) {
   const [selected, setSelected] = useState([]);
   const [busy, setBusy] = useState(false);
   const [input, setInput] = useState("");
-  // Hands-free voice: the mic opens by itself after each reply (once spoken)
-  // and closes by itself when the user stops talking. Defaults on wherever
-  // the browser supports speech recognition.
-  const speechCapable = typeof window !== "undefined" && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
-  const [handsFree, setHandsFree] = useState(speechCapable);
-  const [voiceOut, setVoiceOut] = useState(speechCapable);
+  // Voice is deliberately opt-in: permission prompts must follow a clear user
+  // action, and the first greeting must not compete with a browser permission dialog.
+  const [handsFree, setHandsFree] = useState(false);
+  const [voiceOut, setVoiceOut] = useState(false);
+  const [audioPermission, setAudioPermission] = useState("idle");
+  const [voiceSessionStarted, setVoiceSessionStarted] = useState(false);
+  const [voiceSetupError, setVoiceSetupError] = useState("");
   const [speechPending, setSpeechPending] = useState(false);
   const [typing, setTyping] = useState(false);
   const silenceRef = useRef(0);
@@ -380,7 +381,49 @@ export default function AiConsultant({ open, onClose }) {
     if ((busy || typing || !open || !handsFree) && micOn) micStop();
   }, [busy, typing, open, handsFree, micOn, micStop]);
 
+  const enableMicrophone = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setVoiceSetupError("This browser can't request microphone access here. Use HTTPS or type your message instead.");
+      return;
+    }
+    setAudioPermission("requesting");
+    setVoiceSetupError("");
+    try {
+      const permissionStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      permissionStream.getTracks().forEach((track) => track.stop());
+      setAudioPermission("granted");
+    } catch (error) {
+      setAudioPermission("denied");
+      setVoiceSetupError(error?.name === "NotAllowedError"
+        ? "Microphone access was blocked. Allow it in your browser's site settings, then try again."
+        : "Couldn't access the microphone. Check that it's connected and not being used exclusively by another app.");
+    }
+  };
+
+  const startVoiceSession = () => {
+    if (audioPermission !== "granted" || !recognition.supported) return;
+    setVoiceSessionStarted(true);
+    setVoiceNote("");
+    setVoiceOut(Boolean(tts.supported));
+    setHandsFree(Boolean(recognition.supported));
+    setTyping(false);
+    setSpeechPending(Boolean(tts.supported));
+    const greeting = [...items].reverse().find((item) => item.type === "bot" && item.text);
+    const releaseMic = () => setSpeechPending(false);
+    if (greeting && tts.supported) {
+      const safety = setTimeout(releaseMic, 15000);
+      tts.speak(greeting.text, ui?.speechLang || "en-IN", () => {
+        clearTimeout(safety);
+        releaseMic();
+      });
+    } else {
+      releaseMic();
+    }
+    consultantApi.metric("voice_input_used");
+  };
+
   const toggleMic = () => {
+    if (!voiceSessionStarted) return;
     setVoiceNote("");
     if (!recognition.supported) {
       setVoiceNote(VOICE_COPY.unsupported);
@@ -565,6 +608,34 @@ export default function AiConsultant({ open, onClose }) {
         <div className="gai-body">
           <div className="gai-stream" ref={streamRef}>
             <div className="gai-stream-inner" aria-live="polite" aria-relevant="additions">
+              {!voiceSessionStarted && (
+                <section className="gai-voice-stage" aria-label="Set up voice assistant">
+                  <div className="gai-voice-stage-orb"><Bot size={28} /></div>
+                  <p className="gai-voice-eyebrow">VOICE PROPERTY ASSISTANT</p>
+                  <h2>{audioPermission === "granted" ? "Ready when you are" : "Let's get your voice ready"}</h2>
+                  <p className="gai-voice-description">
+                    {audioPermission === "granted"
+                      ? "Your microphone is ready. Start the conversation when you're comfortable — we'll speak the greeting first, then listen."
+                      : "First allow microphone access. We won't start listening or speak over the browser permission prompt."}
+                  </p>
+                  {audioPermission !== "granted" ? (
+                    <button type="button" className="gai-voice-primary" onClick={enableMicrophone} disabled={audioPermission === "requesting" || !recognition.supported}>
+                      <Mic size={20} />
+                      {audioPermission === "requesting" ? "Waiting for permission…" : "Enable microphone"}
+                    </button>
+                  ) : (
+                    <button type="button" className="gai-voice-primary" onClick={startVoiceSession} disabled={!recognition.supported}>
+                      <Mic size={20} />
+                      Start voice conversation
+                    </button>
+                  )}
+                  {!recognition.supported && (
+                    <p className="gai-voice-error">Voice recognition isn't supported by this browser. You can still use the text chat below.</p>
+                  )}
+                  {voiceSetupError ? <p className="gai-voice-error" role="alert">{voiceSetupError}</p> : null}
+                  <p className="gai-voice-footnote">Your microphone is used only after you choose to start. You can pause it anytime.</p>
+                </section>
+              )}
               {items.map((it, i) => {
                 if (it.type === "user")
                   return (
@@ -683,7 +754,7 @@ export default function AiConsultant({ open, onClose }) {
               send(input);
             }}
           >
-            <button type="button" className={`gai-mic${recognition.listening ? " listening" : ""}${recognition.supported && handsFree ? "" : " unsupported"}`} onClick={toggleMic} aria-pressed={handsFree} aria-label={handsFree ? "Pause hands-free voice" : "Turn on hands-free voice"} title={!recognition.supported ? "Voice not supported in this browser" : handsFree ? "Hands-free voice is on — tap to pause" : "Tap to talk hands-free"}>
+            <button type="button" className={`gai-mic${recognition.listening ? " listening" : ""}${recognition.supported && handsFree ? "" : " unsupported"}`} onClick={toggleMic} disabled={!voiceSessionStarted} aria-pressed={handsFree} aria-label={handsFree ? "Pause hands-free voice" : "Turn on hands-free voice"} title={!voiceSessionStarted ? "Enable microphone and start the voice conversation above" : !recognition.supported ? "Voice not supported in this browser" : handsFree ? "Hands-free voice is on — tap to pause" : "Tap to talk hands-free"}>
               {recognition.supported && handsFree ? <Mic size={22} /> : <MicOff size={20} />}
             </button>
             <div className="gai-input-wrap">
