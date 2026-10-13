@@ -137,12 +137,19 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
   useEffect(() => {
     let cancelled = false;
     const browserOk = Boolean(Recognition) && synthesisSupported;
-    fetchJson("/api/ai-consultant/livekit/config", { credentials: "omit", timeoutMs: 8000 })
+    // A sleeping free-tier server can take ~50s to answer. Offer browser voice
+    // meanwhile, and switch to real-time voice once the server reports in.
+    const provisional = setTimeout(() => {
+      if (!cancelled) setEngine((e) => (e === "checking" ? (browserOk ? "browser" : "none") : e));
+    }, 6000);
+    fetchJson("/api/ai-consultant/livekit/config", { credentials: "omit", timeoutMs: 70000 })
       .then(({ ok, data }) => {
         if (cancelled) return;
-        setEngine(ok && data.enabled === true ? "livekit" : browserOk ? "browser" : "none");
+        const next = ok && data.enabled === true ? "livekit" : browserOk ? "browser" : "none";
+        if (!activeRef.current) setEngine(next);
       })
-      .catch(() => !cancelled && setEngine(browserOk ? "browser" : "none"));
+      .catch(() => !cancelled && setEngine((e) => (e === "checking" ? (browserOk ? "browser" : "none") : e)))
+      .finally(() => clearTimeout(provisional));
     if (navigator.permissions?.query) {
       navigator.permissions
         .query({ name: "microphone" })
@@ -157,6 +164,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
     if (!navigator.mediaDevices?.getUserMedia) setPermission("unavailable");
     return () => {
       cancelled = true;
+      clearTimeout(provisional);
     };
   }, []);
 
@@ -480,8 +488,12 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
     room.startAudio().catch(() => {});
 
     let tokenResult;
+    const wakeNote = setTimeout(() => {
+      if (activeRef.current && phaseRef.current === "connecting") setNotice("Waking up the voice service — the first call can take up to a minute.");
+    }, 5000);
     try {
       tokenResult = await fetchJson("/api/ai-consultant/livekit/token", {
+        timeoutMs: 70000,
         method: "POST",
         credentials: "omit",
         headers: { "Content-Type": "application/json" },
@@ -490,6 +502,8 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
     } catch (_) {
       tokenResult = { ok: false, data: {} };
     }
+    clearTimeout(wakeNote);
+    setNotice("");
     if (!activeRef.current) return;
     if (!tokenResult.ok || !tokenResult.data?.token) {
       await teardownRoom();

@@ -1,4 +1,4 @@
-import React, { createContext, lazy, Suspense, useCallback, useContext, useMemo, useRef, useState } from "react";
+import React, { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { consultantApi } from "./consultantApi";
 
 const AiConsultant = lazy(() => import("./AiConsultant"));
@@ -15,6 +15,12 @@ const AiConsultantContext = createContext({
  * conversation and any voice session survive page navigation.
  */
 export function AiConsultantProvider({ children }) {
+  // Free-tier hosting sleeps when idle: wake the API as soon as the site loads,
+  // so the consultant (and voice) answer quickly when the visitor opens it.
+  useEffect(() => {
+    const base = process.env.REACT_APP_Base_API || "";
+    fetch(`${base}/api/ai-consultant/livekit/config`, { credentials: "omit" }).catch(() => {});
+  }, []);
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [minimized, setMinimized] = useState(false);

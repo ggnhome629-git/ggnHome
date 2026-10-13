@@ -91,6 +91,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   const busyRef = useRef(false);
   const queuedTranscriptRef = useRef(null);
   const sendRef = useRef(null);
+  const stageVisibleRef = useRef(false);
   const [aiAvailable, setAiAvailable] = useState(null);
   const [review, setReview] = useState({ submitting: false, error: "", success: persisted?.success || null });
   const idemRef = useRef(persisted?.idem || null);
@@ -121,6 +122,14 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   const voiceRef = useRef(voice);
   voiceRef.current = voice;
 
+  // While the centered voice card is showing, keep it in view instead of
+  // auto-scrolling past it to the newest message.
+  const stageVisible = !stageDismissed && !voice.active;
+  stageVisibleRef.current = stageVisible;
+  useEffect(() => {
+    if (stageVisible && streamRef.current) streamRef.current.scrollTo({ top: 0, behavior: "auto" });
+  }, [stageVisible, items, chips]);
+
   // Persist the conversation so closing and reopening continues it.
   useEffect(() => {
     if (!convState) return;
@@ -136,7 +145,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
 
   useEffect(() => {
     const el = streamRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    if (el && !stageVisibleRef.current) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [items, chips]);
 
   const pushItems = useCallback((...list) => setItems((prev) => [...prev, ...list].slice(-MAX_ITEMS)), []);
@@ -559,7 +568,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
         <div className="gai-body">
           <div className="gai-stream" ref={streamRef}>
             <div className="gai-stream-inner" aria-live="polite" aria-relevant="additions">
-              {!stageDismissed && !voice.active ? (
+              {stageVisible ? (
                 <VoiceStage voice={voice} onStart={startVoice} onTypeInstead={() => { setStageDismissed(true); setTimeout(() => inputRef.current && inputRef.current.focus(), 50); }} />
               ) : (
                 <div className="gai-voicebar-slot">
