@@ -25,6 +25,7 @@ const {
   aiSearchLimiter,
 } = require("../middleware/rateLimit");
 const aiConsultant = require("../controllers/aiConsultant.controller");
+const livekitVoice = require("../controllers/livekitVoice.controller");
 
 // Controllers
 const { requestOtp, verifyOtp, loginWithPassword, setPassword, checkMobile , setRecoveryEmail , changePasswordDirect } = require("../controllers/login.controller");
@@ -350,6 +351,8 @@ router.get("/api/chatbot/initial-questions", getInitialQuestions);
 // Rule-based consultant with optional Groq assistance. Conversation state is
 // held by the client and re-validated on every call; leads are written only
 // on a consented, idempotent submit.
+router.get("/api/ai-consultant/livekit/config", livekitVoice.getConfig);
+router.post("/api/ai-consultant/livekit/token", aiTurnLimiter, livekitVoice.createToken);
 router.get("/api/ai-consultant/config", aiConsultant.getConfig);
 router.post("/api/ai-consultant/turn", aiTurnLimiter, aiConsultant.turn);
 router.post("/api/ai-consultant/search", aiSearchLimiter, aiConsultant.search);
