@@ -110,6 +110,7 @@ async function ensureUnderLimit(srcPath, maxBytesTarget = NORMAL_MAX_BYTES) {
 // -------------------------
 async function uploadWithFallbackAgent(localPath, folder = 'agents', preferredIndex = null, subfolder = null) {
   if (!localPath) throw new Error('No localPath passed to uploadWithFallbackAgent');
+  if (!uploadAccounts.length) throw new Error('No agent Cloudinary account configured; upload paused.');
 
   const baseFolder = String(folder || 'agents').replace(/[^a-zA-Z0-9-_]/g, '_').substring(0,80);
   const extra = subfolder ? String(subfolder).replace(/[^a-zA-Z0-9-_]/g, '_').substring(0,80) : null;
