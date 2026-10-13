@@ -96,6 +96,10 @@ export default function LiveKitVoiceSession({ enabled = true, assistantText, onT
       room.on(RoomEvent.Disconnected, () => {
         if (roomRef.current === room) {
           roomRef.current = null;
+          if (micRef.current) {
+            micRef.current.stop();
+            micRef.current = null;
+          }
           updateStatus("idle");
         }
       });
