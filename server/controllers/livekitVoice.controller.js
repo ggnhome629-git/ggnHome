@@ -38,7 +38,7 @@ exports.createToken = async (req, res) => {
   try {
     // Keep the API secret on the server. Visitors receive a short-lived token
     // scoped to one randomly generated room, with no administrative grants.
-    const { AccessToken } = require("livekit-server-sdk");
+    const { AccessToken, LiveKitAPI } = require("livekit-server-sdk");
     const identity = `visitor_${crypto.randomBytes(10).toString("hex")}`;
     const roomName = `ggnhome-ai-${crypto.randomBytes(10).toString("hex")}`;
     const token = new AccessToken(apiKey, apiSecret, {
@@ -54,6 +54,17 @@ exports.createToken = async (req, res) => {
       canPublishData: true,
     });
     const jwt = await token.toJwt();
+
+    // Explicit dispatch is required because this worker uses a named agent.
+    // The room name is random per session, preventing room reuse across visitors.
+    const livekitApi = new LiveKitAPI(url, apiKey, apiSecret);
+    try {
+      await livekitApi.agentDispatch.createDispatch(roomName, "ggnhome-property-voice", {
+        metadata: JSON.stringify({ app: "ggnhome", role: "visitor" }),
+      });
+    } finally {
+      await livekitApi.close?.();
+    }
 
     res.set("Cache-Control", "no-store");
     return res.json({
