@@ -487,6 +487,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   }, [convState, ui, chips, review.success, items, basicMode]);
 
   const close = (reason) => {
+    leaveVoiceQueue();
     persistConversation();
     clearTimeout(autoSendRef.current);
     // Disconnect immediately; do not wait for an idle timeout.
@@ -495,6 +496,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   };
 
   const minimize = () => {
+    leaveVoiceQueue();
     persistConversation();
     clearTimeout(autoSendRef.current);
     // The full voice screen is closing. Keep the saved chat/preferences,
@@ -510,7 +512,8 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
     if (voiceRef.current.active || voiceRef.current.phase !== "off") {
       void voiceRef.current.end({ silent: true });
     }
-  }, [open, minimized, persistConversation]);
+    leaveVoiceQueue();
+  }, [open, minimized, persistConversation, leaveVoiceQueue]);
 
   /* ------------------------------------------------------------ render */
 
