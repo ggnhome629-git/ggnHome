@@ -14,6 +14,7 @@ const settings = () => ({
   maxActive: intEnv("VOICE_QUEUE_MAX_ACTIVE", 3, 1, 10),
   maxWaiting: intEnv("VOICE_QUEUE_MAX_WAITING", 50, 1, 100),
   leaseSeconds: intEnv("VOICE_QUEUE_LEASE_SECONDS", 90, 60, 300),
+  waitTtlSeconds: intEnv("VOICE_QUEUE_WAIT_TTL_SECONDS", 900, 120, 3600),
   prefix: String(process.env.VOICE_QUEUE_KEY_PREFIX || "ggnhome:voice:v1").replace(/[^a-zA-Z0-9:_-]/g, "").slice(0, 80),
 });
 const keys = () => {
@@ -44,6 +45,8 @@ const STATUS_SCRIPT = `
   local ticket = ARGV[2]
   local maxActive = tonumber(ARGV[3])
   local leaseUntil = now + tonumber(ARGV[4])
+  local waitingCutoff = now - tonumber(ARGV[5]) * 1000
+  redis.call('ZREMRANGEBYSCORE', KEYS[1], '-inf', waitingCutoff)
   redis.call('ZREMRANGEBYSCORE', KEYS[2], '-inf', now)
   while redis.call('ZCARD', KEYS[2]) < maxActive and redis.call('ZCARD', KEYS[1]) > 0 do
     local first = redis.call('ZRANGE', KEYS[1], 0, 0)
@@ -91,7 +94,7 @@ async function status(ticket) {
   const c = client();
   if (!c) return { available: false };
   const s = keys();
-  const result = await c.eval(STATUS_SCRIPT, 2, s.queueKey, s.activeKey, Date.now(), ticket, s.maxActive, s.leaseSeconds * 1000);
+  const result = await c.eval(STATUS_SCRIPT, 2, s.queueKey, s.activeKey, Date.now(), ticket, s.maxActive, s.leaseSeconds * 1000, s.waitTtlSeconds);
   const active = Number(result[0]) === 1;
   const rank = Number(result[1]);
   return {
