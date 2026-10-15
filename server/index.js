@@ -56,7 +56,7 @@ app.use((req, res, next) => {
 });
 
 // Health check (for uptime monitors / Render)
-app.get("/", (req, res) => {
+app.get(["/", "/health", "/healthz", "/api/health"], (req, res) => {
   res.json({
     status: "ok",
     service: "ggnHome API",
