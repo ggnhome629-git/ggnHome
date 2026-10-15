@@ -23,6 +23,8 @@ const isLocalDevOrigin = (origin) =>
 
 // Initialize Express
 const app = express();
+// Health check for uptime monitors (added by Stashr)
+app.get("/health", (req, res) => res.status(200).json({ status: "ok", uptime: process.uptime() }));
 app.set("trust proxy", 1); // Render sits behind a proxy; needed for real client IPs
 
 // Middleware
