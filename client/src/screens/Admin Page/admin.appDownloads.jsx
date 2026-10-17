@@ -2,7 +2,22 @@ import React, { useEffect, useState } from "react";
 import { Alert, Box, Button, Card, CardContent, CircularProgress, Stack, TextField, Typography } from "@mui/material";
 import { Download, ExternalLink, Save, Smartphone } from "lucide-react";
 
-const API = process.env.REACT_APP_Base_API;
+const API = process.env.REACT_APP_Base_API || "";
+const authHeaders = (extra = {}) => {
+  let token = "";
+  try {
+    token = localStorage.getItem("accessToken") || localStorage.getItem("token") || "";
+  } catch (_) {
+    // Cookie authentication can still work when browser storage is unavailable.
+  }
+  return {
+    ...extra,
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+const readJson = async (response) => {
+  try { return await response.json(); } catch (_) { return {}; }
+};
 const DEFAULT_APPS = [
   { key: "ggnhome", name: "GgnHome", description: "Main GgnHome Android app", url: "", version: "" },
   { key: "partner", name: "GgnHome-Partner", description: "Partner portal Android app", url: "", version: "" },
@@ -19,9 +34,20 @@ export default function AdminAppDownloads() {
   async function load() {
     setLoading(true); setError("");
     try {
-      const response = await fetch(`${API}/api/admin/app-downloads`, { credentials: "include" });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Could not load app links.");
+      const response = await fetch(`${API}/api/admin/app-downloads`, {
+        credentials: "include",
+        headers: authHeaders({ Accept: "application/json" }),
+      });
+      const data = await readJson(response);
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Your admin session is missing or expired. Please sign in again, then reopen App Downloads.");
+        }
+        if (response.status === 403) {
+          throw new Error("This account does not have permission to manage APK links.");
+        }
+        throw new Error(data.message || "Could not load app links.");
+      }
       setApps(DEFAULT_APPS.map(base => ({ ...base, ...(data.find(x => x.key === base.key) || {}) })));
     } catch (e) { setError(e.message || "Could not load app links."); }
     finally { setLoading(false); }
@@ -36,11 +62,19 @@ export default function AdminAppDownloads() {
     try {
       const response = await fetch(`${API}/api/admin/app-downloads`, {
         method: "PUT", credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: authHeaders({ "Content-Type": "application/json", Accept: "application/json" }),
         body: JSON.stringify({ apps: apps.map(({ key, url, version }) => ({ key, url: url.trim(), version: version.trim() })) }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Could not save links.");
+      const data = await readJson(response);
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Your admin session is missing or expired. Please sign in again before saving APK links.");
+        }
+        if (response.status === 403) {
+          throw new Error("This account does not have permission to update APK links.");
+        }
+        throw new Error(data.message || "Could not save links.");
+      }
       setApps(DEFAULT_APPS.map(base => ({ ...base, ...(data.apps.find(x => x.key === base.key) || {}) })));
       setNotice("Download links saved. They are now available to the Partner portal.");
     } catch (e) { setError(e.message || "Could not save links."); }
