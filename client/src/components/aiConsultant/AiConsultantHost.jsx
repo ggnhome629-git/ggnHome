@@ -1,5 +1,6 @@
 import React, { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { consultantApi } from "./consultantApi";
+import { AI_CONSULTANT_ENABLED } from "./featureFlag";
 
 const AiConsultant = lazy(() => import("./AiConsultant"));
 
@@ -15,6 +16,13 @@ const AiConsultantContext = createContext({
  * conversation and any voice session survive page navigation.
  */
 export function AiConsultantProvider({ children }) {
+  // Disabled build: render no consultant and no wake-up call. The default
+  // context value (closed, open is a no-op) keeps every caller working.
+  if (!AI_CONSULTANT_ENABLED) return children;
+  return <AiConsultantSession>{children}</AiConsultantSession>;
+}
+
+function AiConsultantSession({ children }) {
   // Free-tier hosting sleeps when idle: wake the API as soon as the site loads,
   // so the consultant (and voice) answer quickly when the visitor opens it.
   useEffect(() => {
