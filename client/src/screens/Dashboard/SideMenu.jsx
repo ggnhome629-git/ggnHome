@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PostPropertyIcon, PostRoomIcon } from '../../components/ui/PostActionIcon';
+import { AI_CONSULTANT_ENABLED } from '../../components/aiConsultant/featureFlag';
 import { User, X, ChevronRight, Home, Key, Building, Users, TrendingUp, Lightbulb, FileText, HelpCircle, Smartphone, Search, Sparkles, Scale, Calculator, MapPin, DollarSign } from 'lucide-react';
 const ad1 = process.env.PUBLIC_URL + "/Ad/ad1.jpg";
 const ad2 = process.env.PUBLIC_URL + "/Ad/ad2.jpg";
@@ -16,7 +17,7 @@ export default function SideMenuBar({ currentUser, onLoginClick, onPost, postLab
 
   const menuSections = [{title: null, items: [{icon: User, label: currentUser
     ? (currentUser.mobileNumber || currentUser.email || 'User')
-    : 'LOGIN / REGISTER', color: '#0066FF', special: true, onClick: !currentUser ? onLoginClick : undefined}]}, {title: 'Quick Actions', items: [{icon: postLabel.toLowerCase().includes('room') ? PostRoomIcon : PostPropertyIcon, label: postLabel, color: '#00A79D', badge: 'FREE', onClick: post}, {icon: Sparkles, label: 'AI Search', color: '#22D3EE', badge: 'NEW', link: '/AIassistant'}, {icon: Scale, label: 'Legal Laws', color: '#4A6A8A', onClick: () => {
+    : 'LOGIN / REGISTER', color: '#0066FF', special: true, onClick: !currentUser ? onLoginClick : undefined}]}, {title: 'Quick Actions', items: [{icon: postLabel.toLowerCase().includes('room') ? PostRoomIcon : PostPropertyIcon, label: postLabel, color: '#00A79D', badge: 'FREE', onClick: post}, ...(AI_CONSULTANT_ENABLED ? [{icon: Sparkles, label: 'AI Search', color: '#22D3EE', badge: 'NEW', link: '/AIassistant'}] : []), {icon: Scale, label: 'Legal Laws', color: '#4A6A8A', onClick: () => {
     const el = document.getElementById('news');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   }}]}, {title: 'Explore our Services', items: [

@@ -8,6 +8,7 @@ import PageLoader from "./components/ui/PageLoader";
 import AppLaunchIntro from "./components/app/AppLaunchIntro";
 import Dashboard from "./screens/Dashboard/dashboard";
 import { AiConsultantProvider } from "./components/aiConsultant/AiConsultantHost";
+import { AI_CONSULTANT_ENABLED } from "./components/aiConsultant/featureFlag";
 import LoginModal from "./screens/Login Page/login";
 const SmsOtpTest = lazy(() => import("./screens/Test Page/SmsOtpTest"));
 const PropertyCheckout = lazy(() => import("./screens/Visit Schedule/Clientvist"));
@@ -184,9 +185,10 @@ function App() {
       <Route path="/app/settings" element={<AppSettingsPage />} />
       <Route path="/app/notifications" element={<NotificationsPage />} />
       <Route element={<ProtectedRoutes />}>
-        <Route path="/AIassistant" element={<PropertySearchInterface />} />
-        <Route path="/AIassistant-Rent" element={<VoiceAssistantRentResponsive />} />
-        <Route path="/AIassistant-Sale" element={<VoiceAssistantSaleResponsive />} />
+        {/* AI pages are off on this build (AI_CONSULTANT_ENABLED); send visitors home. */}
+        <Route path="/AIassistant" element={AI_CONSULTANT_ENABLED ? <PropertySearchInterface /> : <Navigate replace to="/" />} />
+        <Route path="/AIassistant-Rent" element={AI_CONSULTANT_ENABLED ? <VoiceAssistantRentResponsive /> : <Navigate replace to="/" />} />
+        <Route path="/AIassistant-Sale" element={AI_CONSULTANT_ENABLED ? <VoiceAssistantSaleResponsive /> : <Navigate replace to="/" />} />
         <Route path="/add-property" element={<PropertyListingForm />} />
         {/* COMMENTED: Flatmates route - controlled by feature toggles */}
         {/* <Route path="/flatmateslistingform" element={<CreateFlatmateListing />} /> */}
@@ -198,7 +200,7 @@ function App() {
         <Route path="/price-predictor" element={<PricePredictor />} />
         <Route path="/investrealestate" element={<InvestRealEstatePage />} />
         <Route path="/support" element={<CustomerSupportPage />} />
-        <Route path="/chatbot" element={<Chatbot />} />
+        <Route path="/chatbot" element={AI_CONSULTANT_ENABLED ? <Chatbot /> : <Navigate replace to="/" />} />
         <Route path="/seeAllproperties" element={<SeeAllProperties />} />
         <Route path="/savedproperties" element={<Savedproperties />} />
         <Route path="/property-analytics/:id" element={<PropertyAnalytics />} />
