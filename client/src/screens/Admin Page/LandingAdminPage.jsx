@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, LayoutDashboard, Users, MessageSquare, Home, ArrowRight, Settings, LockKeyhole, Unlock, EyeOff, Megaphone, CreditCard } from 'lucide-react';
+import { Sparkles, LayoutDashboard, Users, MessageSquare, Home, ArrowRight, Settings, LockKeyhole, Unlock, EyeOff, Megaphone, CreditCard, RefreshCw } from 'lucide-react';
 import { Box, Button, Card, CardContent, TextField, Typography, Alert, Chip, IconButton, Tooltip, Divider, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
@@ -34,6 +34,8 @@ const AdminLandingPage = () => {
   const [toolsLoading, setToolsLoading] = useState(true);
   const [toolsSaving, setToolsSaving] = useState(false);
   const [toolsError, setToolsError] = useState("");
+  const [purgeStep, setPurgeStep] = useState("idle"); // idle | confirm | busy
+  const [purgeMsg, setPurgeMsg] = useState(null); // { severity, text }
 
   const handleNavigation = (route) => {
     navigate(route);
@@ -106,6 +108,29 @@ const AdminLandingPage = () => {
     if (response.status === 401 || response.status === 403) return "Your admin session has expired — sign in again to lock or unlock tools.";
     if (response.status === 404) return "The server hasn't been updated with tool locks yet. Your changes are kept in this browser until it is.";
     return (data && data.message) || fallback;
+  };
+
+  // Clears the Cloudflare cache for the whole site (admin-only endpoint).
+  const purgeSiteCache = async () => {
+    setPurgeStep("busy");
+    setPurgeMsg(null);
+    try {
+      const response = await fetch((process.env.REACT_APP_Base_API || "") + "/api/admin/cache/purge", {
+        method: "POST",
+        credentials: "include",
+        headers: authHeaders(true),
+        body: "{}",
+      });
+      const data = await readJson(response);
+      if (response.status === 401 || response.status === 403) throw new Error("Your admin session has expired — sign in again.");
+      if (response.status === 404) throw new Error("The server hasn't been updated with cache clearing yet.");
+      if (!response.ok || !data || !data.success) throw new Error((data && data.message) || "Cloudflare could not clear the cache.");
+      setPurgeMsg({ severity: "success", text: "Site cache cleared. Visitors get fresh pages within a few seconds." });
+    } catch (error) {
+      setPurgeMsg({ severity: "error", text: error.message || "Could not clear the cache." });
+    } finally {
+      setPurgeStep("idle");
+    }
   };
 
   useEffect(() => {
@@ -240,8 +265,26 @@ const AdminLandingPage = () => {
             <Chip label={toolsLoading ? "Loading tools…" : (adminGroups.flatMap((group) => group.links).length - hiddenTools.length) + " active tools"} sx={{ bgcolor: 'rgba(255,255,255,.14)', color: '#fff', fontWeight: 800 }} />
             <Chip label={hiddenTools.length + " hidden"} icon={<EyeOff size={14} />} sx={{ bgcolor: 'rgba(255,255,255,.10)', color: '#fff', fontWeight: 700, '& .MuiChip-icon': { color: '#fff' } }} />
             {toolsSaving && <Chip label="Saving…" sx={{ bgcolor: 'rgba(255,255,255,.10)', color: '#fff' }} />}
+            <Box sx={{ display: 'flex', gap: 1, ml: { sm: 'auto' } }}>
+              {purgeStep === 'confirm' && (
+                <Button size="small" onClick={() => setPurgeStep('idle')} sx={{ color: '#fff', fontWeight: 700, textTransform: 'none' }}>
+                  Cancel
+                </Button>
+              )}
+              <Button
+                size="small"
+                disabled={purgeStep === 'busy'}
+                onClick={() => (purgeStep === 'confirm' ? purgeSiteCache() : setPurgeStep('confirm'))}
+                startIcon={<RefreshCw size={14} />}
+                sx={{ bgcolor: purgeStep === 'confirm' ? '#F59E0B' : 'rgba(255,255,255,.18)', color: '#fff', fontWeight: 800, textTransform: 'none', boxShadow: 'none', '&:hover': { bgcolor: purgeStep === 'confirm' ? '#D97706' : 'rgba(255,255,255,.28)' }, '&.Mui-disabled': { color: 'rgba(255,255,255,.7)' } }}
+              >
+                {purgeStep === 'busy' ? 'Clearing…' : purgeStep === 'confirm' ? 'Yes, clear site cache' : 'Clear site cache'}
+              </Button>
+            </Box>
           </Box>
         </Box>
+
+        {purgeMsg && <Alert severity={purgeMsg.severity} onClose={() => setPurgeMsg(null)} sx={{ mb: 3 }}>{purgeMsg.text}</Alert>}
 
         {/* Main Cards */}
         <Box
