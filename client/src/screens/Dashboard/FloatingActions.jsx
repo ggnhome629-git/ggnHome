@@ -14,6 +14,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { MessageCircle, SlidersHorizontal, X } from "lucide-react";
 import { motionDuration, motionEase } from "../../theme/motion";
 import { radii } from "../../theme/theme";
+import { AI_CONSULTANT_ENABLED } from "../../components/aiConsultant/featureFlag";
 
 const Chatbot = React.lazy(() => import("./ChatBot"));
 
@@ -142,6 +143,7 @@ export default function FloatingActions({ onOpenPreferences }) {
           </IconButton>
         </Tooltip>
 
+        {AI_CONSULTANT_ENABLED && (
         <Tooltip title="Ask our assistant" placement="left">
           <IconButton
             component={motion.button}
@@ -161,10 +163,11 @@ export default function FloatingActions({ onOpenPreferences }) {
             <MessageCircle size={24} />
           </IconButton>
         </Tooltip>
+        )}
       </Stack>
 
       <Dialog
-        open={chatOpen}
+        open={AI_CONSULTANT_ENABLED && chatOpen}
         onClose={() => setChatOpen(false)}
         fullScreen={fullScreen}
         maxWidth="xs"
