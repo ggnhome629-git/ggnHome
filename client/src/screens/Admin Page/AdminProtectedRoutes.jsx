@@ -49,8 +49,8 @@ const AdminProtectedRoute = ({ element }) => {
           This console is limited to GgnHome administrators. Sign in with an admin account, or head back to the site.
         </Typography>
         <Stack direction="row" spacing={2}>
-          <Button variant="contained" onClick={() => navigate("/login")}>
-            Sign in
+          <Button variant="contained" onClick={() => navigate("/admin/login")}>
+            Admin sign in
           </Button>
           <Button variant="outlined" onClick={() => navigate("/")} sx={{ borderColor: "divider", color: "text.secondary" }}>
             Go home

@@ -14,7 +14,8 @@
 | Portal | URL | Who uses it | Status |
 |---|---|---|---|
 | Main website | https://www.ggnhome.com | Public users | ✅ |
-| Admin portal | https://www.ggnhome.com/admin/Landingpage | Admins (admin email login) | ✅ |
+| Admin login | https://www.ggnhome.com/admin/login | Admins only (OTP; role verified before OTP is sent) | ✅ |
+| Admin portal | https://www.ggnhome.com/admin/Landingpage | Signed-in admins | ✅ |
 | Partner Hub | https://www.ggnhome.com/partner/login | Approved partners (OTP login) | ✅ |
 | Partner Hub (standalone site) | ❓ host not in repo (`partner-portal/`) | Partners | ❓ |
 | SMS gateway console | https://www.ggnhome.com/sms-service/app/manage | Owner with SMS key | ✅ (hidden page) |

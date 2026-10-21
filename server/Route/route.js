@@ -42,6 +42,7 @@ const {
 const { getUserDashboard, searchProperties,getSectorSuggestions, getSearchHistory, searchPropertiesonLocation } = require("../controllers/Searchproperties.controller");
 const { listDocSuggestions, createDocSuggestion } = require("../controllers/docSuggestion.controller");
 const { adminPurgeCache, secretPurgeCache } = require("../controllers/cachePurge.controller");
+const { partnerRequestOtp, partnerVerifyOtp, adminRequestOtp, adminVerifyOtp } = require("../controllers/roleLogin.controller");
 const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests , getUserRewardsStatus, toggleActiveStatus, toggleReviewStatus, updateUserRole , getAllProperties , updateServiceRequestDetails , deletePropertyAdmin , updatePropertyAdmin  , createRentalPropertyAdmin , createSalePropertyAdmin , setPropertyRank} = require("../controllers/admin.controller");
 const {
   getAllAgents,
@@ -155,6 +156,11 @@ router.get("/api/users", verifyToken, checkAdminEmail, async (req, res) => {
 router.post("/login/request-otp", otpRequestLimiter, otpRequestIpLimiter, requestOtp);
 router.post("/login/password", loginLimiter, loginWithPassword);
 router.post("/login/verify-otp", otpVerifyLimiter, verifyOtp);
+// Role-gated OTP logins: the role is checked BEFORE an OTP is sent or accepted.
+router.post("/partner/login/request-otp", otpRequestLimiter, otpRequestIpLimiter, partnerRequestOtp);
+router.post("/partner/login/verify-otp", otpVerifyLimiter, partnerVerifyOtp);
+router.post("/admin/login/request-otp", otpRequestLimiter, otpRequestIpLimiter, adminRequestOtp);
+router.post("/admin/login/verify-otp", otpVerifyLimiter, adminVerifyOtp);
 router.post("/auth/set-password", verifyToken, setPassword);
 router.post("/auth/check-mobile", otpRequestIpLimiter, checkMobile);
 

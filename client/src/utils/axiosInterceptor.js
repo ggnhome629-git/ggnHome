@@ -16,7 +16,8 @@ export const setupInterceptors = (navigate) => {
       if (error.response && (error.response.status === 401 || error.response.status === 403)) {
         console.warn("⚠️ Session expired or unauthorized. Redirecting to login...");
         alert("Your session has expired. Please log in again to continue.");
-        navigate("/login");
+        // Admin pages have their own sign-in.
+        navigate(window.location.pathname.startsWith("/admin") ? "/admin/login" : "/login");
       }
       return Promise.reject(error);
     }

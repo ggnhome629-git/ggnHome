@@ -80,6 +80,7 @@ const FeatureTogglesAdmin = lazy(() => import("./screens/Admin Page/admin.featur
 const AdminAppDownloads = lazy(() => import("./screens/Admin Page/admin.appDownloads"));
 const PublicAppDownloads = lazy(() => import("./screens/App/PublicAppDownloads"));
 const PortalsDocs = lazy(() => import("./screens/Docs/PortalsDocs"));
+const AdminLoginPage = lazy(() => import("./screens/Admin Page/AdminLoginPage"));
 const AdminSettings = lazy(() => import("./screens/Admin Page/admin.settings"));
 const AdminAiConsultantLeads = lazy(() => import("./screens/Admin Page/admin.aiConsultantLeads"));
 const AdminServiceCatalog = lazy(() => import("./screens/Admin Page/admin.serviceCatalog"));
@@ -172,6 +173,8 @@ function App() {
       <Route path="/test" element={<SmsOtpTest />} />
       {/* Public status page, outside the admin gate (it is more specific than the /admin layout below) */}
       <Route path="/admin/ping" element={<AdminPing />} />
+      {/* Separate admin sign-in: public page, but the server only lets admin numbers through. */}
+      <Route path="/admin/login" element={<AdminLoginPage />} />
       {/* Hidden SMS Service console: not linked anywhere; has its own owner password */}
       <Route path="/sms-service/app/manage" element={<SmsConsole />} />
       <Route path="/Rentaldetails/:id" element={<RentalPropertydetails />} />

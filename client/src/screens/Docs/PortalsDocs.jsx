@@ -31,7 +31,8 @@ const RELEASES = "https://github.com/ggnhome629-git/ggnHome/releases/download/la
 
 const PORTALS = [
   { name: "Main website", url: SITE, who: "Public users", status: "Live", icon: Globe },
-  { name: "Admin portal", url: `${SITE}/admin/Landingpage`, who: "Admins (admin email login)", status: "Live", icon: ShieldCheck },
+  { name: "Admin login", url: `${SITE}/admin/login`, who: "Admins only (OTP; role verified before OTP is sent)", status: "Live", icon: ShieldCheck },
+  { name: "Admin portal", url: `${SITE}/admin/Landingpage`, who: "Signed-in admins", status: "Live", icon: ShieldCheck },
   { name: "Partner Hub", url: `${SITE}/partner/login`, who: "Approved partners (OTP login)", status: "Live", icon: Building2 },
   { name: "SMS gateway console", url: `${SITE}/sms-service/app/manage`, who: "Owner with SMS key", status: "Live (hidden page)", icon: Smartphone },
   { name: "App downloads page", url: `${SITE}/apps`, who: "Everyone", status: "Live", icon: Download },

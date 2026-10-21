@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Alert, Box, Button, Container, Paper, Stack, TextField, Typography } from "@mui/material";
 import { ShieldCheck } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import useResendCooldown from "../../utils/useResendCooldown";
 
 const API = process.env.REACT_APP_Base_API || "";
 
@@ -14,6 +15,7 @@ export default function PartnerAuthPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const resend = useResendCooldown(30);
   const normalizedMobile = mobileNumber.replace(/\D/g, "").slice(-10);
 
   useEffect(() => {
@@ -22,7 +24,9 @@ export default function PartnerAuthPage() {
     }
   }, [location.pathname, navigate]);
 
-  async function sendOtp() {
+  // The server checks that this number is a registered, active Partner BEFORE
+  // it sends any OTP, so a non-partner number is rejected right here.
+  async function sendOtp(isResend = false) {
     setError(""); setNotice("");
     if (!/^[6-9]\d{9}$/.test(normalizedMobile)) {
       setError("Enter a valid 10-digit Indian mobile number.");
@@ -30,16 +34,21 @@ export default function PartnerAuthPage() {
     }
     setBusy(true);
     try {
-      const res = await fetch(API + "/login/request-otp", {
+      const res = await fetch(API + "/partner/login/request-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ mobileNumber: normalizedMobile }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Could not send OTP.");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 429 && data.retryAfterSec) resend.start(Math.min(data.retryAfterSec, 120));
+        throw new Error(data.message || "Could not send OTP.");
+      }
       setOtpSent(true);
-      setNotice(data.message || "OTP sent. It is valid for 5 minutes.");
+      setOtp("");
+      resend.start(30);
+      setNotice(isResend ? "A new OTP has been sent." : data.message || "OTP sent. It is valid for 5 minutes.");
     } catch (e) {
       setError(e.message || "Could not send OTP.");
     } finally {
@@ -56,34 +65,35 @@ export default function PartnerAuthPage() {
     }
     setBusy(true);
     try {
-      const res = await fetch(API + "/login/verify-otp", {
+      const res = await fetch(API + "/partner/login/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ mobileNumber: normalizedMobile, otp: code }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "OTP verification failed.");
 
-      if (data.agent?.role === "Agent") {
-        throw new Error("This number is registered as a standard Agent, not a Partner. Contact GgnHome admin for help.");
+      // The server only accepts a Partner number here; these checks are a second guard.
+      if (data.agent?.role !== "Partner") {
+        throw new Error("This mobile number is not registered for Partner Portal access. Ask a GgnHome administrator to register it.");
       }
-      if (data.agent?.role === "Partner") {
-        if (data.agent.status === "suspended") throw new Error("This Partner account is suspended. Contact GgnHome support.");
-        if (data.agent.status !== "active") throw new Error("This Partner account is not active yet. Contact GgnHome admin.");
-        if (!data.agentAccessToken) throw new Error("OTP was verified, but a Partner session could not be created. Please try again.");
-        localStorage.setItem("accessToken", data.accessToken);
-        localStorage.setItem("partnerAccessToken", data.agentAccessToken);
-        navigate("/partner/dashboard", { replace: true });
-        return;
-      }
+      if (data.agent.status === "suspended") throw new Error("This Partner account is suspended. Contact GgnHome support.");
+      if (data.agent.status !== "active") throw new Error("This Partner account is not active yet. Contact GgnHome admin.");
+      if (!data.agentAccessToken) throw new Error("OTP was verified, but a Partner session could not be created. Please try again.");
 
-      throw new Error("This mobile number is not registered for Partner Portal access. Ask a GgnHome administrator to register it, then sign in with OTP.");
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("partnerAccessToken", data.agentAccessToken);
+      navigate("/partner/dashboard", { replace: true });
     } catch (e) {
       setError(e.message || "OTP verification failed.");
     } finally {
       setBusy(false);
     }
+  }
+
+  function changeNumber() {
+    setOtpSent(false); setOtp(""); setNotice(""); setError(""); resend.stop();
   }
 
   return (
@@ -98,7 +108,7 @@ export default function PartnerAuthPage() {
               <Typography sx={{ color: "#0f766e", fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase" }}>GgnHome Partner Portal</Typography>
               <Typography variant="h4" sx={{ fontWeight: 850, color: "#0f172a", mt: 1 }}>Partner login</Typography>
               <Typography color="text.secondary" sx={{ mt: 1 }}>
-                Sign in using the mobile number registered by GgnHome admin. Access is granted only after OTP verification.
+                Sign in using the mobile number registered by GgnHome admin. We check the number first, then send an OTP.
               </Typography>
             </Box>
 
@@ -115,8 +125,8 @@ export default function PartnerAuthPage() {
               placeholder="10-digit mobile number"
             />
             {!otpSent ? (
-              <Button variant="contained" size="large" disabled={busy} onClick={sendOtp} sx={{ py: 1.4, bgcolor: "#0f766e", fontWeight: 800, textTransform: "none" }}>
-                {busy ? "Sending OTP…" : "Send OTP"}
+              <Button variant="contained" size="large" disabled={busy} onClick={() => sendOtp(false)} sx={{ py: 1.4, bgcolor: "#0f766e", fontWeight: 800, textTransform: "none" }}>
+                {busy ? "Checking number…" : "Send OTP"}
               </Button>
             ) : (
               <>
@@ -132,9 +142,14 @@ export default function PartnerAuthPage() {
                 <Button variant="contained" size="large" disabled={busy} onClick={verifyOtp} sx={{ py: 1.4, bgcolor: "#0f766e", fontWeight: 800, textTransform: "none" }}>
                   {busy ? "Verifying…" : "Verify OTP and sign in"}
                 </Button>
-                <Button disabled={busy} onClick={() => { setOtpSent(false); setOtp(""); setNotice(""); setError(""); }} sx={{ textTransform: "none" }}>
-                  Change mobile number
-                </Button>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Button disabled={busy} onClick={changeNumber} sx={{ textTransform: "none" }}>
+                    Change mobile number
+                  </Button>
+                  <Button disabled={busy || resend.remaining > 0} onClick={() => sendOtp(true)} sx={{ textTransform: "none", fontWeight: 700 }}>
+                    {resend.remaining > 0 ? `Resend OTP in ${resend.remaining}s` : "Resend OTP"}
+                  </Button>
+                </Stack>
               </>
             )}
             <Typography variant="body2" color="text.secondary" textAlign="center">
