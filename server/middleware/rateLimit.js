@@ -22,13 +22,22 @@ const RateLimitHit = require("../models/RateLimitHit.model");
 //   3. A local in-memory Map, only if both of the above are unreachable --
 //      today's pre-fix behavior, never worse than before this change.
 class SharedStore {
-  constructor(prefix) {
+  constructor(prefix, windowJitterMs) {
     this.prefix = prefix;
+    this.windowJitterMs = windowJitterMs; // optional [minMs, maxMs]: each window lasts a random time in this range
     this.localHits = new Map(); // key -> { count, resetAt } used only as last-resort fallback
   }
 
   init(options) {
     this.windowMs = options.windowMs;
+  }
+
+  // Length of a NEW window: fixed, or random inside windowJitterMs so blocked
+  // clients wait slightly different times and their retries don't arrive in sync.
+  nextWindowMs() {
+    if (!this.windowJitterMs) return this.windowMs;
+    const [min, max] = this.windowJitterMs;
+    return Math.round(min + Math.random() * (max - min));
   }
 
   async increment(key) {
@@ -39,7 +48,7 @@ class SharedStore {
       try {
         const count = await redisClient.incr(redisKey);
         if (count === 1) {
-          await redisClient.pexpire(redisKey, this.windowMs);
+          await redisClient.pexpire(redisKey, this.nextWindowMs());
         }
         const pttl = await redisClient.pttl(redisKey);
         return {
@@ -55,13 +64,23 @@ class SharedStore {
     if (mongoose.connection.readyState === 1) {
       try {
         const now = Date.now();
+        const nowDate = new Date(now);
+        const freshResetAt = new Date(now + this.nextWindowMs());
+        // One atomic pipeline update. A window whose resetAt has passed starts
+        // over at count 1 even if Mongo's TTL sweep (which can lag ~60s) has not
+        // deleted the doc yet -- needed now that windows can be only 30-60s long.
+        const expired = { $lte: [{ $ifNull: ["$resetAt", nowDate] }, nowDate] };
         const doc = await RateLimitHit.findOneAndUpdate(
           { key: redisKey },
-          {
-            $inc: { count: 1 },
-            $setOnInsert: { resetAt: new Date(now + this.windowMs) },
-          },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
+          [
+            {
+              $set: {
+                count: { $cond: [expired, 1, { $add: [{ $ifNull: ["$count", 0] }, 1] }] },
+                resetAt: { $cond: [expired, freshResetAt, "$resetAt"] },
+              },
+            },
+          ],
+          { upsert: true, new: true }
         );
         return { totalHits: doc.count, resetTime: doc.resetAt };
       } catch (_) {
@@ -72,7 +91,7 @@ class SharedStore {
     const now = Date.now();
     const entry = this.localHits.get(key);
     if (!entry || entry.resetAt <= now) {
-      const resetAt = now + this.windowMs;
+      const resetAt = now + this.nextWindowMs();
       this.localHits.set(key, { count: 1, resetAt });
       return { totalHits: 1, resetTime: new Date(resetAt) };
     }
@@ -138,21 +157,28 @@ const cfSafeKeyGenerator = (req) => {
 
 // Counts per IP. Behind Render's proxy `trust proxy` must be set (index.js)
 // or every user shares one bucket.
-const make = ({ name, windowMs, max, message, keyGenerator }) => {
+// `windowJitterMs: [min, max]` makes every window last a random time in that
+// range instead of a fixed `windowMs`. `message` may be a function of the
+// seconds left, so the text can say exactly how long to wait.
+const make = ({ name, windowMs, max, message, keyGenerator, windowJitterMs }) => {
   const config = {
-    windowMs,
+    windowMs: windowJitterMs ? windowJitterMs[1] : windowMs,
     max,
     standardHeaders: true,
     legacyHeaders: false,
     skip: () => process.env.DISABLE_RATE_LIMIT === "true",
-    store: new SharedStore(name),
+    store: new SharedStore(name, windowJitterMs),
     keyGenerator: keyGenerator || cfSafeKeyGenerator,
     handler: (req, res, _next, options) => {
-      const retryAfterSec = Math.ceil(options.windowMs / 1000);
+      // Seconds until THIS window actually ends (not the configured maximum).
+      const resetTime = req.rateLimit && req.rateLimit.resetTime;
+      const retryAfterSec = resetTime
+        ? Math.max(1, Math.ceil((new Date(resetTime).getTime() - Date.now()) / 1000))
+        : Math.ceil(options.windowMs / 1000);
       res.set("Retry-After", String(retryAfterSec));
       res.status(429).json({
         code: "RATE_LIMITED",
-        message: message || "Too many attempts. Please try again later.",
+        message: typeof message === "function" ? message(retryAfterSec) : message || "Too many attempts. Please try again later.",
         retryAfterSec,
       });
     },
@@ -169,12 +195,13 @@ const byMobileOrIp = (req) => {
   return "default-bucket";
 };
 
-// OTP sending costs money (SMS) - keep it tight, per IP.
+// OTP sending costs money (SMS) - keep it tight, per IP. A blocked client waits
+// a random 30-60 seconds (not minutes); the hourly cap below is the abuse backstop.
 const otpRequestLimiter = make({
   name: "otp-req",
-  windowMs: 10 * 60 * 1000,
+  windowJitterMs: [30 * 1000, 60 * 1000],
   max: 5,
-  message: "Too many OTP requests. Try again in 10 minutes.",
+  message: (sec) => `Too many OTP requests. Please try again in ${sec} seconds.`,
 });
 const otpRequestIpLimiter = make({ name: "otp-req-ip", windowMs: 60 * 60 * 1000, max: 30 });
 const otpVerifyLimiter = make({
@@ -209,7 +236,15 @@ const apiLimiter = make({ name: "api", windowMs: 60 * 1000, max: 600 });
 const aiTurnLimiter = make({ name: "ai-turn", windowMs: 10 * 60 * 1000, max: 120, message: "You're going a little fast — please wait a moment and try again." });
 const aiSearchLimiter = make({ name: "ai-search", windowMs: 10 * 60 * 1000, max: 40, message: "Too many searches — please wait a moment and try again." });
 
+// After a successful OTP verification the client is clearly a real user: reset
+// their OTP request and verify counters to zero so they are never left locked out.
+const resetOtpLimits = async (req) => {
+  const key = cfSafeKeyGenerator(req);
+  await Promise.all([otpRequestLimiter, otpRequestIpLimiter, otpVerifyLimiter].map((limiter) => limiter.resetKey(key)));
+};
+
 module.exports = {
+  resetOtpLimits,
   otpRequestLimiter,
   otpRequestIpLimiter,
   otpVerifyLimiter,

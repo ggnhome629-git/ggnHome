@@ -6,6 +6,7 @@ const { hasOnlineDevice } = require("./smsGateway.controller");
 const crypto = require("crypto");
 const { generateCode, normalizeCode } = require("../utils/otpCode");
 const { issueAgentSession } = require("../utils/agentSession");
+const { resetOtpLimits } = require("../middleware/rateLimit");
 
 // Generate a random 4-letter login code
 function generateOtp() {
@@ -33,21 +34,28 @@ function maskMobile(mobile) {
 }
 
 // Tiny in-memory per-IP limiter for the OTP endpoint (SMS costs real quota).
-const ipHits = new Map();
-function tooManyFromIp(req) {
-  // Behind Cloudflare/Render req.ip is the proxy, so prefer the forwarded client IP.
-  const ip =
+const ipHits = new Map(); // ip -> { count, resetAt }
+// Behind Cloudflare/Render req.ip is the proxy, so prefer the forwarded client IP.
+function clientIp(req) {
+  return (
     req.headers["cf-connecting-ip"] ||
     String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() ||
     req.ip ||
-    "unknown";
+    "unknown"
+  );
+}
+function tooManyFromIp(req) {
+  const ip = clientIp(req);
   const now = Date.now();
-  const windowMs = 10 * 60 * 1000;
-  const hits = (ipHits.get(ip) || []).filter((t) => now - t < windowMs);
-  hits.push(now);
-  ipHits.set(ip, hits);
+  let entry = ipHits.get(ip);
+  if (!entry || entry.resetAt <= now) {
+    // Each window lasts a random 30-60 seconds, so a blocked client is never locked out for long.
+    entry = { count: 0, resetAt: now + 30 * 1000 + Math.floor(Math.random() * 30 * 1000) };
+    ipHits.set(ip, entry);
+  }
+  entry.count += 1;
   if (ipHits.size > 5000) ipHits.clear();
-  return hits.length > 15;
+  return entry.count > 15;
 }
 
 function otpEmailHtml(otp) {
@@ -95,7 +103,7 @@ async function sendOtpEmail(user, otp) {
 exports.requestOtp = async (req, res) => {
   try {
     if (tooManyFromIp(req)) {
-      return res.status(429).json({ message: "Too many requests. Please try again in a few minutes." });
+      return res.status(429).json({ message: "Too many requests. Please try again in a minute." });
     }
 
     const mobileNumber = req.body.mobileNumber ? String(req.body.mobileNumber).trim() : "";
@@ -420,6 +428,11 @@ exports.verifyOtp = async (req, res) => {
     user.otp = null;
     user.otpExpiry = null;
     user.otpAttempts = 0;
+
+    // A verified OTP proves a real user: reset this client's OTP request/verify
+    // counters to zero (best effort -- never block the login on it).
+    ipHits.delete(clientIp(req));
+    resetOtpLimits(req).catch((err) => console.error("resetOtpLimits failed:", err.message));
 
     const accessToken = user.getAccessToken();
     const refreshToken = user.getRefreshToken();
