@@ -234,6 +234,8 @@ exports.requestOtp = async (req, res) => {
       maskedEmail: emailFallback ? maskEmail(user.email) : null,
     });
   } catch (error) {
+    // Log the real cause (never the OTP) so a 500 here can be diagnosed from the host's logs.
+    console.error("requestOtp failed:", error?.name, error?.message, error?.code || "", error?.stack?.split("\n").slice(0, 4).join(" | "));
     res.status(500).json({ message: "Server error" });
   }
 };
