@@ -3,6 +3,12 @@ const SaleProperty = require('../models/SaleProperty.model');
 const RentalProperty = require('../models/Rentalproperty.model');
 const { uploadWithFallback } = require('../config/FileHandling');
 const { sanitizeNearbyAmenities, sanitizeCornerPosition } = require('../config/propertyParameters');
+const { buildListingText, estimateBathrooms } = require('../services/listingText.service');
+const { findNearbyParameters } = require('../services/nearbyPlaces.service');
+
+// Must match the enums on the Rental / Sale models, or saving fails with a validation error.
+const RENT_TYPES = ['house', 'apartment', 'condo', 'townhouse', 'villa', '1RK', 'builder-floor', 'studio'];
+const SALE_TYPES = ['house', 'apartment', 'condo', 'townhouse', 'villa', 'plot', 'builder-floor', 'studio'];
 
 const numberOrUndefined = value => value === '' || value == null ? undefined : Number(value);
 const parseJsonArray = value => {
@@ -53,7 +59,19 @@ async function createPartnerProperty(req, res) {
     if (!files.some((file, i) => categories[i] === 'front')) return res.status(400).json({ message: 'Add at least one front/exterior photo.' });
     if (floor !== '' && totalFloors !== '' && Number(floor) > Number(totalFloors)) return res.status(400).json({ message: 'Floor number cannot exceed total floors.' });
 
-    const amenities = sanitizeNearbyAmenities(req.body.amenities);
+    let amenities = sanitizeNearbyAmenities(req.body.amenities);
+    let lat = numberOrUndefined(latitude);
+    let lon = numberOrUndefined(longitude);
+    const safeType = (purpose === 'sale' ? SALE_TYPES : RENT_TYPES).includes(propertyType) ? propertyType : 'apartment';
+    const beds = numberOrUndefined(bedrooms);
+    const baths = numberOrUndefined(bathrooms) ?? estimateBathrooms(beds);
+
+    // Auto-detect nearby places (and the map position if the app did not send one) while the
+    // photos upload. Best effort: a failed lookup never blocks publishing.
+    const needsLookup = !amenities.length || lat === undefined || lon === undefined;
+    const nearbyPromise = needsLookup
+      ? findNearbyParameters({ address: String(address), sector: String(sector), latitude: lat, longitude: lon }).catch(() => null)
+      : Promise.resolve(null);
 
     const images = [];
     let cloudinaryAccountIndex = null;
@@ -66,10 +84,23 @@ async function createPartnerProperty(req, res) {
     }
     if (!images.some(image => image.category === 'front')) return res.status(400).json({ message: 'Front photo upload failed. Please try again.' });
 
+    const nearby = await nearbyPromise;
+    if (nearby) {
+      if (lat === undefined || lon === undefined) { lat = nearby.latitude; lon = nearby.longitude; }
+      if (!amenities.length) {
+        amenities = sanitizeNearbyAmenities((nearby.amenities || [])
+          .filter(a => a.found)
+          .map(a => ({ category: a.category, name: a.name, distanceMeters: a.distanceMeters, source: 'locationiq' })));
+      }
+    }
+
+    // Title and description are written here, so the partner never has to.
+    const text = buildListingText({ purpose, propertyType: safeType, bedrooms: beds, bathrooms: baths, area, price, sector: String(sector).trim(), furnishing, floor: numberOrUndefined(floor), totalFloors: numberOrUndefined(totalFloors), amenities });
+
     const common = {
-      title: String(title || `${bedrooms || 'Property'} BHK ${purpose === 'rental' ? 'for Rent' : 'for Sale'} in ${sector}`).slice(0, 160),
-      description: '',
-      propertyType: propertyType || 'apartment',
+      title: String(title || text.title).slice(0, 160),
+      description: String(body.description || text.description).slice(0, 2000),
+      propertyType: safeType,
       Sector: String(sector).trim().slice(0, 120),
       address: String(address).trim().slice(0, 500),
       location: String(address).trim().slice(0, 500),
@@ -81,9 +112,9 @@ async function createPartnerProperty(req, res) {
       partnerEmail: String(agent.email || '').trim().slice(0, 160).toLowerCase(),
       ownerType: 'Partner',
       agentUserId: agent.userId,
-      bedrooms: numberOrUndefined(bedrooms),
-      bathrooms: numberOrUndefined(bathrooms),
-      totalArea: { sqft: Number(area), configuration: bedrooms ? `${bedrooms} BHK` : undefined },
+      bedrooms: beds,
+      bathrooms: baths,
+      totalArea: { sqft: Number(area), configuration: beds ? `${beds} BHK` : undefined },
       totalFloors: numberOrUndefined(totalFloors),
       floorNumber: numberOrUndefined(floor),
       floorForRent: numberOrUndefined(floor),
@@ -91,8 +122,8 @@ async function createPartnerProperty(req, res) {
       parking: parking ? String(parking).slice(0, 100) : undefined,
       images: images.map(image => image.url),
       imageCategories: images,
-      latitude: numberOrUndefined(latitude),
-      longitude: numberOrUndefined(longitude),
+      latitude: lat,
+      longitude: lon,
       nearbyAmenities: amenities,
       cornerPosition: sanitizeCornerPosition(cornerPosition),
       cloudinaryAccountIndex,
