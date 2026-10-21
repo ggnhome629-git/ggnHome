@@ -20,7 +20,7 @@ const FONT = `ggn-font-${VERSION}`;
 const KEEP = [SHELL, STATIC, API, IMG, FONT];
 
 const SHELL_FILES = ["/", "/index.html", "/offline.html", "/manifest.json", "/Logo2.jpg", "/default-property.jpg"];
-const NEVER_CACHE = /\/(admin|payment|payments|otp|login|logout|register|cron|upload|sms)(\/|\?|$)|\/api\/(admin|payment|enquiry|request-callback|chatbot)/i;
+const NEVER_CACHE = /\/(admin|payment|payments|otp|login|logout|register|cron|upload|sms)(\/|\?|$)|\/api\/(admin|payment|enquiry|request-callback|chatbot|cache-version)/i;
 const CACHEABLE_API = /\/(api\/(activeproperties|getRentalproperties|getSaleproperties|search-properties|search-areas|get-sector-suggestions|propertyAanalysis\/savedProperties|app\/recommendations|recommendations|news|promos?|similar)|auth\/me|api\/user\/dashboard)/i;
 // Public listing data that is identical for every visitor: served instantly
 // from cache and refreshed in the background (stale-while-revalidate).

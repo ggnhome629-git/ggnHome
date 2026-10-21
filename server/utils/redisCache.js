@@ -15,13 +15,15 @@ let isConnected = false;
  * Initialize Redis connection
  */
 async function initialize() {
-  if (!process.env.REDIS_URL) {
-    logger.info('[redis] REDIS_URL not set - Redis caching disabled');
+  // Same Redis as config/cache.js: accept either variable name.
+  const redisUrl = process.env.REDIS_URL || process.env.REDIS_URI;
+  if (!redisUrl) {
+    logger.info('[redis] REDIS_URL / REDIS_URI not set - Redis caching disabled');
     return false;
   }
 
   try {
-    client = new Redis(process.env.REDIS_URL, {
+    client = new Redis(redisUrl, {
       maxRetriesPerRequest: 3,
       retryStrategy: (times) => {
         const delay = Math.min(times * 50, 2000);

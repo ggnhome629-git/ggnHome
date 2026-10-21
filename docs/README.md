@@ -26,6 +26,7 @@ The live, reviewable overview of portals and apps is at **https://www.ggnhome.co
 | [PWA_AND_PLAYSTORE_GUIDE](guides/PWA_AND_PLAYSTORE_GUIDE.md) | Web app and Play Store publication |
 | [PRODUCTION_ACCESS_AND_DOWNLOADS](guides/PRODUCTION_ACCESS_AND_DOWNLOADS.md) | Partner access, dashboard tools and APK delivery |
 | [SMART_NOTIFICATIONS](guides/SMART_NOTIFICATIONS.md) | Smart push notifications |
+| [CACHE_AND_REDIS](guides/CACHE_AND_REDIS.md) | Cache layers, Redis setup and the "Clear all caches" button |
 | [SEARCH_OPTIMIZATION_GUIDE](guides/SEARCH_OPTIMIZATION_GUIDE.md) | Search optimization and advanced filtering |
 | [SEO_BEST_PRACTICES](guides/SEO_BEST_PRACTICES.md) | SEO best practices |
 | [SCRAPER_INTEGRATION_GUIDE](guides/SCRAPER_INTEGRATION_GUIDE.md) | Scraper integration |

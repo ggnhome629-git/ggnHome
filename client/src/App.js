@@ -6,6 +6,7 @@ import { setupInterceptors } from "./utils/axiosInterceptor";
 import { pageTransitionVariants } from "./theme/motion";
 import PageLoader from "./components/ui/PageLoader";
 import AppLaunchIntro from "./components/app/AppLaunchIntro";
+import CacheRefreshWatcher from "./components/app/CacheRefreshWatcher";
 import Dashboard from "./screens/Dashboard/dashboard";
 import { AiConsultantProvider } from "./components/aiConsultant/AiConsultantHost";
 import { AI_CONSULTANT_ENABLED } from "./components/aiConsultant/featureFlag";
@@ -154,6 +155,7 @@ function App() {
   return (
     <AiConsultantProvider>
     <AppLaunchIntro />
+    <CacheRefreshWatcher />
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
         key={location.pathname}

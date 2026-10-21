@@ -43,7 +43,7 @@ const {
 } = require("../controllers/Rentalproperty.controller.js");
 const { getUserDashboard, searchProperties,getSectorSuggestions, getSearchHistory, searchPropertiesonLocation } = require("../controllers/Searchproperties.controller");
 const { listDocSuggestions, createDocSuggestion } = require("../controllers/docSuggestion.controller");
-const { adminPurgeCache, secretPurgeCache } = require("../controllers/cachePurge.controller");
+const { adminPurgeCache, secretPurgeCache, getCacheVersion } = require("../controllers/cachePurge.controller");
 const { partnerRequestOtp, partnerVerifyOtp, adminRequestOtp, adminVerifyOtp } = require("../controllers/roleLogin.controller");
 const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests , getUserRewardsStatus, toggleActiveStatus, toggleReviewStatus, updateUserRole , getAllProperties , updateServiceRequestDetails , deletePropertyAdmin , updatePropertyAdmin  , createRentalPropertyAdmin , createSalePropertyAdmin , setPropertyRank} = require("../controllers/admin.controller");
 const {
@@ -131,6 +131,8 @@ const checkAdminEmail = async (req, res, next) => {
   }
 };
 router.get("/api/features", getPublicFeatureToggles);
+// Browsers compare this number to decide whether to wipe their own caches (bumped by an admin cache clear).
+router.get("/api/cache-version", getCacheVersion);
 router.get("/api/admin/feature-toggles", verifyToken, checkAdminEmail, getAdminFeatureToggles);
 router.put("/api/admin/feature-toggles", verifyToken, checkAdminEmail, updateAdminFeatureToggles);
 router.get("/api/app-downloads", getAppDownloads);

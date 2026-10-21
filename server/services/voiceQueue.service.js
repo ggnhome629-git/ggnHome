@@ -10,7 +10,7 @@ const intEnv = (name, fallback, min, max) => {
   return Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
 };
 const settings = () => ({
-  enabled: process.env.VOICE_QUEUE_ENABLED !== "false" && Boolean(process.env.REDIS_URL),
+  enabled: process.env.VOICE_QUEUE_ENABLED !== "false" && Boolean(process.env.REDIS_URL || process.env.REDIS_URI),
   maxActive: intEnv("VOICE_QUEUE_MAX_ACTIVE", 3, 1, 10),
   maxWaiting: intEnv("VOICE_QUEUE_MAX_WAITING", 50, 1, 100),
   leaseSeconds: intEnv("VOICE_QUEUE_LEASE_SECONDS", 90, 60, 300),

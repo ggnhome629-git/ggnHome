@@ -110,7 +110,8 @@ const AdminLandingPage = () => {
     return (data && data.message) || fallback;
   };
 
-  // Clears the Cloudflare cache for the whole site (admin-only endpoint).
+  // Clears every cache in one go (admin-only endpoint): every visitor's browser cache
+  // (via a new site version), the server's Redis cache, and Cloudflare.
   const purgeSiteCache = async () => {
     setPurgeStep("busy");
     setPurgeMsg(null);
@@ -124,8 +125,11 @@ const AdminLandingPage = () => {
       const data = await readJson(response);
       if (response.status === 401 || response.status === 403) throw new Error("Your admin session has expired — sign in again.");
       if (response.status === 404) throw new Error("The server hasn't been updated with cache clearing yet.");
-      if (!response.ok || !data || !data.success) throw new Error((data && data.message) || "Cloudflare could not clear the cache.");
-      setPurgeMsg({ severity: "success", text: "Site cache cleared. Visitors get fresh pages within a few seconds." });
+      if (!response.ok || !data || !data.success) throw new Error((data && data.message) || "The cache could not be cleared.");
+      // Green only when every layer was done; amber when one is not connected or failed (the message says which).
+      const allDone = data.browsers?.refreshed && data.cloudflare?.success && (data.redis?.cleared || data.redis?.configured === false);
+      const text = data.message ? data.message.charAt(0).toUpperCase() + data.message.slice(1) : "Caches cleared.";
+      setPurgeMsg({ severity: allDone ? "success" : "warning", text });
     } catch (error) {
       setPurgeMsg({ severity: "error", text: error.message || "Could not clear the cache." });
     } finally {
@@ -278,7 +282,7 @@ const AdminLandingPage = () => {
                 startIcon={<RefreshCw size={14} />}
                 sx={{ bgcolor: purgeStep === 'confirm' ? '#F59E0B' : 'rgba(255,255,255,.18)', color: '#fff', fontWeight: 800, textTransform: 'none', boxShadow: 'none', '&:hover': { bgcolor: purgeStep === 'confirm' ? '#D97706' : 'rgba(255,255,255,.28)' }, '&.Mui-disabled': { color: 'rgba(255,255,255,.7)' } }}
               >
-                {purgeStep === 'busy' ? 'Clearing…' : purgeStep === 'confirm' ? 'Yes, clear site cache' : 'Clear site cache'}
+                {purgeStep === 'busy' ? 'Clearing…' : purgeStep === 'confirm' ? 'Yes, clear all caches' : 'Clear all caches'}
               </Button>
             </Box>
           </Box>

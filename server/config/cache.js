@@ -39,13 +39,16 @@ const warnOnce = (message, error) => {
   console.warn("[cache] Falling back to MongoDB for all reads until Redis recovers.");
 };
 
-if (process.env.REDIS_URI) {
+// One Redis serves the whole app: accept either variable name (utils/redisCache.js reads the same pair).
+const REDIS_CONNECTION = process.env.REDIS_URI || process.env.REDIS_URL;
+
+if (REDIS_CONNECTION) {
   try {
     // Required lazily so a project without the dependency installed still
     // boots — the cache simply stays off.
     const Redis = require("ioredis");
 
-    client = new Redis(process.env.REDIS_URI, {
+    client = new Redis(REDIS_CONNECTION, {
       // Fail a command fast instead of hanging a request behind a dead socket.
       maxRetriesPerRequest: 2,
       connectTimeout: 5000,
@@ -72,7 +75,7 @@ if (process.env.REDIS_URI) {
     redisEnabled = false;
   }
 } else {
-  console.log("[cache] REDIS_URI not set — caching disabled, reads go straight to MongoDB.");
+  console.log("[cache] REDIS_URI / REDIS_URL not set — caching disabled, reads go straight to MongoDB.");
 }
 
 const isReady = () => redisEnabled && client && client.status === "ready";
