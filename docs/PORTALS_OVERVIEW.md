@@ -1,6 +1,7 @@
 # GgnHome — Portals, Links & Status
 
 **For:** co-founder review. **Branch:** `main`. **As of:** 21 Oct 2026.
+**Suggestions:** add them on the live page at https://www.ggnhome.com/doc (not in this file).
 
 **Legend:** ✅ Live (in code on `main`) · 🚫 Disabled · ❓ Needs confirmation
 
@@ -10,34 +11,30 @@
 
 ## 1. Portals & links
 
-| Portal | URL | Who uses it | Status | Suggestion |
-|---|---|---|---|---|
-| Main website | https://www.ggnhome.com | Public users | ✅ | |
-| Admin portal | https://www.ggnhome.com/admin/Landingpage | Admins (admin email login) | ✅ | |
-| Partner Hub | https://www.ggnhome.com/partner/login | Approved partners (OTP login) | ✅ | |
-| Partner Hub (standalone site) | ❓ host not in repo (`partner-portal/`) | Partners | ❓ | |
-| SMS gateway console | https://www.ggnhome.com/sms-service/app/manage | Owner with SMS key | ✅ (hidden page) | |
-| App downloads page | https://www.ggnhome.com/apps | Everyone | ✅ | |
-| Agent portal (legacy) | /agent/login | — | 🚫 See §4 | |
-| API backend | ❓ (`ggnhome.onrender.com` is the likely host) | Used by all apps | ❓ | |
-| Voice / LiveKit | `infra/livekit/` (self-hosted) | AI voice assistant | 🚫 on `main` (on `v2`) | |
-
-**Suggestion:** _______________________________________________
+| Portal | URL | Who uses it | Status |
+|---|---|---|---|
+| Main website | https://www.ggnhome.com | Public users | ✅ |
+| Admin portal | https://www.ggnhome.com/admin/Landingpage | Admins (admin email login) | ✅ |
+| Partner Hub | https://www.ggnhome.com/partner/login | Approved partners (OTP login) | ✅ |
+| Partner Hub (standalone site) | ❓ host not in repo (`partner-portal/`) | Partners | ❓ |
+| SMS gateway console | https://www.ggnhome.com/sms-service/app/manage | Owner with SMS key | ✅ (hidden page) |
+| App downloads page | https://www.ggnhome.com/apps | Everyone | ✅ |
+| Agent portal (legacy) | /agent/login | — | 🚫 See §4 |
+| API backend | ❓ (`ggnhome.onrender.com` is the likely host) | Used by all apps | ❓ |
+| Voice / LiveKit | `infra/livekit/` (self-hosted) | AI voice assistant | 🚫 on `main` (on `v2`) |
 
 ---
 
 ## 2. Mobile apps & APKs
 
-| App | Details | Download | Status | Suggestion |
-|---|---|---|---|---|
-| **GgnHome** (user) | Capacitor wrapper of www.ggnhome.com · id `com.tanush.ggnhome` · v1.2.0 | GitHub Release `latest-apks` → `GgnHome.apk` | ✅ | |
-| **GgnHome Partner** | Android wrapper for PartnerHub | `/api/app-downloads/partner.apk` (streams `GgnHome-Partner.apk`) | ✅ | |
-| **SMS Service** | Android SMS gateway + OTP viewer | GitHub Release `latest-apks` → `sms-service.apk` | ✅ | |
+| App | Details | Download | Status |
+|---|---|---|---|
+| **GgnHome** (user) | Capacitor wrapper of www.ggnhome.com · id `com.tanush.ggnhome` · v1.2.0 | GitHub Release `latest-apks` → `GgnHome.apk` | ✅ |
+| **GgnHome Partner** | Android wrapper for PartnerHub | `/api/app-downloads/partner.apk` (streams `GgnHome-Partner.apk`) | ✅ |
+| **SMS Service** | Android SMS gateway + OTP viewer | GitHub Release `latest-apks` → `sms-service.apk` | ✅ |
 
 - Admin manages download URLs at **Admin → App Downloads** (keys: `ggnhome`, `partner`, `sms-service`).
 - APKs are built by `.github/workflows/build-all-apks.yml`.
-
-**Suggestion:** _______________________________________________
 
 ---
 
@@ -71,8 +68,6 @@
 - Simpler single-page form: purpose, type, title, sector, address, price, area, bedrooms, bathrooms, owner name and mobile.
 - At least one front photo is required.
 
-**Suggestion:** _______________________________________________
-
 ---
 
 ## 4. Feature status
@@ -89,15 +84,13 @@
 
 ### 🚫 Disabled / not live
 
-| Feature | Why | Suggestion |
-|---|---|---|
-| Flatmates (user pages) | Routes commented out in `App.js`; feature toggle defaults to off | |
-| Agent portal (dashboard, add property, etc.) | Routes commented out; `/agent/register` redirects to admin; toggle off | |
-| Public partner self-registration | Backend returns 410; admin adds partners instead | |
-| AI consultant (chat + voice) | Turned off on `main` via `AI_CONSULTANT_ENABLED = false`; on in `v2` | |
-| Hidden SMS devices page | `/admin/sms-devices` redirects to landing page | |
-
-**Suggestion:** _______________________________________________
+| Feature | Why |
+|---|---|
+| Flatmates (user pages) | Routes commented out in `App.js`; feature toggle defaults to off |
+| Agent portal (dashboard, add property, etc.) | Routes commented out; `/agent/register` redirects to admin; toggle off |
+| Public partner self-registration | Backend returns 410; admin adds partners instead |
+| AI assistant on the site (consultant, AI Search pages, floating assistant, Chatbot) | Off on `main` via `AI_CONSULTANT_ENABLED = false`; on in `v2` |
+| Hidden SMS devices page | `/admin/sms-devices` redirects to landing page |
 
 ---
 
@@ -110,5 +103,4 @@
 5. **Partner Hub host:** confirm whether it is served from `www.ggnhome.com/partner/*` or a separate site.
 6. **Feature toggles:** check the live values for Flatmates and Agent portal in the admin Feature Toggles page.
 7. **Admin APK URLs:** confirm all three download URLs are set in Admin → App Downloads.
-
-**Other suggestions:** _______________________________________________
+8. **AI backend endpoints:** `/api/ai-consultant/*` still answer on `main`. The site no longer calls them, but they are not blocked server-side yet.

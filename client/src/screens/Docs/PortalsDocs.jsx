@@ -1,5 +1,7 @@
-import React from "react";
-import { Box, Card, CardContent, Chip, Container, Stack, Typography } from "@mui/material";
+import React, { useCallback, useEffect, useState } from "react";
+import { Alert, Box, Button, Card, CardContent, Chip, Container, Stack, TextField, Typography } from "@mui/material";
+
+const API = (process.env.REACT_APP_Base_API || "").replace(/\/+$/, "");
 
 // Public, read-only overview for co-founder review. Mirrors docs/PORTALS_OVERVIEW.md.
 // Deliberately outside ProtectedRoutes and AdminLayout: no login or role check.
@@ -59,11 +61,112 @@ const statusColor = (status) => {
   return "default";
 };
 
-function Section({ title, children }) {
+/** Suggestions for one section: list of what others wrote, plus a form to add one. */
+function SuggestionBox({ section }) {
+  const [items, setItems] = useState([]);
+  const [text, setText] = useState("");
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState(null); // { type: "success" | "error", msg }
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/api/docs/suggestions?section=${encodeURIComponent(section)}`, {
+        headers: { Accept: "application/json" },
+      });
+      const data = await res.json();
+      if (res.ok) setItems(data.items || []);
+    } catch (_) {
+      // Keep the form usable even if the list cannot load.
+    }
+  }, [section]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (text.trim().length < 3) {
+      setStatus({ type: "error", msg: "Please write at least 3 characters." });
+      return;
+    }
+    setBusy(true);
+    setStatus(null);
+    try {
+      const res = await fetch(`${API}/api/docs/suggestions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ section, text: text.trim(), name: name.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || "Could not send your suggestion.");
+      setText("");
+      setStatus({ type: "success", msg: "Thanks, your suggestion is recorded." });
+      load();
+    } catch (err) {
+      setStatus({ type: "error", msg: err.message || "Could not send your suggestion." });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Box sx={{ mt: 2, pt: 2, borderTop: "1px dashed", borderColor: "divider" }}>
+      <Typography variant="subtitle2" fontWeight={700}>Suggestions</Typography>
+      {items.length === 0 ? (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>No suggestions yet.</Typography>
+      ) : (
+        <Stack spacing={1} sx={{ mt: 1 }}>
+          {items.map((s) => (
+            <Box key={s._id || `${s.createdAt}-${s.text}`} sx={{ p: 1.5, borderRadius: 1.5, backgroundColor: "action.hover" }}>
+              <Typography variant="body2">{s.text}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {s.name || "Anonymous"} · {s.createdAt ? new Date(s.createdAt).toLocaleDateString("en-IN") : ""}
+              </Typography>
+            </Box>
+          ))}
+        </Stack>
+      )}
+
+      <Box component="form" onSubmit={submit} sx={{ mt: 2 }}>
+        <Stack spacing={1.5}>
+          <TextField
+            label="Your suggestion"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            multiline
+            minRows={2}
+            inputProps={{ maxLength: 600 }}
+            helperText={`${text.length}/600`}
+            required
+            fullWidth
+          />
+          <TextField
+            label="Name (optional)"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            inputProps={{ maxLength: 60 }}
+            fullWidth
+          />
+          {status && <Alert severity={status.type}>{status.msg}</Alert>}
+          <Box>
+            <Button type="submit" variant="contained" disabled={busy}>
+              {busy ? "Sending…" : "Send suggestion"}
+            </Button>
+          </Box>
+        </Stack>
+      </Box>
+    </Box>
+  );
+}
+
+function Section({ title, sectionKey, children }) {
   return (
     <Box component="section" sx={{ mt: 4 }}>
       <Typography variant="h5" fontWeight={700} gutterBottom>{title}</Typography>
       {children}
+      {sectionKey && <SuggestionBox section={sectionKey} />}
     </Box>
   );
 }
@@ -80,7 +183,7 @@ export default function PortalsDocs() {
         For co-founder review · Branch main · As of 21 Oct 2026. "Live" means enabled in the code on main; check the hosting dashboard before treating anything as in production.
       </Typography>
 
-      <Section title="1. Portals & links">
+      <Section title="1. Portals & links" sectionKey="portals">
         <Stack spacing={1.5}>
           {PORTALS.map((p) => (
             <Panel key={p.name}>
@@ -97,7 +200,7 @@ export default function PortalsDocs() {
         </Stack>
       </Section>
 
-      <Section title="2. Mobile apps & APKs">
+      <Section title="2. Mobile apps & APKs" sectionKey="apps">
         <Stack spacing={1.5}>
           {APPS.map((a) => (
             <Panel key={a.name}>
@@ -117,7 +220,7 @@ export default function PortalsDocs() {
         </Typography>
       </Section>
 
-      <Section title="3. Post property">
+      <Section title="3. Post property" sectionKey="post-property">
         <Panel>
           <Typography fontWeight={700}>User / owner — /add-property (6 steps)</Typography>
           <Typography variant="body2" sx={{ mb: 1 }}>{USER_STEPS.join(" → ")}</Typography>
@@ -138,7 +241,7 @@ export default function PortalsDocs() {
         </Box>
       </Section>
 
-      <Section title="4. Feature status">
+      <Section title="4. Feature status" sectionKey="features">
         <Typography variant="subtitle1" fontWeight={700}>Live</Typography>
         <Box component="ul" sx={{ pl: 3, mt: 0.5 }}>
           {LIVE.map((item) => <li key={item}><Typography variant="body2">{item}</Typography></li>)}
@@ -154,7 +257,7 @@ export default function PortalsDocs() {
         </Stack>
       </Section>
 
-      <Section title="5. Open items for review">
+      <Section title="5. Open items for review" sectionKey="open-items">
         <Box component="ol" sx={{ pl: 3 }}>
           {OPEN_ITEMS.map((item) => <li key={item}><Typography variant="body2" sx={{ mb: 0.5 }}>{item}</Typography></li>)}
         </Box>

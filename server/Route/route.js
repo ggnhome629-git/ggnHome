@@ -40,6 +40,7 @@ const {
   
 } = require("../controllers/Rentalproperty.controller.js");
 const { getUserDashboard, searchProperties,getSectorSuggestions, getSearchHistory, searchPropertiesonLocation } = require("../controllers/Searchproperties.controller");
+const { listDocSuggestions, createDocSuggestion } = require("../controllers/docSuggestion.controller");
 const { getPendingPayments, updatePaymentStatus, getApprovedPayments , getAdminOverview , getAllUsersDetailed , getCallbackRequests , getUserRewardsStatus, toggleActiveStatus, toggleReviewStatus, updateUserRole , getAllProperties , updateServiceRequestDetails , deletePropertyAdmin , updatePropertyAdmin  , createRentalPropertyAdmin , createSalePropertyAdmin , setPropertyRank} = require("../controllers/admin.controller");
 const {
   getAllAgents,
@@ -318,6 +319,10 @@ router.post(
 );
 
 
+
+// ================== Portals doc suggestions (public /doc page) ==================
+router.get("/api/docs/suggestions", listDocSuggestions);
+router.post("/api/docs/suggestions", guestFormLimiter, createDocSuggestion);
 
 // ================== User Preference form ==================
 router.post("/api/userpreferenceform", guestFormLimiter, savePreferenceForm);
