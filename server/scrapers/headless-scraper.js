@@ -8,7 +8,7 @@
  * - For production with 99acres: Upgrade to paid tier or use proxy service
  * - NoBroker works perfectly with Cheerio (50 MB vs 400 MB for Puppeteer)
  *
- * See SCRAPER_BLOCKING_SOLUTIONS.md for alternatives
+ * See docs/guides/SCRAPER_BLOCKING_SOLUTIONS.md for alternatives
  */
 
 const axios = require("axios");

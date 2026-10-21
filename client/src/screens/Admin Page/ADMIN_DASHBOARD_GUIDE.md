@@ -327,9 +327,9 @@ If you see "Unauthorized" error:
 ## Support & Resources
 
 ### For Scraper Issues
-- See: `server/SCRAPER_TRIGGERING_GUIDE.md`
-- See: `server/SCRAPER_BLOCKING_SOLUTIONS.md`
-- See: `server/DEPLOYMENT_FREE_TIER.md`
+- See: `docs/guides/SCRAPER_TRIGGERING_GUIDE.md`
+- See: `docs/guides/SCRAPER_BLOCKING_SOLUTIONS.md`
+- See: `docs/guides/DEPLOYMENT_FREE_TIER.md`
 
 ### For Property Management
 - See: Backend API documentation

@@ -189,8 +189,13 @@ ggnHome/
 ├── sms-gateway-app/                # SMS gateway companion application
 ├── scraper/                        # Scraping/synchronization utilities
 ├── Images/                         # Project visual assets
-├── SECURITY_AUDIT.md               # Existing security-audit notes (verify against current code)
-├── GGNHOME_DEEP_AUDIT_REPORT.md    # Source-level audit and prioritized findings
+├── docs/                           # All project documentation (index: docs/README.md)
+│   ├── architecture/               # System, data-model and caching architecture
+│   ├── guides/                     # How-to, deployment, scraper and integration guides
+│   ├── audits/                     # Security audit and source-level audit report
+│   ├── product/                    # Feature checklists, admin notes, portals overview
+│   ├── design/                     # Colour palette
+│   └── ops/                        # Operations files
 ├── package.json                    # Root scripts
 └── README.md
 ```
@@ -497,7 +502,7 @@ Security controls visible in the current source include JWT/auth middleware, rol
 
 ### Security audit
 
-See [`GGNHOME_DEEP_AUDIT_REPORT.md`](./GGNHOME_DEEP_AUDIT_REPORT.md) for the source-level audit, prioritized findings and items still requiring runtime verification. `SECURITY_AUDIT.md` is historical and may contain entries that no longer match current source; re-verify each claim before relying on it.
+See [`GGNHOME_DEEP_AUDIT_REPORT.md`](./docs/audits/GGNHOME_DEEP_AUDIT_REPORT.md) for the source-level audit, prioritized findings and items still requiring runtime verification. [`SECURITY_AUDIT.md`](./docs/audits/SECURITY_AUDIT.md) is historical and may contain entries that no longer match current source; re-verify each claim before relying on it.
 
 ---
 

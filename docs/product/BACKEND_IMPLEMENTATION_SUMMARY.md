@@ -20,7 +20,7 @@ Database
 ```
 
 **Files Created:**
-- `BACKEND_ARCHITECTURE.md` - Complete pattern documentation
+- `docs/architecture/BACKEND_ARCHITECTURE.md` - Complete pattern documentation
 
 #### Response Envelope Structure
 All endpoints follow:
@@ -191,7 +191,7 @@ try {
 - Keep-alive monitoring
 
 **Files:**
-- `DEPLOYMENT_FREE_TIER.md` - Complete free tier guide
+- `docs/guides/DEPLOYMENT_FREE_TIER.md` - Complete free tier guide
 
 **Checklist:**
 - [x] Dependencies optimized
@@ -231,8 +231,8 @@ const authorize = (...roles) => {
 ## Files Created
 
 ### Architecture & Documentation
-1. `BACKEND_ARCHITECTURE.md` - Complete architecture guide (550+ lines)
-2. `DEPLOYMENT_FREE_TIER.md` - Free tier deployment & optimization (400+ lines)
+1. `docs/architecture/BACKEND_ARCHITECTURE.md` - Complete architecture guide (550+ lines)
+2. `docs/guides/DEPLOYMENT_FREE_TIER.md` - Free tier deployment & optimization (400+ lines)
 3. `IMPLEMENTATION_SUMMARY.md` - This file
 
 ### Core Infrastructure
@@ -483,8 +483,8 @@ curl -X POST https://your-app.onrender.com/api/property \
 - Docs: https://cheerio.js.org/
 
 **Deployment**
-- See: `DEPLOYMENT_FREE_TIER.md` (Free tier guide)
-- See: `BACKEND_ARCHITECTURE.md` (General architecture)
+- See: `docs/guides/DEPLOYMENT_FREE_TIER.md` (Free tier guide)
+- See: `docs/architecture/BACKEND_ARCHITECTURE.md` (General architecture)
 
 ---
 

@@ -4,7 +4,7 @@ import { createTheme } from "@mui/material/styles";
 // Design tokens
 //
 // Colors are built from the brand palette already defined for ggnHome
-// (see Colorpallet.txt): Prussian Blue, Slate Blue, Teal, Cyan, Alabaster.
+// (see docs/design/Colorpallet.txt): Prussian Blue, Slate Blue, Teal, Cyan, Alabaster.
 // Everything else (spacing, motion timings, radii, shadow levels) follows the
 // values specified in the UI/UX redesign brief so every page pulls from the
 // same tokens instead of hardcoding one-off values.

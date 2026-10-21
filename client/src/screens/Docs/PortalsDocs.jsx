@@ -22,7 +22,7 @@ import {
   UserCog,
 } from "lucide-react";
 
-// Public, read-only overview for co-founder review. Mirrors docs/PORTALS_OVERVIEW.md.
+// Public, read-only overview for co-founder review. Mirrors docs/product/PORTALS_OVERVIEW.md.
 // Deliberately outside ProtectedRoutes and AdminLayout: no login or role check.
 
 const API = (process.env.REACT_APP_Base_API || "").replace(/\/+$/, "");
