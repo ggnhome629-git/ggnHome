@@ -18,6 +18,7 @@ import { getRecentlyViewed } from "../../utils/propertyAnalytics";
 import FloatingActions from "./FloatingActions";
 import AiLaunchButton from "../../components/aiConsultant/AiLaunchButton";
 import { useAiConsultant } from "../../components/aiConsultant/AiConsultantHost";
+import { AI_CONSULTANT_ENABLED } from "../../components/aiConsultant/featureFlag";
 
 // Code-split: the consultant (and its styles) only download when it opens.
 // Opens by itself once per browser session, after the launch intro finishes.
@@ -100,6 +101,7 @@ export default function RealEstateDashboard() {
 
   const { open: openAi, isActive: aiActive, onManualSearch } = aiConsultant;
   useEffect(() => {
+    if (!AI_CONSULTANT_ENABLED) return undefined;
     let seen = false;
     try {
       seen = Boolean(sessionStorage.getItem(AI_AUTO_OPEN_KEY));
@@ -384,7 +386,7 @@ export default function RealEstateDashboard() {
         suggestions={areaSuggestions}
         searching={isSearching}
         onOpenPreferences={goToPreferences}
-        onOpenAi={() => openAi("hero")}
+        onOpenAi={AI_CONSULTANT_ENABLED ? () => openAi("hero") : undefined}
       />
 
       {/* Sticky search bar on scroll - disabled
@@ -543,7 +545,7 @@ export default function RealEstateDashboard() {
 
       <FloatingActions onOpenPreferences={goToPreferences} />
 
-      {!aiActive && <AiLaunchButton floating onClick={() => openAi("fab")} />}
+      {AI_CONSULTANT_ENABLED && !aiActive && <AiLaunchButton floating onClick={() => openAi("fab")} />}
 
       <Suspense fallback={null}>
         <Footer user={user} />
