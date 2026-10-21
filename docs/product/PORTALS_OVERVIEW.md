@@ -54,15 +54,15 @@
 - Owner's mobile number is kept private.
 - Sale and rent supported.
 
-### Partner — PartnerHub `/partner/properties/add` (3 steps)
+### Partner — PartnerHub `/partner/properties/add` (3 short screens, about 2–3 minutes)
 
-1. Photos (front photo required)
-2. Property Details (owner's mobile number required)
-3. Review & Publish
+1. **Photos:** camera or gallery; photos are shrunk before upload; the first photo is the front photo.
+2. **Property:** Rent or Sale, type (flat, house, builder floor, villa, plot or studio), rooms, size (plots in gaj), price.
+3. **Place:** "Use my location" (best-accuracy GPS, address and sector found automatically) or address search; the address is cross-checked against the phone's GPS; owner's mobile number.
 
-- **Publishes immediately.**
-- Partner contact is attached automatically.
-- Drafts are saved on the device.
+- English with Hindi under every label; big buttons; works one-handed.
+- **Written automatically on the server:** title, description, bathrooms, map position and nearby metro, market, hospital, school, park and mall.
+- **Publishes immediately.** Partner contact is attached automatically. A draft is saved on the device.
 
 ### Partner web (standalone `partner-portal`)
 

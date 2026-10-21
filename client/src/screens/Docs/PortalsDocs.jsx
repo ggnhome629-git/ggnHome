@@ -67,7 +67,7 @@ const APPS = [
 ];
 
 const OWNER_STEPS = ["Basic Details", "Location", "Property Profile", "Price & Description", "Photos", "Review & Post"];
-const PARTNER_STEPS = ["Photos (front photo required)", "Property Details (owner mobile required)", "Review & Publish"];
+const PARTNER_STEPS = ["Photos (first photo = front, auto)", "Property: rent or sale, type, rooms, size, price", "Place: GPS or address search, owner mobile"];
 
 const LIVE = [
   "Property search, listing and detail pages",
@@ -538,10 +538,10 @@ export default function PortalsDocs() {
 
             <Box sx={cardSx}>
               <Typography fontWeight={800}>Partner (Partner Hub)</Typography>
-              <Typography variant="caption" color="text.secondary">/partner/properties/add · 3 steps</Typography>
+              <Typography variant="caption" color="text.secondary">/partner/properties/add · 3 short screens</Typography>
               <Steps steps={PARTNER_STEPS} color="#2563eb" />
               <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 2 }}>
-                {["Publishes immediately", "Partner contact attached", "Drafts saved on device"].map((c) => (
+                {["2-3 minutes", "Hindi + English", "Auto title & description", "Auto location & nearby places", "Publishes immediately", "Draft saved on device"].map((c) => (
                   <Chip key={c} size="small" label={c} sx={{ fontWeight: 600 }} />
                 ))}
               </Stack>
