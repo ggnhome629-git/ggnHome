@@ -23,8 +23,10 @@ const {
   smsConsoleLoginLimiter,
   aiTurnLimiter,
   aiSearchLimiter,
+  locationLookupLimiter,
 } = require("../middleware/rateLimit");
 const aiConsultant = require("../controllers/aiConsultant.controller");
+const partnerLocation = require("../controllers/partnerLocation.controller");
 const livekitVoice = require("../controllers/livekitVoice.controller");
 const voiceQueue = require("../controllers/voiceQueue.controller");
 
@@ -574,6 +576,9 @@ router.post("/api/partner/register", (req, res) => res.status(410).json({ messag
 router.get("/api/partner/dashboard", verifyAgentToken, verifyPartnerAccess, getAgentHubDashboard);
 router.get("/api/partner/properties", verifyAgentToken, verifyPartnerAccess, getAgentProperties);
 router.post("/api/partner/properties", verifyAgentToken, verifyPartnerAccess, upload.array("images", 18), createPartnerProperty);
+// Quick-post helpers: GPS -> address and address suggestions (partner sessions only).
+router.post("/api/partner/location/reverse", verifyAgentToken, verifyPartnerAccess, locationLookupLimiter, partnerLocation.reverse);
+router.get("/api/partner/location/suggest", verifyAgentToken, verifyPartnerAccess, locationLookupLimiter, partnerLocation.suggest);
 router.get("/api/partner/leads", verifyAgentToken, verifyPartnerAccess, getAgentLeads);
 router.get("/api/partner/leads/preferences", verifyAgentToken, verifyPartnerAccess, listPreferenceForms);
 router.get("/api/partner/leads/searches", verifyAgentToken, verifyPartnerAccess, getPartnerSearchLeads);

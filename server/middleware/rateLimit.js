@@ -236,6 +236,10 @@ const apiLimiter = make({ name: "api", windowMs: 60 * 1000, max: 600 });
 const aiTurnLimiter = make({ name: "ai-turn", windowMs: 10 * 60 * 1000, max: 120, message: "You're going a little fast — please wait a moment and try again." });
 const aiSearchLimiter = make({ name: "ai-search", windowMs: 10 * 60 * 1000, max: 40, message: "Too many searches — please wait a moment and try again." });
 
+// Partner address box: a few suggestion calls per typed address, so allow plenty
+// per 10 minutes (the client also waits for the partner to pause typing).
+const locationLookupLimiter = make({ name: "partner-location", windowMs: 10 * 60 * 1000, max: 150, message: "Too many location searches — please wait a moment and try again." });
+
 // After a successful OTP verification the client is clearly a real user: reset
 // their OTP request and verify counters to zero so they are never left locked out.
 const resetOtpLimits = async (req) => {
@@ -245,6 +249,7 @@ const resetOtpLimits = async (req) => {
 
 module.exports = {
   resetOtpLimits,
+  locationLookupLimiter,
   otpRequestLimiter,
   otpRequestIpLimiter,
   otpVerifyLimiter,

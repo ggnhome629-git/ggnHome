@@ -111,4 +111,4 @@ async function findNearbyParameters({ address, sector, latitude, longitude }) {
   return result;
 }
 
-module.exports = { findNearbyParameters, haversineMeters };
+module.exports = { findNearbyParameters, haversineMeters, providerConfig };
