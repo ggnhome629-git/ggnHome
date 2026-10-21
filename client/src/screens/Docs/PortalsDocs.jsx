@@ -1,30 +1,71 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Box, Button, Card, CardContent, Chip, Container, Stack, TextField, Typography } from "@mui/material";
-
-const API = (process.env.REACT_APP_Base_API || "").replace(/\/+$/, "");
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert, Box, Button, Chip, Collapse, Container, LinearProgress, Stack, TextField, Typography } from "@mui/material";
+import { motion } from "framer-motion";
+import {
+  Ban,
+  Building2,
+  CheckCircle2,
+  ChevronDown,
+  Circle,
+  ClipboardCheck,
+  Download,
+  ExternalLink,
+  Globe,
+  Layers,
+  ListChecks,
+  MessageSquarePlus,
+  Mic,
+  Rocket,
+  Server,
+  ShieldCheck,
+  Smartphone,
+  UserCog,
+} from "lucide-react";
 
 // Public, read-only overview for co-founder review. Mirrors docs/PORTALS_OVERVIEW.md.
 // Deliberately outside ProtectedRoutes and AdminLayout: no login or role check.
 
+const API = (process.env.REACT_APP_Base_API || "").replace(/\/+$/, "");
+const SITE = "https://www.ggnhome.com";
+const RELEASES = "https://github.com/ggnhome629-git/ggnHome/releases/download/latest-apks";
+
 const PORTALS = [
-  { name: "Main website", url: "https://www.ggnhome.com", who: "Public users", status: "Live" },
-  { name: "Admin portal", url: "https://www.ggnhome.com/admin/Landingpage", who: "Admins (admin email login)", status: "Live" },
-  { name: "Partner Hub", url: "https://www.ggnhome.com/partner/login", who: "Approved partners (OTP login)", status: "Live" },
-  { name: "Partner Hub (standalone site)", url: "Host not in repo", who: "Partners", status: "Confirm" },
-  { name: "SMS gateway console", url: "https://www.ggnhome.com/sms-service/app/manage", who: "Owner with SMS key", status: "Live (hidden page)" },
-  { name: "App downloads", url: "https://www.ggnhome.com/apps", who: "Everyone", status: "Live" },
-  { name: "Agent portal (legacy)", url: "/agent/login", who: "—", status: "Disabled" },
-  { name: "API backend", url: "Host not in repo (ggnhome.onrender.com likely)", who: "All apps", status: "Confirm" },
-  { name: "Voice / LiveKit", url: "infra/livekit (self-hosted)", who: "AI voice assistant", status: "Off on main, on in v2" },
+  { name: "Main website", url: SITE, who: "Public users", status: "Live", icon: Globe },
+  { name: "Admin portal", url: `${SITE}/admin/Landingpage`, who: "Admins (admin email login)", status: "Live", icon: ShieldCheck },
+  { name: "Partner Hub", url: `${SITE}/partner/login`, who: "Approved partners (OTP login)", status: "Live", icon: Building2 },
+  { name: "SMS gateway console", url: `${SITE}/sms-service/app/manage`, who: "Owner with SMS key", status: "Live (hidden page)", icon: Smartphone },
+  { name: "App downloads page", url: `${SITE}/apps`, who: "Everyone", status: "Live", icon: Download },
+  { name: "API backend", url: "https://api.ggnhome.com", who: "All apps and the website", status: "Live", icon: Server },
+  { name: "Partner Hub (standalone site)", url: "Host not in repo", who: "Partners", status: "Confirm", icon: Building2 },
+  { name: "Agent portal (legacy)", url: "/agent/login", who: "No longer a supported flow", status: "Disabled", icon: UserCog },
+  { name: "Voice / LiveKit", url: "infra/livekit (self-hosted)", who: "AI voice assistant", status: "Off on main, on in v2", icon: Mic },
 ];
 
 const APPS = [
-  { name: "GgnHome (user)", details: "Capacitor wrapper of www.ggnhome.com · com.tanush.ggnhome · v1.2.0", download: "GitHub Release latest-apks → GgnHome.apk", status: "Live" },
-  { name: "GgnHome Partner", details: "Android wrapper for Partner Hub", download: "/api/app-downloads/partner.apk (streams GgnHome-Partner.apk)", status: "Live" },
-  { name: "SMS Service", details: "Android SMS gateway + OTP viewer", download: "GitHub Release latest-apks → sms-service.apk", status: "Live" },
+  {
+    name: "GgnHome (user)",
+    details: "Capacitor wrapper of www.ggnhome.com · com.tanush.ggnhome · v1.2.0",
+    source: "GitHub Release latest-apks → GgnHome.apk",
+    href: `${RELEASES}/GgnHome.apk`,
+    status: "Live",
+  },
+  {
+    name: "GgnHome Partner",
+    details: "Android wrapper for Partner Hub",
+    source: "/api/app-downloads/partner.apk (streams GgnHome-Partner.apk)",
+    href: "https://api.ggnhome.com/api/app-downloads/partner.apk",
+    status: "Live",
+  },
+  {
+    name: "SMS Service",
+    details: "Android SMS gateway + OTP viewer",
+    source: "GitHub Release latest-apks → sms-service.apk",
+    href: `${RELEASES}/sms-service.apk`,
+    status: "Live",
+  },
 ];
 
-const USER_STEPS = ["Basic Details", "Location", "Property Profile", "Price & Description", "Photos", "Review & Post"];
+const OWNER_STEPS = ["Basic Details", "Location", "Property Profile", "Price & Description", "Photos", "Review & Post"];
 const PARTNER_STEPS = ["Photos (front photo required)", "Property Details (owner mobile required)", "Review & Publish"];
 
 const LIVE = [
@@ -41,29 +82,102 @@ const DISABLED = [
   ["Flatmates (user pages)", "Routes commented out; feature toggle defaults to off"],
   ["Agent portal", "Routes commented out; /agent/register redirects to admin; toggle off"],
   ["Public partner self-registration", "Backend returns 410; admin adds partners instead"],
-  ["AI consultant (chat + voice)", "Off on main (AI_CONSULTANT_ENABLED = false); on in v2"],
+  ["AI assistant on the site", "Consultant, AI Search pages, floating assistant and Chatbot are off on main (AI_CONSULTANT_ENABLED = false); on in v2"],
   ["Hidden SMS devices page", "/admin/sms-devices redirects to landing page"],
 ];
 
 const OPEN_ITEMS = [
-  "Confirm the production API host and set it in the hosting dashboard.",
   "Confirm the domain: code uses both ggnhome.com and ggnhome.in.",
   "Store builds: GitHub APKs for GgnHome and Partner are debug builds. Publish signed release builds before Play Store or wide distribution.",
   "Test routes: /test (SMS OTP) and /admin/ping are public. Consider removing them in production.",
   "Partner Hub host: confirm www.ggnhome.com/partner/* or a separate site.",
   "Feature toggles: check live values for Flatmates and Agent portal in admin.",
   "Admin APK URLs: confirm all three download URLs are set in Admin → App Downloads.",
+  "AI backend endpoints (/api/ai-consultant/*) still answer on main. The site no longer calls them, but they are not blocked server-side.",
 ];
 
-const statusColor = (status) => {
-  if (status.startsWith("Live")) return "success";
-  if (status === "Confirm") return "warning";
-  return "default";
+const NAV = [
+  { id: "portals", label: "Portals" },
+  { id: "apps", label: "Apps" },
+  { id: "post-property", label: "Post property" },
+  { id: "features", label: "Features" },
+  { id: "open-items", label: "Open items" },
+];
+
+const TONES = {
+  live: { fg: "#15803d", bg: "rgba(22,163,74,0.13)" },
+  confirm: { fg: "#b45309", bg: "rgba(217,119,6,0.15)" },
+  off: { fg: "#b91c1c", bg: "rgba(220,38,38,0.11)" },
+};
+const toneOf = (status) => (status.startsWith("Live") ? "live" : status === "Confirm" ? "confirm" : "off");
+const isUrl = (value) => /^https?:\/\//.test(value);
+
+const cardSx = {
+  p: 2.25,
+  borderRadius: 3,
+  border: "1px solid",
+  borderColor: "divider",
+  bgcolor: "background.paper",
+  transition: "transform .2s ease, box-shadow .2s ease",
+  "&:hover": { transform: "translateY(-2px)", boxShadow: "0 12px 30px rgba(0,30,60,0.10)" },
 };
 
-/** Suggestions for one section: list of what others wrote, plus a form to add one. */
+function StatusPill({ status }) {
+  const tone = TONES[toneOf(status)];
+  return (
+    <Box
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 0.75,
+        px: 1.1,
+        py: 0.35,
+        borderRadius: 99,
+        bgcolor: tone.bg,
+        color: tone.fg,
+        fontSize: 12,
+        fontWeight: 700,
+        whiteSpace: "nowrap",
+        flexShrink: 0,
+      }}
+    >
+      <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: tone.fg }} />
+      {status}
+    </Box>
+  );
+}
+
+function IconBubble({ icon: Icon, status }) {
+  const tone = TONES[toneOf(status)];
+  return (
+    <Box sx={{ width: 40, height: 40, borderRadius: 2.5, display: "grid", placeItems: "center", bgcolor: tone.bg, color: tone.fg, flexShrink: 0 }}>
+      <Icon size={20} />
+    </Box>
+  );
+}
+
+function LinkButton({ href, children, icon: Icon = ExternalLink, variant = "contained", download = false, size = "small", sx }) {
+  return (
+    <Button
+      component="a"
+      href={href}
+      target={download ? undefined : "_blank"}
+      rel="noopener noreferrer"
+      download={download || undefined}
+      variant={variant}
+      size={size}
+      endIcon={<Icon size={15} />}
+      sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2, boxShadow: "none", ...sx }}
+    >
+      {children}
+    </Button>
+  );
+}
+
+/** Suggestions for one section: collapsible, with the list others wrote and a form to add one. */
 function SuggestionBox({ section }) {
   const [items, setItems] = useState([]);
+  const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -112,156 +226,426 @@ function SuggestionBox({ section }) {
   };
 
   return (
-    <Box sx={{ mt: 2, pt: 2, borderTop: "1px dashed", borderColor: "divider" }}>
-      <Typography variant="subtitle2" fontWeight={700}>Suggestions</Typography>
-      {items.length === 0 ? (
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>No suggestions yet.</Typography>
-      ) : (
-        <Stack spacing={1} sx={{ mt: 1 }}>
-          {items.map((s) => (
-            <Box key={s._id || `${s.createdAt}-${s.text}`} sx={{ p: 1.5, borderRadius: 1.5, backgroundColor: "action.hover" }}>
-              <Typography variant="body2">{s.text}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {s.name || "Anonymous"} · {s.createdAt ? new Date(s.createdAt).toLocaleDateString("en-IN") : ""}
-              </Typography>
+    <Box sx={{ mt: 3, borderRadius: 3, border: "1px dashed", borderColor: "divider", overflow: "hidden" }}>
+      <Button
+        onClick={() => setOpen((v) => !v)}
+        fullWidth
+        aria-expanded={open}
+        sx={{ justifyContent: "space-between", textTransform: "none", px: 2, py: 1.25, color: "text.primary", fontWeight: 700 }}
+        startIcon={<MessageSquarePlus size={18} />}
+        endIcon={<ChevronDown size={18} style={{ transition: "transform .2s", transform: open ? "rotate(180deg)" : "none" }} />}
+      >
+        <Box sx={{ flex: 1, textAlign: "left" }}>
+          Suggestions{" "}
+          <Chip size="small" label={items.length} sx={{ ml: 0.5, height: 20, fontWeight: 700 }} />
+        </Box>
+      </Button>
+      <Collapse in={open} unmountOnExit>
+        <Box sx={{ px: 2, pb: 2 }}>
+          {items.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">No suggestions yet. Be the first.</Typography>
+          ) : (
+            <Stack spacing={1}>
+              {items.map((s) => (
+                <Box key={s._id || `${s.createdAt}-${s.text}`} sx={{ p: 1.5, borderRadius: 2, bgcolor: "action.hover" }}>
+                  <Typography variant="body2">{s.text}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {s.name || "Anonymous"} · {s.createdAt ? new Date(s.createdAt).toLocaleDateString("en-IN") : ""}
+                  </Typography>
+                </Box>
+              ))}
+            </Stack>
+          )}
+
+          <Box component="form" onSubmit={submit} sx={{ mt: 2 }}>
+            <Stack spacing={1.5}>
+              <TextField
+                label="Your suggestion"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                multiline
+                minRows={2}
+                inputProps={{ maxLength: 600 }}
+                helperText={`${text.length}/600`}
+                required
+                fullWidth
+              />
+              <TextField
+                label="Name (optional)"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                inputProps={{ maxLength: 60 }}
+                fullWidth
+              />
+              {status && <Alert severity={status.type}>{status.msg}</Alert>}
+              <Box>
+                <Button type="submit" variant="contained" disabled={busy} sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2 }}>
+                  {busy ? "Sending…" : "Send suggestion"}
+                </Button>
+              </Box>
+            </Stack>
+          </Box>
+        </Box>
+      </Collapse>
+    </Box>
+  );
+}
+
+function Section({ id, number, title, subtitle, icon: Icon, children }) {
+  return (
+    <Box
+      component={motion.section}
+      id={id}
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.4 }}
+      sx={{ mt: { xs: 5, md: 7 }, scrollMarginTop: 84 }}
+    >
+      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2.5 }}>
+        <Box sx={{ width: 42, height: 42, borderRadius: 3, display: "grid", placeItems: "center", color: "#fff", background: "linear-gradient(135deg,#003366,#0f766e)", flexShrink: 0 }}>
+          <Icon size={21} />
+        </Box>
+        <Box>
+          <Typography variant="h5" fontWeight={800} sx={{ lineHeight: 1.2 }}>
+            <Box component="span" sx={{ color: "text.secondary", fontWeight: 600, mr: 0.75 }}>{number}.</Box>
+            {title}
+          </Typography>
+          {subtitle && <Typography variant="body2" color="text.secondary">{subtitle}</Typography>}
+        </Box>
+      </Stack>
+      {children}
+      <SuggestionBox section={id} />
+    </Box>
+  );
+}
+
+function Steps({ steps, color }) {
+  return (
+    <Stack sx={{ mt: 1.5 }}>
+      {steps.map((step, i) => (
+        <Stack key={step} direction="row" spacing={1.5} alignItems="stretch">
+          <Stack alignItems="center">
+            <Box sx={{ width: 26, height: 26, borderRadius: "50%", bgcolor: color, color: "#fff", display: "grid", placeItems: "center", fontSize: 13, fontWeight: 700, flexShrink: 0 }}>
+              {i + 1}
+            </Box>
+            {i < steps.length - 1 && <Box sx={{ width: 2, flex: 1, minHeight: 14, bgcolor: "divider", my: 0.5 }} />}
+          </Stack>
+          <Typography variant="body2" sx={{ pt: 0.4, pb: i < steps.length - 1 ? 1.5 : 0 }}>{step}</Typography>
+        </Stack>
+      ))}
+    </Stack>
+  );
+}
+
+function Hero({ stats }) {
+  return (
+    <Box sx={{ position: "relative", overflow: "hidden", color: "#fff", background: "linear-gradient(135deg,#003366 0%,#0b5c7a 55%,#0f766e 100%)" }}>
+      <Box sx={{ position: "absolute", top: -120, right: -80, width: 360, height: 360, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,255,255,0.18),transparent 70%)" }} />
+      <Box sx={{ position: "absolute", bottom: -160, left: -100, width: 380, height: 380, borderRadius: "50%", background: "radial-gradient(circle,rgba(34,211,238,0.22),transparent 70%)" }} />
+      <Container maxWidth="lg" sx={{ position: "relative", py: { xs: 5, md: 8 }, px: 2 }}>
+        <Chip label="Co-founder review" size="small" sx={{ bgcolor: "rgba(255,255,255,0.16)", color: "#fff", fontWeight: 700, mb: 2 }} />
+        <Typography component="h1" sx={{ fontSize: { xs: 30, md: 48 }, fontWeight: 800, lineHeight: 1.1, maxWidth: 760 }}>
+          GgnHome portals, apps &amp; status
+        </Typography>
+        <Typography sx={{ mt: 1.5, maxWidth: 640, opacity: 0.9, fontSize: { xs: 15, md: 17 } }}>
+          Every link, app and feature in one place. Open anything with one tap and leave a suggestion under any section.
+        </Typography>
+
+        <Stack direction="row" flexWrap="wrap" gap={1.25} sx={{ mt: 3 }}>
+          <LinkButton href={SITE} sx={{ bgcolor: "#fff", color: "#003366", "&:hover": { bgcolor: "#e6f4f1" } }}>Open website</LinkButton>
+          <LinkButton href={`${SITE}/admin/Landingpage`} variant="outlined" sx={{ color: "#fff", borderColor: "rgba(255,255,255,0.6)", "&:hover": { borderColor: "#fff", bgcolor: "rgba(255,255,255,0.1)" } }}>
+            Admin portal
+          </LinkButton>
+          <LinkButton href={`${SITE}/apps`} icon={Download} variant="outlined" sx={{ color: "#fff", borderColor: "rgba(255,255,255,0.6)", "&:hover": { borderColor: "#fff", bgcolor: "rgba(255,255,255,0.1)" } }}>
+            Get the apps
+          </LinkButton>
+        </Stack>
+
+        <Box sx={{ mt: 4, display: "grid", gap: 1.5, gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" } }}>
+          {stats.map((s) => (
+            <Box key={s.label} sx={{ p: 2, borderRadius: 3, bgcolor: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.18)", backdropFilter: "blur(6px)" }}>
+              <Typography sx={{ fontSize: 30, fontWeight: 800, lineHeight: 1 }}>{s.value}</Typography>
+              <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.5 }}>{s.label}</Typography>
             </Box>
           ))}
-        </Stack>
-      )}
-
-      <Box component="form" onSubmit={submit} sx={{ mt: 2 }}>
-        <Stack spacing={1.5}>
-          <TextField
-            label="Your suggestion"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            multiline
-            minRows={2}
-            inputProps={{ maxLength: 600 }}
-            helperText={`${text.length}/600`}
-            required
-            fullWidth
-          />
-          <TextField
-            label="Name (optional)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            inputProps={{ maxLength: 60 }}
-            fullWidth
-          />
-          {status && <Alert severity={status.type}>{status.msg}</Alert>}
-          <Box>
-            <Button type="submit" variant="contained" disabled={busy}>
-              {busy ? "Sending…" : "Send suggestion"}
-            </Button>
-          </Box>
-        </Stack>
-      </Box>
+        </Box>
+        <Typography variant="caption" sx={{ display: "block", mt: 2, opacity: 0.75 }}>
+          Branch main · As of 21 Oct 2026 · "Live" means enabled in the code on main; check the hosting dashboard before treating anything as in production.
+        </Typography>
+      </Container>
     </Box>
   );
 }
 
-function Section({ title, sectionKey, children }) {
+function SectionNav({ active }) {
+  const go = (id) => {
+    const el = document.getElementById(id);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
   return (
-    <Box component="section" sx={{ mt: 4 }}>
-      <Typography variant="h5" fontWeight={700} gutterBottom>{title}</Typography>
-      {children}
-      {sectionKey && <SuggestionBox section={sectionKey} />}
+    <Box sx={{ position: "sticky", top: 0, zIndex: 10, bgcolor: "background.paper", borderBottom: "1px solid", borderColor: "divider", backdropFilter: "blur(8px)" }}>
+      <Container maxWidth="lg" sx={{ px: 2 }}>
+        <Stack direction="row" spacing={1} sx={{ py: 1.25, overflowX: "auto", "&::-webkit-scrollbar": { display: "none" } }}>
+          {NAV.map((n) => (
+            <Chip
+              key={n.id}
+              label={n.label}
+              onClick={() => go(n.id)}
+              color={active === n.id ? "primary" : "default"}
+              variant={active === n.id ? "filled" : "outlined"}
+              sx={{ fontWeight: 700, flexShrink: 0 }}
+            />
+          ))}
+          <Box sx={{ flex: 1 }} />
+          <Chip component="a" href="/" clickable label="Back to site" variant="outlined" sx={{ fontWeight: 700, flexShrink: 0 }} />
+        </Stack>
+      </Container>
     </Box>
   );
 }
 
-function Panel({ children }) {
-  return <Card variant="outlined" sx={{ borderRadius: 2 }}><CardContent>{children}</CardContent></Card>;
-}
+const REVIEWED_KEY = "ggn:docReviewedItems";
 
 export default function PortalsDocs() {
+  const [active, setActive] = useState(NAV[0].id);
+  const [reviewed, setReviewed] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(REVIEWED_KEY) || "[]");
+    } catch (_) {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    if (typeof IntersectionObserver === "undefined") return undefined;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (visible) setActive(visible.target.id);
+      },
+      { rootMargin: "-20% 0px -65% 0px" }
+    );
+    NAV.forEach((n) => {
+      const el = document.getElementById(n.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  const toggleReviewed = (index) => {
+    setReviewed((prev) => {
+      const next = prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index];
+      try {
+        localStorage.setItem(REVIEWED_KEY, JSON.stringify(next));
+      } catch (_) {
+        // Progress is a per-viewer convenience; ignore blocked storage.
+      }
+      return next;
+    });
+  };
+
+  const stats = useMemo(
+    () => [
+      { value: PORTALS.filter((p) => toneOf(p.status) === "live").length, label: "Live portals" },
+      { value: APPS.length, label: "Android apps" },
+      { value: DISABLED.length, label: "Disabled features" },
+      { value: OPEN_ITEMS.length, label: "Open items" },
+    ],
+    []
+  );
+
+  const progress = Math.round((reviewed.length / OPEN_ITEMS.length) * 100);
+
   return (
-    <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 }, px: 2 }}>
-      <Typography variant="h4" fontWeight={800}>GgnHome — Portals, Links & Status</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-        For co-founder review · Branch main · As of 21 Oct 2026. "Live" means enabled in the code on main; check the hosting dashboard before treating anything as in production.
-      </Typography>
+    <Box sx={{ bgcolor: "background.default", minHeight: "100vh", pb: 8 }}>
+      <Hero stats={stats} />
+      <SectionNav active={active} />
 
-      <Section title="1. Portals & links" sectionKey="portals">
-        <Stack spacing={1.5}>
-          {PORTALS.map((p) => (
-            <Panel key={p.name}>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography fontWeight={700}>{p.name}</Typography>
-                  <Typography variant="body2" sx={{ wordBreak: "break-all" }}>{p.url}</Typography>
-                  <Typography variant="caption" color="text.secondary">{p.who}</Typography>
+      <Container maxWidth="lg" sx={{ px: 2 }}>
+        <Section id="portals" number={1} title="Portals & links" subtitle="Tap Open to jump straight to any portal." icon={Globe}>
+          <Box sx={{ display: "grid", gap: 1.75, gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" } }}>
+            {PORTALS.map((p) => (
+              <Box key={p.name} sx={cardSx}>
+                <Stack direction="row" spacing={1.5} alignItems="flex-start">
+                  <IconBubble icon={p.icon} status={p.status} />
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+                      <Typography fontWeight={700}>{p.name}</Typography>
+                      <StatusPill status={p.status} />
+                    </Stack>
+                    <Typography variant="body2" color="text.secondary" sx={{ wordBreak: "break-all", mt: 0.25 }}>
+                      {isUrl(p.url) ? p.url.replace(/^https?:\/\//, "") : p.url}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">{p.who}</Typography>
+                    {isUrl(p.url) && (
+                      <Box sx={{ mt: 1.25 }}>
+                        <LinkButton href={p.url}>Open</LinkButton>
+                      </Box>
+                    )}
+                  </Box>
+                </Stack>
+              </Box>
+            ))}
+          </Box>
+        </Section>
+
+        <Section id="apps" number={2} title="Mobile apps & APKs" subtitle="Download the latest Android builds." icon={Smartphone}>
+          <Box sx={{ display: "grid", gap: 1.75, gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" } }}>
+            {APPS.map((a) => (
+              <Box key={a.name} sx={{ ...cardSx, display: "flex", flexDirection: "column" }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                  <IconBubble icon={Smartphone} status={a.status} />
+                  <StatusPill status={a.status} />
+                </Stack>
+                <Typography fontWeight={700}>{a.name}</Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>{a.details}</Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, wordBreak: "break-all", display: "block" }}>
+                  Source: {a.source}
+                </Typography>
+                <Box sx={{ mt: "auto", pt: 1.5 }}>
+                  <LinkButton href={a.href} icon={Download} download>Download APK</LinkButton>
                 </Box>
-                <Chip size="small" label={p.status} color={statusColor(p.status)} />
-              </Stack>
-            </Panel>
-          ))}
-        </Stack>
-      </Section>
+              </Box>
+            ))}
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            Admin manages download URLs at Admin → App Downloads (keys: ggnhome, partner, sms-service). APKs are built by{" "}
+            <Box component="code" sx={{ fontSize: 13 }}>.github/workflows/build-all-apks.yml</Box>.
+          </Typography>
+          <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 1.5 }}>
+            <LinkButton href={`${SITE}/apps`} variant="outlined" icon={Globe}>Public downloads page</LinkButton>
+            <LinkButton href="https://github.com/ggnhome629-git/ggnHome/releases/tag/latest-apks" variant="outlined">All releases on GitHub</LinkButton>
+          </Stack>
+        </Section>
 
-      <Section title="2. Mobile apps & APKs" sectionKey="apps">
-        <Stack spacing={1.5}>
-          {APPS.map((a) => (
-            <Panel key={a.name}>
-              <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography fontWeight={700}>{a.name}</Typography>
-                  <Typography variant="body2" color="text.secondary">{a.details}</Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5, wordBreak: "break-all" }}>Download: {a.download}</Typography>
+        <Section id="post-property" number={3} title="Post property" subtitle="What users and partners see when they list a property." icon={Building2}>
+          <Box sx={{ display: "grid", gap: 1.75, gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" } }}>
+            <Box sx={cardSx}>
+              <Typography fontWeight={800}>User / owner</Typography>
+              <Typography variant="caption" color="text.secondary">/add-property · 6 steps</Typography>
+              <Steps steps={OWNER_STEPS} color="#0f766e" />
+              <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 2 }}>
+                {["Free listing", "Reviewed before going live", "Editable anytime", "Owner mobile private", "Sale & rent"].map((c) => (
+                  <Chip key={c} size="small" label={c} sx={{ fontWeight: 600 }} />
+                ))}
+              </Stack>
+              <Box sx={{ mt: 2 }}>
+                <LinkButton href={`${SITE}/add-property`}>Open form</LinkButton>
+              </Box>
+            </Box>
+
+            <Box sx={cardSx}>
+              <Typography fontWeight={800}>Partner (Partner Hub)</Typography>
+              <Typography variant="caption" color="text.secondary">/partner/properties/add · 3 steps</Typography>
+              <Steps steps={PARTNER_STEPS} color="#2563eb" />
+              <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 2 }}>
+                {["Publishes immediately", "Partner contact attached", "Drafts saved on device"].map((c) => (
+                  <Chip key={c} size="small" label={c} sx={{ fontWeight: 600 }} />
+                ))}
+              </Stack>
+              <Box sx={{ mt: 2 }}>
+                <LinkButton href={`${SITE}/partner/properties/add`}>Open form</LinkButton>
+              </Box>
+            </Box>
+
+            <Box sx={cardSx}>
+              <Typography fontWeight={800}>Partner web (standalone)</Typography>
+              <Typography variant="caption" color="text.secondary">partner-portal · single page</Typography>
+              <Typography variant="body2" sx={{ mt: 1.5 }}>
+                One form: purpose, type, title, sector, address, price, area, bedrooms, bathrooms, owner name and mobile.
+              </Typography>
+              <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 2 }}>
+                <Chip size="small" label="Front photo required" sx={{ fontWeight: 600 }} />
+              </Stack>
+            </Box>
+          </Box>
+        </Section>
+
+        <Section id="features" number={4} title="Feature status" subtitle="What is on, and what is switched off." icon={Layers}>
+          <Box sx={{ display: "grid", gap: 1.75, gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" } }}>
+            <Box sx={cardSx}>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+                <CheckCircle2 size={20} color={TONES.live.fg} />
+                <Typography fontWeight={800}>Live</Typography>
+              </Stack>
+              <Stack spacing={1.1}>
+                {LIVE.map((item) => (
+                  <Stack key={item} direction="row" spacing={1} alignItems="flex-start">
+                    <CheckCircle2 size={16} color={TONES.live.fg} style={{ marginTop: 3, flexShrink: 0 }} />
+                    <Typography variant="body2">{item}</Typography>
+                  </Stack>
+                ))}
+              </Stack>
+            </Box>
+
+            <Box sx={cardSx}>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+                <Ban size={20} color={TONES.off.fg} />
+                <Typography fontWeight={800}>Disabled / not live</Typography>
+              </Stack>
+              <Stack spacing={1.5}>
+                {DISABLED.map(([feature, reason]) => (
+                  <Box key={feature} sx={{ p: 1.5, borderRadius: 2, bgcolor: TONES.off.bg }}>
+                    <Typography variant="body2" fontWeight={700}>{feature}</Typography>
+                    <Typography variant="caption" color="text.secondary">{reason}</Typography>
+                  </Box>
+                ))}
+              </Stack>
+            </Box>
+          </Box>
+        </Section>
+
+        <Section id="open-items" number={5} title="Open items for review" subtitle="Tick items off as you go. Your progress is saved on this device." icon={ListChecks}>
+          <Box sx={{ ...cardSx, mb: 1.75, "&:hover": undefined }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <ClipboardCheck size={18} />
+                <Typography fontWeight={700}>{reviewed.length} of {OPEN_ITEMS.length} reviewed</Typography>
+              </Stack>
+              <Typography variant="body2" color="text.secondary">{progress}%</Typography>
+            </Stack>
+            <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 99 }} />
+          </Box>
+          <Stack spacing={1.25}>
+            {OPEN_ITEMS.map((item, i) => {
+              const done = reviewed.includes(i);
+              return (
+                <Box
+                  key={item}
+                  component="button"
+                  type="button"
+                  onClick={() => toggleReviewed(i)}
+                  aria-pressed={done}
+                  sx={{
+                    ...cardSx,
+                    display: "flex",
+                    gap: 1.5,
+                    alignItems: "flex-start",
+                    textAlign: "left",
+                    width: "100%",
+                    font: "inherit",
+                    color: "text.primary",
+                    cursor: "pointer",
+                    opacity: done ? 0.6 : 1,
+                  }}
+                >
+                  {done ? <CheckCircle2 size={20} color={TONES.live.fg} style={{ flexShrink: 0, marginTop: 1 }} /> : <Circle size={20} style={{ flexShrink: 0, marginTop: 1 }} />}
+                  <Typography variant="body2" sx={{ textDecoration: done ? "line-through" : "none" }}>{item}</Typography>
                 </Box>
-                <Chip size="small" label={a.status} color={statusColor(a.status)} />
-              </Stack>
-            </Panel>
-          ))}
+              );
+            })}
+          </Stack>
+        </Section>
+
+        <Stack alignItems="center" spacing={1.5} sx={{ mt: 8, textAlign: "center" }}>
+          <Rocket size={22} />
+          <Typography variant="body2" color="text.secondary">
+            Thanks for reviewing. Every suggestion is saved and visible to the team.
+          </Typography>
+          <LinkButton href={SITE} variant="outlined">Back to ggnhome.com</LinkButton>
         </Stack>
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-          Admin manages download URLs at Admin → App Downloads (keys: ggnhome, partner, sms-service). APKs are built by .github/workflows/build-all-apks.yml.
-        </Typography>
-      </Section>
-
-      <Section title="3. Post property" sectionKey="post-property">
-        <Panel>
-          <Typography fontWeight={700}>User / owner — /add-property (6 steps)</Typography>
-          <Typography variant="body2" sx={{ mb: 1 }}>{USER_STEPS.join(" → ")}</Typography>
-          <Typography variant="body2">Free listing · reviewed before going live · editable anytime · owner mobile kept private · sale and rent.</Typography>
-        </Panel>
-        <Box sx={{ mt: 1.5 }}>
-          <Panel>
-            <Typography fontWeight={700}>Partner — Partner Hub /partner/properties/add (3 steps)</Typography>
-            <Typography variant="body2" sx={{ mb: 1 }}>{PARTNER_STEPS.join(" → ")}</Typography>
-            <Typography variant="body2">Publishes immediately · partner contact attached automatically · drafts saved on the device.</Typography>
-          </Panel>
-        </Box>
-        <Box sx={{ mt: 1.5 }}>
-          <Panel>
-            <Typography fontWeight={700}>Partner web (standalone partner-portal)</Typography>
-            <Typography variant="body2">Single-page form: purpose, type, title, sector, address, price, area, bedrooms, bathrooms, owner name and mobile. At least one front photo required.</Typography>
-          </Panel>
-        </Box>
-      </Section>
-
-      <Section title="4. Feature status" sectionKey="features">
-        <Typography variant="subtitle1" fontWeight={700}>Live</Typography>
-        <Box component="ul" sx={{ pl: 3, mt: 0.5 }}>
-          {LIVE.map((item) => <li key={item}><Typography variant="body2">{item}</Typography></li>)}
-        </Box>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ mt: 2 }}>Disabled / not live</Typography>
-        <Stack spacing={1.5} sx={{ mt: 0.5 }}>
-          {DISABLED.map(([feature, reason]) => (
-            <Panel key={feature}>
-              <Typography fontWeight={700}>{feature}</Typography>
-              <Typography variant="body2" color="text.secondary">{reason}</Typography>
-            </Panel>
-          ))}
-        </Stack>
-      </Section>
-
-      <Section title="5. Open items for review" sectionKey="open-items">
-        <Box component="ol" sx={{ pl: 3 }}>
-          {OPEN_ITEMS.map((item) => <li key={item}><Typography variant="body2" sx={{ mb: 0.5 }}>{item}</Typography></li>)}
-        </Box>
-      </Section>
-    </Container>
+      </Container>
+    </Box>
   );
 }

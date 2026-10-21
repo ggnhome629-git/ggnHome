@@ -20,7 +20,7 @@
 | SMS gateway console | https://www.ggnhome.com/sms-service/app/manage | Owner with SMS key | ✅ (hidden page) |
 | App downloads page | https://www.ggnhome.com/apps | Everyone | ✅ |
 | Agent portal (legacy) | /agent/login | — | 🚫 See §4 |
-| API backend | ❓ (`ggnhome.onrender.com` is the likely host) | Used by all apps | ❓ |
+| API backend | https://api.ggnhome.com | Used by all apps | ✅ |
 | Voice / LiveKit | `infra/livekit/` (self-hosted) | AI voice assistant | 🚫 on `main` (on `v2`) |
 
 ---
@@ -96,11 +96,10 @@
 
 ## 5. Open items for review
 
-1. **Confirm the production API host** and set it in the hosting dashboard.
-2. **Confirm the domain:** code uses both `ggnhome.com` and `ggnhome.in` (e.g. AI share links). Pick one.
-3. **Store builds:** the GitHub APKs for GgnHome and Partner are **debug** builds. Publish signed release builds before Play Store or wide distribution.
-4. **Test routes:** `/test` (SMS OTP) and `/admin/ping` are public. Consider removing them in production.
-5. **Partner Hub host:** confirm whether it is served from `www.ggnhome.com/partner/*` or a separate site.
-6. **Feature toggles:** check the live values for Flatmates and Agent portal in the admin Feature Toggles page.
-7. **Admin APK URLs:** confirm all three download URLs are set in Admin → App Downloads.
-8. **AI backend endpoints:** `/api/ai-consultant/*` still answer on `main`. The site no longer calls them, but they are not blocked server-side yet.
+1. **Confirm the domain:** code uses both `ggnhome.com` and `ggnhome.in` (e.g. AI share links). Pick one.
+2. **Store builds:** the GitHub APKs for GgnHome and Partner are **debug** builds. Publish signed release builds before Play Store or wide distribution.
+3. **Test routes:** `/test` (SMS OTP) and `/admin/ping` are public. Consider removing them in production.
+4. **Partner Hub host:** confirm whether it is served from `www.ggnhome.com/partner/*` or a separate site.
+5. **Feature toggles:** check the live values for Flatmates and Agent portal in the admin Feature Toggles page.
+6. **Admin APK URLs:** confirm all three download URLs are set in Admin → App Downloads.
+7. **AI backend endpoints:** `/api/ai-consultant/*` still answer on `main`. The site no longer calls them, but they are not blocked server-side yet.
