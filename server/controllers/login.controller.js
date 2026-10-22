@@ -195,6 +195,27 @@ exports.requestOtp = async (req, res) => {
       });
     }
 
+    // Direct OTP is a testing convenience only. The server must explicitly allowlist
+    // test numbers; never expose a live OTP to arbitrary public login requests.
+    if (channel === "sms") {
+      const SmsSetting = require("../models/SmsSetting.model");
+      const setting = await SmsSetting.findOne({ key: "ggnhome" }).lean();
+      const directOtpEnabled = !setting || setting.directOtpEnabled !== false;
+      const testNumbers = String(process.env.DIRECT_OTP_TEST_NUMBERS || "")
+        .split(",")
+        .map((number) => number.replace(/\\D/g, "").slice(-10))
+        .filter((number) => /^\\d{10}$/.test(number));
+      if (directOtpEnabled && testNumbers.includes(user.mobileNumber)) {
+        return res.status(200).json({
+          message: "Testing code ready",
+          channel: "direct-test",
+          directOtp: otp,
+          maskedMobile: maskMobile(user.mobileNumber),
+          expiresInSeconds: Math.floor(OTP_TTL_MS / 1000),
+        });
+      }
+    }
+
     // SMS channel
     let smsQueued = false;
     let smsPreview = false;
