@@ -25,9 +25,16 @@ beforeEach(() => {
   global.fetch = jest.fn(async (url) => ({
     ok: true,
     status: 200,
-    json: async () => (String(url).includes("/location/reverse")
-      ? { success: true, address: "Sushant Lok III, Sector 57, Gurgaon", sector: "Sector 57", inServiceArea: true }
-      : { success: true, suggestions: [] }),
+    json: async () => {
+      if (String(url).includes("/location/reverse")) return { success: true, address: "Sushant Lok III, Sector 57, Gurgaon", sector: "Sector 57", inServiceArea: true };
+      if (String(url).includes("/api/nearby-parameters")) {
+        return { success: true, amenities: [
+          { category: "metro", name: "Sikanderpur Metro", distanceMeters: 1200, found: true },
+          { category: "park", name: "", distanceMeters: null, found: false },
+        ] };
+      }
+      return { success: true, suggestions: [] };
+    },
   }));
 
   global.XMLHttpRequest = class {
@@ -54,7 +61,7 @@ test("blocks Next on step 1 until a photo is added", () => {
   expect(screen.getByText(/Add at least 1 photo/i)).toBeInTheDocument();
 });
 
-test("a partner can post a rental in three short screens and the server gets only the essentials", async () => {
+test("a partner can post a rental in four short screens and the server gets only the essentials", async () => {
   const { container } = renderForm();
 
   // 1. photos
@@ -67,14 +74,18 @@ test("a partner can post a rental in three short screens and the server gets onl
   fireEvent.click(button(/^Rent/));
   fireEvent.click(button(/^Flat/));
   fireEvent.click(button("3"));
+  fireEvent.click(button(/next/i));
+
+  // 3. size and price
   fireEvent.click(button(/Typical size: 1,500/));
   fireEvent.click(button("₹20,000"));
   fireEvent.click(button(/next/i));
 
-  // 3. the place: GPS fills the address and sector
+  // 4. the place: GPS fills the address and sector, and the nearby places are found
   fireEvent.click(button(/use my location/i));
   await screen.findByText("Sector 57");
   expect(screen.getByDisplayValue(/Sushant Lok III/)).toBeInTheDocument();
+  await screen.findByText(/Sikanderpur Metro/);
 
   // publishing without the owner's number is refused with a clear message
   fireEvent.click(button(/publish property/i));
@@ -95,6 +106,8 @@ test("a partner can post a rental in three short screens and the server gets onl
   expect(sentForm.get("address")).toMatch(/Sushant Lok III/);
   expect(sentForm.get("latitude")).toBe("28.4212");
   expect(sentForm.get("ownerMobile")).toBe("9876543210");
+  // the nearby places that were shown go with the listing, so the server does not search again
+  expect(JSON.parse(sentForm.get("amenities"))).toEqual([{ category: "metro", name: "Sikanderpur Metro", distanceMeters: 1200, source: "locationiq" }]);
   expect(sentForm.getAll("images")).toHaveLength(1);
   expect(sentForm.get("imageCategories")).toBe('["front"]');
   ["title", "description", "bathrooms"].forEach((field) => expect(sentForm.get(field)).toBeNull());
@@ -108,6 +121,7 @@ test("plot sizes in gaj are converted to square feet", async () => {
   fireEvent.click(button(/next/i));
   fireEvent.click(button(/^Sale/));
   fireEvent.click(button(/^Plot/));
+  fireEvent.click(button(/next/i));
   fireEvent.click(button("200 gaj"));
   expect(screen.getByText(/= 1,800 sq ft/)).toBeInTheDocument();
 });

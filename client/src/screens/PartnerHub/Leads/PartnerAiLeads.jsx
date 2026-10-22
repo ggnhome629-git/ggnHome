@@ -121,7 +121,7 @@ export default function PartnerAiLeads() {
             </Typography>
           </Box>
         </Stack>
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
           <Chip label="All open" color={scope === "all" ? "primary" : "default"} onClick={() => { setScope("all"); setPage(1); }} />
           <Chip label="Assigned to me" color={scope === "mine" ? "primary" : "default"} onClick={() => { setScope("mine"); setPage(1); }} />
           <TextField select size="small" value={mode} onChange={(e) => { setMode(e.target.value); setPage(1); }} sx={{ minWidth: 120 }} SelectProps={{ displayEmpty: true }}>

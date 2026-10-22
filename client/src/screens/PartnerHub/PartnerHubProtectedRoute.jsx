@@ -4,11 +4,21 @@ import PageLoader from '../../components/ui/PageLoader';
 
 const API_BASE = process.env.REACT_APP_Base_API;
 
+// The sign-in check makes network calls, so it is remembered for a few minutes: opening another
+// partner page then shows the page at once instead of a loading screen.
+const VERIFY_TTL_MS = 5 * 60 * 1000;
+let verified = { token: "", at: 0 };
+const verifiedRecently = () => {
+  const token = localStorage.getItem('partnerAccessToken') || '';
+  return !!token && verified.token === token && Date.now() - verified.at < VERIFY_TTL_MS;
+};
+
 const PartnerHubProtectedRoute = ({ element }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => (verifiedRecently() ? true : null));
 
   useEffect(() => {
     let cancelled = false;
+    if (verifiedRecently()) return undefined;
 
     const checkAuth = async () => {
       try {
@@ -47,10 +57,12 @@ const PartnerHubProtectedRoute = ({ element }) => {
 
         if (!res.ok) {
           if (res.status === 401) localStorage.removeItem('partnerAccessToken');
+          verified = { token: '', at: 0 };
           if (!cancelled) setIsAuthenticated(false);
           return;
         }
 
+        verified = { token, at: Date.now() };
         if (!cancelled) setIsAuthenticated(true);
       } catch (err) {
         console.error('PartnerHub auth error:', err);

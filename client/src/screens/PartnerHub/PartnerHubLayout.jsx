@@ -1,13 +1,13 @@
-import React, { useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import {
-  AppBar, Avatar, Box, Button, Divider, Drawer, IconButton, List,
+  AppBar, Avatar, Box, Button, Divider, Drawer, IconButton, LinearProgress, List,
   ListItemButton, ListItemIcon, ListItemText, Stack, Toolbar, Tooltip, Typography,
 } from "@mui/material";
 import {
   Building2, ChevronRight, ClipboardList, Download, ExternalLink, Home, LayoutDashboard,
   LogOut, Menu, MessageSquare, UserRound, X,
 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { PostPropertyIcon } from "../../components/ui/PostActionIcon";
 
 const NAV_ITEMS = [
@@ -19,6 +19,19 @@ const NAV_ITEMS = [
 ];
 
 const SIDEBAR_WIDTH = 258;
+
+// Downloads the code of every partner page in the background, so moving between pages is instant.
+const prefetchPartnerPages = () => Promise.all([
+  import("./Dashboard/PartnerHubDashboard"),
+  import("./Properties/PartnerHubProperties"),
+  import("./Properties/PartnerPropertyAdd"),
+  import("./Leads/PartnerHubLeads"),
+  import("./Enquiries/PartnerHubEnquiries"),
+  import("./Profile/PartnerHubProfile"),
+]).catch(() => {});
+
+// Shown inside the page area only (the menu and header stay) while a page's code arrives.
+const PageArea = () => <Box role="status" aria-live="polite"><LinearProgress sx={{ height: 3 }} /></Box>;
 
 function SidebarContent({ pathname, navigate, onNavigate }) {
   const active = (path) => path === "/partner/properties"
@@ -82,6 +95,17 @@ export default function PartnerHubLayout({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const isAddPage = location.pathname === "/partner/properties/add";
+
+  useEffect(() => {
+    const run = () => { prefetchPartnerPages(); };
+    if (typeof window.requestIdleCallback === "function") {
+      const id = window.requestIdleCallback(run, { timeout: 3000 });
+      return () => window.cancelIdleCallback?.(id);
+    }
+    const timer = setTimeout(run, 1200);
+    return () => clearTimeout(timer);
+  }, []);
   const current = location.pathname === "/partner/properties/add"
     ? { label: "Add a property" }
     : NAV_ITEMS.find((item) => item.path === location.pathname)
@@ -102,7 +126,7 @@ export default function PartnerHubLayout({ children }) {
         {sidebar}
       </Drawer>
       <Box sx={{ minWidth: 0, ml: { xs: 0, md: `${SIDEBAR_WIDTH}px` } }}>
-        <AppBar position="sticky" elevation={0} sx={{ bgcolor: "rgba(255,255,255,.92)", color: "#102a43", borderBottom: "1px solid #e7edf3", backdropFilter: "blur(12px)" }}>
+        <AppBar position={isAddPage ? "static" : "sticky"} elevation={0} sx={{ bgcolor: "rgba(255,255,255,.92)", color: "#102a43", borderBottom: "1px solid #e7edf3", backdropFilter: "blur(12px)" }}>
           <Toolbar sx={{ minHeight: { xs: 64, md: 72 }, px: { xs: 2, sm: 3, lg: 4 }, gap: 1.5 }}>
             <IconButton onClick={() => setMobileOpen(true)} sx={{ display: { xs: "inline-flex", md: "none" }, color: "#334e68" }} aria-label="Open navigation"><Menu size={21} /></IconButton>
             <Box sx={{ minWidth: 0, flex: 1 }}>
@@ -120,7 +144,7 @@ export default function PartnerHubLayout({ children }) {
           </Toolbar>
         </AppBar>
         <Box component="main" sx={{ minHeight: "calc(100vh - 72px)", "& .MuiContainer-root": { maxWidth: "1440px" }, "& .MuiPaper-root": { borderColor: "#e7edf3" }, "& .MuiButton-root": { borderRadius: "10px", fontWeight: 700, textTransform: "none" }, "& .MuiButton-containedPrimary": { bgcolor: "#0f766e", color: "#fff", "&:hover": { bgcolor: "#115e59" } }, "& .MuiButton-outlinedPrimary": { color: "#0f766e", borderColor: "#b8dcd6", "&:hover": { borderColor: "#0f766e", bgcolor: "#f1faf8" } }, "& .MuiOutlinedInput-root": { borderRadius: "10px" }, "& .MuiTableContainer-root": { borderRadius: "16px", boxShadow: "0 4px 18px rgba(16,42,67,.035)", overflowX: "auto" }, "& .MuiTable-root": { minWidth: 760 }, "& .MuiTableHead-root .MuiTableCell-root": { bgcolor: "#f3f7fa", color: "#526477", fontSize: 11, letterSpacing: ".35px", textTransform: "uppercase", borderBottom: "1px solid #e5edf3", py: 1.8 }, "& .MuiTableBody-root .MuiTableCell-root": { color: "#334e68", fontSize: 12.5, borderBottom: "1px solid #edf2f7", py: 1.65 }, "& .MuiTableBody-root .MuiTableRow-root:hover": { bgcolor: "#f8fcfb" } }}>
-          {children}
+          {children ?? <Suspense fallback={<PageArea />}><Outlet /></Suspense>}
         </Box>
       </Box>
     </Box>

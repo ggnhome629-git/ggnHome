@@ -9,14 +9,14 @@ import {
 } from "./quickPostHelpers";
 
 /**
- * Quick listing form for partners: photos, the property, the place. Three short
- * screens, big buttons, English with Hindi underneath. The title, description,
- * bathrooms, nearby places and map position are filled in by the server, so the
- * partner never types them.
+ * Quick listing form for partners: photos, the property, size and price, the place.
+ * Four short screens, big buttons, English with Hindi underneath. The title,
+ * description, bathrooms and map position are filled in by the server, and the
+ * nearby places are found on the last screen, so the partner never types them.
  */
 
 const API = process.env.REACT_APP_Base_API || "";
-const DRAFT_KEY = "partnerQuickPost:v2";
+const DRAFT_KEY = "partnerQuickPost:v3";
 const MAX_PHOTOS = 10;
 const GREEN = "#0f766e";
 const INK = "#0f172a";
@@ -24,8 +24,20 @@ const INK = "#0f172a";
 const STEPS = [
   { en: "Photos", hi: "फोटो" },
   { en: "Property", hi: "प्रॉपर्टी" },
+  { en: "Size & price", hi: "साइज़, कीमत" },
   { en: "Place", hi: "जगह" },
 ];
+const LAST_STEP = STEPS.length - 1;
+
+// Nearby places the server looks for, with a Hindi name for each.
+const NEARBY_LABELS = {
+  market: { en: "Market", hi: "बाज़ार" },
+  metro: { en: "Metro", hi: "मेट्रो" },
+  hospital: { en: "Hospital", hi: "अस्पताल" },
+  school: { en: "School", hi: "स्कूल" },
+  park: { en: "Park", hi: "पार्क" },
+  mall: { en: "Mall", hi: "मॉल" },
+};
 
 const EMPTY_FORM = { purpose: "", propertyType: "", bedrooms: "", area: "", areaUnit: "sqft", price: "", furnishing: "", ownerMobile: "" };
 const EMPTY_LOC = { address: "", sector: "", latitude: null, longitude: null, source: "", accuracy: null };
@@ -139,8 +151,14 @@ export default function PartnerQuickPost() {
   const [publishing, setPublishing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [done, setDone] = useState(null); // { title }
+  const [typing, setTyping] = useState(false); // a phone keyboard is open: hide the bottom bar
+  const [nearby, setNearby] = useState({ status: "idle", items: [] }); // idle | loading | done | failed
   const cameraRef = useRef(null);
   const galleryRef = useRef(null);
+  const typeRef = useRef(null);
+  const bhkRef = useRef(null);
+  const locRef = useRef(loc);
+  locRef.current = loc;
 
   const needsBhk = !!f.propertyType && !NO_BHK.has(f.propertyType);
   const isPlot = f.propertyType === "plot";
@@ -150,6 +168,45 @@ export default function PartnerQuickPost() {
   const check = checkAddressAgainstGps(gps, loc);
 
   const set = (patch) => { setF((prev) => ({ ...prev, ...patch })); setError(""); };
+
+  // When a new question appears below, bring it into view so nobody has to hunt for it.
+  const showSection = (ref) => setTimeout(() => ref.current?.scrollIntoView?.({ behavior: "smooth", block: "start" }), 120);
+
+  // A new screen always starts at the top (instant: a smooth scroll fights with a touch scroll).
+  useEffect(() => { window.scrollTo(0, 0); }, [step]);
+
+  // On phones the keyboard covers half the screen: hide the Back/Next bar while a field is being typed in.
+  useEffect(() => {
+    if (!window.matchMedia || !window.matchMedia("(pointer: coarse)").matches) return undefined;
+    let timer;
+    const isField = (el) => !!el && /^(INPUT|TEXTAREA)$/.test(el.tagName);
+    const onIn = (e) => { clearTimeout(timer); if (isField(e.target)) setTyping(true); };
+    const onOut = () => { timer = setTimeout(() => setTyping(false), 150); };
+    document.addEventListener("focusin", onIn);
+    document.addEventListener("focusout", onOut);
+    return () => { clearTimeout(timer); document.removeEventListener("focusin", onIn); document.removeEventListener("focusout", onOut); };
+  }, []);
+
+  // Single-line fields: the keyboard's Done key closes the keyboard.
+  const doneKeyDown = (e) => { if (e.key === "Enter") e.target.blur(); };
+
+  // Nearby places for the chosen spot, shown on the last screen (once per place, not per letter typed).
+  useEffect(() => {
+    if (step !== LAST_STEP || loc.latitude == null || loc.longitude == null) return undefined;
+    let cancelled = false;
+    setNearby({ status: "loading", items: [] });
+    const timer = setTimeout(async () => {
+      try {
+        const data = await apiJson("/api/nearby-parameters", { method: "POST", body: JSON.stringify({ address: locRef.current.address, sector: locRef.current.sector, latitude: loc.latitude, longitude: loc.longitude }) });
+        if (cancelled) return;
+        const items = (data.amenities || []).filter((a) => a.found && NEARBY_LABELS[a.category]).map((a) => ({ category: a.category, name: a.name, distanceMeters: a.distanceMeters }));
+        setNearby({ status: "done", items });
+      } catch (_) {
+        if (!cancelled) setNearby({ status: "failed", items: [] });
+      }
+    }, 400);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [step, loc.latitude, loc.longitude]);
 
   // Keep what was typed if the page is closed by accident (photos cannot be kept).
   useEffect(() => {
@@ -238,10 +295,12 @@ export default function PartnerQuickPost() {
       if (!f.purpose) return "Choose Rent or Sale. / किराये पर या बिक्री चुनें।";
       if (!f.propertyType) return "Choose the type of property. / प्रॉपर्टी का प्रकार चुनें।";
       if (needsBhk && !f.bedrooms) return "Choose the number of rooms. / कमरे चुनें।";
+    }
+    if (index === 2) {
       if (!(Number(f.area) > 0)) return "Enter the size. / साइज़ लिखें।";
       if (!(Number(f.price) > 0)) return rent ? "Enter the monthly rent. / किराया लिखें।" : "Enter the price. / कीमत लिखें।";
     }
-    if (index === 2) {
+    if (index === 3) {
       if (loc.address.trim().length < 5) return "Add the address: tap “Use my location” or search. / पता जोड़ें।";
       if (!loc.sector.trim()) return "Choose the sector or area. / सेक्टर या इलाका चुनें।";
       if (!/^[6-9]\d{9}$/.test(f.ownerMobile)) return "Enter the owner's 10-digit mobile number. / मालिक का 10 अंकों का मोबाइल नंबर लिखें।";
@@ -254,14 +313,13 @@ export default function PartnerQuickPost() {
     const problem = validate(step);
     if (problem) { setError(problem); return; }
     setError("");
-    setStep((s) => Math.min(2, s + 1));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setStep((s) => Math.min(LAST_STEP, s + 1));
   };
-  const goBack = () => { setError(""); setStep((s) => Math.max(0, s - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const goBack = () => { setError(""); setStep((s) => Math.max(0, s - 1)); };
 
   const publish = async () => {
-    const problem = validate(0) || validate(1) || validate(2);
-    if (problem) { setError(problem); return; }
+    const firstProblem = [0, 1, 2, 3].find((i) => validate(i));
+    if (firstProblem !== undefined) { setStep(firstProblem); setError(validate(firstProblem)); return; }
     const fd = new FormData();
     fd.append("purpose", f.purpose);
     fd.append("propertyType", f.propertyType);
@@ -273,6 +331,8 @@ export default function PartnerQuickPost() {
     if (loc.latitude != null && loc.longitude != null) { fd.append("latitude", String(loc.latitude)); fd.append("longitude", String(loc.longitude)); }
     fd.append("ownerMobile", f.ownerMobile);
     if (f.furnishing) fd.append("furnishing", f.furnishing);
+    // The nearby places found on this screen go with the listing, so the server does not search again.
+    if (nearby.status === "done" && nearby.items.length) fd.append("amenities", JSON.stringify(nearby.items.map((a) => ({ ...a, source: "locationiq" }))));
     fd.append("imageCategories", JSON.stringify(photos.map((_, i) => (i === 0 ? "front" : "other"))));
     photos.forEach((p, i) => fd.append("images", p.file, p.file.name || `photo-${i + 1}.jpg`));
 
@@ -293,7 +353,7 @@ export default function PartnerQuickPost() {
   const startOver = useCallback(() => {
     try { localStorage.removeItem(DRAFT_KEY); } catch (_) { /* ignore */ }
     setPhotos([]); setF({ ...EMPTY_FORM }); setLoc({ ...EMPTY_LOC }); setGps(null); setFarConfirmed(false);
-    setStep(0); setDone(null); setError(""); setLocNote(""); setQuery(""); setSuggestions([]);
+    setStep(0); setDone(null); setError(""); setLocNote(""); setQuery(""); setSuggestions([]); setNearby({ status: "idle", items: [] });
     window.scrollTo({ top: 0 });
   }, []);
 
@@ -322,18 +382,18 @@ export default function PartnerQuickPost() {
   const phoneOk = /^[6-9]\d{9}$/.test(f.ownerMobile);
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#f5f7fb", pb: 14 }}>
+    <Box sx={{ minHeight: "100vh", "@supports (height: 100dvh)": { minHeight: "100dvh" }, bgcolor: "#f5f7fb", pb: typing ? 3 : "calc(124px + env(safe-area-inset-bottom))" }}>
       <Container maxWidth="sm" sx={{ pt: 2.5, px: 2 }}>
         {/* Progress */}
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
           <Typography sx={{ fontSize: 13, fontWeight: 800, color: GREEN, letterSpacing: 0.6 }}>ADD PROPERTY · प्रॉपर्टी जोड़ें</Typography>
-          <Typography sx={{ fontSize: 13, color: "#64748b" }}>Step {step + 1} of 3 · 2-3 min</Typography>
+          <Typography sx={{ fontSize: 13, color: "#64748b" }}>Step {step + 1} of {STEPS.length} · 2-3 min</Typography>
         </Stack>
         <Stack direction="row" spacing={1} sx={{ mb: 3 }}>
           {STEPS.map((s, i) => (
             <Box key={s.en} sx={{ flex: 1 }}>
               <Box sx={{ height: 6, borderRadius: 3, bgcolor: i <= step ? GREEN : "#d6dee8" }} />
-              <Typography sx={{ fontSize: 13, mt: 0.5, fontWeight: i === step ? 800 : 500, color: i === step ? INK : "#64748b" }}>{s.en} · {s.hi}</Typography>
+              <Typography sx={{ fontSize: 13, mt: 0.5, fontWeight: i === step ? 800 : 500, color: i === step ? INK : "#64748b", lineHeight: 1.25 }}>{s.en}<Box component="span" sx={{ display: "block", fontWeight: 500, fontSize: 12 }}>{s.hi}</Box></Typography>
             </Box>
           ))}
         </Stack>
@@ -376,90 +436,97 @@ export default function PartnerQuickPost() {
           <Stack spacing={3}>
             <Bi en="Rent or Sale?" hi="किराये पर या बिक्री?" size={24} />
             <Stack direction="row" spacing={1.5}>
-              <Choice selected={f.purpose === "rent"} onClick={() => set({ purpose: "rent", propertyType: f.propertyType === "plot" ? "" : f.propertyType, price: "" })} en="Rent" hi="किराये पर" />
-              <Choice selected={f.purpose === "sale"} onClick={() => set({ purpose: "sale", propertyType: f.propertyType === "studio" ? "" : f.propertyType, price: "" })} en="Sale" hi="बिक्री" />
+              <Choice selected={f.purpose === "rent"} onClick={() => { if (!f.purpose) showSection(typeRef); set({ purpose: "rent", propertyType: f.propertyType === "plot" ? "" : f.propertyType, price: "" }); }} en="Rent" hi="किराये पर" />
+              <Choice selected={f.purpose === "sale"} onClick={() => { if (!f.purpose) showSection(typeRef); set({ purpose: "sale", propertyType: f.propertyType === "studio" ? "" : f.propertyType, price: "" }); }} en="Sale" hi="बिक्री" />
             </Stack>
 
             {f.purpose && (
-              <>
-                <Bi en="What is it?" hi="यह क्या है?" size={22} />
-                <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
-                  {types.map((t) => (
-                    <Choice key={t.value} selected={f.propertyType === t.value} icon={t.icon} en={t.en} hi={t.hi} onClick={() => set({ propertyType: t.value, bedrooms: NO_BHK.has(t.value) ? "" : f.bedrooms, areaUnit: t.value === "plot" ? "gaj" : "sqft", area: t.value === "plot" || f.propertyType === "plot" ? "" : f.area })} />
-                  ))}
-                </Box>
-              </>
+              <Box ref={typeRef} sx={{ scrollMarginTop: 12 }}>
+                <Stack spacing={2}>
+                  <Bi en="What is it?" hi="यह क्या है?" size={22} />
+                  <Box sx={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 1.5 }}>
+                    {types.map((t) => (
+                      <Choice key={t.value} selected={f.propertyType === t.value} icon={t.icon} en={t.en} hi={t.hi} onClick={() => { if (!NO_BHK.has(t.value) && !f.bedrooms) showSection(bhkRef); set({ propertyType: t.value, bedrooms: NO_BHK.has(t.value) ? "" : f.bedrooms, areaUnit: t.value === "plot" ? "gaj" : "sqft", area: t.value === "plot" || f.propertyType === "plot" ? "" : f.area }); }} />
+                    ))}
+                  </Box>
+                </Stack>
+              </Box>
             )}
 
             {needsBhk && (
-              <>
-                <Bi en="How many rooms (BHK)?" hi="कितने कमरे (BHK)?" size={22} />
-                <Stack direction="row" spacing={1.25}>
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <ButtonBase key={n} onClick={() => set({ bedrooms: String(n) })} aria-pressed={f.bedrooms === String(n)} sx={{ flex: 1, minHeight: 64, borderRadius: 3, border: "2px solid", borderColor: f.bedrooms === String(n) ? GREEN : "#d6dee8", bgcolor: f.bedrooms === String(n) ? "#e4f5f0" : "#fff", fontSize: 22, fontWeight: 800, color: INK }}>
-                      {n === 5 ? "5+" : n}
-                    </ButtonBase>
-                  ))}
-                </Stack>
-              </>
-            )}
-
-            {f.propertyType && (
-              <>
-                <Bi en={isPlot ? "Plot size" : "Size (sq ft)"} hi={isPlot ? "प्लॉट का साइज़" : "साइज़ (वर्ग फुट)"} size={22} />
-                {isPlot && (
-                  <Stack direction="row" spacing={1}>
-                    <Choice compact selected={f.areaUnit === "gaj"} onClick={() => set({ areaUnit: "gaj" })} en="Gaj" hi="गज" />
-                    <Choice compact selected={f.areaUnit === "sqft"} onClick={() => set({ areaUnit: "sqft" })} en="Sq ft" hi="वर्ग फुट" />
-                  </Stack>
-                )}
-                <TextField
-                  value={f.area}
-                  onChange={(e) => set({ area: e.target.value.replace(/\D/g, "").slice(0, 6) })}
-                  placeholder={isPlot && f.areaUnit === "gaj" ? "e.g. 200" : "e.g. 1000"}
-                  inputProps={{ inputMode: "numeric", style: { fontSize: 22, fontWeight: 700, padding: "16px 14px" } }}
-                  InputProps={{ endAdornment: <Typography sx={{ color: "#64748b", ml: 1 }}>{isPlot && f.areaUnit === "gaj" ? "gaj" : "sq ft"}</Typography> }}
-                  fullWidth
-                />
-                {isPlot && f.areaUnit === "gaj" && Number(f.area) > 0 && <Typography sx={{ color: "#475569" }}>= {Math.round(areaSqft).toLocaleString("en-IN")} sq ft</Typography>}
-                <Stack direction="row" flexWrap="wrap" gap={1}>
-                  {isPlot
-                    ? (f.areaUnit === "gaj" ? PLOT_SIZES_GAJ : []).map((g) => <Chip key={g} label={`${g} gaj`} onClick={() => set({ area: String(g) })} sx={{ fontSize: 15, fontWeight: 700, height: 40 }} />)
-                    : (() => { const typical = f.propertyType === "studio" ? TYPICAL_AREA.studio : TYPICAL_AREA[f.bedrooms]; return typical ? <Chip label={`Typical size: ${typical.toLocaleString("en-IN")} sq ft — tap to use / आम साइज़`} onClick={() => set({ area: String(typical) })} color="primary" variant="outlined" sx={{ fontSize: 14, fontWeight: 700, height: 40 }} /> : null; })()}
-                </Stack>
-
-                <Bi en={rent ? "Monthly rent" : "Price"} hi={rent ? "महीने का किराया" : "कीमत"} size={22} />
-                <TextField
-                  value={f.price}
-                  onChange={(e) => set({ price: e.target.value.replace(/\D/g, "").slice(0, 10) })}
-                  placeholder={rent ? "e.g. 25000" : "e.g. 7500000"}
-                  inputProps={{ inputMode: "numeric", style: { fontSize: 22, fontWeight: 700, padding: "16px 14px" } }}
-                  InputProps={{ startAdornment: <Typography sx={{ fontSize: 22, fontWeight: 700, mr: 0.5 }}>₹</Typography> }}
-                  helperText={Number(f.price) > 0 ? `${rupeesInWords(f.price)}${rent ? " per month" : ""}` : " "}
-                  FormHelperTextProps={{ sx: { fontSize: 16, fontWeight: 700, color: GREEN } }}
-                  fullWidth
-                />
-                <Stack direction="row" flexWrap="wrap" gap={1}>
-                  {rent
-                    ? RENT_PRICES.map((p) => <Chip key={p} label={`₹${p.toLocaleString("en-IN")}`} onClick={() => set({ price: String(p) })} sx={{ fontSize: 15, fontWeight: 700, height: 40 }} />)
-                    : SALE_PRICES.map((p) => <Chip key={p.value} label={p.label} onClick={() => set({ price: String(p.value) })} sx={{ fontSize: 15, fontWeight: 700, height: 40 }} />)}
-                </Stack>
-
-                <Box>
-                  <Typography sx={{ fontWeight: 700, color: INK, mb: 1 }}>Furnishing (optional) · फर्नीचर (ज़रूरी नहीं)</Typography>
-                  <Stack direction="row" spacing={1}>
-                    {[["unfurnished", "Empty", "खाली"], ["semi-furnished", "Some items", "कुछ सामान"], ["furnished", "Full", "पूरा सामान"]].map(([value, en, hi]) => (
-                      <Choice key={value} compact selected={f.furnishing === value} onClick={() => set({ furnishing: f.furnishing === value ? "" : value })} en={en} hi={hi} />
+              <Box ref={bhkRef} sx={{ scrollMarginTop: 12 }}>
+                <Stack spacing={2}>
+                  <Bi en="How many rooms (BHK)?" hi="कितने कमरे (BHK)?" size={22} />
+                  <Stack direction="row" spacing={1.25}>
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <ButtonBase key={n} onClick={() => set({ bedrooms: String(n) })} aria-pressed={f.bedrooms === String(n)} sx={{ flex: 1, minHeight: 64, borderRadius: 3, border: "2px solid", borderColor: f.bedrooms === String(n) ? GREEN : "#d6dee8", bgcolor: f.bedrooms === String(n) ? "#e4f5f0" : "#fff", fontSize: 22, fontWeight: 800, color: INK }}>
+                        {n === 5 ? "5+" : n}
+                      </ButtonBase>
                     ))}
                   </Stack>
-                </Box>
-              </>
+                </Stack>
+              </Box>
             )}
           </Stack>
         )}
 
-        {/* ------------------------------------------------ 3. place ------- */}
+        {/* ------------------------------------------------ 3. size & price */}
         {step === 2 && (
+          <Stack spacing={3}>
+            <Bi en={isPlot ? "Plot size" : "Size (sq ft)"} hi={isPlot ? "प्लॉट का साइज़" : "साइज़ (वर्ग फुट)"} size={22} />
+            {isPlot && (
+              <Stack direction="row" spacing={1}>
+                <Choice compact selected={f.areaUnit === "gaj"} onClick={() => set({ areaUnit: "gaj" })} en="Gaj" hi="गज" />
+                <Choice compact selected={f.areaUnit === "sqft"} onClick={() => set({ areaUnit: "sqft" })} en="Sq ft" hi="वर्ग फुट" />
+              </Stack>
+            )}
+            <TextField
+              value={f.area}
+              onChange={(e) => set({ area: e.target.value.replace(/\D/g, "").slice(0, 6) })}
+              placeholder={isPlot && f.areaUnit === "gaj" ? "e.g. 200" : "e.g. 1000"}
+              onKeyDown={doneKeyDown}
+              inputProps={{ inputMode: "numeric", enterKeyHint: "done", style: { fontSize: 22, fontWeight: 700, padding: "16px 14px" } }}
+              InputProps={{ endAdornment: <Typography sx={{ color: "#64748b", ml: 1, whiteSpace: "nowrap", flexShrink: 0 }}>{isPlot && f.areaUnit === "gaj" ? "gaj" : "sq ft"}</Typography> }}
+              fullWidth
+            />
+            {isPlot && f.areaUnit === "gaj" && Number(f.area) > 0 && <Typography sx={{ color: "#475569" }}>= {Math.round(areaSqft).toLocaleString("en-IN")} sq ft</Typography>}
+            <Stack direction="row" flexWrap="wrap" gap={1}>
+              {isPlot
+                ? (f.areaUnit === "gaj" ? PLOT_SIZES_GAJ : []).map((g) => <Chip key={g} label={`${g} gaj`} onClick={() => set({ area: String(g) })} sx={{ fontSize: 15, fontWeight: 700, height: 40 }} />)
+                : (() => { const typical = f.propertyType === "studio" ? TYPICAL_AREA.studio : TYPICAL_AREA[f.bedrooms]; return typical ? <Chip label={`Typical size: ${typical.toLocaleString("en-IN")} sq ft — tap to use / आम साइज़`} onClick={() => set({ area: String(typical) })} color="primary" variant="outlined" sx={{ fontSize: 14, fontWeight: 700, height: "auto", minHeight: 40, py: 0.5, "& .MuiChip-label": { whiteSpace: "normal", textAlign: "left" } }} /> : null; })()}
+            </Stack>
+
+            <Bi en={rent ? "Monthly rent" : "Price"} hi={rent ? "महीने का किराया" : "कीमत"} size={22} />
+            <TextField
+              value={f.price}
+              onChange={(e) => set({ price: e.target.value.replace(/\D/g, "").slice(0, 10) })}
+              placeholder={rent ? "e.g. 25000" : "e.g. 7500000"}
+              onKeyDown={doneKeyDown}
+              inputProps={{ inputMode: "numeric", enterKeyHint: "done", style: { fontSize: 22, fontWeight: 700, padding: "16px 14px" } }}
+              InputProps={{ startAdornment: <Typography sx={{ fontSize: 22, fontWeight: 700, mr: 0.5 }}>₹</Typography> }}
+              helperText={Number(f.price) > 0 ? `${rupeesInWords(f.price)}${rent ? " per month" : ""}` : " "}
+              FormHelperTextProps={{ sx: { fontSize: 16, fontWeight: 700, color: GREEN } }}
+              fullWidth
+            />
+            <Stack direction="row" flexWrap="wrap" gap={1}>
+              {rent
+                ? RENT_PRICES.map((p) => <Chip key={p} label={`₹${p.toLocaleString("en-IN")}`} onClick={() => set({ price: String(p) })} sx={{ fontSize: 15, fontWeight: 700, height: 40 }} />)
+                : SALE_PRICES.map((p) => <Chip key={p.value} label={p.label} onClick={() => set({ price: String(p.value) })} sx={{ fontSize: 15, fontWeight: 700, height: 40 }} />)}
+            </Stack>
+
+            <Box>
+              <Typography sx={{ fontWeight: 700, color: INK, mb: 1 }}>Furnishing (optional) · फर्नीचर (ज़रूरी नहीं)</Typography>
+              <Stack direction="row" spacing={1}>
+                {[["unfurnished", "Empty", "खाली"], ["semi-furnished", "Some items", "कुछ सामान"], ["furnished", "Full", "पूरा सामान"]].map(([value, en, hi]) => (
+                  <Choice key={value} compact selected={f.furnishing === value} onClick={() => set({ furnishing: f.furnishing === value ? "" : value })} en={en} hi={hi} />
+                ))}
+              </Stack>
+            </Box>
+          </Stack>
+        )}
+
+        {/* ------------------------------------------------ 4. place ------- */}
+        {step === LAST_STEP && (
           <Stack spacing={2.5}>
             <Bi en="Where is it?" hi="प्रॉपर्टी कहाँ है?" size={26} sub="Stand at the property and tap the button. We find the address for you. / प्रॉपर्टी पर खड़े होकर बटन दबाएँ।" />
             <BigButton icon={locBusy ? undefined : LocateFixed} fullWidth onClick={detectLocation} disabled={locBusy} sub="मेरी लोकेशन लगाएँ">
@@ -526,26 +593,56 @@ export default function PartnerQuickPost() {
               </Alert>
             )}
 
+            {loc.latitude != null && (
+              <Box sx={{ p: 2, borderRadius: 3, bgcolor: "#fff", border: "1px solid #d6dee8" }}>
+                <Typography sx={{ fontWeight: 800, color: INK }}>Nearby places · आसपास की जगहें</Typography>
+                {nearby.status === "loading" && (
+                  <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 1 }}>
+                    <CircularProgress size={20} />
+                    <Typography sx={{ fontSize: 14, color: "#475569" }}>Finding nearby places… / आसपास की जगहें खोज रहे हैं…</Typography>
+                  </Stack>
+                )}
+                {nearby.status === "done" && nearby.items.length > 0 && (
+                  <Stack spacing={0.75} sx={{ mt: 1 }}>
+                    {nearby.items.map((a) => (
+                      <Stack key={a.category} direction="row" spacing={1} alignItems="baseline" justifyContent="space-between">
+                        <Typography sx={{ fontSize: 15, color: INK, minWidth: 0 }}><b>{NEARBY_LABELS[a.category].en}</b> · {NEARBY_LABELS[a.category].hi}<Box component="span" sx={{ display: "block", fontSize: 13, color: "#64748b" }}>{a.name}</Box></Typography>
+                        <Typography sx={{ fontSize: 15, fontWeight: 800, color: GREEN, whiteSpace: "nowrap" }}>{a.distanceMeters != null ? formatKm(a.distanceMeters) : ""}</Typography>
+                      </Stack>
+                    ))}
+                    <Typography sx={{ fontSize: 12, color: "#64748b" }}>Approximate straight-line distance. These are added to your listing. / अनुमानित दूरी, लिस्टिंग में अपने-आप जुड़ेगी।</Typography>
+                  </Stack>
+                )}
+                {nearby.status === "done" && nearby.items.length === 0 && (
+                  <Typography sx={{ mt: 1, fontSize: 14, color: "#475569" }}>No nearby places found for this spot. You can still publish. / इस जगह के पास कुछ नहीं मिला, फिर भी पोस्ट कर सकते हैं।</Typography>
+                )}
+                {nearby.status === "failed" && (
+                  <Typography sx={{ mt: 1, fontSize: 14, color: "#475569" }}>Could not find nearby places right now. You can still publish. / अभी आसपास की जगहें नहीं मिलीं, फिर भी पोस्ट कर सकते हैं।</Typography>
+                )}
+              </Box>
+            )}
+
             <Bi en="Owner's mobile number" hi="मालिक का मोबाइल नंबर" size={22} sub="Only the GgnHome team sees this. / इसे सिर्फ GgnHome टीम देखती है।" />
             <TextField
               value={f.ownerMobile}
               onChange={(e) => set({ ownerMobile: e.target.value.replace(/\D/g, "").slice(0, 10) })}
+              onKeyDown={doneKeyDown}
               placeholder="10-digit number"
-              inputProps={{ inputMode: "numeric", style: { fontSize: 22, fontWeight: 700, padding: "16px 14px", letterSpacing: 1 } }}
+              inputProps={{ inputMode: "numeric", enterKeyHint: "done", style: { fontSize: 22, fontWeight: 700, padding: "16px 14px", letterSpacing: 1 } }}
               InputProps={{ endAdornment: phoneOk ? <CheckCircle2 size={22} color={GREEN} /> : null }}
               fullWidth
             />
 
             <Box sx={{ p: 2, borderRadius: 3, bgcolor: "#eef6ff", border: "1px solid #cfe0f7" }}>
               <Typography sx={{ fontWeight: 800, color: INK, mb: 0.5 }}>We will write the rest for you ✔</Typography>
-              <Typography sx={{ fontSize: 14, color: "#334155" }}>Title, description, bathrooms, map position and nearby metro, market, hospital and school are added automatically. / शीर्षक, विवरण और आसपास की जगहें अपने-आप जुड़ जाएँगी।</Typography>
+              <Typography sx={{ fontSize: 14, color: "#334155" }}>Title, description, bathrooms and map position are added automatically. / शीर्षक, विवरण और नक्शे की जगह अपने-आप जुड़ जाएँगी।</Typography>
             </Box>
           </Stack>
         )}
       </Container>
 
-      {/* Sticky bottom bar: easy to reach with a thumb */}
-      <Box sx={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 20, bgcolor: "#fff", borderTop: "1px solid #d6dee8", pb: "env(safe-area-inset-bottom)" }}>
+      {/* Bottom bar: easy to reach with a thumb. Hidden while the phone keyboard is open. */}
+      <Box sx={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 20, bgcolor: "#fff", borderTop: "1px solid #d6dee8", pb: "env(safe-area-inset-bottom)", display: typing && !publishing ? "none" : "block" }}>
         <Container maxWidth="sm" sx={{ py: 1.5, px: 2 }}>
           {publishing && (
             <Box sx={{ mb: 1.25 }}>
@@ -559,7 +656,7 @@ export default function PartnerQuickPost() {
                 Back
               </Button>
             )}
-            {step < 2 ? (
+            {step < LAST_STEP ? (
               <BigButton fullWidth onClick={goNext} disabled={compressing} sx={{ flex: 1 }} endIcon={<ArrowRight size={22} />} sub="आगे बढ़ें">Next</BigButton>
             ) : (
               <BigButton fullWidth icon={Send} onClick={publish} disabled={publishing} sx={{ flex: 1 }} sub="प्रकाशित करें">{publishing ? "Publishing…" : "Publish property"}</BigButton>

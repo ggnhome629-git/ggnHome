@@ -137,6 +137,8 @@ const VoiceAssistantSaleResponsive = makeResponsiveComponent(VoiceAssistantSale,
 
 
 
+const PARTNER_SHELL_PATHS = /^\/partner\/(dashboard|properties|leads|enquiries|profile)(\/|$)/;
+
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -152,13 +154,17 @@ function App() {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [location.pathname]);
 
+  // The PartnerHub pages share one shell: give them one key so moving between them does not
+  // play an exit/enter animation or rebuild the menu and header.
+  const transitionKey = PARTNER_SHELL_PATHS.test(location.pathname) ? "partner-hub" : location.pathname;
+
   return (
     <AiConsultantProvider>
     <AppLaunchIntro />
     <CacheRefreshWatcher />
     <AnimatePresence mode="wait" initial={false}>
       <motion.div
-        key={location.pathname}
+        key={transitionKey}
         initial="initial"
         animate="animate"
         exit="exit"
@@ -226,13 +232,15 @@ function App() {
       {/* PartnerHub public mobile + OTP authentication. */}
       <Route path="/partner/login" element={<PartnerAuthPage />} />
       <Route path="/partner/register" element={<PartnerAuthPage />} />
-      {/* PartnerHub routes share one responsive shell and navigation system. */}
-      <Route path="/partner/dashboard" element={<PartnerHubProtectedRoute element={<PartnerHubLayout><PartnerHubDashboard /></PartnerHubLayout>} />} />
-      <Route path="/partner/properties" element={<PartnerHubProtectedRoute element={<PartnerHubLayout><PartnerHubProperties /></PartnerHubLayout>} />} />
-      <Route path="/partner/properties/add" element={<PartnerHubProtectedRoute element={<PartnerHubLayout><PartnerPropertyAdd /></PartnerHubLayout>} />} />
-      <Route path="/partner/leads" element={<PartnerHubProtectedRoute element={<PartnerHubLayout><PartnerHubLeads /></PartnerHubLayout>} />} />
-      <Route path="/partner/enquiries" element={<PartnerHubProtectedRoute element={<PartnerHubLayout><PartnerHubEnquiries /></PartnerHubLayout>} />} />
-      <Route path="/partner/profile" element={<PartnerHubProtectedRoute element={<PartnerHubLayout><PartnerHubProfile /></PartnerHubLayout>} />} />
+      {/* PartnerHub routes share one responsive shell. It stays mounted (and the sign-in check runs once) while moving between pages. */}
+      <Route element={<PartnerHubProtectedRoute element={<PartnerHubLayout />} />}>
+        <Route path="/partner/dashboard" element={<PartnerHubDashboard />} />
+        <Route path="/partner/properties" element={<PartnerHubProperties />} />
+        <Route path="/partner/properties/add" element={<PartnerPropertyAdd />} />
+        <Route path="/partner/leads" element={<PartnerHubLeads />} />
+        <Route path="/partner/enquiries" element={<PartnerHubEnquiries />} />
+        <Route path="/partner/profile" element={<PartnerHubProfile />} />
+      </Route>
 
       {/* <Route element={<AgentProtectedRoute />}>
         //         <Route path="/agent/dashboard" element={<AgentDashboard />} />

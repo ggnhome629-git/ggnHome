@@ -28,6 +28,9 @@ function rows(data, keys = []) {
   return [];
 }
 const money = value => value == null || value === "" ? "Price on request" : `₹${Number(value).toLocaleString("en-IN")}`;
+// Public page of a listing on the GgnHome website (sale and rent pages are separate).
+const SITE = "https://www.ggnhome.com";
+const propertyUrl = item => item?._id ? `${SITE}${item.propertyType === "rental" || item.defaultpropertytype === "rental" ? "/Rentaldetails/" : "/Saledetails/"}${item._id}` : "";
 const displayDate = value => value ? new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—";
 
 function Brand({ small = false }) {
@@ -409,7 +412,7 @@ function EmptyState({ icon: Icon, title, text, action, onAction }) {
   return <div className="empty-state"><div className="empty-icon"><Icon size={24} /></div><h3>{title}</h3><p>{text}</p>{action && <button className="primary" onClick={onAction}>{action} <ArrowRight size={15} /></button>}</div>;
 }
 function PropertyTable({ items }) {
-  return <div className="table-wrap"><table><thead><tr><th>Property</th><th>Location</th><th>Price</th><th>Status</th><th>Added</th></tr></thead><tbody>{items.map((item, i) => <tr key={item._id || i}><td><div className="property-cell">{item.images?.[0] && <img src={typeof item.images[0] === "string" ? item.images[0] : item.images[0]?.url} alt="" />}<div><strong>{item.title || item.propertyTitle || "Property listing"}</strong><small>{item.propertyType || item.defaultpropertytype || "Property"}</small></div></div></td><td>{item.address || item.location || item.Sector || "—"}</td><td>{money(item.price || item.monthlyRent)}</td><td><span className={item.isActive === false ? "status pending" : "status live"}><span />{item.isActive === false ? "Inactive" : "Live"}</span></td><td>{displayDate(item.createdAt || item.updatedAt)}</td></tr>)}</tbody></table></div>;
+  return <div className="table-wrap"><table><thead><tr><th>Property</th><th>Location</th><th>Price</th><th>Status</th><th>Added</th><th>Open</th></tr></thead><tbody>{items.map((item, i) => <tr key={item._id || i}><td><div className="property-cell">{item.images?.[0] && <img src={typeof item.images[0] === "string" ? item.images[0] : item.images[0]?.url} alt="" />}<div><strong>{item.title || item.propertyTitle || "Property listing"}</strong><small>{item.propertyType || item.defaultpropertytype || "Property"}</small></div></div></td><td>{item.address || item.location || item.Sector || "—"}</td><td>{money(item.price || item.monthlyRent)}</td><td><span className={item.isActive === false ? "status pending" : "status live"}><span />{item.isActive === false ? "Inactive" : "Live"}</span></td><td>{displayDate(item.createdAt || item.updatedAt)}</td><td>{propertyUrl(item) ? <a className="inline-link" href={propertyUrl(item)} target="_blank" rel="noreferrer">View <ArrowRight size={14} /></a> : "—"}</td></tr>)}</tbody></table></div>;
 }
 function ProfileField({ label, value }) { return <div className="profile-field"><small>{label}</small><strong>{value}</strong></div>; }
 
