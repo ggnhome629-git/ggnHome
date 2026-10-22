@@ -101,6 +101,9 @@ async function fetchJson(path, options = {}) {
 
 export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscript, onMetric } = {}) {
   const [engine, setEngine] = useState("checking"); // checking | livekit | browser | none
+  // Which voice is actually speaking, shown on screen so a test shows the source at a glance.
+  const [voiceSource, setVoiceSource] = useState(null); // { kind: "livekit" | "browser", name, reason }
+  const fallbackReasonRef = useRef("");
   const [phase, setPhaseState] = useState("off");
   const [error, setError] = useState(null); // { code, message }
   const [notice, setNotice] = useState("");
@@ -348,6 +351,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
           pool.find((v) => !v.localService) ||
           pool[0];
         if (voice) utterance.voice = voice;
+        setVoiceSource({ kind: "browser", name: voice?.name || "browser default", reason: fallbackReasonRef.current });
         const timer = setTimeout(() => settle(id, { spoken: true, timeout: true }), Math.min(30000, 2500 + clean.length * 85));
         pendingRef.current.set(id, { resolve, timer });
         utterance.onstart = () => {
@@ -500,6 +504,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
       }
       setActiveEngine("browser");
       levelsRef.current = () => ({ mic: 0, agent: 0 });
+      fallbackReasonRef.current = fallbackNote || "";
       if (fallbackNote) setNotice(fallbackNote);
       await greetThenListen(browserSpeak);
     },
@@ -511,9 +516,13 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
       if (!message || typeof message !== "object") return;
       switch (message.type) {
         case "voice_status":
-          if (message.status === "ready") readyRef.current?.();
+          if (message.status === "ready") {
+            if (typeof message.tts === "string") setVoiceSource({ kind: "livekit", name: message.tts, reason: "" });
+            readyRef.current?.();
+          }
           else if (message.status === "tts_error") {
             setNotice("The real-time voice couldn't speak that reply. Using your browser voice instead.");
+            fallbackReasonRef.current = "the agent's voice (TTS) failed for this reply";
             // Keep replies audible even if the cloud TTS provider/key/model fails.
             const failedId = String(message.id || "");
             const pending = pendingRef.current.get(failedId);
@@ -868,6 +877,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
   return {
     engine,
     activeEngine,
+    voiceSource,
     supported: engine === "livekit" || engine === "browser",
     phase,
     active,

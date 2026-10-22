@@ -23,6 +23,13 @@ export default function VoiceBar({ voice, onStart, compact = false }) {
       <VoiceOrb size={compact ? "sm" : "md"} phase={phase} muted={muted} levelsRef={voice.levelsRef} onClick={orbClick} label={orbLabel} showStop={speaking && phase !== "greeting"} />
       <div className="gvb-text">
         <strong aria-live="polite">{failed ? error?.message || "Voice stopped" : off ? "Voice is off" : phaseLabel(voice)}</strong>
+        {voice.voiceSource && !off ? (
+          <span className="gvb-source" title={voice.voiceSource.reason || undefined}>
+            {voice.voiceSource.kind === "livekit" ? "Voice: LiveKit · " : "Voice: Browser (fallback) · "}
+            {voice.voiceSource.name}
+            {voice.voiceSource.kind === "browser" && voice.voiceSource.reason ? ` — ${voice.voiceSource.reason}` : ""}
+          </span>
+        ) : null}
         {caption && !off && !failed ? (
           <span className={`gvb-caption ${caption.who}${caption.interim ? " interim" : ""}`}>
             {caption.who === "user" ? "You: " : ""}

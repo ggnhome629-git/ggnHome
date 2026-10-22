@@ -244,3 +244,12 @@
 @media (prefers-reduced-motion: reduce) {
   .gvo-ring, .gvo-core, .gvo-spin, .gaf, .gaf-avatar.busy, .gaf-msg.typing span { animation: none !important; transition: none !important; }
 }
+
+/* Test badge: which voice is speaking (LiveKit agent voice or the browser fallback). */
+.gvb-source {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.3;
+  opacity: 0.75;
+}

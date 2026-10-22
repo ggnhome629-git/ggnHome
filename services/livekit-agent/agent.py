@@ -14,6 +14,7 @@ Data-channel protocol (topic "ggnhome-voice", JSON):
 
   agent -> browser
     {"type": "voice_status", "status": "ready" | "tts_error" | "stt_error"}
+        ("ready" also carries "tts": the voice provider and model, shown in the test badge)
     {"type": "agent_state", "state": "initializing|idle|listening|thinking|speaking"}
     {"type": "user_state", "state": "speaking|listening|away"}
     {"type": "user_transcript", "id": str, "text": str}
@@ -138,6 +139,19 @@ class GgnHomeVoiceAgent(Agent):
         # pipeline cannot produce a parallel, ungrounded answer.
         if False:  # pragma: no cover
             yield ""
+
+
+def tts_label() -> str:
+    """Which voice is speaking, for the on-screen test badge (never includes keys)."""
+    if TTS_PROVIDER == "deepgram":
+        return f"Deepgram {DEEPGRAM_TTS_MODEL}"
+    if TTS_PROVIDER == "cartesia":
+        return f"Cartesia {CARTESIA_TTS_MODEL}"
+    if TTS_PROVIDER == "sarvam":
+        return f"Sarvam {SARVAM_TTS_MODEL}" + (f" {SARVAM_SPEAKER}" if SARVAM_SPEAKER else "")
+    if TTS_PROVIDER == "groq":
+        return f"Groq {GROQ_TTS_MODEL.split('/')[-1]} {GROQ_TTS_VOICE}"
+    return f"Local {TTS_MODEL} {TTS_VOICES['en']}"
 
 
 def build_speech_services() -> tuple[Any, Any]:
@@ -354,7 +368,7 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
             idle.touch()  # the visitor typed or the page is actively talking to us
         if kind == "hello":
             # The browser may join after our first "ready"; answer every hello.
-            spawn(send({"type": "voice_status", "status": "ready"}))
+            spawn(send({"type": "voice_status", "status": "ready", "tts": tts_label()}))
         elif kind == "set_language":
             set_language(str(message.get("lang", "en")))
         elif kind == "stop_speaking":
@@ -389,7 +403,7 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
 
     @ctx.room.on("participant_connected")
     def on_participant_connected(participant: rtc.RemoteParticipant) -> None:
-        spawn(send({"type": "voice_status", "status": "ready"}))
+        spawn(send({"type": "voice_status", "status": "ready", "tts": tts_label()}))
 
     async def shutdown_later(reason: str, delay: float) -> None:
         await asyncio.sleep(delay)
@@ -430,7 +444,7 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
     spawn(idle_watchdog())
 
     await session.start(room=ctx.room, agent=GgnHomeVoiceAgent())
-    await send({"type": "voice_status", "status": "ready"})
+    await send({"type": "voice_status", "status": "ready", "tts": tts_label()})
     logger.info("GgnHome voice agent joined room %s", ctx.room.name)
 
 
