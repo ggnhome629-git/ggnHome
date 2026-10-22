@@ -1002,10 +1002,10 @@
           "Open to all of Gurgaon — I'll rank by your other preferences."
         ],
         "hinglish": [
-          "Poora Gurgaon — baaki preferences se rank karunga."
+          "Poora Gurgaon — baaki preferences se rank karungi."
         ],
         "hi": [
-          "पूरा गुड़गाँव — बाकी पसंद के हिसाब से रैंक करूँगा।"
+          "पूरा गुड़गाँव — बाकी पसंद के हिसाब से रैंक करूँगी।"
         ]
       },
       "followUps": [
@@ -1064,10 +1064,10 @@
             "That's a lot of areas — I'll use the first {limit}. You can change them any time."
           ],
           "hinglish": [
-            "Kaafi saare areas hain — pehle {limit} use karunga. Baad mein badal sakte hain."
+            "Kaafi saare areas hain — pehle {limit} use karungi. Baad mein badal sakte hain."
           ],
           "hi": [
-            "काफ़ी इलाके हैं — पहले {limit} इस्तेमाल करूँगा। बाद में बदल सकते हैं।"
+            "काफ़ी इलाके हैं — पहले {limit} इस्तेमाल करूँगी। बाद में बदल सकते हैं।"
           ]
         }
       },
@@ -2337,8 +2337,8 @@
       },
       "hint": {
         "en": "Distances are approx. estimates — I'll always say when one isn't verified.",
-        "hinglish": "Distance andaaza hai — verified na ho to main bata dunga.",
-        "hi": "दूरी अनुमान है — सत्यापित न हो तो मैं बता दूँगा।"
+        "hinglish": "Distance andaaza hai — verified na ho to main bata dungi.",
+        "hi": "दूरी अनुमान है — सत्यापित न हो तो मैं बता दूँगी।"
       },
       "chips": [
         {
@@ -2484,10 +2484,10 @@
           "No fixed distance for {param} — I'll still favour closer homes."
         ],
         "hinglish": [
-          "{param} ki fixed distance nahi — phir bhi paas wale ghar pehle dikhaunga."
+          "{param} ki fixed distance nahi — phir bhi paas wale ghar pehle dikhaungi."
         ],
         "hi": [
-          "{param} की तय दूरी नहीं — फिर भी पास वाले घर पहले दिखाऊँगा।"
+          "{param} की तय दूरी नहीं — फिर भी पास वाले घर पहले दिखाऊँगी।"
         ]
       },
       "conversions": {
@@ -2852,10 +2852,10 @@
           "I ask a few quick questions, search GgnHome's live listings and rank them for you. You can talk or type, change any answer (“make it 30k”), say “show results” any time, or ask about a listing (“tell me about #2”)."
         ],
         "hinglish": [
-          "Main kuch chhote sawaal poochta hoon, GgnHome ki live listings search karke rank karta hoon. Aap bol ya likh sakte hain, koi bhi jawab badal sakte hain (“30k kar do”), kabhi bhi “results dikhao” bol sakte hain, ya kisi listing ke baare mein pooch sakte hain (“#2 ke baare mein batao”)."
+          "Main kuch chhote sawaal poochti hoon, GgnHome ki live listings search karke rank karti hoon. Aap bol ya likh sakte hain, koi bhi jawab badal sakte hain (“30k kar do”), kabhi bhi “results dikhao” bol sakte hain, ya kisi listing ke baare mein pooch sakte hain (“#2 ke baare mein batao”)."
         ],
         "hi": [
-          "मैं कुछ छोटे सवाल पूछता हूँ, GgnHome की लाइव लिस्टिंग खोजकर रैंक करता हूँ। आप बोल या लिख सकते हैं, कोई भी जवाब बदल सकते हैं (“30 हज़ार कर दो”), कभी भी “नतीजे दिखाओ” बोल सकते हैं, या किसी लिस्टिंग के बारे में पूछ सकते हैं (“#2 के बारे में बताओ”)।"
+          "मैं कुछ छोटे सवाल पूछती हूँ, GgnHome की लाइव लिस्टिंग खोजकर रैंक करती हूँ। आप बोल या लिख सकते हैं, कोई भी जवाब बदल सकते हैं (“30 हज़ार कर दो”), कभी भी “नतीजे दिखाओ” बोल सकते हैं, या किसी लिस्टिंग के बारे में पूछ सकते हैं (“#2 के बारे में बताओ”)।"
         ]
       }
     },
@@ -2899,10 +2899,10 @@
           "On it — searching now."
         ],
         "hinglish": [
-          "Abhi search karta hoon."
+          "Abhi search karti hoon."
         ],
         "hi": [
-          "अभी खोजता हूँ।"
+          "अभी खोजती हूँ।"
         ]
       }
     },
@@ -3029,13 +3029,13 @@
       ],
       "reply": {
         "en": [
-          "I'm GgnHome's AI property consultant. I'm rule-based at heart with an optional AI helper, and I only show real, live GgnHome listings — never invented ones."
+          "I'm Riya, GgnHome's AI property advisor. I'm rule-based at heart with an optional AI helper, and I only show real, live GgnHome listings — never invented ones."
         ],
         "hinglish": [
-          "Main GgnHome ka AI property consultant hoon. Main sirf asli, live GgnHome listings dikhata hoon — kabhi bhi banayi hui nahi."
+          "Main Riya hoon, GgnHome ki AI property advisor. Main sirf asli, live GgnHome listings dikhati hoon — kabhi bhi banayi hui nahi."
         ],
         "hi": [
-          "मैं GgnHome का AI प्रॉपर्टी सलाहकार हूँ। मैं सिर्फ़ असली, लाइव GgnHome लिस्टिंग दिखाता हूँ — कभी भी बनाई हुई नहीं।"
+          "मैं GgnHome की AI प्रॉपर्टी सलाहकार रिया हूँ। मैं सिर्फ़ असली, लाइव GgnHome लिस्टिंग दिखाती हूँ — कभी भी बनाई हुई नहीं।"
         ]
       }
     },
@@ -3067,13 +3067,13 @@
       "setLanguage": "hi",
       "reply": {
         "en": [
-          "अब मैं हिन्दी में बात करूँगा।"
+          "अब मैं हिन्दी में बात करूँगी।"
         ],
         "hinglish": [
-          "अब मैं हिन्दी में बात करूँगा।"
+          "अब मैं हिन्दी में बात करूँगी।"
         ],
         "hi": [
-          "अब मैं हिन्दी में बात करूँगा।"
+          "अब मैं हिन्दी में बात करूँगी।"
         ]
       }
     },
@@ -4480,13 +4480,13 @@
   "responses": {
     "welcome": {
       "en": [
-        "Hi! I'm GgnHome's property assistant 👋 Tell me what you're after in your own words, or just answer a few quick questions."
+        "Hi, I'm Riya, your GgnHome property advisor 👋 I'll ask you a few quick questions to find the right home — or just tell me what you're looking for."
       ],
       "hinglish": [
-        "Namaste! Main GgnHome ka property assistant hoon 👋 Apne shabdon mein bataiye kya chahiye, ya bas kuch chhote sawaalon ka jawab dijiye."
+        "Namaste, main Riya hoon, GgnHome se aapki property advisor 👋 Main aapse kuch chhote sawaal poochungi — ya seedha bataiye aapko kya chahiye."
       ],
       "hi": [
-        "नमस्ते! मैं GgnHome का प्रॉपर्टी सहायक हूँ 👋 अपने शब्दों में बताइए क्या चाहिए, या बस कुछ छोटे सवालों के जवाब दीजिए।"
+        "नमस्ते, मैं रिया हूँ, GgnHome से आपकी प्रॉपर्टी सलाहकार 👋 मैं आपसे कुछ छोटे सवाल पूछूँगी — या सीधे बताइए आपको क्या चाहिए।"
       ]
     },
     "welcomeBack": {
@@ -4573,12 +4573,12 @@
         "Lovely, finding homes for you now…"
       ],
       "hinglish": [
-        "Perfect — ab aapke liye best ghar dhoondhta hoon…",
-        "Badhiya, abhi ghar dhoondh raha hoon…"
+        "Perfect — ab aapke liye best ghar dhoondhti hoon…",
+        "Badhiya, abhi ghar dhoondh rahi hoon…"
       ],
       "hi": [
-        "बढ़िया — अब आपके लिए सबसे अच्छे घर ढूँढता हूँ…",
-        "ठीक है, अभी घर ढूँढ रहा हूँ…"
+        "बढ़िया — अब आपके लिए सबसे अच्छे घर ढूँढती हूँ…",
+        "ठीक है, अभी घर ढूँढ रही हूँ…"
       ]
     },
     "needMoreBeforeSearch": {
@@ -4880,10 +4880,10 @@
         "Distances for this listing haven't been verified yet, so I won't guess."
       ],
       "hinglish": [
-        "Is listing ki distances abhi verified nahi hain, isliye andaaza nahi lagaunga."
+        "Is listing ki distances abhi verified nahi hain, isliye andaaza nahi lagaungi."
       ],
       "hi": [
-        "इस लिस्टिंग की दूरियाँ अभी सत्यापित नहीं हैं, इसलिए अनुमान नहीं लगाऊँगा।"
+        "इस लिस्टिंग की दूरियाँ अभी सत्यापित नहीं हैं, इसलिए अनुमान नहीं लगाऊँगी।"
       ]
     },
     "distanceDisclaimer": {
@@ -4985,8 +4985,8 @@
       },
       "listening": {
         "en": "Listening…",
-        "hinglish": "Sun raha hoon…",
-        "hi": "सुन रहा हूँ…"
+        "hinglish": "Sun rahi hoon…",
+        "hi": "सुन रही हूँ…"
       }
     },
     "fieldNames": {
@@ -5293,10 +5293,10 @@
           "I don't have enough live listings in {location} to quote an average yet. Share your budget and I'll show real options."
         ],
         "hinglish": [
-          "{location} mein average batane ke liye abhi kaafi live listings nahi hain. Apna budget batayein, main asli options dikhaunga."
+          "{location} mein average batane ke liye abhi kaafi live listings nahi hain. Apna budget batayein, main asli options dikhaungi."
         ],
         "hi": [
-          "{location} का औसत बताने के लिए अभी पर्याप्त लाइव लिस्टिंग नहीं हैं। अपना बजट बताइए, मैं असली विकल्प दिखाऊँगा।"
+          "{location} का औसत बताने के लिए अभी पर्याप्त लाइव लिस्टिंग नहीं हैं। अपना बजट बताइए, मैं असली विकल्प दिखाऊँगी।"
         ]
       },
       "askLocation": {
@@ -5319,8 +5319,8 @@
       "icon": "BrainCircuit",
       "label": {
         "en": "Understanding your requirements",
-        "hinglish": "Aapki zarooratein samajh raha hoon",
-        "hi": "आपकी ज़रूरतें समझ रहा हूँ"
+        "hinglish": "Aapki zarooratein samajh rahi hoon",
+        "hi": "आपकी ज़रूरतें समझ रही हूँ"
       },
       "detail": {
         "en": "{value}",
@@ -5334,8 +5334,8 @@
       "icon": "Radar",
       "label": {
         "en": "Scanning live Gurgaon listings",
-        "hinglish": "Gurgaon ki live listings scan kar raha hoon",
-        "hi": "गुड़गाँव की लाइव लिस्टिंग स्कैन कर रहा हूँ"
+        "hinglish": "Gurgaon ki live listings scan kar rahi hoon",
+        "hi": "गुड़गाँव की लाइव लिस्टिंग स्कैन कर रही हूँ"
       },
       "detail": {
         "en": "{count} listings scanned",
@@ -5349,8 +5349,8 @@
       "icon": "Filter",
       "label": {
         "en": "Applying your must-haves",
-        "hinglish": "Must-haves laga raha hoon",
-        "hi": "ज़रूरी शर्तें लगा रहा हूँ"
+        "hinglish": "Must-haves laga rahi hoon",
+        "hi": "ज़रूरी शर्तें लगा रही हूँ"
       },
       "detail": {
         "en": "{count} pass budget, area and BHK",
@@ -5364,8 +5364,8 @@
       "icon": "MapPinned",
       "label": {
         "en": "Measuring market, metro, hospital, school, park & mall",
-        "hinglish": "Market, metro, hospital, school, park aur mall ki doori naap raha hoon",
-        "hi": "बाज़ार, मेट्रो, अस्पताल, स्कूल, पार्क और मॉल की दूरी नाप रहा हूँ"
+        "hinglish": "Market, metro, hospital, school, park aur mall ki doori naap rahi hoon",
+        "hi": "बाज़ार, मेट्रो, अस्पताल, स्कूल, पार्क और मॉल की दूरी नाप रही हूँ"
       },
       "detail": {
         "en": "{count} with verified distances",
@@ -5379,8 +5379,8 @@
       "icon": "Sparkles",
       "label": {
         "en": "Scoring and ranking the best fits",
-        "hinglish": "Best fit score aur rank kar raha hoon",
-        "hi": "सबसे सही घरों को स्कोर और रैंक कर रहा हूँ"
+        "hinglish": "Best fit score aur rank kar rahi hoon",
+        "hi": "सबसे सही घरों को स्कोर और रैंक कर रही हूँ"
       },
       "detail": {
         "en": "Top {count} picked",

@@ -628,7 +628,7 @@ async function handleTurn({ state: rawState, message, action, disableLLM = false
     if (action.type === "setLanguage" && oneOf(action.lang, LANGS)) {
       s.lang = action.lang;
       s.langLocked = true;
-      const reply = { en: "Switched to English.", hinglish: "Theek hai, ab Hinglish mein baat karte hain.", hi: "अब मैं हिन्दी में बात करूँगा।" }[s.lang];
+      const reply = { en: "Switched to English.", hinglish: "Theek hai, ab Hinglish mein baat karte hain.", hi: "अब मैं हिन्दी में बात करूँगी।" }[s.lang];
       next = reAsk(s, messages, reply);
       return { state: s, messages, next, ui: ui(s) };
     }

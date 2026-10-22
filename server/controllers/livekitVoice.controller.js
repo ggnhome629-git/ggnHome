@@ -1,7 +1,8 @@
 /**
  * LiveKit voice sessions for the AI Property Consultant.
  *
- * Public:  config (safe values only), token (consented, short-lived, one room)
+ * Public:  config (safe values only), token (consented, short-lived, one room),
+ *          end (closes the visitor's own room at once when they stop or leave)
  * Admin:   health (reachability of the LiveKit API; never returns secrets)
  *
  * The LiveKit API secret never leaves this module. Each visitor gets a fresh
@@ -12,8 +13,10 @@ const crypto = require("crypto");
 const voiceQueue = require("../services/voiceQueue.service");
 
 const TOKEN_TTL_SECONDS = 10 * 60;
-const ROOM_EMPTY_TIMEOUT_SECONDS = 60;
-const ROOM_DEPARTURE_TIMEOUT_SECONDS = 20;
+// Short timeouts: once the visitor's app is closed the room (and the agent job in it)
+// is gone within seconds, so voice never lingers on the server.
+const ROOM_EMPTY_TIMEOUT_SECONDS = 20;
+const ROOM_DEPARTURE_TIMEOUT_SECONDS = 5;
 const API_TIMEOUT_MS = 6000;
 
 function livekitSettings() {
@@ -139,6 +142,28 @@ exports.createToken = async (req, res) => {
 };
 
 /** Admin: is the LiveKit API reachable with these credentials, and how busy is it? */
+/**
+ * Closes a visitor's voice room right away (they stopped voice, closed the app or
+ * switched away). The room name is a random secret only that visitor holds.
+ * Always answers 200 so a page that is closing never waits on it.
+ */
+exports.endSession = async (req, res) => {
+  const roomName = String(req.body?.roomName || "");
+  const queueTicket = req.body?.queueTicket;
+  res.set("Cache-Control", "no-store");
+  if (typeof queueTicket === "string" && /^[a-f0-9]{48}$/.test(queueTicket)) await voiceQueue.leave(queueTicket).catch(() => {});
+  const { url, apiKey, apiSecret, enabled } = livekitSettings();
+  if (!enabled || !/^ggnhome-ai-[a-f0-9]{20}$/.test(roomName)) return res.json({ success: true, ended: false });
+  try {
+    const { RoomServiceClient } = exports._sdk();
+    await withTimeout(new RoomServiceClient(apiHost(url), apiKey, apiSecret).deleteRoom(roomName), API_TIMEOUT_MS, "deleteRoom");
+    return res.json({ success: true, ended: true });
+  } catch (_) {
+    // already closed by LiveKit
+    return res.json({ success: true, ended: false });
+  }
+};
+
 exports.health = async (_req, res) => {
   const { url, apiKey, apiSecret, agentName, enabled, secure } = livekitSettings();
   res.set("Cache-Control", "no-store");

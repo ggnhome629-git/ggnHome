@@ -379,6 +379,7 @@ router.get("/api/ai-consultant/voice-queue/status", aiTurnLimiter, voiceQueue.st
 router.post("/api/ai-consultant/voice-queue/heartbeat", aiTurnLimiter, voiceQueue.heartbeat);
 router.post("/api/ai-consultant/voice-queue/leave", aiTurnLimiter, voiceQueue.leave);
 router.post("/api/ai-consultant/livekit/token", aiTurnLimiter, livekitVoice.createToken);
+router.post("/api/ai-consultant/livekit/end", aiTurnLimiter, livekitVoice.endSession);
 router.get("/api/admin/ai-consultant/livekit/health", verifyToken, checkAdminEmail, livekitVoice.health);
 router.get("/api/ai-consultant/config", aiConsultant.getConfig);
 router.post("/api/ai-consultant/turn", aiTurnLimiter, aiConsultant.turn);

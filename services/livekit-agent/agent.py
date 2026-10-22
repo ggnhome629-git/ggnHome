@@ -27,6 +27,11 @@ Data-channel protocol (topic "ggnhome-voice", JSON):
     {"type": "hello"}            (answered with voice_status "ready")
     {"type": "stop_speaking"}
     {"type": "set_language", "lang": "en|hi|hinglish"}
+    {"type": "mic", "enabled": bool}   (visitor muted/unmuted: nothing is heard while off)
+
+Speech is half-duplex: the microphone input is switched off while the assistant
+talks, so its own voice (or a phone's speaker) is never transcribed as the
+visitor. The visitor interrupts by tapping, which sends "stop_speaking".
 """
 import asyncio
 import json
@@ -262,6 +267,8 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
     idle = IdleWatch(IDLE_WARN_S, IDLE_END_S)
     transcripts = TranscriptFilter()
     current_lang = {"value": "en"}
+    mic = {"on": True}
+    speaking_id = {"value": ""}
     speak_lock = asyncio.Lock()
     tasks: set[asyncio.Task[Any]] = set()
 
@@ -315,6 +322,9 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
     def on_user_input_transcribed(event: Any) -> None:
         if not getattr(event, "is_final", False):
             return
+        # A segment finished after the visitor muted, or while we were talking, is not theirs.
+        if not mic["on"] or speaking_id["value"]:
+            return
         text = str(getattr(event, "transcript", "") or "").strip()[:MAX_TRANSCRIPT_CHARS]
         if text:
             idle.touch()  # even a filler like "hmm" proves the visitor is there
@@ -327,15 +337,19 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
         source = type(getattr(event, "source", None)).__name__.lower()
         status = "stt_error" if "stt" in source else "tts_error" if "tts" in source else "agent_error"
         logger.warning("Voice pipeline error from %s", source or "unknown")
-        spawn(send({"type": "voice_status", "status": status}))
+        message = {"type": "voice_status", "status": status}
+        if status == "tts_error" and speaking_id["value"]:
+            message["id"] = speaking_id["value"]
+        spawn(send(message))
 
     async def speak(message_id: str, text: str, interruptible: bool) -> None:
         async with speak_lock:
             transcripts.remember_spoken(text)
-            # A non-interruptible message (the greeting) is spoken with the
-            # microphone input switched off, so nothing is heard until it ends.
-            if not interruptible:
-                session.input.set_audio_enabled(False)
+            # Half-duplex: the microphone input is off while we talk, so nothing
+            # we say (or the room hears from the speaker) becomes a "visitor" turn.
+            speaking_id["value"] = message_id
+            session.clear_user_turn()
+            session.input.set_audio_enabled(False)
             await send({"type": "speech_started", "id": message_id})
             interrupted = False
             try:
@@ -346,11 +360,11 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
                 logger.exception("Local TTS failed for a voice response")
                 await send({"type": "voice_status", "status": "tts_error", "id": message_id})
             finally:
-                if not interruptible:
-                    # Let the last audio frames leave the speaker before listening.
-                    await asyncio.sleep(0.35)
-                    session.clear_user_turn()
-                    session.input.set_audio_enabled(True)
+                # Let the last audio frames leave the speaker before listening.
+                await asyncio.sleep(0.35)
+                speaking_id["value"] = ""
+                session.clear_user_turn()
+                session.input.set_audio_enabled(mic["on"])
             await send({"type": "speech_done", "id": message_id, "interrupted": interrupted})
 
     @ctx.room.on("data_received")
@@ -371,6 +385,12 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
             spawn(send({"type": "voice_status", "status": "ready", "tts": tts_label()}))
         elif kind == "set_language":
             set_language(str(message.get("lang", "en")))
+        elif kind == "mic":
+            mic["on"] = message.get("enabled") is not False
+            if not speaking_id["value"]:
+                session.input.set_audio_enabled(mic["on"])
+            if not mic["on"]:
+                session.clear_user_turn()
         elif kind == "stop_speaking":
             session.interrupt(force=True)
         elif kind == "speak_text":

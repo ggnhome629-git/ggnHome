@@ -8,6 +8,7 @@ import FloatingConsultant from "./FloatingConsultant";
 import { useVoiceAssistant } from "./voice/useVoiceAssistant";
 import VoiceStage from "./voice/VoiceStage";
 import VoiceBar from "./voice/VoiceBar";
+import CallScreen from "./voice/CallScreen";
 import "./voice/voice.css";
 import ResultCard from "./ResultCard";
 import ReviewCard from "./ReviewCard";
@@ -117,6 +118,8 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   const [busy, setBusy] = useState(false);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  // While voice is on, the conversation is shown as a phone call; the chat view is one tap away.
+  const [callView, setCallView] = useState(true);
   // The centered voice screen shows until the visitor starts voice, chooses to
   // type, or the conversation is under way.
   const [stageDismissed, setStageDismissed] = useState(Boolean(persisted?.items?.some((it) => it.type === "user")));
@@ -610,6 +613,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
 
   const startVoice = useCallback(() => {
     setStageDismissed(true);
+    setCallView(true);
     const greeting = voiceOpening(items);
     if (voiceRef.current.engine === "livekit") {
       if (queueTicket && queue.state === "ready") {
@@ -628,6 +632,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   const startQueuedVoice = useCallback(() => {
     if (!queueTicket || queue.state !== "ready") return;
     setStageDismissed(true);
+    setCallView(true);
     forgetStoredQueueTicket();
     setQueue((current) => ({ ...current, state: "in_session" }));
     const greeting = voiceOpening(items);
@@ -666,6 +671,12 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
     if (voiceRef.current.active || voiceRef.current.phase !== "off") void voiceRef.current.end({ silent: true });
     leaveVoiceQueue();
   }, [open, minimized, persistConversation, leaveVoiceQueue]);
+
+  // Results, the number card and the review form need the screen: show the chat for them.
+  const lastItemType = items.length ? items[items.length - 1].type : null;
+  useEffect(() => {
+    if (["scanner", "results", "leadgate", "review"].includes(lastItemType)) setCallView(false);
+  }, [lastItemType]);
 
   /* ------------------------------------------------------------ render */
 
@@ -733,6 +744,14 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
     return -1;
   })();
 
+  const callOpen = callView && (voice.active || voice.phase === "error");
+  const lastUserIndex = (() => {
+    for (let i = items.length - 1; i >= 0; i -= 1) if (items[i].type === "user") return i;
+    return -1;
+  })();
+  const currentQuestion = lastBotIndex >= 0 ? items[lastBotIndex].text : "";
+  const lastAnswer = lastUserIndex > lastBotIndex ? items[lastUserIndex].text : "";
+
   const floating = minimized ? (
     <FloatingConsultant
       items={items}
@@ -790,7 +809,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
             </i>
           </div>
           <div className="gai-title">
-            <strong id="gai-title">GgnHome AI Consultant</strong>
+            <strong id="gai-title">Riya · GgnHome AI Consultant</strong>
             <small>
               <span className={`gai-live-dot${aiAvailable === false ? " offline" : ""}`} />
               {basicMode || aiAvailable === false ? "Basic rule-based mode · live listings" : "Rule engine + AI · live Gurgaon listings"}
@@ -821,6 +840,21 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
           </button>
         </header>
 
+        {callOpen ? (
+          <CallScreen
+            voice={voice}
+            question={currentQuestion}
+            lastAnswer={lastAnswer}
+            chips={chips}
+            busy={busy}
+            summary={summary}
+            progress={progress}
+            onChip={(c) => send(c.value, c.label)}
+            onShowChat={() => setCallView(false)}
+            onRetry={startVoice}
+          />
+        ) : (
+        <>
         <nav className="gai-strip" aria-label="Your requirements">
           {compact && (
             <div className="gai-seg" role="group" aria-label="Language" style={{ flexShrink: 0 }}>
@@ -847,7 +881,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
                 <VoiceStage voice={voice} queue={queue} onStart={startVoice} onJoinQueue={joinVoiceQueue} onStartQueued={startQueuedVoice} onLeaveQueue={leaveVoiceQueue} onUseBasic={useBasicConsultant} onTypeInstead={() => { leaveVoiceQueue(); setStageDismissed(true); setTimeout(() => inputRef.current && inputRef.current.focus(), 50); }} />
               ) : (
                 <div className="gai-voicebar-slot">
-                  <VoiceBar voice={voice} onStart={startVoice} />
+                  <VoiceBar voice={voice} onStart={startVoice} onOpenCall={() => setCallView(true)} />
                 </div>
               )}
               {items.map((it, i) => {
@@ -1012,6 +1046,8 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
             <span>Real listings only — never invented</span>
           </div>
         </footer>
+        </>
+        )}
       </div>
     </Dialog>
     </>

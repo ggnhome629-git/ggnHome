@@ -53,4 +53,24 @@ describe("self-hosted LiveKit voice controller", () => {
     expect(res.statusCode).toBe(503);
     expect(res.body.code).toBe("LIVEKIT_NOT_CONFIGURED");
   });
+
+  test("ends a visitor's own room right away and ignores anything else", async () => {
+    process.env.LIVEKIT_URL = "wss://voice.example.com";
+    process.env.LIVEKIT_API_KEY = "key";
+    process.env.LIVEKIT_API_SECRET = "secret";
+    const deleted = [];
+    const sdk = livekitVoice._sdk;
+    livekitVoice._sdk = () => ({ RoomServiceClient: class { deleteRoom(name) { deleted.push(name); return Promise.resolve(); } } });
+    try {
+      const ok = mockResponse();
+      await livekitVoice.endSession({ body: { roomName: "ggnhome-ai-0123456789abcdef0123" } }, ok);
+      expect(ok.body).toEqual({ success: true, ended: true });
+      const bad = mockResponse();
+      await livekitVoice.endSession({ body: { roomName: "someone-elses-room" } }, bad);
+      expect(bad.body).toEqual({ success: true, ended: false });
+      expect(deleted).toEqual(["ggnhome-ai-0123456789abcdef0123"]);
+    } finally {
+      livekitVoice._sdk = sdk;
+    }
+  });
 });

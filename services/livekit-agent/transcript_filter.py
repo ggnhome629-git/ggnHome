@@ -11,9 +11,25 @@ FILLER_WORDS = {
     "ok", "okay", "okk", "yeah", "yes", "yep", "right", "achha", "accha", "theek", "hmmm",
 }
 
+# Phrases Whisper invents from silence, breathing or room noise (it was trained on
+# subtitled video). A transcript made only of these is never a real answer.
+HALLUCINATIONS = {
+    "thank you", "thank you very much", "thank you so much", "thanks", "thanks a lot",
+    "thank you for watching", "thanks for watching", "thank you for listening",
+    "please subscribe", "like and subscribe", "subscribe", "bye", "bye bye", "goodbye",
+    "you", "the end", "subtitles by the amara org community", "transcribed by",
+    "so", "okay thank you", "ok thank you", "thank you bye", "see you next time",
+    "धन्यवाद", "शुक्रिया", "सब्सक्राइब", "थैंक यू", "बाय",
+}
+
 
 def normalise(text: str) -> str:
     return re.sub(r"[^\wऀ-ॿ]+", " ", text.lower()).strip()
+
+
+def is_hallucination(text: str) -> bool:
+    norm = normalise(text)
+    return norm in HALLUCINATIONS or bool(re.fullmatch(r"(thank you\s*)+", norm))
 
 
 def is_filler_only(text: str) -> bool:
@@ -37,6 +53,9 @@ class TranscriptFilter:
         now = time.monotonic()
         norm = normalise(text)
         if not norm or is_filler_only(text):
+            return False
+        if is_hallucination(text):
+            logger.info("Dropped a likely speech-to-text hallucination: %r", norm)
             return False
         if norm == self.last_text and now - self.last_at < DUPLICATE_WINDOW_S:
             return False

@@ -1,5 +1,5 @@
 import React from "react";
-import { Mic, MicOff, PhoneOff, RotateCcw, Square, Volume2 } from "lucide-react";
+import { MessageCircle, Mic, MicOff, PhoneOff, RotateCcw, Square, Volume2 } from "lucide-react";
 import VoiceOrb from "./VoiceOrb";
 import { phaseLabel } from "./phases";
 
@@ -7,7 +7,7 @@ import { phaseLabel } from "./phases";
  * Live voice status during a session: orb, what's happening, the live caption
  * and the only controls voice needs — mute, stop talking, end, retry.
  */
-export default function VoiceBar({ voice, onStart, compact = false }) {
+export default function VoiceBar({ voice, onStart, onOpenCall, compact = false }) {
   const { phase, muted, caption, notice, error, needsAudioUnlock } = voice;
   const off = phase === "off";
   const failed = phase === "error";
@@ -65,6 +65,11 @@ export default function VoiceBar({ voice, onStart, compact = false }) {
             {speaking && phase !== "greeting" ? (
               <button type="button" className="gvb-btn" onClick={voice.interrupt}>
                 <Square size={13} /> {compact ? "" : "Stop"}
+              </button>
+            ) : null}
+            {onOpenCall ? (
+              <button type="button" className="gvb-btn primary gvb-call" onClick={onOpenCall}>
+                <MessageCircle size={14} /> {compact ? "" : "Back to Riya"}
               </button>
             ) : null}
             <button type="button" className={`gvb-btn${muted ? " on" : ""}`} onClick={voice.toggleMute} aria-pressed={muted} aria-label={muted ? "Unmute microphone" : "Mute microphone"}>

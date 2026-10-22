@@ -33,6 +33,11 @@ const Recognition = typeof window !== "undefined" ? window.SpeechRecognition || 
 // Ask the microphone for echo cancellation, noise suppression and level control, mono, so room noise
 // and the assistant's own voice from the speaker are not picked up as speech.
 const MIC_CONSTRAINTS = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } };
+// Phones switch into "call mode" while an echo-cancelled mic is open: other media is ducked and the
+// assistant plays quietly through the earpiece. Voice here is half-duplex (the mic is released while
+// the assistant talks), so phones can skip the platform echo canceller and keep normal media volume.
+const IS_PHONE = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || "");
+const LIVEKIT_CAPTURE = { echoCancellation: !IS_PHONE, noiseSuppression: true, autoGainControl: true, voiceIsolation: !IS_PHONE, channelCount: 1 };
 const synthesisSupported = typeof window !== "undefined" && "speechSynthesis" in window;
 
 export const VOICE_ERRORS = {
@@ -61,6 +66,9 @@ function isEcho(heard, spoken) {
   const pool = new Set(normalise(spoken).split(" "));
   return h.filter((w) => pool.has(w)).length / h.length >= 0.6;
 }
+// Phrases speech-to-text invents from silence or room noise; never a real answer on their own.
+const HALLUCINATIONS = new Set(["thank you", "thank you very much", "thank you so much", "thanks", "thanks for watching", "thank you for watching", "please subscribe", "bye", "bye bye", "you", "the end", "so", "धन्यवाद", "शुक्रिया"]);
+const isHallucination = (text) => HALLUCINATIONS.has(normalise(text)) || /^(thank you ?)+$/.test(normalise(text));
 const normalise = (text) => String(text || "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 const newId = () => `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 
@@ -85,6 +93,50 @@ function browserSpeechText(text) {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 420);
+}
+
+/** Split speech into sentence-sized pieces (max ~180 chars) for the browser's voice. */
+function sentenceChunks(text) {
+  const parts = String(text).match(/[^.!?।]+[.!?।]*\s*/g) || [String(text)];
+  const out = [];
+  parts.forEach((p) => {
+    const last = out[out.length - 1];
+    if (last && last.length + p.length <= 180) out[out.length - 1] = last + p;
+    else out.push(p);
+  });
+  return out.map((p) => p.trim()).filter(Boolean);
+}
+
+/** Best voice for the language: neural "Natural" voices first, then Google/online ones; female where named. */
+function pickVoice(lang) {
+  if (!synthesisSupported) return null;
+  const voices = window.speechSynthesis.getVoices();
+  const prefix = lang.split("-")[0];
+  const sameLang = voices.filter((v) => v.lang === lang || v.lang?.replace("_", "-") === lang);
+  const pool = sameLang.length ? sameLang : voices.filter((v) => v.lang?.startsWith(prefix));
+  const female = /female|woman|neerja|swara|heera|kalpana|aditi|raveena|veena|lekha|samantha|zira|aria|jenny|google/i;
+  return (
+    pool.find((v) => /natural|neural/i.test(v.name) && female.test(v.name)) ||
+    pool.find((v) => /natural|neural/i.test(v.name)) ||
+    pool.find((v) => /google|online/i.test(v.name)) ||
+    pool.find((v) => female.test(v.name)) ||
+    pool.find((v) => !v.localService) ||
+    pool[0] ||
+    null
+  );
+}
+
+/** Mobile browsers only let speech play if it first starts inside a tap: say nothing, now. */
+function primeSynthesis() {
+  if (!synthesisSupported) return;
+  try {
+    window.speechSynthesis.getVoices();
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0;
+    window.speechSynthesis.speak(u);
+  } catch (_) {
+    // speech will try again on the first real reply
+  }
 }
 
 async function fetchJson(path, options = {}) {
@@ -129,11 +181,15 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
   const helloTimerRef = useRef(null);
   const queueHeartbeatRef = useRef(null);
   const queueTicketRef = useRef(null);
+  const roomNameRef = useRef(null);
   const readyRef = useRef(null);
   const endRef = useRef(null);
   const greetingRef = useRef("");
   const endedByUserRef = useRef(false);
   const levelsRef = useRef(() => ({ mic: 0, agent: 0 }));
+  const applyMicRef = useRef(null);
+  const micOnRef = useRef(null);
+  const micWantedRef = useRef(null);
   const cbRef = useRef({ onTranscript, onMetric, speechLang, lang });
   cbRef.current = { onTranscript, onMetric, speechLang, lang };
 
@@ -224,7 +280,9 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
   const deliverTranscript = useCallback(
     (raw) => {
       const text = String(raw || "").trim().slice(0, 600);
-      if (!text) return;
+      // Nothing is taken while the mic is off, on hold, or while the assistant itself is talking.
+      if (!text || !activeRef.current || mutedRef.current || holdRef.current) return;
+      if (["speaking", "greeting"].includes(phaseRef.current) || isHallucination(text)) return;
       const norm = normalise(text);
       const last = lastTranscriptRef.current;
       if (norm && norm === last.text && Date.now() - last.at < DUPLICATE_WINDOW_MS) return;
@@ -334,40 +392,43 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
         }
         spokenRef.current = clean;
         const id = newId();
-        const utterance = new SpeechSynthesisUtterance(clean);
-        utterance.lang = cbRef.current.speechLang || "en-IN";
-        utterance.rate = 0.96;
-        utterance.pitch = 1;
-        utterance.volume = 0.95;
-        const voices = window.speechSynthesis.getVoices();
-        const prefix = utterance.lang.split("-")[0];
-        // Best first: neural "Natural" voices (Edge, Windows), then Google/online voices, then any voice
-        // for the language. The plain offline voices are the harsh robotic ones.
-        const sameLang = voices.filter((v) => v.lang === utterance.lang || v.lang?.replace("_", "-") === utterance.lang);
-        const pool = sameLang.length ? sameLang : voices.filter((v) => v.lang?.startsWith(prefix));
-        const voice =
-          pool.find((v) => /natural|neural/i.test(v.name)) ||
-          pool.find((v) => /google|online/i.test(v.name)) ||
-          pool.find((v) => !v.localService) ||
-          pool[0];
-        if (voice) utterance.voice = voice;
+        const lang = cbRef.current.speechLang || "en-IN";
+        const voice = pickVoice(lang);
         setVoiceSource({ kind: "browser", name: voice?.name || "browser default", reason: fallbackReasonRef.current });
-        const timer = setTimeout(() => settle(id, { spoken: true, timeout: true }), Math.min(30000, 2500 + clean.length * 85));
+        const timer = setTimeout(() => {
+          settle(id, { spoken: true, timeout: true });
+          afterSpeech();
+        }, Math.min(45000, 3000 + clean.length * 85));
         pendingRef.current.set(id, { resolve, timer });
-        utterance.onstart = () => {
-          if (activeRef.current) setPhase(greeting ? "greeting" : "speaking");
-        };
-        utterance.onend = () => {
-          settle(id, { spoken: true });
-          afterSpeech();
-        };
-        utterance.onerror = () => {
-          settle(id, { spoken: false });
-          afterSpeech();
-        };
         setPhase(greeting ? "greeting" : "speaking");
-        window.speechSynthesis.cancel();
-        window.speechSynthesis.speak(utterance);
+        // Chrome silently stops utterances longer than ~15s, so speak sentence by sentence.
+        const chunks = sentenceChunks(clean);
+        const synth = window.speechSynthesis;
+        const speakChunk = (i) => {
+          if (!pendingRef.current.has(id)) return;
+          if (i >= chunks.length) {
+            settle(id, { spoken: true });
+            afterSpeech();
+            return;
+          }
+          const utterance = new SpeechSynthesisUtterance(chunks[i]);
+          utterance.lang = lang;
+          utterance.rate = 1;
+          utterance.pitch = 1.04;
+          utterance.volume = 1;
+          if (voice) utterance.voice = voice;
+          utterance.onend = () => speakChunk(i + 1);
+          utterance.onerror = (event) => {
+            if (event?.error === "interrupted" || event?.error === "canceled") return;
+            speakChunk(i + 1);
+          };
+          synth.speak(utterance);
+        };
+        // Cancelling and speaking in the same tick drops the new utterance on Android Chrome.
+        const busy = synth.speaking || synth.pending;
+        if (busy) synth.cancel();
+        synth.resume();
+        setTimeout(() => speakChunk(0), busy ? 80 : 0);
       }),
     [afterSpeech, setPhase, settle]
   );
@@ -397,8 +458,9 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
           settle(id, { spoken: true, timeout: true });
           afterSpeech();
         }, Math.min(45000, 6000 + clean.length * 90));
-        pendingRef.current.set(id, { resolve, timer, text: clean });
+        pendingRef.current.set(id, { resolve, timer, text: clean, heard: false });
         setPhase(greeting ? "greeting" : "speaking");
+        applyMicRef.current?.();
         const sent = publish({
           type: "speak_text",
           id,
@@ -423,21 +485,32 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
     roomRef.current = null;
     agentRef.current = null;
     levelsRef.current = () => ({ mic: 0, agent: 0 });
+    micOnRef.current = null;
+    micWantedRef.current = null;
     document.querySelectorAll("audio[data-ggn-voice]").forEach((el) => el.remove());
+    // Tell the server first (keepalive requests survive the page closing), then hang up locally.
+    const ticket = queueTicketRef.current;
+    queueTicketRef.current = null;
+    const roomName = roomNameRef.current;
+    roomNameRef.current = null;
+    if (roomName) {
+      // Closes the room on the server too, so the voice worker stops immediately.
+      fetch(`${API_BASE}/api/ai-consultant/livekit/end`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ roomName, queueTicket: ticket }), keepalive: true,
+      }).catch(() => {});
+    } else if (ticket) {
+      fetch(`${API_BASE}/api/ai-consultant/voice-queue/leave`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticket }), keepalive: true,
+      }).catch(() => {});
+    }
     if (room) {
       try {
         await room.disconnect();
       } catch (_) {
         // already gone
       }
-    }
-    const ticket = queueTicketRef.current;
-    queueTicketRef.current = null;
-    if (ticket) {
-      fetch(`${API_BASE}/api/ai-consultant/voice-queue/leave`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ticket }), keepalive: true,
-      }).catch(() => {});
     }
   }, []);
 
@@ -524,7 +597,8 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
             setNotice("The real-time voice couldn't speak that reply. Using your browser voice instead.");
             fallbackReasonRef.current = "the agent's voice (TTS) failed for this reply";
             // Keep replies audible even if the cloud TTS provider/key/model fails.
-            const failedId = String(message.id || "");
+            // No id means the error came from the pipeline itself: re-speak the newest pending reply.
+            const failedId = String(message.id || "") || [...pendingRef.current.keys()].pop() || "";
             const pending = pendingRef.current.get(failedId);
             if (pending?.text) {
               clearTimeout(pending.timer);
@@ -539,6 +613,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
           if (message.state === "listening" && phaseRef.current === "hearing") setPhase("listening");
           break;
         case "agent_state":
+          if (message.state === "speaking") pendingRef.current.forEach((entry) => { entry.heard = true; });
           if (message.state === "speaking" && !["greeting", "speaking"].includes(phaseRef.current) && pendingRef.current.size) setPhase("speaking");
           break;
         case "user_transcript":
@@ -552,10 +627,22 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
           endedByUserRef.current = true;
           endRef.current?.({ silent: true }).then(() => setNotice(IDLE_MESSAGE));
           break;
-        case "speech_done":
-          settle(String(message.id || ""), { spoken: true, interrupted: Boolean(message.interrupted) });
+        case "speech_done": {
+          const doneId = String(message.id || "");
+          const entry = pendingRef.current.get(doneId);
+          // The worker finished without ever producing audio (TTS key/model/quota problem):
+          // say it with the browser's voice so the visitor is never left in silence.
+          if (entry && !entry.heard && !message.interrupted && entry.text) {
+            clearTimeout(entry.timer);
+            pendingRef.current.delete(doneId);
+            fallbackReasonRef.current = "the real-time voice produced no audio";
+            browserSpeak(entry.text).then(entry.resolve).catch(() => entry.resolve({ spoken: false }));
+            break;
+          }
+          settle(doneId, { spoken: true, interrupted: Boolean(message.interrupted) });
           afterSpeech();
           break;
+        }
         default:
           break;
       }
@@ -568,7 +655,9 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
     const room = new Room({
       adaptiveStream: true,
       dynacast: true,
-      audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, voiceIsolation: true, channelCount: 1 },
+      audioCaptureDefaults: LIVEKIT_CAPTURE,
+      // Muting releases the microphone completely: nothing is captured and the phone leaves call mode.
+      publishDefaults: { stopMicTrackOnMute: true },
     });
     roomRef.current = room;
     // Called inside the tap that started voice, so browsers allow playback.
@@ -599,6 +688,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
       return;
     }
 
+    roomNameRef.current = tokenResult.data.roomName || null;
     if (queueTicketRef.current) {
       const ticket = queueTicketRef.current;
       queueHeartbeatRef.current = setInterval(() => {
@@ -612,6 +702,8 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
         const el = track.attach();
         el.dataset.ggnVoice = participant.identity;
         el.setAttribute("playsinline", "true");
+        el.autoplay = true;
+        el.volume = 1;
         el.style.display = "none";
         document.body.appendChild(el);
         el.play?.().catch(() => setNeedsAudioUnlock(true));
@@ -674,6 +766,8 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
       return;
     }
     setPermission("granted");
+    micOnRef.current = true;
+    micWantedRef.current = true;
     room.remoteParticipants.forEach((p) => {
       if (p.isAgent) agentRef.current = p;
     });
@@ -717,6 +811,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
       return false;
     }
     setError(null);
+    primeSynthesis();
     setPhase("requesting");
     try {
       const stream = await navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS);
@@ -742,6 +837,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
         setPhase("error");
         return;
       }
+      primeSynthesis();
       greetingRef.current = String(greeting || "").trim();
       queueTicketRef.current = queueTicket;
       endedByUserRef.current = false;
@@ -813,13 +909,32 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
 
   interruptRef.current = interrupt;
 
+  // Half-duplex: the mic is open only while it is the visitor's turn. While the assistant talks
+  // the mic is released, so it can't hear itself and the phone plays the voice at full volume.
   const applyMic = useCallback(() => {
     const room = roomRef.current;
-    const enabled = !mutedRef.current && !holdRef.current;
-    if (room?.localParticipant) room.localParticipant.setMicrophoneEnabled(enabled).catch(() => {});
+    const wanted = !mutedRef.current && !holdRef.current;
+    const assistantTalking = ["speaking", "greeting"].includes(phaseRef.current) || pendingRef.current.size > 0;
+    const enabled = wanted && !assistantTalking;
+    if (room?.localParticipant && room.state === "connected") {
+      if (micOnRef.current !== enabled) {
+        micOnRef.current = enabled;
+        room.localParticipant.setMicrophoneEnabled(enabled).catch(() => {});
+      }
+      if (micWantedRef.current !== wanted) {
+        micWantedRef.current = wanted;
+        publish({ type: "mic", enabled: wanted });
+      }
+    }
     if (!enabled) stopRecognition();
     setLoopTick((n) => n + 1);
-  }, [stopRecognition]);
+  }, [publish, stopRecognition]);
+  applyMicRef.current = applyMic;
+
+  // Reopen (or release) the real-time mic whenever whose turn it is changes.
+  useEffect(() => {
+    if (activeEngine === "livekit") applyMicRef.current?.();
+  }, [activeEngine, phase]);
 
   const toggleMute = useCallback(() => {
     mutedRef.current = !mutedRef.current;
@@ -848,8 +963,28 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
   );
 
   const unlockAudio = useCallback(() => {
+    primeSynthesis();
     roomRef.current?.startAudio().then(() => setNeedsAudioUnlock(false)).catch(() => {});
     document.querySelectorAll("audio[data-ggn-voice]").forEach((el) => el.play?.().catch(() => {}));
+  }, []);
+
+  // Voice never keeps running in the background: closing the app, switching away from it
+  // or locking the phone ends the session and releases the microphone at once.
+  useEffect(() => {
+    const stop = () => {
+      if (activeRef.current || phaseRef.current !== "off") endRef.current?.({ silent: true });
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") stop();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", stop);
+    window.addEventListener("ggn-app-pause", stop); // sent by the Android app when it goes to the background
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", stop);
+      window.removeEventListener("ggn-app-pause", stop);
+    };
   }, []);
 
   // Keep the worker's language in sync with the consultant's.
