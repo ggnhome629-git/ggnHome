@@ -32,6 +32,10 @@ Admin → Home → **Clear all caches** (two-step confirm). It runs three indepe
 
 Each step still runs if another is not connected, and the result says which parts were done.
 
+### Automatic: once for every deploy
+
+When a new build starts (Render sets `RENDER_GIT_COMMIT`), the API runs the same three steps by itself, once per build. A restart or wake-up of the same build does nothing. Turn it off with `AUTO_CACHE_CLEAR_ON_DEPLOY=false`.
+
 ### Without the admin page (Postman / scripts)
 
 ```

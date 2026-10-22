@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const mongoose = require("mongoose");
 const axios = require("axios");
 const SiteCacheVersion = require("../models/SiteCacheVersion.model");
 const appCache = require("../config/cache");
@@ -153,6 +154,36 @@ async function clearAllCaches(req, res) {
   });
 }
 
+/**
+ * Clears everything once for every new deploy, so nobody has to press the button after a release:
+ * the browser version is bumped (every visitor's browser wipes its caches), Redis is cleared and
+ * Cloudflare is purged. The build is identified by RENDER_GIT_COMMIT; a restart or wake-up of the
+ * same build does nothing, so the free tier going to sleep never reloads anyone's page.
+ * Turn it off with AUTO_CACHE_CLEAR_ON_DEPLOY=false.
+ */
+async function autoPurgeOnDeploy() {
+  const off = ["false", "0", "off"].includes(String(process.env.AUTO_CACHE_CLEAR_ON_DEPLOY || "").toLowerCase());
+  const build = process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || "";
+  if (off || !build) return { skipped: true };
+  if (mongoose.connection.readyState !== 1) await new Promise((resolve) => mongoose.connection.once("open", resolve));
+  try {
+    // Only one instance can claim a build: the others find it already claimed.
+    const doc = await SiteCacheVersion.findOneAndUpdate(
+      { key: "site", buildId: { $ne: build } },
+      { $set: { version: Date.now(), buildId: build } },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    versionCache.set("site", { version: doc.version, at: Date.now() });
+  } catch (err) {
+    if (err && err.code === 11000) return { skipped: true }; // this build was already handled
+    console.error("autoPurgeOnDeploy failed:", err.message);
+    return { error: err.message };
+  }
+  const [redis, cloudflare] = await Promise.all([clearRedisCache(), purgeCloudflare({ purge_everything: true })]);
+  console.log(`New deploy ${build.slice(0, 7)}: browsers will refresh; Redis ${redis.cleared ? "cleared" : "not cleared"}; Cloudflare ${cloudflare.success ? "purged" : "not purged"}.`);
+  return { build, redis, cloudflare };
+}
+
 // POST /api/admin/cache/purge — signed-in admin (verifyToken + checkAdminEmail on the route).
 exports.adminPurgeCache = clearAllCaches;
 
@@ -164,4 +195,5 @@ exports.secretPurgeCache = (req, res) => {
   return clearAllCaches(req, res);
 };
 
+exports.autoPurgeOnDeploy = autoPurgeOnDeploy;
 exports._internals = { bumpVersion, readVersion };

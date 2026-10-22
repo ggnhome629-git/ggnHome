@@ -167,6 +167,11 @@ app.use(errorHandler);
 if (require.main === module) {
   db();
 
+  // Every new deploy clears the browser, Redis and Cloudflare caches once (see cachePurge.controller).
+  if (process.env.NODE_ENV !== "test") {
+    require("./controllers/cachePurge.controller").autoPurgeOnDeploy().catch((err) => console.warn("Deploy cache clear failed:", err.message));
+  }
+
   // Initialize Redis cache (optional - gracefully degrades if unavailable)
   redisCache.initialize().catch(err => {
     console.warn('⚠️ Warning: Redis cache initialization failed:', err.message);
