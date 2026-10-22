@@ -18,7 +18,7 @@
 | Admin portal | https://www.ggnhome.com/admin/Landingpage | Signed-in admins | ✅ |
 | Partner Hub | https://www.ggnhome.com/partner/login | Approved partners (OTP login) | ✅ |
 | Partner Hub (standalone site) | ❓ host not in repo (`partner-portal/`) | Partners | ❓ |
-| SMS gateway console | https://www.ggnhome.com/sms-service/app/manage | Owner with SMS key | ✅ (hidden page) |
+| SMS Console (OTP / Direct Login) | https://www.ggnhome.com/admin/sms-console (also `/sms-service/app/manage`) | Owner console password; manages SMS gateway and user/partner/admin login mode | ✅ (separate sign-in) |
 | App downloads page | https://www.ggnhome.com/apps | Everyone | ✅ |
 | Agent portal (legacy) | /agent/login | — | 🚫 See §4 |
 | API backend | https://api.ggnhome.com | Used by all apps | ✅ |
@@ -80,7 +80,7 @@
 - Post property (owner and partner)
 - Partner Hub: dashboard, properties, leads, enquiries, profile (OTP login)
 - Admin: inventory, users, enquiries, payments, rewards, property manager, settings, feature toggles, app downloads, partner access, callback requests
-- SMS gateway console and OTP-display mode
+- SMS Console: SMS gateway, logs/tests, and a direct-login toggle for user/partner/admin (ON skips SMS; OFF restores SMS OTP)
 - App downloads page
 
 ### 🚫 Disabled / not live
