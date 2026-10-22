@@ -322,7 +322,7 @@ function GgnhomeTab({ data, reload, notify }) {
           </Stack>
           <Typography variant="body2" color="text.secondary">
             {form.directOtpEnabled
-              ? "Direct auto login is on for user, partner and admin sign-in: the code is filled in automatically and the user is signed in, with no SMS sent. Turn it off to use the normal SMS flow for all three."
+              ? "Direct auto login is on for user, partner and admin sign-in: entering a registered number signs the user in straight away. No code is sent or shown. Turn it off to use the normal SMS code flow for all three."
               : "Normal SMS login is on for user, partner and admin sign-in: the code is sent by SMS and the user enters it."}
           </Typography>
           <Stack direction="row" spacing={2} alignItems="center">

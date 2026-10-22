@@ -45,11 +45,9 @@ export default function PartnerAuthPage() {
         if (res.status === 429 && data.retryAfterSec) resend.start(Math.min(data.retryAfterSec, 120));
         throw new Error(data.message || "Could not send OTP.");
       }
-      // Direct login is on: the code comes back instead of an SMS, so sign in with it straight away.
-      if (data.channel === "direct" && data.directOtp) {
-        setOtpSent(true);
-        setOtp(data.directOtp);
-        await verifyOtp(data.directOtp);
+      // Direct login is on: the server has already signed the partner in.
+      if (data.channel === "direct") {
+        await completePartnerLogin(data);
         return;
       }
       setOtpSent(true);
@@ -61,6 +59,21 @@ export default function PartnerAuthPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  // Opens the partner dashboard from a successful login response (OTP or direct login).
+  async function completePartnerLogin(data) {
+    // The server only accepts a Partner number here; these checks are a second guard.
+    if (data.agent?.role !== "Partner") {
+      throw new Error("This mobile number is not registered for Partner Portal access. Ask a GgnHome administrator to register it.");
+    }
+    if (data.agent.status === "suspended") throw new Error("This Partner account is suspended. Contact GgnHome support.");
+    if (data.agent.status !== "active") throw new Error("This Partner account is not active yet. Contact GgnHome admin.");
+    if (!data.agentAccessToken) throw new Error("OTP was verified, but a Partner session could not be created. Please try again.");
+
+    localStorage.setItem("accessToken", data.accessToken);
+    localStorage.setItem("partnerAccessToken", data.agentAccessToken);
+    navigate("/partner/dashboard", { replace: true });
   }
 
   async function verifyOtp(submitted) {
@@ -81,17 +94,7 @@ export default function PartnerAuthPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "OTP verification failed.");
 
-      // The server only accepts a Partner number here; these checks are a second guard.
-      if (data.agent?.role !== "Partner") {
-        throw new Error("This mobile number is not registered for Partner Portal access. Ask a GgnHome administrator to register it.");
-      }
-      if (data.agent.status === "suspended") throw new Error("This Partner account is suspended. Contact GgnHome support.");
-      if (data.agent.status !== "active") throw new Error("This Partner account is not active yet. Contact GgnHome admin.");
-      if (!data.agentAccessToken) throw new Error("OTP was verified, but a Partner session could not be created. Please try again.");
-
-      localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("partnerAccessToken", data.agentAccessToken);
-      navigate("/partner/dashboard", { replace: true });
+      await completePartnerLogin(data);
     } catch (e) {
       setError(e.message || "OTP verification failed.");
     } finally {

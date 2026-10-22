@@ -43,6 +43,18 @@ function AuthScreen({ onLogin }) {
   const [notice, setNotice] = useState("");
   const normalized = mobile.replace(/\D/g, "").slice(-10);
 
+  function completePartnerLogin(data) {
+    if (!data.accessToken) throw new Error("OTP was verified but no login token was returned.");
+    if (data.agent?.role === "Agent") throw new Error("This number is registered as a standard Agent, not a Partner. Contact GgnHome admin.");
+    if (data.agent?.role !== "Partner") throw new Error("This mobile number is not registered for Partner Portal access. Ask a GgnHome administrator to register it first.");
+    if (data.agent.status === "suspended") throw new Error("This Partner account is suspended. Contact GgnHome support.");
+    if (data.agent.status !== "active") throw new Error("This Partner account is not active yet. Contact GgnHome admin.");
+    if (!data.agentAccessToken) throw new Error("OTP was verified, but a Partner session could not be created. Please try again.");
+    localStorage.setItem("accessToken", data.accessToken);
+    localStorage.setItem("partnerAccessToken", data.agentAccessToken);
+    onLogin(data.agentAccessToken);
+  }
+
   async function sendOtp() {
     setError(""); setNotice("");
     if (!/^[6-9]\d{9}$/.test(normalized)) return setError("Enter a valid 10-digit Indian mobile number.");
@@ -50,30 +62,20 @@ function AuthScreen({ onLogin }) {
     try {
       const data = await request("/partner/login/request-otp", { method: "POST", body: JSON.stringify({ mobileNumber: normalized }) });
       // Direct login is on: the code is returned instead of sent by SMS, so sign in with it straight away.
-      if (data.channel === "direct" && data.directOtp) {
-        setSent(true); setOtp(data.directOtp);
-        return await verifyOtp(data.directOtp);
-      }
+      // Direct login is on: the server has already signed the partner in.
+      if (data.channel === "direct") return completePartnerLogin(data);
       setSent(true); setNotice(data.message || "OTP sent. It is valid for 5 minutes.");
     } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
 
-  async function verifyOtp(submitted) {
+  async function verifyOtp() {
     setError(""); setNotice("");
-    const code = String(typeof submitted === "string" ? submitted : otp).trim().toUpperCase();
+    const code = otp.trim().toUpperCase();
     if (!/^[A-Z]{4}$/.test(code)) return setError("Enter the 4-letter OTP you received.");
     setBusy(true);
     try {
       const data = await request("/partner/login/verify-otp", { method: "POST", body: JSON.stringify({ mobileNumber: normalized, otp: code }) });
-      if (!data.accessToken) throw new Error("OTP was verified but no login token was returned.");
-      if (data.agent?.role === "Agent") throw new Error("This number is registered as a standard Agent, not a Partner. Contact GgnHome admin.");
-      if (data.agent?.role !== "Partner") throw new Error("This mobile number is not registered for Partner Portal access. Ask a GgnHome administrator to register it first.");
-      if (data.agent.status === "suspended") throw new Error("This Partner account is suspended. Contact GgnHome support.");
-      if (data.agent.status !== "active") throw new Error("This Partner account is not active yet. Contact GgnHome admin.");
-      if (!data.agentAccessToken) throw new Error("OTP was verified, but a Partner session could not be created. Please try again.");
-      localStorage.setItem("accessToken", data.accessToken);
-      localStorage.setItem("partnerAccessToken", data.agentAccessToken);
-      onLogin(data.agentAccessToken);
+      completePartnerLogin(data);
     } catch (e) { setError(e.message || "OTP verification failed."); } finally { setBusy(false); }
   }
 
@@ -102,7 +104,7 @@ function AuthScreen({ onLogin }) {
           {!sent ? <button className="primary full" onClick={sendOtp} disabled={busy}>{busy ? "Sending code…" : "Send OTP"} <ArrowRight size={17} /></button> : <>
             <label>4-letter OTP</label>
             <input className="otp-input" value={otp} onChange={e => setOtp(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4))} placeholder="e.g. KQMX" maxLength={4} disabled={busy} />
-            <button className="primary full" onClick={() => verifyOtp()} disabled={busy}>{busy ? "Verifying…" : "Verify OTP and sign in"} <ArrowRight size={17} /></button>
+            <button className="primary full" onClick={verifyOtp} disabled={busy}>{busy ? "Verifying…" : "Verify OTP and sign in"} <ArrowRight size={17} /></button>
             <button className="text-button" onClick={() => { setSent(false); setOtp(""); setError(""); setNotice(""); }} disabled={busy}>Change mobile number</button>
           </>}
           <p className="fine-print">Need access? Ask a GgnHome administrator to register your mobile number. Self-registration is disabled.</p>

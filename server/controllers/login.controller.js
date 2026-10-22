@@ -206,15 +206,9 @@ async function requestOtpFor(req, res, directRoles) {
       });
     }
 
-    // Direct login: the code is returned to the website to auto-fill and sign in, and no SMS is sent.
+    // Direct login: no code is shown or sent. The account is signed in straight away.
     if (channel === "sms" && directRoles.includes(user.role) && (await isDirectLoginOn())) {
-      return res.status(200).json({
-        message: "Direct login ready",
-        channel: "direct",
-        directOtp: otp,
-        maskedMobile: maskMobile(user.mobileNumber),
-        expiresInSeconds: Math.floor(OTP_TTL_MS / 1000),
-      });
+      return finishLogin(req, res, user);
     }
 
     // SMS channel
@@ -403,6 +397,58 @@ exports.setPassword = async (req, res) => {
 };
 
 // Verify OTP
+// Signs the account in: sets the session cookies and returns the login payload.
+// Used by OTP login and by direct login (no code is entered).
+async function finishLogin(req, res, user) {
+  user.isVerified = true;
+  user.otpVerifiedAt = new Date();
+  // clear one-time OTP fields (single use, all roles)
+  user.otp = null;
+  user.otpExpiry = null;
+  user.otpAttempts = 0;
+
+  // A verified OTP proves a real user: reset this client's OTP request/verify
+  // counters to zero (best effort -- never block the login on it).
+  ipHits.delete(clientIp(req));
+  resetOtpLimits(req).catch((err) => console.error("resetOtpLimits failed:", err.message));
+
+  const accessToken = user.getAccessToken();
+  const refreshToken = user.getRefreshToken();
+  user.refreshToken = refreshToken;
+  await user.save();
+
+  res.cookie("accessToken", accessToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "None",
+    maxAge: 65 * 60 * 1000,
+  });
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "None",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+
+  // One login for both sites: approved agents also get their agent session.
+  let agentSession = { agent: null };
+  try {
+    agentSession = await issueAgentSession(req, res, user);
+  } catch (e) {
+    console.error("issueAgentSession failed:", e && e.message);
+  }
+
+  return res.json({
+    message: "Login successful",
+    accessToken,
+    refreshToken,
+    user: { email: user.email, role: user.role, name: user.name, mobileNumber: user.mobileNumber },
+    agent: agentSession.agent,
+    ...(agentSession.agentAccessToken ? { agentAccessToken: agentSession.agentAccessToken } : {}),
+  });
+}
+
 exports.verifyOtp = async (req, res) => {
   try {
     const { email, otp, mobileNumber } = req.body;
@@ -447,53 +493,7 @@ exports.verifyOtp = async (req, res) => {
     //   user.email = email;
     // }
 
-    user.isVerified = true;
-    user.otpVerifiedAt = new Date();
-    // clear one-time OTP fields (single use, all roles)
-    user.otp = null;
-    user.otpExpiry = null;
-    user.otpAttempts = 0;
-
-    // A verified OTP proves a real user: reset this client's OTP request/verify
-    // counters to zero (best effort -- never block the login on it).
-    ipHits.delete(clientIp(req));
-    resetOtpLimits(req).catch((err) => console.error("resetOtpLimits failed:", err.message));
-
-    const accessToken = user.getAccessToken();
-    const refreshToken = user.getRefreshToken();
-    user.refreshToken = refreshToken;
-    await user.save();
-
-    res.cookie("accessToken", accessToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "None",
-      maxAge: 65 * 60 * 1000,
-    });
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "None",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    // One login for both sites: approved agents also get their agent session.
-    let agentSession = { agent: null };
-    try {
-      agentSession = await issueAgentSession(req, res, user);
-    } catch (e) {
-      console.error("issueAgentSession failed:", e && e.message);
-    }
-
-    return res.json({
-      message: "Login successful",
-      accessToken,
-      refreshToken,
-      user: { email: user.email, role: user.role, name: user.name, mobileNumber: user.mobileNumber },
-      agent: agentSession.agent,
-      ...(agentSession.agentAccessToken ? { agentAccessToken: agentSession.agentAccessToken } : {}),
-    });
+    return finishLogin(req, res, user);
   } catch (error) {
     res.status(500).json({ message: "Server error" });
   }

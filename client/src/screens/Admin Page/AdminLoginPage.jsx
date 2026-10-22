@@ -49,11 +49,9 @@ export default function AdminLoginPage() {
         if (res.status === 429 && data.retryAfterSec) resend.start(Math.min(data.retryAfterSec, 120));
         throw new Error(data.message || "Could not send OTP.");
       }
-      // Direct login is on: the code comes back instead of an SMS, so sign in with it straight away.
-      if (data.channel === "direct" && data.directOtp) {
-        setOtpSent(true);
-        setOtp(data.directOtp);
-        await verifyOtp(data.directOtp);
+      // Direct login is on: the server has already signed the admin in.
+      if (data.channel === "direct") {
+        await completeAdminLogin(data);
         return;
       }
       setOtpSent(true);
@@ -65,6 +63,16 @@ export default function AdminLoginPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  // Opens the admin console from a successful login response (OTP or direct login).
+  async function completeAdminLogin(data) {
+    // Second guard: never keep a session that is not an admin's.
+    if (data.user?.role !== "admin") throw new Error("This account does not have admin access.");
+
+    if (data.accessToken) localStorage.setItem("accessToken", data.accessToken);
+    await fetchUser?.({ force: true });
+    navigate(ADMIN_HOME, { replace: true });
   }
 
   async function verifyOtp(submitted) {
@@ -84,12 +92,7 @@ export default function AdminLoginPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "OTP verification failed.");
-      // Second guard: never keep a session that is not an admin's.
-      if (data.user?.role !== "admin") throw new Error("This account does not have admin access.");
-
-      if (data.accessToken) localStorage.setItem("accessToken", data.accessToken);
-      await fetchUser?.({ force: true });
-      navigate(ADMIN_HOME, { replace: true });
+      await completeAdminLogin(data);
     } catch (e) {
       setError(e.message || "OTP verification failed.");
     } finally {

@@ -38,13 +38,9 @@ export default function MobileOtpForm({ onVerified, submitLabel = "Verify & Cont
       const res = await fetch(`${base}/login/request-otp`, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ mobileNumber: mobile }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "Couldn't send the code. Please try again.");
-      // Direct login is on: the server returns the code. Enter it and verify through
-      // the same endpoint so normal session/role checks still run.
-      if (data.channel === "direct" && data.directOtp) {
-        setStep("code");
-        setCode(data.directOtp);
-        setInfo("Your code was filled in automatically. Signing you in…");
-        await verify(null, data.directOtp);
+      // Direct login is on: the server has already signed the account in.
+      if (data.channel === "direct") {
+        await onVerified(data, mobile);
         return;
       }
       setStep("code");
@@ -59,18 +55,16 @@ export default function MobileOtpForm({ onVerified, submitLabel = "Verify & Cont
     }
   };
 
-  // submitted: the code passed in directly (direct login), so it does not wait for a state update.
-  const verify = async (e, submitted) => {
+  const verify = async (e) => {
     e?.preventDefault();
     setError("");
-    const value = typeof submitted === "string" ? submitted : code;
-    if (value.length !== 4) {
+    if (code.length !== 4) {
       setError("Enter all 4 letters of the code");
       return;
     }
     setBusy(true);
     try {
-      const res = await fetch(`${base}/login/verify-otp`, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ mobileNumber: mobile, otp: value }) });
+      const res = await fetch(`${base}/login/verify-otp`, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ mobileNumber: mobile, otp: code }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "That code didn't work. Please try again.");
       await onVerified(data, mobile);
