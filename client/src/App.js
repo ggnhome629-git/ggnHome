@@ -96,6 +96,9 @@ const PartnerHubDashboard = lazy(() => import("./screens/PartnerHub/Dashboard/Pa
 const PartnerAuthPage = lazy(() => import("./screens/PartnerHub/PartnerAuthPage"));
 const PartnerHubProperties = lazy(() => import("./screens/PartnerHub/Properties/PartnerHubProperties"));
 const PartnerPropertyAdd = lazy(() => import("./screens/PartnerHub/Properties/PartnerPropertyAdd"));
+// The sale and rental property pages as the Partner portal shows them (partner header, no customer features).
+const PartnerSalePropertyView = lazy(() => import("./screens/PartnerHub/Properties/PartnerSalePropertyView"));
+const PartnerRentalPropertyView = lazy(() => import("./screens/PartnerHub/Properties/PartnerRentalPropertyView"));
 const PartnerHubLeads = lazy(() => import("./screens/PartnerHub/Leads/PartnerHubLeads"));
 const PartnerHubEnquiries = lazy(() => import("./screens/PartnerHub/Enquiries/PartnerHubEnquiries"));
 const PartnerHubProfile = lazy(() => import("./screens/PartnerHub/Profile/PartnerHubProfile"));
@@ -237,6 +240,8 @@ function App() {
         <Route path="/partner/dashboard" element={<PartnerHubDashboard />} />
         <Route path="/partner/properties" element={<PartnerHubProperties />} />
         <Route path="/partner/properties/add" element={<PartnerPropertyAdd />} />
+        <Route path="/partner/properties/sale/:id" element={<PartnerSalePropertyView />} />
+        <Route path="/partner/properties/rental/:id" element={<PartnerRentalPropertyView />} />
         <Route path="/partner/leads" element={<PartnerHubLeads />} />
         <Route path="/partner/enquiries" element={<PartnerHubEnquiries />} />
         <Route path="/partner/profile" element={<PartnerHubProfile />} />

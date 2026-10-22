@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Autocomplete, Box, Button, ButtonBase, Chip, CircularProgress, Container, LinearProgress, Stack, TextField, Typography } from "@mui/material";
-import { ArrowLeft, ArrowRight, Camera, Check, CheckCircle2, ImagePlus, LocateFixed, MapPin, Search, Send, Star, X } from "lucide-react";
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Autocomplete, Box, Button, ButtonBase, Chip, CircularProgress, Container, LinearProgress, Stack, TextField, Typography } from "@mui/material";
+import { ArrowLeft, ArrowRight, Camera, Check, CheckCircle2, ChevronDown, ImagePlus, LocateFixed, MapPin, Search, Send, Star, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { rupeesInWords } from "../../../components/postForm/scoring";
 import {
@@ -12,7 +12,8 @@ import {
  * Quick listing form for partners: photos, the property, size and price, the place.
  * Four short screens, big buttons, English with Hindi underneath. The title,
  * description, bathrooms and map position are filled in by the server, and the
- * nearby places are found on the last screen, so the partner never types them.
+ * nearby places are found on the last screen (the partner can edit or add to them in a closed
+ * menu), so the partner never has to type them.
  */
 
 const API = process.env.REACT_APP_Base_API || "";
@@ -38,6 +39,8 @@ const NEARBY_LABELS = {
   park: { en: "Park", hi: "पार्क" },
   mall: { en: "Mall", hi: "मॉल" },
 };
+const NEARBY_ORDER = Object.keys(NEARBY_LABELS);
+const NEARBY_EXAMPLES = { market: "Sector 57 Market", metro: "Sikanderpur Metro", hospital: "Fortis Hospital", school: "DPS School", park: "Central Park", mall: "Ambience Mall" };
 
 const EMPTY_FORM = { purpose: "", propertyType: "", bedrooms: "", area: "", areaUnit: "sqft", price: "", furnishing: "", ownerMobile: "" };
 const EMPTY_LOC = { address: "", sector: "", latitude: null, longitude: null, source: "", accuracy: null };
@@ -190,23 +193,46 @@ export default function PartnerQuickPost() {
   // Single-line fields: the keyboard's Done key closes the keyboard.
   const doneKeyDown = (e) => { if (e.key === "Enter") e.target.blur(); };
 
-  // Nearby places for the chosen spot, shown on the last screen (once per place, not per letter typed).
+  // Nearby places for the chosen spot, shown on the last screen. Looked up once per spot (not per
+  // letter typed, and not again when going Back and Next), so what the partner edited is kept.
+  const nearbyFor = useRef("");
   useEffect(() => {
     if (step !== LAST_STEP || loc.latitude == null || loc.longitude == null) return undefined;
+    const spot = `${loc.latitude},${loc.longitude}`;
+    if (nearbyFor.current === spot) return undefined;
+    nearbyFor.current = spot;
     let cancelled = false;
+    let finished = false;
     setNearby({ status: "loading", items: [] });
     const timer = setTimeout(async () => {
       try {
         const data = await apiJson("/api/nearby-parameters", { method: "POST", body: JSON.stringify({ address: locRef.current.address, sector: locRef.current.sector, latitude: loc.latitude, longitude: loc.longitude }) });
         if (cancelled) return;
         const items = (data.amenities || []).filter((a) => a.found && NEARBY_LABELS[a.category]).map((a) => ({ category: a.category, name: a.name, distanceMeters: a.distanceMeters }));
+        finished = true;
         setNearby({ status: "done", items });
       } catch (_) {
+        finished = true;
         if (!cancelled) setNearby({ status: "failed", items: [] });
       }
     }, 400);
-    return () => { cancelled = true; clearTimeout(timer); };
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      if (!finished) nearbyFor.current = ""; // left before the answer came: look again next time
+    };
   }, [step, loc.latitude, loc.longitude]);
+
+  // The partner can change a place, or add one that was not found (a park, a market...).
+  const setPlace = (category, patch) => setNearby((prev) => {
+    const exists = prev.items.some((a) => a.category === category);
+    const items = exists
+      ? prev.items.map((a) => (a.category === category ? { ...a, ...patch, edited: true } : a))
+      : [...prev.items, { category, name: "", distanceMeters: "", ...patch, edited: true }];
+    return { ...prev, items };
+  });
+  const placeOf = (category) => nearby.items.find((a) => a.category === category) || { name: "", distanceMeters: "" };
+  const shownPlaces = nearby.items.filter((a) => String(a.name || "").trim() || Number(a.distanceMeters) > 0);
 
   // Keep what was typed if the page is closed by accident (photos cannot be kept).
   useEffect(() => {
@@ -331,8 +357,17 @@ export default function PartnerQuickPost() {
     if (loc.latitude != null && loc.longitude != null) { fd.append("latitude", String(loc.latitude)); fd.append("longitude", String(loc.longitude)); }
     fd.append("ownerMobile", f.ownerMobile);
     if (f.furnishing) fd.append("furnishing", f.furnishing);
-    // The nearby places found on this screen go with the listing, so the server does not search again.
-    if (nearby.status === "done" && nearby.items.length) fd.append("amenities", JSON.stringify(nearby.items.map((a) => ({ ...a, source: "locationiq" }))));
+    // The nearby places shown on this screen (found automatically, or edited / added by the partner)
+    // go with the listing, so the server does not search again.
+    if (shownPlaces.length) {
+      fd.append("amenities", JSON.stringify(shownPlaces.map((a) => ({
+        category: a.category,
+        name: String(a.name || "").trim(),
+        distanceMeters: Number(a.distanceMeters) > 0 ? Math.round(Number(a.distanceMeters)) : undefined,
+        source: a.edited ? "partner" : "locationiq",
+        edited: !!a.edited,
+      }))));
+    }
     fd.append("imageCategories", JSON.stringify(photos.map((_, i) => (i === 0 ? "front" : "other"))));
     photos.forEach((p, i) => fd.append("images", p.file, p.file.name || `photo-${i + 1}.jpg`));
 
@@ -353,7 +388,7 @@ export default function PartnerQuickPost() {
   const startOver = useCallback(() => {
     try { localStorage.removeItem(DRAFT_KEY); } catch (_) { /* ignore */ }
     setPhotos([]); setF({ ...EMPTY_FORM }); setLoc({ ...EMPTY_LOC }); setGps(null); setFarConfirmed(false);
-    setStep(0); setDone(null); setError(""); setLocNote(""); setQuery(""); setSuggestions([]); setNearby({ status: "idle", items: [] });
+    setStep(0); setDone(null); setError(""); setLocNote(""); setQuery(""); setSuggestions([]); setNearby({ status: "idle", items: [] }); nearbyFor.current = "";
     window.scrollTo({ top: 0 });
   }, []);
 
@@ -602,22 +637,66 @@ export default function PartnerQuickPost() {
                     <Typography sx={{ fontSize: 14, color: "#475569" }}>Finding nearby places… / आसपास की जगहें खोज रहे हैं…</Typography>
                   </Stack>
                 )}
-                {nearby.status === "done" && nearby.items.length > 0 && (
+                {nearby.status !== "loading" && shownPlaces.length > 0 && (
                   <Stack spacing={0.75} sx={{ mt: 1 }}>
-                    {nearby.items.map((a) => (
+                    {shownPlaces.map((a) => (
                       <Stack key={a.category} direction="row" spacing={1} alignItems="baseline" justifyContent="space-between">
-                        <Typography sx={{ fontSize: 15, color: INK, minWidth: 0 }}><b>{NEARBY_LABELS[a.category].en}</b> · {NEARBY_LABELS[a.category].hi}<Box component="span" sx={{ display: "block", fontSize: 13, color: "#64748b" }}>{a.name}</Box></Typography>
-                        <Typography sx={{ fontSize: 15, fontWeight: 800, color: GREEN, whiteSpace: "nowrap" }}>{a.distanceMeters != null ? formatKm(a.distanceMeters) : ""}</Typography>
+                        <Typography sx={{ fontSize: 15, color: INK, minWidth: 0 }}><b>{NEARBY_LABELS[a.category].en}</b> · {NEARBY_LABELS[a.category].hi}{a.name && <Box component="span" sx={{ display: "block", fontSize: 13, color: "#64748b" }}>{a.name}</Box>}</Typography>
+                        <Typography sx={{ fontSize: 15, fontWeight: 800, color: GREEN, whiteSpace: "nowrap" }}>{Number(a.distanceMeters) > 0 ? formatKm(Number(a.distanceMeters)) : ""}</Typography>
                       </Stack>
                     ))}
                     <Typography sx={{ fontSize: 12, color: "#64748b" }}>Approximate straight-line distance. These are added to your listing. / अनुमानित दूरी, लिस्टिंग में अपने-आप जुड़ेगी।</Typography>
                   </Stack>
                 )}
-                {nearby.status === "done" && nearby.items.length === 0 && (
+                {nearby.status === "done" && shownPlaces.length === 0 && (
                   <Typography sx={{ mt: 1, fontSize: 14, color: "#475569" }}>No nearby places found for this spot. You can still publish. / इस जगह के पास कुछ नहीं मिला, फिर भी पोस्ट कर सकते हैं।</Typography>
                 )}
-                {nearby.status === "failed" && (
+                {nearby.status === "failed" && shownPlaces.length === 0 && (
                   <Typography sx={{ mt: 1, fontSize: 14, color: "#475569" }}>Could not find nearby places right now. You can still publish. / अभी आसपास की जगहें नहीं मिलीं, फिर भी पोस्ट कर सकते हैं।</Typography>
+                )}
+
+                {/* Closed by default: everything above is filled in automatically. */}
+                {nearby.status !== "loading" && (
+                  <Accordion disableGutters elevation={0} square sx={{ mt: 1.5, border: "1px solid #d6dee8", borderRadius: "12px !important", "&:before": { display: "none" }, overflow: "hidden" }}>
+                    <AccordionSummary expandIcon={<ChevronDown size={22} />} sx={{ minHeight: 52, "& .MuiAccordionSummary-content": { my: 1 } }}>
+                      <Typography sx={{ fontWeight: 800, fontSize: 15, color: GREEN }}>Edit or add places · जगहें बदलें या जोड़ें</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ pt: 0 }}>
+                      <Typography sx={{ fontSize: 13, color: "#64748b", mb: 1.5 }}>Found something we missed, like a park? Add its name and distance. / कुछ छूट गया हो, जैसे पार्क? नाम और दूरी लिखें।</Typography>
+                      <Stack spacing={2}>
+                        {NEARBY_ORDER.map((category) => {
+                          const place = placeOf(category);
+                          const has = String(place.name || "").trim() || Number(place.distanceMeters) > 0;
+                          return (
+                            <Box key={category}>
+                              <Stack direction="row" alignItems="center" justifyContent="space-between">
+                                <Typography sx={{ fontWeight: 800, color: INK, fontSize: 15 }}>{NEARBY_LABELS[category].en} · {NEARBY_LABELS[category].hi}</Typography>
+                                {has && <Button size="small" onClick={() => setPlace(category, { name: "", distanceMeters: "" })} sx={{ textTransform: "none", fontWeight: 700, minWidth: 0 }}>Clear · हटाएँ</Button>}
+                              </Stack>
+                              <TextField
+                                value={place.name || ""}
+                                onChange={(e) => setPlace(category, { name: e.target.value.slice(0, 80) })}
+                                onKeyDown={doneKeyDown}
+                                placeholder={`e.g. ${NEARBY_EXAMPLES[category]}`}
+                                inputProps={{ "aria-label": `${NEARBY_LABELS[category].en} name`, enterKeyHint: "done", style: { fontSize: 16, padding: "12px 14px" } }}
+                                fullWidth
+                                sx={{ mt: 0.75 }}
+                              />
+                              <TextField
+                                value={place.distanceMeters === null || place.distanceMeters === undefined ? "" : String(place.distanceMeters)}
+                                onChange={(e) => setPlace(category, { distanceMeters: e.target.value.replace(/\D/g, "").slice(0, 5) })}
+                                onKeyDown={doneKeyDown}
+                                placeholder="Distance in metres"
+                                inputProps={{ "aria-label": `${NEARBY_LABELS[category].en} distance in metres`, inputMode: "numeric", enterKeyHint: "done", style: { fontSize: 16, padding: "12px 14px" } }}
+                                InputProps={{ endAdornment: <Typography sx={{ color: "#64748b", ml: 1, whiteSpace: "nowrap", flexShrink: 0 }}>{Number(place.distanceMeters) >= 1000 ? formatKm(Number(place.distanceMeters)) : "m"}</Typography> }}
+                                sx={{ mt: 1, width: { xs: "100%", sm: 260 } }}
+                              />
+                            </Box>
+                          );
+                        })}
+                      </Stack>
+                    </AccordionDetails>
+                  </Accordion>
                 )}
               </Box>
             )}

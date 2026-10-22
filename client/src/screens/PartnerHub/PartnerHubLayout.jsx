@@ -108,7 +108,9 @@ export default function PartnerHubLayout({ children }) {
   }, []);
   const current = location.pathname === "/partner/properties/add"
     ? { label: "Add a property" }
-    : NAV_ITEMS.find((item) => item.path === location.pathname)
+    : /^\/partner\/properties\/(sale|rental)\//.test(location.pathname)
+      ? { label: "Property details" }
+      : NAV_ITEMS.find((item) => item.path === location.pathname)
       || (location.pathname.startsWith("/partner/properties") ? NAV_ITEMS[1] : NAV_ITEMS[0]);
   const logout = () => {
     localStorage.removeItem("partnerAccessToken");

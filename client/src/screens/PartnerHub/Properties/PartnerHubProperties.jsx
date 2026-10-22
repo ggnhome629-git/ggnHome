@@ -22,8 +22,9 @@ import { useNavigate } from 'react-router-dom';
 
 const GREEN = '#0f766e';
 
-// The list API tells us if a property is for sale or rent; the public detail pages are split the same way.
-const detailPath = (property) => (property.propertyType === 'rental' ? `/Rentaldetails/${property._id}` : `/Saledetails/${property._id}`);
+// The list API tells us if a property is for sale or rent. Both open inside the Partner portal
+// (partner header, none of the customer features of the public page).
+const detailPath = (property) => `/partner/properties/${property.propertyType === 'rental' ? 'rental' : 'sale'}/${property._id}`;
 
 // Sale prices the way people say them (lakh / crore), rent per month.
 function priceText(property) {

@@ -107,12 +107,72 @@ test("a partner can post a rental in four short screens and the server gets only
   expect(sentForm.get("latitude")).toBe("28.4212");
   expect(sentForm.get("ownerMobile")).toBe("9876543210");
   // the nearby places that were shown go with the listing, so the server does not search again
-  expect(JSON.parse(sentForm.get("amenities"))).toEqual([{ category: "metro", name: "Sikanderpur Metro", distanceMeters: 1200, source: "locationiq" }]);
+  expect(JSON.parse(sentForm.get("amenities"))).toEqual([{ category: "metro", name: "Sikanderpur Metro", distanceMeters: 1200, source: "locationiq", edited: false }]);
   expect(sentForm.getAll("images")).toHaveLength(1);
   expect(sentForm.get("imageCategories")).toBe('["front"]');
   ["title", "description", "bathrooms"].forEach((field) => expect(sentForm.get(field)).toBeNull());
   expect(screen.getByText("3 BHK Flat for Rent in Sector 57, Gurugram")).toBeInTheDocument();
 });
+
+// Photos, property, size and price, then the GPS place: the screen where nearby places are shown.
+async function reachPlaceStep(container) {
+  fireEvent.change(container.querySelector("input[type=file][multiple]"), { target: { files: [new File(["x"], "front.jpg", { type: "image/jpeg" })] } });
+  await screen.findByText(/1 photo added/i);
+  fireEvent.click(button(/next/i));
+  fireEvent.click(button(/^Rent/));
+  fireEvent.click(button(/^Flat/));
+  fireEvent.click(button("3"));
+  fireEvent.click(button(/next/i));
+  fireEvent.click(button(/Typical size: 1,500/));
+  fireEvent.click(button("₹20,000"));
+  fireEvent.click(button(/next/i));
+  fireEvent.click(button(/use my location/i));
+  await screen.findByText("Sector 57");
+  await screen.findByText(/Sikanderpur Metro/);
+}
+
+test("nearby places can be edited or added in a menu that starts closed", async () => {
+  const { container } = renderForm();
+  await reachPlaceStep(container);
+
+  const menu = screen.getByRole("button", { name: /Edit or add places/i });
+  expect(menu).toHaveAttribute("aria-expanded", "false");
+  fireEvent.click(menu);
+  expect(menu).toHaveAttribute("aria-expanded", "true");
+
+  // the metro was found automatically; the partner corrects its name and adds a park that was missed
+  fireEvent.change(screen.getByLabelText("Metro name"), { target: { value: "Sikanderpur Metro Station" } });
+  fireEvent.change(screen.getByLabelText("Park name"), { target: { value: "Leisure Valley Park" } });
+  fireEvent.change(screen.getByLabelText("Park distance in metres"), { target: { value: "450" } });
+
+  fireEvent.change(screen.getByPlaceholderText("10-digit number"), { target: { value: "9876543210" } });
+  fireEvent.click(button(/publish property/i));
+  await screen.findByText(/Property published!/i);
+
+  expect(JSON.parse(sentForm.get("amenities"))).toEqual([
+    { category: "metro", name: "Sikanderpur Metro Station", distanceMeters: 1200, source: "partner", edited: true },
+    { category: "park", name: "Leisure Valley Park", distanceMeters: 450, source: "partner", edited: true },
+  ]);
+}, 20000);
+
+test("a place can be cleared, and going Back then Next keeps what was edited", async () => {
+  const { container } = renderForm();
+  await reachPlaceStep(container);
+  fireEvent.click(screen.getByRole("button", { name: /Edit or add places/i }));
+  fireEvent.change(screen.getByLabelText("Park name"), { target: { value: "Aravali Park" } });
+  fireEvent.click(button(/^Back/));
+  fireEvent.click(button(/next/i));
+
+  // the edit is kept (and shown in the list), and the menu is closed again
+  expect(screen.getByText("Aravali Park")).toBeInTheDocument();
+  const menu = screen.getByRole("button", { name: /Edit or add places/i });
+  expect(menu).toHaveAttribute("aria-expanded", "false");
+
+  fireEvent.click(menu);
+  fireEvent.click(screen.getAllByRole("button", { name: /Clear/ })[0]); // the metro row comes first
+  expect(screen.queryByText(/Sikanderpur Metro/)).not.toBeInTheDocument();
+  expect(screen.getByText("Aravali Park")).toBeInTheDocument();
+}, 20000);
 
 test("plot sizes in gaj are converted to square feet", async () => {
   const { container } = renderForm();

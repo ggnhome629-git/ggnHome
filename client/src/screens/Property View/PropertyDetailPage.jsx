@@ -26,6 +26,7 @@ import {
   recordPropertyView,
   trackEvent,
 } from "../../utils/propertyAnalytics";
+import PartnerPropertyBar from "../PartnerHub/Properties/PartnerPropertyBar";
 import MapIntegration from "./mapsintegration";
 import SimilarProperties from "./Similarproperties";
 import PropertyHero from "./sections/PropertyHero";
@@ -108,12 +109,17 @@ function LoadingSkeleton() {
  * decides for itself whether it has enough data to render, so a listing
  * without floor plans, documents or nearby-place data simply doesn't show
  * those sections rather than rendering empty shells.
+ *
+ * partnerView: the same page opened from the Partner portal. The GgnHome website menu is
+ * not drawn (the portal's own header is used instead), the customer features (save,
+ * enquiry, callback, site visit, similar and recently viewed listings) are removed, and
+ * nothing is counted as a customer view.
  */
-export default function PropertyDetailPage({ type }) {
+export default function PropertyDetailPage({ type, partnerView = false }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const routerLocation = useLocation();
-  const previewMode = routerLocation.state?.preview || false;
+  const previewMode = partnerView || routerLocation.state?.preview || false;
 
   const [raw, setRaw] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -126,7 +132,7 @@ export default function PropertyDetailPage({ type }) {
 
   const property = useMemo(() => normaliseProperty(raw, type), [raw, type]);
 
-  const emit = (event, extra) => trackEvent(event, { propertyId: id, ...extra });
+  const emit = (event, extra) => { if (!partnerView) trackEvent(event, { propertyId: id, ...extra }); };
 
   // ------------------------------------------------------------- data load --
 
@@ -160,7 +166,7 @@ export default function PropertyDetailPage({ type }) {
 
   // Record the view once, and remember it for "Recently viewed" elsewhere.
   useEffect(() => {
-    if (!property) return;
+    if (!property || partnerView) return;
     setRecent(getRecentlyViewed(property.id));
     recordPropertyView(property.id);
     pushRecentlyViewed(property);
@@ -170,7 +176,7 @@ export default function PropertyDetailPage({ type }) {
 
   // Time-on-listing, reported when the visitor leaves.
   useEffect(() => {
-    if (!property) return undefined;
+    if (!property || partnerView) return undefined;
     const start = Date.now();
     return () => recordEngagementTime(property.id, Math.floor((Date.now() - start) / 1000));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -221,12 +227,17 @@ export default function PropertyDetailPage({ type }) {
 
   // --------------------------------------------------------------- render --
 
+  // The GgnHome website menu. In the Partner portal the portal's own header is used instead.
+  const topNav = partnerView ? null : (
+    <Suspense fallback={<Box sx={{ height: 64 }} />}>
+      <TopNavigationBar navItems={NAV_ITEMS} />
+    </Suspense>
+  );
+
   if (loading) {
     return (
       <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
-        <Suspense fallback={<Box sx={{ height: 64 }} />}>
-          <TopNavigationBar navItems={NAV_ITEMS} />
-        </Suspense>
+        {topNav}
         <LoadingSkeleton />
       </Box>
     );
@@ -235,9 +246,7 @@ export default function PropertyDetailPage({ type }) {
   if (!property) {
     return (
       <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
-        <Suspense fallback={<Box sx={{ height: 64 }} />}>
-          <TopNavigationBar navItems={NAV_ITEMS} />
-        </Suspense>
+        {topNav}
         <Container maxWidth="sm" sx={{ py: 20, textAlign: "center" }}>
           <Typography variant="h2" sx={{ fontSize: "1.5rem", color: "primary.main", mb: 3 }}>
             This property isn't available
@@ -245,8 +254,8 @@ export default function PropertyDetailPage({ type }) {
           <Typography variant="body2" sx={{ color: "text.secondary", mb: 6 }}>
             The listing may have been taken down or is awaiting approval.
           </Typography>
-          <Button variant="contained" onClick={() => navigate("/search")}>
-            Browse other properties
+          <Button variant="contained" onClick={() => navigate(partnerView ? "/partner/properties" : "/search")}>
+            {partnerView ? "Back to My properties" : "Browse other properties"}
           </Button>
         </Container>
       </Box>
@@ -260,59 +269,73 @@ export default function PropertyDetailPage({ type }) {
 
   return (
     <>
-      <Helmet>
-        <title>{pageTitle}</title>
-        <meta
-          name="description"
-          content={`${property.title} — ${property.priceDisplay || "price on request"}${
-            property.builtUpAreaDisplay ? `, ${property.builtUpAreaDisplay}` : ""
-          } in ${property.sector || "Gurgaon"}. Verified listing on GgnHome.`}
-        />
-        <meta property="og:title" content={pageTitle} />
-        <meta property="og:description" content={property.description?.slice(0, 200) || property.title} />
-        {property.images[0] && <meta property="og:image" content={property.images[0]} />}
-        <meta property="og:type" content="product" />
-        <meta property="og:url" content={shareLink} />
-        <meta name="twitter:card" content="summary_large_image" />
-        <link rel="canonical" href={shareLink} />
-        {property.images[0] && <link rel="preload" as="image" href={property.images[0]} />}
-        <script type="application/ld+json">
-          {JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": property.isRental ? "Accommodation" : "Product",
-            name: property.title,
-            description: property.description || undefined,
-            image: property.images[0] || undefined,
-            url: shareLink,
-            numberOfRooms: property.bedrooms || undefined,
-            floorSize: property.builtUpArea
-              ? { "@type": "QuantitativeValue", value: property.builtUpArea, unitCode: "FTK" }
-              : undefined,
-            address: {
-              "@type": "PostalAddress",
-              addressLocality: property.sector || undefined,
-              addressRegion: "Gurgaon",
-              addressCountry: "IN",
-            },
-            offers: property.price
-              ? {
-                  "@type": "Offer",
-                  price: property.price,
-                  priceCurrency: "INR",
-                  availability: "https://schema.org/InStock",
-                  url: shareLink,
-                }
-              : undefined,
-          })}
-        </script>
-      </Helmet>
+      {partnerView ? (
+        <Helmet>
+          <title>Property details | GgnHome Partner</title>
+          <meta name="robots" content="noindex" />
+        </Helmet>
+      ) : (
+        <Helmet>
+          <title>{pageTitle}</title>
+          <meta
+            name="description"
+            content={`${property.title} — ${property.priceDisplay || "price on request"}${
+              property.builtUpAreaDisplay ? `, ${property.builtUpAreaDisplay}` : ""
+            } in ${property.sector || "Gurgaon"}. Verified listing on GgnHome.`}
+          />
+          <meta property="og:title" content={pageTitle} />
+          <meta property="og:description" content={property.description?.slice(0, 200) || property.title} />
+          {property.images[0] && <meta property="og:image" content={property.images[0]} />}
+          <meta property="og:type" content="product" />
+          <meta property="og:url" content={shareLink} />
+          <meta name="twitter:card" content="summary_large_image" />
+          <link rel="canonical" href={shareLink} />
+          {property.images[0] && <link rel="preload" as="image" href={property.images[0]} />}
+          <script type="application/ld+json">
+            {JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": property.isRental ? "Accommodation" : "Product",
+              name: property.title,
+              description: property.description || undefined,
+              image: property.images[0] || undefined,
+              url: shareLink,
+              numberOfRooms: property.bedrooms || undefined,
+              floorSize: property.builtUpArea
+                ? { "@type": "QuantitativeValue", value: property.builtUpArea, unitCode: "FTK" }
+                : undefined,
+              address: {
+                "@type": "PostalAddress",
+                addressLocality: property.sector || undefined,
+                addressRegion: "Gurgaon",
+                addressCountry: "IN",
+              },
+              offers: property.price
+                ? {
+                    "@type": "Offer",
+                    price: property.price,
+                    priceCurrency: "INR",
+                    availability: "https://schema.org/InStock",
+                    url: shareLink,
+                  }
+                : undefined,
+            })}
+          </script>
+        </Helmet>
+      )}
 
-      <Box sx={{ minHeight: "100vh", backgroundColor: "background.default", pb: { xs: 24, lg: 0 } }}>
-        <Suspense fallback={<Box sx={{ height: 64 }} />}>
-          <TopNavigationBar navItems={NAV_ITEMS} />
-        </Suspense>
+      <Box sx={{ minHeight: partnerView ? "auto" : "100vh", backgroundColor: "background.default", pb: partnerView ? 4 : { xs: 24, lg: 0 } }}>
+        {topNav}
 
-        <Container maxWidth="lg" sx={{ px: { xs: 4, md: 6 }, py: { xs: 5, md: 7 } }}>
+        <Container maxWidth="lg" sx={{ px: { xs: 4, md: 6 }, py: { xs: 5, md: 7 }, ...(partnerView ? { maxWidth: "1200px !important" } : {}) }}>
+          {partnerView && (
+            <PartnerPropertyBar
+              isActive={raw?.isActive !== false}
+              publicLink={shareLink}
+              onBack={() => navigate("/partner/properties")}
+              onShare={openShare}
+            />
+          )}
+          {!partnerView && (
           <Breadcrumbs separator="›" sx={{ mb: 5, fontSize: 13 }}>
             <MuiLink component="button" onClick={() => navigate("/")} sx={{ color: "text.secondary", fontSize: 13 }}>
               Home
@@ -333,12 +356,13 @@ export default function PropertyDetailPage({ type }) {
               </Typography>
             )}
           </Breadcrumbs>
+          )}
 
           <PropertyGalleryPro
             images={property.images}
             panoramas={property.panoramas}
             videos={property.videos}
-            onOpenVirtualTour={openVirtualTour}
+            onOpenVirtualTour={partnerView ? undefined : openVirtualTour}
             onEvent={emit}
           />
 
@@ -354,43 +378,47 @@ export default function PropertyDetailPage({ type }) {
               flexDirection: "column",
               gap: { xs: 5, lg: 7 },
               alignItems: { lg: "start" },
-              gridTemplateColumns: { lg: "minmax(0, 1fr) 360px" },
-              gridTemplateAreas: { lg: '"header side" "main side"' },
+              gridTemplateColumns: { lg: partnerView ? "minmax(0, 1fr)" : "minmax(0, 1fr) 360px" },
+              gridTemplateAreas: { lg: partnerView ? '"header" "main"' : '"header side" "main side"' },
               "& > *": { minWidth: 0 },
             }}
           >
             <Box sx={{ gridArea: "header", order: 1 }}>
               <PropertyHero property={property} />
               {/* Phones get Save / Enquire / Book visit from the sticky bottom bar, so the inline action row is desktop-only. */}
-              <Box sx={{ mt: 5, display: { xs: "none", md: "block" } }}>
-                <QuickActionsBar
-                  property={property}
-                  saved={saved}
-                  onSave={handleSave}
-                  onShare={openShare}
-                  onEvent={emit}
-                />
-              </Box>
-            </Box>
-
-            {/* The price/contact sidebar is desktop-only; on phones the bottom bar + enquiry form at the end cover it. */}
-            <Box sx={{ gridArea: "side", alignSelf: { lg: "stretch" }, order: 2, display: { xs: "none", lg: "block" } }}>
-              <Stack spacing={4} sx={{ position: { lg: "sticky" }, top: { lg: 88 } }}>
-                {!property.isAffiliate && (
-                  <PriceActionsCard
+              {!partnerView && (
+                <Box sx={{ mt: 5, display: { xs: "none", md: "block" } }}>
+                  <QuickActionsBar
                     property={property}
                     saved={saved}
                     onSave={handleSave}
                     onShare={openShare}
-                    onScheduleVisit={openVisit}
-                    onRequestCallback={openCallback}
-                    onMessage={scrollToEnquiry}
                     onEvent={emit}
                   />
-                )}
-                <ContactCard property={property} onMessage={scrollToEnquiry} onEvent={emit} />
-              </Stack>
+                </Box>
+              )}
             </Box>
+
+            {/* The price/contact sidebar is desktop-only; on phones the bottom bar + enquiry form at the end cover it. */}
+            {!partnerView && (
+              <Box sx={{ gridArea: "side", alignSelf: { lg: "stretch" }, order: 2, display: { xs: "none", lg: "block" } }}>
+                <Stack spacing={4} sx={{ position: { lg: "sticky" }, top: { lg: 88 } }}>
+                  {!property.isAffiliate && (
+                    <PriceActionsCard
+                      property={property}
+                      saved={saved}
+                      onSave={handleSave}
+                      onShare={openShare}
+                      onScheduleVisit={openVisit}
+                      onRequestCallback={openCallback}
+                      onMessage={scrollToEnquiry}
+                      onEvent={emit}
+                    />
+                  )}
+                  <ContactCard property={property} onMessage={scrollToEnquiry} onEvent={emit} />
+                </Stack>
+              </Box>
+            )}
 
             <Stack spacing={5} sx={{ gridArea: "main", minWidth: 0, order: 3 }}>
               <OverviewSection property={property} />
@@ -411,7 +439,7 @@ export default function PropertyDetailPage({ type }) {
 
               <DocumentsSection documents={property.documents} onDownload={() => emit(EVENTS.BROCHURE_DOWNLOAD)} />
 
-              {!property.isAffiliate && (
+              {!property.isAffiliate && !partnerView && (
                 <Stack
                   direction={{ xs: "column", sm: "row" }}
                   spacing={4}
@@ -445,45 +473,53 @@ export default function PropertyDetailPage({ type }) {
                 </Stack>
               )}
 
-              <EnquiryCard property={property} onEvent={emit} />
+              {!partnerView && <EnquiryCard property={property} onEvent={emit} />}
             </Stack>
           </Box>
 
-          <Box sx={{ mt: 10 }}>
-            <SimilarProperties sector={property.sector} currentPropertyId={property.id} />
-          </Box>
+          {!partnerView && (
+            <Box sx={{ mt: 10 }}>
+              <SimilarProperties sector={property.sector} currentPropertyId={property.id} />
+            </Box>
+          )}
 
-          {recent.length > 0 && (
+          {!partnerView && recent.length > 0 && (
             <Box sx={{ mt: 10 }}>
               <RecentlyViewed items={recent} />
             </Box>
           )}
         </Container>
 
-        <StickyActionBar
-          property={property}
-          saved={saved}
-          onSave={handleSave}
-          onShare={openShare}
-          onScheduleVisit={openVisit}
-          onEnquire={scrollToEnquiry}
-          onEvent={emit}
-        />
+        {!partnerView && (
+          <StickyActionBar
+            property={property}
+            saved={saved}
+            onSave={handleSave}
+            onShare={openShare}
+            onScheduleVisit={openVisit}
+            onEnquire={scrollToEnquiry}
+            onEvent={emit}
+          />
+        )}
 
         <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} link={shareLink} />
         <EmiCalculatorDialog open={emiOpen} onClose={() => setEmiOpen(false)} propertyPrice={property.price} />
-        <CallbackDialog
-          open={callbackOpen}
-          onClose={() => setCallbackOpen(false)}
-          property={property}
-          onEvent={emit}
-        />
-        <ScheduleVisitDialog
-          open={visitOpen}
-          onClose={() => setVisitOpen(false)}
-          property={property}
-          onEvent={emit}
-        />
+        {!partnerView && (
+          <>
+            <CallbackDialog
+              open={callbackOpen}
+              onClose={() => setCallbackOpen(false)}
+              property={property}
+              onEvent={emit}
+            />
+            <ScheduleVisitDialog
+              open={visitOpen}
+              onClose={() => setVisitOpen(false)}
+              property={property}
+              onEvent={emit}
+            />
+          </>
+        )}
       </Box>
     </>
   );
