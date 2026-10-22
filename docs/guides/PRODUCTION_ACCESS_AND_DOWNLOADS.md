@@ -15,13 +15,17 @@
 - Locking a shortcut removes it from the main landing-page cards and moves it to **Hidden tools**. Unlocking restores it to its original card.
 - This is a dashboard shortcut preference, not an authorization mechanism. Actual pages and APIs remain protected by their normal auth middleware.
 
-## Partner APK delivery
+## APK delivery (four apps)
 
-- Partners use the first-party endpoint /api/app-downloads/partner.apk; it streams the APK with attachment headers instead of sending the user to a GitHub webpage.
-- Default source: https://github.com/ggnhome629-git/ggnHome/releases/download/latest-apks/GgnHome-Partner.apk.
-- Optional API-host setting: PARTNER_APK_SOURCE_URL. The URL must be a direct GgnHome Release asset URL ending in GgnHome-Partner.apk; otherwise the safe default is used.
-- Optional PUBLIC_API_BASE_URL sets the externally reachable API origin used when publishing the direct download URL. Include the API origin only, with no trailing slash.
-- The API host must be able to reach GitHub Releases. Verify the response downloads a non-empty APK before promoting a release.
+- Every app downloads through one first-party link on the API, which streams the APK from the GitHub release `latest-apks` instead of sending the user to a GitHub page:
+  - `/api/app-downloads/GgnHome.apk` (GgnHome)
+  - `/api/app-downloads/GgnHome-Partner.apk` (Partner portal)
+  - `/api/app-downloads/GgnHome-Admin.apk` (Admin portal)
+  - `/api/app-downloads/sms-service.apk` (SMS Service)
+- `GET /api/app-downloads` lists the four apps with their version (default 1.0.0). The public page is `/apps`.
+- Optional per app: Admin → App Downloads can set a version label, or another HTTPS file. A GitHub release asset with the same file name is streamed; any other HTTPS link is redirected to.
+- Optional env: `PARTNER_APK_SOURCE_URL` (kept for older deployments) and `PUBLIC_API_BASE_URL` (the API origin used in the links; no trailing slash).
+- The API host must be able to reach GitHub Releases. Verify each download is a non-empty APK before promoting a release. See `ANDROID_APPS.md` for how the APKs are built and signed.
 
 ## Production verification checklist
 
@@ -30,7 +34,7 @@
 3. Confirm that an unregistered number cannot enter PartnerHub even if its OTP is correct.
 4. Confirm a registered number needs a valid OTP and a suspended account is denied.
 5. Lock and unlock a few dashboard shortcuts; refresh and sign in again as the same admin to verify preferences persist.
-6. Open /api/app-downloads/partner.apk in a browser and verify the browser downloads GgnHome-Partner.apk with the expected package size.
+6. Open each of the four /api/app-downloads/<file> links in a browser and verify it downloads the APK with the expected size.
 7. Test the partner portal on narrow mobile and desktop widths, including OTP errors, long loading states, no data, and download behavior.
 
 ## Remaining production work

@@ -4,9 +4,13 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js",
+    "start": "node index.js",
+    "dev": "nodemon index.js",
     "sync:nobroker": "node scripts/runNobrokerSync.js",
     "test": "jest tests"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "keywords": [],
   "author": "",

@@ -21,7 +21,7 @@ const { calculateRankingAfterSave } = require("../hooks/propertyRankingHook");
 
 // Multer setup for Excel file uploads (if needed)
 const excelStorage = multer.memoryStorage();
-const excelUpload = multer({ storage: excelStorage });
+const excelUpload = multer({ storage: excelStorage, limits: { fileSize: 5 * 1024 * 1024, files: 1 } });
 
 // ==============================
 // 🔹 createRentalProperty

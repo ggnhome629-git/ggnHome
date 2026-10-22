@@ -288,8 +288,8 @@ function GgnhomeTab({ data, reload, notify }) {
   const s = data.ggnhome.settings;
   const [form, setForm] = useState(null);
   useEffect(() => {
-    setForm({ showOtpOnAndroid: !!s.showOtpOnAndroid, directOtpEnabled: s.directOtpEnabled !== false, mode: s.mode, dailyLimit: s.dailyLimit ?? s.effective.dailyLimit, hourlyLimit: s.hourlyLimit ?? s.effective.hourlyLimit, gapMinSec: s.gapMinSec ?? s.effective.gapMinSec, gapMaxSec: s.gapMaxSec ?? s.effective.gapMaxSec });
-  }, [s.showOtpOnAndroid, s.directOtpEnabled, s.mode, s.dailyLimit, s.hourlyLimit, s.gapMinSec, s.gapMaxSec, s.effective]);
+    setForm({ showOtpOnAndroid: !!s.showOtpOnAndroid, mode: s.mode, dailyLimit: s.dailyLimit ?? s.effective.dailyLimit, hourlyLimit: s.hourlyLimit ?? s.effective.hourlyLimit, gapMinSec: s.gapMinSec ?? s.effective.gapMinSec, gapMaxSec: s.gapMaxSec ?? s.effective.gapMaxSec });
+  }, [s.showOtpOnAndroid, s.mode, s.dailyLimit, s.hourlyLimit, s.gapMinSec, s.gapMaxSec, s.effective]);
   if (!form) return null;
   const save = async () => {
     try {
@@ -303,7 +303,7 @@ function GgnhomeTab({ data, reload, notify }) {
   const eff = s.effective;
   return (
     <Stack spacing={2}>
-      <Typography color="text.secondary">Choose how GGN Home login codes are delivered. SMS mode keeps the existing SMS gateway and SIM sending. App mode shows OTPs in the Android app instead of sending SMS. Direct login is a separate switch below.</Typography>
+      <Typography color="text.secondary">Choose how GGN Home login codes are delivered. SMS mode keeps the existing SMS gateway and SIM sending. App mode shows OTPs in the Android app instead of sending SMS.</Typography>
       <Paper sx={{ p: 2.5 }}>
         <Stack spacing={2}>
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
@@ -313,18 +313,6 @@ function GgnhomeTab({ data, reload, notify }) {
               label={form.showOtpOnAndroid ? "Show OTP in app (no SMS)" : "Send OTP as SMS"}
             />
           </Stack>
-          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-            <Typography fontWeight={600}>Login</Typography>
-            <FormControlLabel
-              control={<Switch checked={!!form.directOtpEnabled} onChange={(e) => setForm({ ...form, directOtpEnabled: e.target.checked })} />}
-              label={form.directOtpEnabled ? "Direct auto login ON" : "Normal SMS login"}
-            />
-          </Stack>
-          <Typography variant="body2" color="text.secondary">
-            {form.directOtpEnabled
-              ? "Direct auto login is on for user, partner and admin sign-in: entering a registered number signs the user in straight away. No code is sent or shown. Turn it off to use the normal SMS code flow for all three."
-              : "Normal SMS login is on for user, partner and admin sign-in: the code is sent by SMS and the user enters it."}
-          </Typography>
           <Stack direction="row" spacing={2} alignItems="center">
             <Typography fontWeight={600}>Limits</Typography>
             <ModeSwitch mode={form.mode} setMode={(mode) => setForm({ ...form, mode })} />

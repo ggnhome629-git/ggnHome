@@ -38,11 +38,6 @@ export default function MobileOtpForm({ onVerified, submitLabel = "Verify & Cont
       const res = await fetch(`${base}/login/request-otp`, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ mobileNumber: mobile }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "Couldn't send the code. Please try again.");
-      // Direct login is on: the server has already signed the account in.
-      if (data.channel === "direct") {
-        await onVerified(data, mobile);
-        return;
-      }
       setStep("code");
       setCode("");
       setWait(RESEND_AFTER);

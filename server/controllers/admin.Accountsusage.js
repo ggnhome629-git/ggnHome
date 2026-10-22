@@ -93,8 +93,8 @@ async function fetchAllAccountsUsage() {
   for (let i = 0; i < ACCOUNTS.length; i++) {
     const acct = ACCOUNTS[i];
     try {
-      cloudinary.config(acct);
-      const usage = await cloudinary.api.usage(); // Admin API call
+      // This account's own credentials for this call only: the global config is shared with uploads running at the same time.
+      const usage = await cloudinary.api.usage(undefined, { cloud_name: acct.cloud_name, api_key: acct.api_key, api_secret: acct.api_secret }); // Admin API call
 
       // Prefer explicit credits if present
       const apiCreditsUsage = usage?.credits?.usage;

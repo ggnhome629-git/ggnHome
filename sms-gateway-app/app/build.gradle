@@ -11,8 +11,9 @@ android {
         applicationId 'com.ggnhome.smsgateway'
         minSdk 24
         targetSdk 34
-        versionCode 4
-        versionName '4.0'
+        // 1.0.0 is the first public release; versionCode only goes up so phones with an earlier build can update.
+        versionCode 5
+        versionName '1.0.0'
 
         // Addresses of the two servers and the ONE shared SMS_KEY (the GitHub build reads it from the SMS_KEY repo
         // secret; the 'test123' default only works against a non-production server).
@@ -22,16 +23,29 @@ android {
         buildConfigField 'String', 'SHINE_KEY', "\"${System.getenv('SMS_KEY') ?: 'test123'}\""
     }
 
+    // One key signs every APK: the release key from the build's secrets when it has one (stable updates and
+    // verified ggnhome.com links), otherwise the debug key so the APK still installs.
+    signingConfigs {
+        ggnhome {
+            def keystorePath = System.getenv("ANDROID_KEYSTORE_FILE")
+            if (keystorePath) {
+                storeFile file(keystorePath)
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildFeatures {
         buildConfig true
     }
 
     buildTypes {
-        // Debug-signed on purpose: this is an internal testing app, so no
-        // release keystore is needed and the APK installs directly.
+        // Signed with the release key when the build has it, otherwise with the debug key so the APK still installs.
         release {
             minifyEnabled false
-            signingConfig signingConfigs.debug
+            signingConfig System.getenv("ANDROID_KEYSTORE_FILE") ? signingConfigs.ggnhome : signingConfigs.debug
         }
     }
     compileOptions {

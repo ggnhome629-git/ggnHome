@@ -97,21 +97,10 @@ async function sendOtpEmail(user, otp) {
   await sendEmail(emailParams);
 }
 
-// Roles that may use direct login on the user/agent login. Admins always use SMS here.
-const USER_DIRECT_ROLES = ["renter", "owner"];
-
-// Direct login is one switch in the SMS Console (SmsSetting.directOtpEnabled), default on.
-async function isDirectLoginOn() {
-  const SmsSetting = require("../models/SmsSetting.model");
-  const setting = await SmsSetting.findOne({ key: "ggnhome" }).lean();
-  return !setting || setting.directOtpEnabled !== false;
-}
-
 // Request OTP
 //   { mobileNumber }  -> OTP by SMS (creates the account for a new number)
 //   { email }         -> OTP by email, for an existing account (email login)
-// directRoles: which account roles get the code back for direct login instead of SMS.
-async function requestOtpFor(req, res, directRoles) {
+exports.requestOtp = async (req, res) => {
   try {
     if (tooManyFromIp(req)) {
       return res.status(429).json({ message: "Too many requests. Please try again in a minute." });
@@ -206,12 +195,6 @@ async function requestOtpFor(req, res, directRoles) {
       });
     }
 
-    // Direct login: no code is shown or sent. The account is signed in straight away.
-    if (channel === "sms" && directRoles.includes(user.role) && (await isDirectLoginOn())) {
-      // The pages look for channel "direct" to know they are already signed in and skip the code step.
-      return finishLogin(req, res, user, { channel: "direct" });
-    }
-
     // SMS channel
     let smsQueued = false;
     let smsPreview = false;
@@ -263,10 +246,7 @@ async function requestOtpFor(req, res, directRoles) {
     console.error("requestOtp failed:", error?.name, error?.message, error?.code || "", error?.stack?.split("\n").slice(0, 4).join(" | "));
     res.status(500).json({ message: "Server error" });
   }
-}
-
-exports.requestOtp = (req, res) => requestOtpFor(req, res, USER_DIRECT_ROLES);
-exports.requestOtpFor = requestOtpFor;
+};
 
 // Login with Password
 exports.loginWithPassword = async (req, res) => {
@@ -399,8 +379,7 @@ exports.setPassword = async (req, res) => {
 
 // Verify OTP
 // Signs the account in: sets the session cookies and returns the login payload.
-// Used by OTP login and by direct login (no code is entered). `extra` is added to the payload.
-async function finishLogin(req, res, user, extra = {}) {
+async function finishLogin(req, res, user) {
   user.isVerified = true;
   user.otpVerifiedAt = new Date();
   // clear one-time OTP fields (single use, all roles)
@@ -441,7 +420,6 @@ async function finishLogin(req, res, user, extra = {}) {
   }
 
   return res.json({
-    ...extra,
     message: "Login successful",
     accessToken,
     refreshToken,

@@ -15,7 +15,7 @@ const Reward = require('../models/Rewards.model');
 const CustomerSupport = require('../models/CustomerSupport.model');
 const ServiceRequest = require('../models/serviceRequests.model');
 // ensure FileHandling runs so cloudinary is configured and we can use uploadWithFallback
-const { uploadWithFallback } = require('../config/FileHandling');
+const { uploadWithFallback, deleteAssets } = require('../config/FileHandling');
 const { calculateRankingAfterSave } = require('../hooks/propertyRankingHook');
 
 // cloudinary client for Admin API calls (delete_resources, delete_resources_by_prefix, delete_folder)
@@ -1511,59 +1511,8 @@ const deletePropertyAdmin = async (req, res) => {
       return res.status(200).json({ message: 'Property deleted (no linked Cloudinary assets found)' });
     }
 
-    // -------- Delete assets in chunks, with retries and fallback --------
-    const CHUNK_SIZE = 100; // cloudinary accepts up to 100 ids
-    const chunks = [];
-    for (let i = 0; i < uniqIds.length; i += CHUNK_SIZE) chunks.push(uniqIds.slice(i, i + CHUNK_SIZE));
-
-    const deletionResults = { deleted: [], notFound: [], errors: [] };
-
-    const maxRetries = 2;
-    for (const chunk of chunks) {
-      let attempt = 0;
-      let success = false;
-      while (attempt <= maxRetries && !success) {
-        try {
-          attempt++;
-          if (!cloudinary || !cloudinary.api || !cloudinary.api.delete_resources) {
-            throw new Error('Cloudinary Admin API not configured');
-          }
-          const resp = await cloudinary.api.delete_resources(chunk, { resource_type: 'image' });
-          // resp is object with results; mark successes
-          // resp may contain 'deleted' map
-          if (resp && resp.deleted) {
-            for (const [pid, result] of Object.entries(resp.deleted)) {
-              if (result === 'deleted' || result === 'ok') deletionResults.deleted.push(pid);
-              else if (result === 'not found') deletionResults.notFound.push(pid);
-              else deletionResults.errors.push({ pid, result });
-            }
-          }
-          success = true;
-        } catch (err) {
-          console.warn('Cloudinary bulk delete attempt failed (attempt ' + attempt + '):', err && err.message);
-          if (attempt > maxRetries) {
-            // fallback per id using uploadWithFallback if available
-            for (const pid of chunk) {
-              try {
-                if (typeof uploadWithFallback === 'function') {
-                  // uploadWithFallback signature used earlier: uploadWithFallback(filePath, folder, accountIndex, publicIdToDelete, deleteFlag)
-                  await uploadWithFallback(null, null, accountIndex, pid, true);
-                  deletionResults.deleted.push(pid);
-                } else {
-                  deletionResults.errors.push({ pid, error: 'uploadWithFallback not available' });
-                }
-              } catch (e) {
-                deletionResults.errors.push({ pid, error: e && e.message });
-              }
-            }
-            break;
-          } else {
-            // wait a bit then retry
-            await new Promise((r) => setTimeout(r, 500 * attempt));
-          }
-        }
-      }
-    }
+    // -------- Delete the files from the Cloudinary account the property was uploaded to, then any other account that holds them --------
+    const deletionResults = await deleteAssets(uniqIds, accountIndex, 'image');
 
     // After attempting asset deletion, remove DB docs
     await RentalProperty.findByIdAndDelete(id);

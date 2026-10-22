@@ -133,6 +133,35 @@ async function ensureUnderLimit(srcPath, maxBytesTarget = CLOUDINARY_HARD_LIMIT)
   }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Account health and per-call credentials
+// ---------------------------------------------------------------------------------------------
+// Every call carries its own credentials. The global cloudinary.config() is never changed while the app is
+// running, so two uploads going to two accounts at the same time can never get each other's keys.
+const credentials = (i) => {
+  const { cloud_name, api_key, api_secret } = cloudAccounts[i];
+  return { cloud_name, api_key, api_secret };
+};
+
+// An account that just said "I cannot take this" (quota, rate limit, bad key, outage) is skipped for a while,
+// so the next uploads go straight to a working account instead of failing on it first.
+const COOLDOWN_MS = Number(process.env.CLOUDINARY_COOLDOWN_MS) || 10 * 60 * 1000;
+const UPLOAD_TIMEOUT_MS = Number(process.env.CLOUDINARY_UPLOAD_TIMEOUT_MS) || 60 * 1000;
+const coolUntil = new Array(cloudAccounts.length).fill(0);
+
+// true: the account is the problem (another account may well work). false: the file is the problem, and
+// the same file would fail the same way anywhere.
+function isAccountProblem(err) {
+  const code = Number(err?.http_code || err?.statusCode || err?.error?.http_code);
+  const message = String(err?.message || err?.error?.message || "");
+  if ([401, 403, 420, 429].includes(code) || code >= 500) return true;
+  if (/quota|rate limit|limit exceeded|over limit|plan limit|credits|storage|disabled|suspended|invalid (api|cloud)|unknown api key|api_key|cloud_name/i.test(message)) return true;
+  if (/ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|ECONNREFUSED|socket hang up|timeout/i.test(message)) return true;
+  return false;
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // Multi-account round-robin + fallback uploader
 const uploadWithFallback = async (path, sectorOrFolder, preferredIndex = null, address = null) => {
   let unlinkPath = path;
@@ -142,6 +171,8 @@ const uploadWithFallback = async (path, sectorOrFolder, preferredIndex = null, a
     console.warn("[uploadWithFallback] No file path provided.");
     return null;
   }
+  if (cloudAccounts.length === 0) throw new Error("No Cloudinary account is configured.");
+
   // Determine target sizes: panoramas get a higher target
   const baseFolder = (sectorOrFolder || 'Uncategorized').toString().replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 80);
   const addressFolder = address ? address.toString().replace(/[^a-zA-Z0-9-_]/g, '_').substring(0, 80) : null;
@@ -151,37 +182,110 @@ const uploadWithFallback = async (path, sectorOrFolder, preferredIndex = null, a
   const isPanorama = String(folderName).toLowerCase().includes('/360') || String(folderName).toLowerCase().endsWith('360');
   const targetMax = isPanorama ? PANORAMA_MAX_BYTES : NORMAL_MAX_BYTES;
 
-  const prepared = await ensureUnderLimit(path, targetMax);
-  const uploadPath = prepared.path;
-  tempToUnlink = prepared.temp; // cleanup after upload
+  const cleanup = () => {
+    try { if (tempToUnlink && fs.existsSync(tempToUnlink)) fs.unlinkSync(tempToUnlink); } catch (_) {}
+    try { if (unlinkPath && fs.existsSync(unlinkPath) && unlinkPath !== tempToUnlink) fs.unlinkSync(unlinkPath); } catch (_) {}
+  };
 
-  const start = (Number.isInteger(preferredIndex) && preferredIndex >= 0) ? (preferredIndex % cloudAccounts.length) : getNextStartIndex();
+  try {
+    const prepared = await ensureUnderLimit(path, targetMax);
+    const uploadPath = prepared.path;
+    tempToUnlink = prepared.temp; // cleanup after upload
 
-  for (let attempt = 0; attempt < cloudAccounts.length; attempt++) {
-    const i = (start + attempt) % cloudAccounts.length;
-    const acct = cloudAccounts[i];
-    try {
-      cloudinary.config(acct);
-      const result = await cloudinary.uploader.upload(uploadPath, {
-        resource_type: 'auto',
-        folder: `properties/${folderName}`,
-        unique_filename: true,
-        overwrite: false,
-      });
-      // Best-effort cleanup of temp/original files after successful upload
-      try { if (tempToUnlink && fs.existsSync(tempToUnlink)) fs.unlinkSync(tempToUnlink); } catch (_) {}
-      try { if (unlinkPath && fs.existsSync(unlinkPath) && unlinkPath !== tempToUnlink) fs.unlinkSync(unlinkPath); } catch (_) {}
-      // console.log(`✅ Uploaded ${path} to Cloudinary account #${i + 1} (${acct.cloud_name}) at ${result.secure_url}`);
-      return { ...result, accountIndex: i, cloudName: acct.cloud_name };
-    } catch (err) {
-      lastError = err;
-      // console.error(`Cloudinary upload failed on account #${i + 1} (${acct.cloud_name}):`, err?.message || err);
+    const count = cloudAccounts.length;
+    const start = (Number.isInteger(preferredIndex) && preferredIndex >= 0) ? (preferredIndex % count) : getNextStartIndex();
+    const order = Array.from({ length: count }, (_, k) => (start + k) % count);
+    // Accounts that are not cooling down go first; if all are cooling, try them anyway.
+    const healthy = order.filter((i) => coolUntil[i] <= Date.now());
+    const tryOrder = healthy.length ? healthy : order;
+
+    let fileFailures = 0;
+    for (const i of tryOrder) {
+      const acct = cloudAccounts[i];
+      try {
+        const result = await cloudinary.uploader.upload(uploadPath, {
+          ...credentials(i),
+          resource_type: 'auto',
+          folder: `properties/${folderName}`,
+          unique_filename: true,
+          overwrite: false,
+          timeout: UPLOAD_TIMEOUT_MS,
+        });
+        coolUntil[i] = 0;
+        return { ...result, accountIndex: i, cloudName: acct.cloud_name };
+      } catch (err) {
+        lastError = err;
+        if (isAccountProblem(err)) {
+          coolUntil[i] = Date.now() + COOLDOWN_MS;
+          console.warn(`[cloudinary] account #${i + 1} (${acct.cloud_name}) skipped for ${Math.round(COOLDOWN_MS / 60000)} min: ${err?.message || err}`);
+          continue;
+        }
+        // Not clearly the account's fault: give the next account one chance, then stop.
+        fileFailures += 1;
+        if (fileFailures >= 2) break;
+      }
     }
+    throw lastError || new Error('Cloudinary upload failed on all configured accounts');
+  } finally {
+    cleanup();
   }
-
-  try { if (tempToUnlink && fs.existsSync(tempToUnlink)) fs.unlinkSync(tempToUnlink); } catch (_) {}
-  try { if (unlinkPath && fs.existsSync(unlinkPath) && unlinkPath !== tempToUnlink) fs.unlinkSync(unlinkPath); } catch (_) {}
-  throw lastError || new Error('Cloudinary upload failed on all configured accounts');
 };
 
-module.exports = { uploadoncloudinary, uploadWithFallback };
+/**
+ * Deletes images from Cloudinary. Starts with the account the listing was uploaded to (preferredIndex),
+ * and asks the other accounts only for what was not found there, so nothing stays behind and uses up quota.
+ * Returns { deleted: [ids], notFound: [ids], errors: [{ pid, error }] }.
+ */
+const deleteAssets = async (publicIds, preferredIndex = null, resourceType = 'image') => {
+  const result = { deleted: [], notFound: [], errors: [] };
+  let remaining = [...new Set((publicIds || []).filter(Boolean))];
+  if (!remaining.length) return result;
+  if (cloudAccounts.length === 0) {
+    result.errors = remaining.map((pid) => ({ pid, error: 'No Cloudinary account is configured.' }));
+    return result;
+  }
+
+  const count = cloudAccounts.length;
+  const start = (Number.isInteger(preferredIndex) && preferredIndex >= 0) ? (preferredIndex % count) : 0;
+  const lastError = new Map();
+
+  for (let step = 0; step < count && remaining.length; step++) {
+    const i = (start + step) % count;
+    const carryOn = [];
+    for (let c = 0; c < remaining.length; c += 100) { // Cloudinary takes up to 100 ids per call
+      const chunk = remaining.slice(c, c + 100);
+      let response = null;
+      for (let attempt = 0; attempt < 3 && !response; attempt++) {
+        try {
+          response = await cloudinary.api.delete_resources(chunk, { ...credentials(i), resource_type: resourceType });
+        } catch (err) {
+          chunk.forEach((pid) => lastError.set(pid, err?.message || String(err)));
+          await sleep(400 * (attempt + 1));
+        }
+      }
+      if (!response) { carryOn.push(...chunk); continue; }
+      for (const pid of chunk) {
+        const outcome = response.deleted && response.deleted[pid];
+        if (outcome === 'deleted' || outcome === 'ok' || outcome === 'already_deleted') { result.deleted.push(pid); lastError.delete(pid); }
+        else carryOn.push(pid); // not here (or not deletable here): ask the next account
+      }
+    }
+    remaining = carryOn;
+  }
+
+  for (const pid of remaining) {
+    if (lastError.has(pid)) result.errors.push({ pid, error: lastError.get(pid) });
+    else result.notFound.push(pid);
+  }
+  return result;
+};
+
+// For health checks and the admin usage page: which accounts exist and which are resting. No secrets.
+const accountsStatus = () => cloudAccounts.map((acct, i) => ({
+  index: i,
+  cloudName: acct.cloud_name,
+  resting: coolUntil[i] > Date.now(),
+  restingSeconds: Math.max(0, Math.round((coolUntil[i] - Date.now()) / 1000)),
+}));
+
+module.exports = { uploadoncloudinary, uploadWithFallback, deleteAssets, accountsStatus, credentialsFor: credentials, accountCount: () => cloudAccounts.length };

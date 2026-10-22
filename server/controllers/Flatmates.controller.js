@@ -3,7 +3,7 @@ const Flatmates = require('../models/Flatmates.model'); // ensure path matches y
 const User = require('../models/user.model'); // optional: used for populating owner info
 const multer = require('multer');
 const { uploadWithFallback } = require('../config/FileHandling');
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 8 } });
 const FlatmateEnquiry = require('../models/FlatmateEnquiry.model');
 
 // ----------------------

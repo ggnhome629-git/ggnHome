@@ -91,9 +91,9 @@ router.get("/recommendations", appOnly, verifyTokenOptional, async (req, res) =>
 router.get("/version", appOnly, (req, res) => {
   res.set("Cache-Control", "public, max-age=300");
   res.json({
-    latest: process.env.APP_LATEST_VERSION || "1.2.0",
+    latest: process.env.APP_LATEST_VERSION || "1.0.0",
     minimum: process.env.APP_MIN_VERSION || "1.0.0",
-    updateUrl: process.env.APP_UPDATE_URL || "",
+    updateUrl: process.env.APP_UPDATE_URL || "https://www.ggnhome.com/apps",
     notes: process.env.APP_UPDATE_NOTES || "",
   });
 });

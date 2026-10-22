@@ -25,12 +25,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-        
+
+            <!-- Every https://www.ggnhome.com link (any path) opens in this app. Android verifies the host against
+                 https://www.ggnhome.com/.well-known/assetlinks.json (the app's signing key must be listed there). -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="www.ggnhome.com" />
+            </intent-filter>
+
+            <!-- The bare domain is a separate filter: if it only redirects to www it cannot be verified, and it must not
+                 stop www from being verified. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="ggnhome.com" />
             </intent-filter>
         </activity>

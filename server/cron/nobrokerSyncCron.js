@@ -1,6 +1,7 @@
 const cron = require("node-cron");
 const { syncNoBrokerListings } = require("../scripts/nobrokerSync");
 const AppSetting = require("../models/AppSetting.model");
+const { runOnce } = require("../utils/jobLock");
 
 const SETTING_KEY = "nobrokerSync";
 
@@ -46,9 +47,13 @@ function startNoBrokerSyncCron() {
     async () => {
       try {
         if (!(await isSyncEnabled())) return;
-        console.log("[nobrokerSync] starting scheduled run...");
-        const summary = await runAndRecord("schedule");
-        console.log("[nobrokerSync] finished:", JSON.stringify(summary));
+        // Several servers fire this schedule: only one of them runs it.
+        const slot = await runOnce("nobrokerSync", 20 * 60 * 60 * 1000, async () => {
+          console.log("[nobrokerSync] starting scheduled run...");
+          const summary = await runAndRecord("schedule");
+          console.log("[nobrokerSync] finished:", JSON.stringify(summary));
+        });
+        if (!slot.ran) console.log("[nobrokerSync] another server is running it");
       } catch (err) {
         console.error("[nobrokerSync] run failed:", err);
       }

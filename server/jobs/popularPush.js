@@ -11,6 +11,7 @@
  * external pinger is the reliable trigger).
  */
 const cron = require("node-cron");
+const { runOnce } = require("../utils/jobLock");
 const DeviceToken = require("../models/DeviceToken.model");
 const PushLog = require("../models/PushLog.model");
 const Notification = require("../models/Notification.model");
@@ -106,8 +107,12 @@ function startPopularPushScheduler() {
     "30 18 * * *",
     async () => {
       try {
-        console.log("[push] popular:", JSON.stringify(await runPopularPush()));
-        console.log("[push] personal:", JSON.stringify(await runPersonalPush()));
+        // Several servers fire this schedule: only one of them sends, so nobody gets the push twice.
+        const slot = await runOnce("popularPush", 20 * 60 * 60 * 1000, async () => {
+          console.log("[push] popular:", JSON.stringify(await runPopularPush()));
+          console.log("[push] personal:", JSON.stringify(await runPersonalPush()));
+        });
+        if (!slot.ran) console.log("[push] another server is sending it");
       } catch (err) {
         console.error("[push] scheduler error:", err.message);
       }

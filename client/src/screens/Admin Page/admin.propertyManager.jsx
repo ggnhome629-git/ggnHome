@@ -257,8 +257,9 @@ export default function AdminPropertyManager() {
             ))}
           </Box>
 
-          <Box className="admin-table-wrap" sx={{ display: { xs: "none", md: "block" } }}>
-            <table className="admin-table">
+          {/* Wide table: scrolls left and right inside the card. The partner tab has the most columns. */}
+          <Box className="admin-table-wrap" tabIndex={0} aria-label="Properties table, scroll sideways for more columns" sx={{ display: { xs: "none", md: "block" } }}>
+            <table className="admin-table" style={{ width: "100%", minWidth: tab === "partner" ? 1240 : current.bulkOrigin ? 980 : 900 }}>
               <thead>
                 <tr>
                   {current.bulkOrigin && (

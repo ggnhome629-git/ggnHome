@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 const AppDownloadSchema = new mongoose.Schema({
-  key: { type: String, enum: ["ggnhome", "partner", "sms-service"], required: true, unique: true },
+  key: { type: String, enum: ["ggnhome", "partner", "admin", "sms-service"], required: true, unique: true },
   name: { type: String, required: true },
   description: { type: String, default: "" },
   url: { type: String, default: "" },

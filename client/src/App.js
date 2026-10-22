@@ -11,7 +11,6 @@ import Dashboard from "./screens/Dashboard/dashboard";
 import { AiConsultantProvider } from "./components/aiConsultant/AiConsultantHost";
 import { AI_CONSULTANT_ENABLED } from "./components/aiConsultant/featureFlag";
 import LoginModal from "./screens/Login Page/login";
-const SmsOtpTest = lazy(() => import("./screens/Test Page/SmsOtpTest"));
 const PropertyCheckout = lazy(() => import("./screens/Visit Schedule/Clientvist"));
 
 const PropertySearchInterface = lazy(() => import("./screens/AI Assistant/ai"));
@@ -181,7 +180,8 @@ function App() {
       <Route path="/apps" element={<PublicAppDownloads />} />
       {/* Public portals overview for co-founder review; no auth or role gate. */}
       <Route path="/doc" element={<PortalsDocs />} />
-      <Route path="/test" element={<SmsOtpTest />} />
+      {/* The public OTP test page is retired; OTP tests are in the SMS Console. */}
+      <Route path="/test" element={<Navigate replace to="/" />} />
       {/* Public status page, outside the admin gate (it is more specific than the /admin layout below) */}
       <Route path="/admin/ping" element={<AdminPing />} />
       {/* Separate admin sign-in: public page, but the server only lets admin numbers through. */}

@@ -4,9 +4,10 @@ import { Download, ExternalLink, Save, Smartphone } from "lucide-react";
 
 const API = process.env.REACT_APP_Base_API;
 const DEFAULT_APPS = [
-  { key: "ggnhome", name: "GgnHome", description: "Main GgnHome Android app", url: "", version: "" },
-  { key: "partner", name: "GgnHome-Partner", description: "Partner portal Android app", url: "", version: "" },
-  { key: "sms-service", name: "sms-service", description: "SMS service Android app", url: "", version: "" },
+  { key: "ggnhome", file: "GgnHome.apk", name: "GgnHome", description: "GgnHome for people who search, rent or buy property", url: "", version: "1.0.0" },
+  { key: "partner", file: "GgnHome-Partner.apk", name: "GgnHome Partner", description: "Partner portal: add properties, leads and enquiries", url: "", version: "1.0.0" },
+  { key: "admin", file: "GgnHome-Admin.apk", name: "GgnHome Admin", description: "Admin portal for the GgnHome team", url: "", version: "1.0.0" },
+  { key: "sms-service", file: "sms-service.apk", name: "SMS Service", description: "SMS gateway and OTP viewer for the GgnHome team", url: "", version: "1.0.0" },
 ];
 
 export default function AdminAppDownloads() {
@@ -42,7 +43,7 @@ export default function AdminAppDownloads() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "Could not save links.");
       setApps(DEFAULT_APPS.map(base => ({ ...base, ...(data.apps.find(x => x.key === base.key) || {}) })));
-      setNotice("Download links saved. They are now available to the Partner portal.");
+      setNotice("Saved. The download page and the /doc page use these now.");
     } catch (e) { setError(e.message || "Could not save links."); }
     finally { setSaving(false); }
   }
@@ -56,13 +57,13 @@ export default function AdminAppDownloads() {
           <Box sx={{ width: 52, height: 52, borderRadius: 3, bgcolor: "#e6f5f3", color: "#087f75", display: "grid", placeItems: "center" }}><Smartphone size={26} /></Box>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 850, color: "#0f172a" }}>App Downloads</Typography>
-            <Typography color="text.secondary">Manage direct APK links for GgnHome, GgnHome-Partner and sms-service.</Typography>
+            <Typography color="text.secondary">The four Android apps: GgnHome, Partner, Admin and SMS Service.</Typography>
           </Box>
         </Stack>
         {notice && <Alert severity="success">{notice}</Alert>}
         {error && <Alert severity="error">{error}</Alert>}
         <Alert severity="info">
-          The Partner portal exposes a first-party download URL on your API domain, so users download the APK without landing on GitHub. For Partner, this optional source must be a direct GgnHome GitHub Release asset URL; if empty, the latest-apks release is used. Other app URLs are displayed as configured.
+          Nothing to set up: every app is downloaded from your own site at /api/app-downloads/&lt;file&gt;, which always serves the latest build published to the GitHub release "latest-apks". Use the fields below only to point an app at a different HTTPS file, or to change the version shown. Leave the link empty to use the latest build.
         </Alert>
         {apps.map((app) => (
           <Card key={app.key} variant="outlined" sx={{ borderRadius: 3 }}>
@@ -76,9 +77,9 @@ export default function AdminAppDownloads() {
                   </Box>
                   {app.url && <Button size="small" endIcon={<ExternalLink size={15} />} onClick={() => window.open(app.url, "_blank", "noopener,noreferrer")}>Test link</Button>}
                 </Stack>
-                <TextField label={app.key === "partner" ? "Partner APK source asset URL (optional)" : "Direct APK download URL (HTTPS)"} placeholder={app.key === "partner" ? "https://github.com/ggnhome629-git/ggnHome/releases/download/latest-apks/GgnHome-Partner.apk" : "https://example.com/app.apk"} value={app.url} onChange={e => change(app.key, "url", e.target.value)} fullWidth />
-                <TextField label="Version (optional)" placeholder="1.0.0" value={app.version} onChange={e => change(app.key, "version", e.target.value)} sx={{ maxWidth: 260 }} />
-                <Typography variant="caption" color="text.secondary">{app.key === "partner" ? (app.url ? "The portal serves this asset through the first-party /api/app-downloads/partner.apk endpoint." : "The latest published Partner APK is used automatically; no GitHub URL is shown to partners.") : (app.url ? "Configured — this direct URL is shown in the app-download list." : "Not configured — this APK will not appear in the download list.")}</Typography>
+                <TextField label="Different download link (optional, HTTPS)" placeholder={`https://github.com/ggnhome629-git/ggnHome/releases/download/latest-apks/${app.file}`} value={app.url} onChange={e => change(app.key, "url", e.target.value)} fullWidth />
+                <TextField label="Version shown" placeholder="1.0.0" value={app.version} onChange={e => change(app.key, "version", e.target.value)} sx={{ maxWidth: 260 }} />
+                <Typography variant="caption" color="text.secondary">{app.url ? "People who download this app are sent to the link above." : `Using the latest build: /api/app-downloads/${app.file}`}</Typography>
               </Stack>
             </CardContent>
           </Card>

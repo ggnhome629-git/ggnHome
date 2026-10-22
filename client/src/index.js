@@ -10,6 +10,7 @@ import theme from './theme/theme';
 import { AuthProvider } from './Context/AuthContext';
 import { AgentAuthProvider } from './Context/AgentAuthContext';
 import AppBridge from './components/app/AppBridge';
+import ErrorBoundary from './components/app/ErrorBoundary';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -20,7 +21,9 @@ root.render(
         <AgentAuthProvider>
           <Router>
             <AppBridge />
-            <App />
+            <ErrorBoundary>
+              <App />
+            </ErrorBoundary>
           </Router>
         </AgentAuthProvider>
       </AuthProvider>

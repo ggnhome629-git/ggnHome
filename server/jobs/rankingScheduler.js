@@ -6,6 +6,7 @@
 
 const cron = require('node-cron');
 const PropertyRankingService = require('../services/PropertyRankingService');
+const { runOnce } = require('../utils/jobLock');
 
 // Run at 2 AM daily (UTC)
 // Format: minute hour day month dayOfWeek
@@ -17,6 +18,8 @@ const startRankingScheduler = () => {
 
   cron.schedule(rankingSchedule, async () => {
     try {
+      // Several servers fire this schedule: only one of them recalculates.
+      const slot = await runOnce('ranking', 20 * 60 * 60 * 1000, async () => {
       console.log('🔄 Starting nightly ranking recalculation...');
       const startTime = Date.now();
 
@@ -38,6 +41,8 @@ const startRankingScheduler = () => {
           quarantined: result.distribution.quarantined || 0,
         });
       }
+      });
+      if (!slot.ran) console.log('Ranking: another server is running it');
     } catch (error) {
       console.error('❌ Error in ranking scheduler:', error);
       // Don't rethrow - let the scheduler keep running

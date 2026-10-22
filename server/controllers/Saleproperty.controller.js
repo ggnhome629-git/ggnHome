@@ -4,7 +4,7 @@
 const multer = require("multer");
 const { parametersFromBody } = require("../config/propertyParameters");
 const { saleProfileFields } = require("../utils/saleProfile");
-const upload = multer({ dest: "uploads/" });
+const upload = multer({ dest: "uploads/", limits: { fileSize: 25 * 1024 * 1024, files: 20 } });
 const { uploadWithFallback } = require("../config/FileHandling");
 const User = require("../models/user.model.js");
 

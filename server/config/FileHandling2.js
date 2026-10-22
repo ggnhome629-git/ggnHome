@@ -128,8 +128,9 @@ async function uploadWithFallbackAgent(localPath, folder = 'agents', preferredIn
     const i = (start + attempt) % attempts;
     const acct = cloudAccounts[i];
     try {
-      if (acct) cloudinary.config(acct);
+      // This account's own credentials for this call only (the global config is shared with other uploads).
       const result = await cloudinary.uploader.upload(uploadPath, {
+        ...(acct ? { cloud_name: acct.cloud_name, api_key: acct.api_key, api_secret: acct.api_secret } : {}),
         resource_type: 'auto',
         folder: folderName,
         unique_filename: true,

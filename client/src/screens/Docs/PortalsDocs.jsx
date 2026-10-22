@@ -22,61 +22,72 @@ import {
   UserCog,
 } from "lucide-react";
 
-// Public, read-only overview for co-founder review. Mirrors docs/product/PORTALS_OVERVIEW.md.
+// Public, read-only overview of the 1.0.0 release. Mirrors docs/product/PORTALS_OVERVIEW.md.
 // Deliberately outside ProtectedRoutes and AdminLayout: no login or role check.
 
 const API = (process.env.REACT_APP_Base_API || "").replace(/\/+$/, "");
 const SITE = "https://www.ggnhome.com";
-const RELEASES = "https://github.com/ggnhome629-git/ggnHome/releases/download/latest-apks";
+const APK_API = "https://api.ggnhome.com/api/app-downloads";
+const VERSION = "1.0.0";
 
 const PORTALS = [
-  { name: "Main website", url: SITE, who: "Public users", status: "Live", icon: Globe },
-  { name: "Admin login", url: `${SITE}/admin/login`, who: "Admins only (OTP; role verified before OTP is sent)", status: "Live", icon: ShieldCheck },
+  { name: "Main website", url: SITE, who: "Everyone. Property search, listings, post property", status: "Live", icon: Globe },
+  { name: "Admin login", url: `${SITE}/admin/login`, who: "Admin numbers only. The role is checked before an OTP is sent", status: "Live", icon: ShieldCheck },
   { name: "Admin portal", url: `${SITE}/admin/Landingpage`, who: "Signed-in admins", status: "Live", icon: ShieldCheck },
-  { name: "Partner Hub", url: `${SITE}/partner/login`, who: "Approved partners (OTP login)", status: "Live", icon: Building2 },
-  { name: "SMS Console (OTP / Direct Login)", url: `${SITE}/admin/sms-console`, who: "Owner console password; manages SMS gateway and user/partner/admin login mode", status: "Live (separate sign-in)", icon: Smartphone },
-  { name: "App downloads page", url: `${SITE}/apps`, who: "Everyone", status: "Live", icon: Download },
-  { name: "API backend", url: "https://api.ggnhome.com", who: "All apps and the website", status: "Live", icon: Server },
-  { name: "Partner Hub (standalone site)", url: "Host not in repo", who: "Partners", status: "Confirm", icon: Building2 },
+  { name: "Partner Hub", url: `${SITE}/partner/login`, who: "Registered partners (OTP login)", status: "Live", icon: Building2 },
+  { name: "SMS Console", url: `${SITE}/admin/sms-console`, who: "Owner console password. SMS gateway phones, limits, logs and OTP delivery mode (also /sms-service/app/manage; button on the admin home page)", status: "Live (separate sign-in)", icon: Smartphone },
+  { name: "App downloads", url: `${SITE}/apps`, who: "Everyone. The four Android apps", status: "Live", icon: Download },
+  { name: "API backend", url: "https://api.ggnhome.com", who: "The website and all four apps", status: "Live", icon: Server },
+  { name: "Partner portal (standalone site)", url: "Host not in repo (partner-portal/)", who: "Partners. Optional second site, the Partner Hub above is the main one", status: "Confirm", icon: Building2 },
   { name: "Agent portal (legacy)", url: "/agent/login", who: "No longer a supported flow", status: "Disabled", icon: UserCog },
   { name: "Voice / LiveKit", url: "infra/livekit (self-hosted)", who: "AI voice assistant", status: "Off on main, on in v2", icon: Mic },
 ];
 
+// Four apps. Each downloads from one stable link on the API; the file is rebuilt by the GitHub workflow.
 const APPS = [
   {
-    name: "GgnHome (user)",
-    details: "Capacitor wrapper of www.ggnhome.com · com.tanush.ggnhome · v1.2.0",
-    source: "GitHub Release latest-apks → GgnHome.apk",
-    href: `${RELEASES}/GgnHome.apk`,
+    name: "GgnHome",
+    details: `v${VERSION} · com.tanush.ggnhome · opens www.ggnhome.com and every ggnhome.com link tapped on the phone`,
+    source: "GgnHome.apk",
+    href: `${APK_API}/GgnHome.apk`,
     status: "Live",
   },
   {
     name: "GgnHome Partner",
-    details: "Android wrapper for Partner Hub",
-    source: "/api/app-downloads/partner.apk (streams GgnHome-Partner.apk)",
-    href: "https://api.ggnhome.com/api/app-downloads/partner.apk",
+    details: `v${VERSION} · com.tanush.ggnhomepartner · opens the Partner Hub`,
+    source: "GgnHome-Partner.apk",
+    href: `${APK_API}/GgnHome-Partner.apk`,
+    status: "Live",
+  },
+  {
+    name: "GgnHome Admin",
+    details: `v${VERSION} · com.tanush.ggnhomeadmin · opens the Admin login`,
+    source: "GgnHome-Admin.apk",
+    href: `${APK_API}/GgnHome-Admin.apk`,
     status: "Live",
   },
   {
     name: "SMS Service",
-    details: "Android SMS gateway + OTP viewer",
-    source: "GitHub Release latest-apks → sms-service.apk",
-    href: `${RELEASES}/sms-service.apk`,
+    details: `v${VERSION} · com.ggnhome.smsgateway · SMS gateway and OTP viewer`,
+    source: "sms-service.apk",
+    href: `${APK_API}/sms-service.apk`,
     status: "Live",
   },
 ];
 
 const OWNER_STEPS = ["Basic Details", "Location", "Property Profile", "Price & Description", "Photos", "Review & Post"];
-const PARTNER_STEPS = ["Photos (first photo = front, auto)", "Property: rent or sale, type, rooms, size, price", "Place: GPS or address search, owner mobile"];
+const PARTNER_STEPS = ["Photos (the first photo is the front photo)", "Property: rent or sale, type, rooms", "Size and price (typical size and price in one tap)", "Place: GPS or address search, nearby places found (edit or add in a closed menu), owner mobile"];
 
 const LIVE = [
   "Property search, listing and detail pages",
   "User accounts, preferences and saved properties",
-  "Post property (owner and partner)",
-  "Partner Hub: dashboard, properties, leads, enquiries, profile (OTP login)",
-  "Admin: inventory, users, enquiries, payments, rewards, property manager, settings, feature toggles, app downloads, partner access, callback requests",
-  "SMS Console: SMS gateway, logs/tests, and a direct-login toggle for user/partner/admin (ON skips SMS; OFF restores SMS OTP)",
-  "App downloads page",
+  "Post property: owner (6 steps) and partner (4 short steps, nearby places found automatically and editable)",
+  "Partner Hub: dashboard, properties, property pages, leads, enquiries, profile (OTP login)",
+  "Admin: inventory, users, enquiries, payments, rewards, property manager, settings, feature toggles, app downloads, partner access, callback requests, SMS Console",
+  "SMS Console: SMS gateway phones, limits, logs and OTP delivery mode",
+  "Four Android apps (GgnHome, Partner, Admin, SMS Service) at /apps. GgnHome opens every ggnhome.com link",
+  "One cache clear for every new deploy (browsers, Redis, Cloudflare)",
+  "Production setup in code: several MongoDB databases (failover), several Cloudinary accounts (rotation, resting a full one), several servers (shared rate limits, one-server-only scheduled jobs), health checks, clean shutdown, request size limits",
 ];
 
 const DISABLED = [
@@ -84,16 +95,17 @@ const DISABLED = [
   ["Agent portal", "Routes commented out; /agent/register redirects to admin; toggle off"],
   ["Public partner self-registration", "Backend returns 410; admin adds partners instead"],
   ["AI assistant on the site", "Consultant, AI Search pages, floating assistant and Chatbot are off on main (AI_CONSULTANT_ENABLED = false); on in v2"],
-  ["Hidden SMS devices page", "/admin/sms-devices redirects to landing page"],
+  ["Hidden SMS devices page", "/admin/sms-devices redirects to the admin home page"],
 ];
 
 const OPEN_ITEMS = [
+  "Hosting: set the health check path to /health/ready, set the required variables in server/.env.example, and add REDIS_URL if you run more than one API server (docs/guides/PRODUCTION_AND_SCALING.md).",
+  "Release signing: add the four ANDROID_* repository secrets (mobile/tools/make-keystore.sh), then put the printed fingerprint in client/public/.well-known/assetlinks.json. Until then ggnhome.com links open in the app only after Android is told to allow it, and APK updates need the same key every time.",
+  "SMS_KEY secret: the SMS Service APK needs the same SMS_KEY as the servers. Without it the APK uses a test key.",
   "Confirm the domain: code uses both ggnhome.com and ggnhome.in.",
-  "Store builds: GitHub APKs for GgnHome and Partner are debug builds. Publish signed release builds before Play Store or wide distribution.",
-  "Test routes: /test (SMS OTP) and /admin/ping are public. Consider removing them in production.",
-  "Partner Hub host: confirm www.ggnhome.com/partner/* or a separate site.",
+  "Partner portal host: confirm whether the standalone partner-portal site is hosted anywhere, or retire it.",
   "Feature toggles: check live values for Flatmates and Agent portal in admin.",
-  "Admin APK URLs: confirm all three download URLs are set in Admin → App Downloads.",
+  "Public status page: /admin/ping is public (the old /test OTP page now redirects home). Decide if it should stay.",
   "AI backend endpoints (/api/ai-consultant/*) still answer on main. The site no longer calls them, but they are not blocked server-side.",
 ];
 
@@ -345,12 +357,12 @@ function Hero({ stats }) {
       <Box sx={{ position: "absolute", top: -120, right: -80, width: 360, height: 360, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,255,255,0.18),transparent 70%)" }} />
       <Box sx={{ position: "absolute", bottom: -160, left: -100, width: 380, height: 380, borderRadius: "50%", background: "radial-gradient(circle,rgba(34,211,238,0.22),transparent 70%)" }} />
       <Container maxWidth="lg" sx={{ position: "relative", py: { xs: 5, md: 8 }, px: 2 }}>
-        <Chip label="Co-founder review" size="small" sx={{ bgcolor: "rgba(255,255,255,0.16)", color: "#fff", fontWeight: 700, mb: 2 }} />
+        <Chip label={`Release ${VERSION}`} size="small" sx={{ bgcolor: "rgba(255,255,255,0.16)", color: "#fff", fontWeight: 700, mb: 2 }} />
         <Typography component="h1" sx={{ fontSize: { xs: 30, md: 48 }, fontWeight: 800, lineHeight: 1.1, maxWidth: 760 }}>
           GgnHome portals, apps &amp; status
         </Typography>
         <Typography sx={{ mt: 1.5, maxWidth: 640, opacity: 0.9, fontSize: { xs: 15, md: 17 } }}>
-          Every link, app and feature in one place. Open anything with one tap and leave a suggestion under any section.
+          Every link, app and feature of the 1.0.0 release in one place. Open anything with one tap and leave a suggestion under any section.
         </Typography>
 
         <Stack direction="row" flexWrap="wrap" gap={1.25} sx={{ mt: 3 }}>
@@ -372,7 +384,7 @@ function Hero({ stats }) {
           ))}
         </Box>
         <Typography variant="caption" sx={{ display: "block", mt: 2, opacity: 0.75 }}>
-          Branch main · As of 21 Oct 2026 · "Live" means enabled in the code on main; check the hosting dashboard before treating anything as in production.
+          Release 1.0.0 · Branch main · As of 22 Oct 2026 · "Live" means enabled in the code on main; check the hosting dashboard for what is deployed.
         </Typography>
       </Container>
     </Box>
@@ -491,8 +503,8 @@ export default function PortalsDocs() {
           </Box>
         </Section>
 
-        <Section id="apps" number={2} title="Mobile apps & APKs" subtitle="Download the latest Android builds." icon={Smartphone}>
-          <Box sx={{ display: "grid", gap: 1.75, gridTemplateColumns: { xs: "1fr", md: "repeat(3, 1fr)" } }}>
+        <Section id="apps" number={2} title="Mobile apps & APKs" subtitle="Version 1.0.0. Always the latest build, from one link per app." icon={Smartphone}>
+          <Box sx={{ display: "grid", gap: 1.75, gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" } }}>
             {APPS.map((a) => (
               <Box key={a.name} sx={{ ...cardSx, display: "flex", flexDirection: "column" }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
@@ -502,7 +514,7 @@ export default function PortalsDocs() {
                 <Typography fontWeight={700}>{a.name}</Typography>
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>{a.details}</Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 1, wordBreak: "break-all", display: "block" }}>
-                  Source: {a.source}
+                  File: {a.source}
                 </Typography>
                 <Box sx={{ mt: "auto", pt: 1.5 }}>
                   <LinkButton href={a.href} icon={Download} download>Download APK</LinkButton>
@@ -511,8 +523,9 @@ export default function PortalsDocs() {
             ))}
           </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-            Admin manages download URLs at Admin → App Downloads (keys: ggnhome, partner, sms-service). APKs are built by{" "}
-            <Box component="code" sx={{ fontSize: 13 }}>.github/workflows/build-all-apks.yml</Box>.
+            The links above always give the latest build. They are rebuilt by{" "}
+            <Box component="code" sx={{ fontSize: 13 }}>.github/workflows/build-all-apks.yml</Box>{" "}
+            whenever the app code changes. Admin can change the version shown or point an app at another file at Admin → App Downloads.
           </Typography>
           <Stack direction="row" flexWrap="wrap" gap={1} sx={{ mt: 1.5 }}>
             <LinkButton href={`${SITE}/apps`} variant="outlined" icon={Globe}>Public downloads page</LinkButton>
@@ -538,7 +551,7 @@ export default function PortalsDocs() {
 
             <Box sx={cardSx}>
               <Typography fontWeight={800}>Partner (Partner Hub)</Typography>
-              <Typography variant="caption" color="text.secondary">/partner/properties/add · 3 short screens</Typography>
+              <Typography variant="caption" color="text.secondary">/partner/properties/add · 4 short screens</Typography>
               <Steps steps={PARTNER_STEPS} color="#2563eb" />
               <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 2 }}>
                 {["2-3 minutes", "Hindi + English", "Auto title & description", "Auto location & nearby places", "Publishes immediately", "Draft saved on device"].map((c) => (

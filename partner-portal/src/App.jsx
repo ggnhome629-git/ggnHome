@@ -64,9 +64,6 @@ function AuthScreen({ onLogin }) {
     setBusy(true);
     try {
       const data = await request("/partner/login/request-otp", { method: "POST", body: JSON.stringify({ mobileNumber: normalized }) });
-      // Direct login is on: the code is returned instead of sent by SMS, so sign in with it straight away.
-      // Direct login is on: the server has already signed the partner in.
-      if (data.channel === "direct") return completePartnerLogin(data);
       setSent(true); setNotice(data.message || "OTP sent. It is valid for 5 minutes.");
     } catch (e) { setError(e.message); } finally { setBusy(false); }
   }

@@ -3,12 +3,26 @@ apply plugin: 'com.android.application'
 android {
     namespace "com.tanush.ggnhome"
     compileSdk rootProject.ext.compileSdkVersion
+    // One key signs every APK: the release key from the build's secrets when it has one (stable updates and
+    // verified ggnhome.com links), otherwise the debug key so the APK still installs.
+    signingConfigs {
+        ggnhome {
+            def keystorePath = System.getenv("ANDROID_KEYSTORE_FILE")
+            if (keystorePath) {
+                storeFile file(keystorePath)
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
     defaultConfig {
         applicationId "com.tanush.ggnhome"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "1.2.0"
+        // 1.0.0 is the first public release. versionCode only ever goes up, so phones with an earlier build can update.
+        versionCode 4
+        versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -20,6 +34,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig System.getenv("ANDROID_KEYSTORE_FILE") ? signingConfigs.ggnhome : signingConfigs.debug
         }
     }
 }

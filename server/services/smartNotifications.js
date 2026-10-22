@@ -5,6 +5,7 @@
  * week and all copy comes from data/notification-templates.json.
  */
 const cron = require("node-cron");
+const { runOnce } = require("../utils/jobLock");
 const DeviceToken = require("../models/DeviceToken.model");
 const Notification = require("../models/Notification.model");
 const templates = require("../data/notification-templates.json").templates;
@@ -132,8 +133,12 @@ async function runSmartNotifications({ dryRun = false, max = 300 } = {}) {
 function startSmartNotificationScheduler() {
   cron.schedule("45 18 * * *", async () => {
     try {
-      const result = await runSmartNotifications();
-      console.log("[smart-push] campaign:", JSON.stringify(result));
+      // Several servers fire this schedule: only one of them sends.
+      const slot = await runOnce("smartPush", 20 * 60 * 60 * 1000, async () => {
+        const result = await runSmartNotifications();
+        console.log("[smart-push] campaign:", JSON.stringify(result));
+      });
+      if (!slot.ran) console.log("[smart-push] another server is sending it");
     } catch (err) {
       console.error("[smart-push] scheduler failed:", err.message);
     }

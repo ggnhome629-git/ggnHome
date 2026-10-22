@@ -167,6 +167,7 @@ async function autoPurgeOnDeploy() {
   if (off || !build) return { skipped: true };
   if (mongoose.connection.readyState !== 1) await new Promise((resolve) => mongoose.connection.once("open", resolve));
   try {
+    await SiteCacheVersion.init(); // the claim below relies on the unique index (a new database may not have it yet)
     // Only one instance can claim a build: the others find it already claimed.
     const doc = await SiteCacheVersion.findOneAndUpdate(
       { key: "site", buildId: { $ne: build } },

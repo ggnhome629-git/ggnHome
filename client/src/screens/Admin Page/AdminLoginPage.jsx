@@ -49,11 +49,6 @@ export default function AdminLoginPage() {
         if (res.status === 429 && data.retryAfterSec) resend.start(Math.min(data.retryAfterSec, 120));
         throw new Error(data.message || "Could not send OTP.");
       }
-      // Direct login is on: the server has already signed the admin in.
-      if (data.channel === "direct") {
-        await completeAdminLogin(data);
-        return;
-      }
       setOtpSent(true);
       setOtp("");
       resend.start(30);
@@ -65,7 +60,7 @@ export default function AdminLoginPage() {
     }
   }
 
-  // Opens the admin console from a successful login response (OTP or direct login).
+  // Opens the admin console from a successful login response.
   async function completeAdminLogin(data) {
     // Second guard: never keep a session that is not an admin's.
     if (data.user?.role !== "admin") throw new Error("This account does not have admin access.");

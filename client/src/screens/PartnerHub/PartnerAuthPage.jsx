@@ -45,11 +45,6 @@ export default function PartnerAuthPage() {
         if (res.status === 429 && data.retryAfterSec) resend.start(Math.min(data.retryAfterSec, 120));
         throw new Error(data.message || "Could not send OTP.");
       }
-      // Direct login is on: the server has already signed the partner in.
-      if (data.channel === "direct") {
-        await completePartnerLogin(data);
-        return;
-      }
       setOtpSent(true);
       setOtp("");
       resend.start(30);
@@ -61,7 +56,7 @@ export default function PartnerAuthPage() {
     }
   }
 
-  // Opens the partner dashboard from a successful login response (OTP or direct login).
+  // Opens the partner dashboard from a successful login response.
   async function completePartnerLogin(data) {
     // The server only accepts a Partner number here; these checks are a second guard.
     if (data.agent?.role !== "Partner") {

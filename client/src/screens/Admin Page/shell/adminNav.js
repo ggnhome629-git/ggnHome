@@ -13,6 +13,7 @@ import {
   Megaphone,
   MessageSquare,
   PhoneCall,
+  Smartphone,
   UserPlus,
   Users,
   ShieldCheck,
@@ -95,6 +96,7 @@ export const ADMIN_NAV = [
     items: [
       { id: "usage", label: "Usage & Limits", route: "/admin/usagetrack", icon: Gauge },
       { id: "feature-toggles", label: "Feature Control", route: "/admin/feature-toggles", icon: SlidersHorizontal },
+      { id: "sms-console", label: "SMS Console", route: "/admin/sms-console", icon: Smartphone },
       { id: "app-downloads", label: "App Downloads", route: "/admin/app-downloads", icon: Download },
       { id: "settings", label: "Settings", route: "/admin/settings", icon: Settings },
     ],

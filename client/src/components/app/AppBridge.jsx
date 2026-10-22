@@ -58,13 +58,34 @@ export default function AppBridge() {
 
     const App = nativePlugin("App");
     let handle;
+    let linkHandle;
     Promise.resolve(
       App?.addListener?.("backButton", () => {
         if (pathRef.current === "/" || window.history.length <= 1) App.exitApp?.();
         else navRef.current(-1);
       })
     ).then((h) => (handle = h));
-    return () => handle?.remove?.();
+
+    // A ggnhome.com link tapped anywhere on the phone (Chrome, WhatsApp, an SMS) opens this app:
+    // show that page. The shell always starts on the home page, so the link is routed here.
+    const openLink = (raw) => {
+      try {
+        const link = new URL(raw);
+        if (!/(^|\.)ggnhome\.com$/i.test(link.hostname)) return;
+        const target = `${link.pathname}${link.search}${link.hash}`;
+        const here = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+        if (target !== here) navRef.current(target);
+      } catch (_) {
+        /* not a link this app can open */
+      }
+    };
+    Promise.resolve(App?.getLaunchUrl?.()).then((launch) => launch?.url && openLink(launch.url)).catch?.(() => {});
+    Promise.resolve(App?.addListener?.("appUrlOpen", ({ url }) => openLink(url))).then((h) => (linkHandle = h));
+
+    return () => {
+      handle?.remove?.();
+      linkHandle?.remove?.();
+    };
   }, [inApp]);
 
 

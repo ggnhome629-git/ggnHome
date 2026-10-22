@@ -6,7 +6,7 @@ const express = require("express");
 const router = express.Router();
 const User = require("../models/user.model.js");
 const { getPublicFeatureToggles, getAdminFeatureToggles, updateAdminFeatureToggles } = require("../controllers/featureToggle.controller");
-const { getAppDownloads, updateAppDownloads, downloadPartnerApk } = require("../controllers/appDownload.controller");
+const { getAppDownloads, updateAppDownloads, downloadApk } = require("../controllers/appDownload.controller");
 const { registerPartnerAccess, listPartnerAccess } = require("../controllers/adminPartnerAccess.controller");
 const { getDashboardPreferences, updateDashboardPreferences } = require("../controllers/adminDashboardPreferences.controller");
 
@@ -138,7 +138,8 @@ router.put("/api/admin/feature-toggles", verifyToken, checkAdminEmail, updateAdm
 router.get("/api/app-downloads", getAppDownloads);
 router.get("/api/admin/app-downloads", verifyToken, checkAdminEmail, getAppDownloads);
 router.put("/api/admin/app-downloads", verifyToken, checkAdminEmail, updateAppDownloads);
-router.get("/api/app-downloads/partner.apk", downloadPartnerApk);
+// One link per app: GgnHome.apk, GgnHome-Partner.apk, GgnHome-Admin.apk, sms-service.apk
+router.get("/api/app-downloads/:file", downloadApk);
 router.get("/api/admin/dashboard-tools", verifyToken, checkAdminEmail, getDashboardPreferences);
 router.put("/api/admin/dashboard-tools", verifyToken, checkAdminEmail, updateDashboardPreferences);
 router.get("/api/admin/partners/access", verifyToken, checkAdminEmail, listPartnerAccess);

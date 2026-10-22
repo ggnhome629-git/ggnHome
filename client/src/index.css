@@ -60,3 +60,15 @@ code {
   .admin-topbar-glow::after { background-size: 300% 100% !important; animation: ggn-gradient 8s ease infinite; }
 }
 .admin-live .MuiCard-root, .admin-live .admin-card { border-radius: 14px; }
+
+/* Admin tables: a wide table scrolls left and right inside its card instead of being cut off. */
+.admin-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+.admin-table-wrap .admin-table { border-collapse: collapse; }
+.admin-table-wrap .admin-table th,
+.admin-table-wrap .admin-table td { text-align: left; padding: 12px 14px; border-bottom: 1px solid #E5E9EE; vertical-align: middle; }
+.admin-table-wrap .admin-table th { white-space: nowrap; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; color: #003366; background: #F0F6F9; }
+.admin-table-wrap .admin-table .admin-table-align-center { text-align: center; }

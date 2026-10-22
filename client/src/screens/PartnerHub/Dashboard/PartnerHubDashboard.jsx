@@ -106,7 +106,7 @@ const PartnerHubDashboard = () => {
               sx={{ px: 2.4, py: 1.35, bgcolor: "#fff", color: "#0f766e", borderRadius: "12px", fontWeight: 850, "&:hover": { bgcolor: "#eafffa" } }}>
               Add property
             </Button>
-            <Button component="a" href={(process.env.REACT_APP_Base_API || "") + "/api/app-downloads/partner.apk"} download
+            <Button component="a" href={(process.env.REACT_APP_Base_API || "") + "/api/app-downloads/GgnHome-Partner.apk"} download
               startIcon={<Download size={17} />}
               sx={{ px: 2.2, py: 1.3, color: "#fff", border: "1px solid rgba(255,255,255,.55)", borderRadius: "12px", fontWeight: 800, "&:hover": { bgcolor: "rgba(255,255,255,.10)" } }}>
               Download Partner APK

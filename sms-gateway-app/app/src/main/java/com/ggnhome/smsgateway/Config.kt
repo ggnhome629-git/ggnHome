@@ -14,7 +14,7 @@ class Svc(val id: String, val label: String, val base: String, val prefix: Strin
 }
 
 object Config {
-    const val APP_VERSION = "5.1"
+    const val APP_VERSION = "1.0.0"
 
     val SERVICES = listOf(
         Svc("ggnhome", "GGN Home", BuildConfig.GGNHOME_URL.trimEnd('/'), "/sms-gateway", BuildConfig.GGNHOME_KEY),
