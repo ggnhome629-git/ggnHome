@@ -50,7 +50,10 @@ function AuthScreen({ onLogin }) {
     try {
       const data = await request("/partner/login/request-otp", { method: "POST", body: JSON.stringify({ mobileNumber: normalized }) });
       // Direct login is on: the code is returned instead of sent by SMS, so sign in with it straight away.
-      if (data.channel === "direct" && data.directOtp) return await verifyOtp(data.directOtp);
+      if (data.channel === "direct" && data.directOtp) {
+        setSent(true); setOtp(data.directOtp);
+        return await verifyOtp(data.directOtp);
+      }
       setSent(true); setNotice(data.message || "OTP sent. It is valid for 5 minutes.");
     } catch (e) { setError(e.message); } finally { setBusy(false); }
   }

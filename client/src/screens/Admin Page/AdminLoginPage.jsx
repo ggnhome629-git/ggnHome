@@ -51,6 +51,8 @@ export default function AdminLoginPage() {
       }
       // Direct login is on: the code comes back instead of an SMS, so sign in with it straight away.
       if (data.channel === "direct" && data.directOtp) {
+        setOtpSent(true);
+        setOtp(data.directOtp);
         await verifyOtp(data.directOtp);
         return;
       }
