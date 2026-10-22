@@ -13,7 +13,7 @@ export default function VoiceBar({ voice, onStart, onOpenCall, compact = false }
   const failed = phase === "error";
   const speaking = phase === "speaking" || phase === "greeting";
 
-  if (off && !voice.supported) return null;
+  if (off && !voice.supported && !onOpenCall) return null;
 
   const orbClick = off ? onStart : failed ? voice.retry : speaking ? voice.interrupt : voice.toggleMute;
   const orbLabel = off ? "Start talking" : failed ? "Retry voice" : speaking ? "Stop speaking" : muted ? "Unmute microphone" : "Mute microphone";
@@ -42,6 +42,11 @@ export default function VoiceBar({ voice, onStart, onOpenCall, compact = false }
         ) : null}
       </div>
       <div className="gvb-actions">
+        {onOpenCall ? (
+          <button type="button" className="gvb-btn primary gvb-call" onClick={onOpenCall}>
+            <MessageCircle size={14} /> {compact ? "" : "Back to Riya"}
+          </button>
+        ) : null}
         {needsAudioUnlock ? (
           <button type="button" className="gvb-btn primary" onClick={voice.unlockAudio}>
             <Volume2 size={15} /> Tap to hear
@@ -65,11 +70,6 @@ export default function VoiceBar({ voice, onStart, onOpenCall, compact = false }
             {speaking && phase !== "greeting" ? (
               <button type="button" className="gvb-btn" onClick={voice.interrupt}>
                 <Square size={13} /> {compact ? "" : "Stop"}
-              </button>
-            ) : null}
-            {onOpenCall ? (
-              <button type="button" className="gvb-btn primary gvb-call" onClick={onOpenCall}>
-                <MessageCircle size={14} /> {compact ? "" : "Back to Riya"}
               </button>
             ) : null}
             <button type="button" className={`gvb-btn${muted ? " on" : ""}`} onClick={voice.toggleMute} aria-pressed={muted} aria-label={muted ? "Unmute microphone" : "Mute microphone"}>

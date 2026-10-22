@@ -107,3 +107,9 @@ On LiveKit Cloud's free plan only a few agent conversations (sessions) can run a
 - **Idle timeout:** a quiet session warns after `VOICE_IDLE_WARN_S` (default 120s) and the agent hangs up after `VOICE_IDLE_END_S` (default 150s). Any speech, typed message or reply resets the clock; the time the assistant spends talking does not count. Browser voice applies the same rule.
 - **Visitor leaves:** the agent ends its session a few seconds after the visitor disconnects, instead of waiting for the room to expire.
 - **Cloud hosting ignores `LIVEKIT_LOAD_THRESHOLD`** (the SDK reverts to its default there). The setting only matters on a self-hosted worker, where a crowded machine can make the worker refuse visitors.
+
+## Riya's voice without LiveKit (API server and Android app)
+
+- The API server speaks and listens for the consultant at `/api/ai-consultant/speech/{config,tts,stt}` using Groq Orpheus (voice) and Whisper (listening). Set `GROQ_SPEECH_API_KEY` on the API server (it falls back to `GROQ_API_KEY_1` / `GROQ_API_KEY`). Orpheus needs its terms accepted once in the Groq console, and it reads at most 200 characters per request (the page sends sentence-sized clips).
+- The Android app bundles `@capacitor-community/text-to-speech` and `@capacitor-community/speech-recognition`: inside the app Riya uses the phone's own voice and recognition (on-device, plays as normal media, works with earphones, no call mode). Rebuild the APK after `npx cap sync android` to ship it.
+- The LiveKit worker splits replies into ≤190-character pieces for Orpheus and, when `DEEPGRAM_API_KEY` or `CARTESIA_API_KEY` is also set, falls back to that voice automatically if the main one fails.

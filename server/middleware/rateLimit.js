@@ -234,6 +234,8 @@ const chatLimiter = make({ name: "chat", windowMs: 10 * 60 * 1000, max: 60 });
 const apiLimiter = make({ name: "api", windowMs: 60 * 1000, max: 600 });
 // AI Property Consultant: a conversation is ~15-30 turns and a few searches.
 const aiTurnLimiter = make({ name: "ai-turn", windowMs: 10 * 60 * 1000, max: 120, message: "You're going a little fast — please wait a moment and try again." });
+// Riya's voice: a reply is spoken in 1-3 sentence clips, plus one clip per thing the visitor says.
+const aiSpeechLimiter = make({ name: "ai-speech", windowMs: 10 * 60 * 1000, max: 500, message: "Voice is busy — please wait a moment." });
 const aiSearchLimiter = make({ name: "ai-search", windowMs: 10 * 60 * 1000, max: 40, message: "Too many searches — please wait a moment and try again." });
 
 // Partner address box: a few suggestion calls per typed address, so allow plenty
@@ -248,6 +250,7 @@ const resetOtpLimits = async (req) => {
 };
 
 module.exports = {
+  aiSpeechLimiter,
   resetOtpLimits,
   locationLookupLimiter,
   otpRequestLimiter,

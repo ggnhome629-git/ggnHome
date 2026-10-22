@@ -37,6 +37,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import uuid
 from typing import Any
 
@@ -112,6 +113,8 @@ IDLE_WARN_S = float(os.getenv("VOICE_IDLE_WARN_S", "120"))
 IDLE_END_S = float(os.getenv("VOICE_IDLE_END_S", "150"))
 MAX_SPEAK_CHARS = int(os.getenv("VOICE_MAX_SPEAK_CHARS", "320"))
 MAX_TRANSCRIPT_CHARS = 600
+# Groq Orpheus rejects any request over 200 characters, so replies are said in pieces.
+TTS_PIECE_CHARS = int(os.getenv("VOICE_TTS_PIECE_CHARS", "190"))
 
 
 def data_packet(message: dict[str, Any]) -> bytes:
@@ -126,6 +129,26 @@ def clean_for_speech(text: str, *, lang: str = "en", opener: bool = True, seed: 
     window = text[:MAX_SPEAK_CHARS]
     cut = max(window.rfind(". "), window.rfind("? "), window.rfind("! "), window.rfind("। "))
     return (window[: cut + 1] if cut > 60 else window.rsplit(" ", 1)[0]).strip()
+
+
+def speech_pieces(text: str, limit: int = TTS_PIECE_CHARS) -> list[str]:
+    """Split text at sentence (then comma/space) boundaries into pieces of at most `limit` characters."""
+    sentences = re.findall(r"[^.!?।]+[.!?।]*\s*", text) or [text]
+    pieces: list[str] = []
+    for sentence in sentences:
+        sentence = sentence.strip()
+        while len(sentence) > limit:
+            cut = max(sentence.rfind(", ", 0, limit), sentence.rfind(" ", 0, limit))
+            cut = cut + 1 if cut > 40 else limit
+            pieces.append(sentence[:cut].strip())
+            sentence = sentence[cut:].strip()
+        if not sentence:
+            continue
+        if pieces and len(pieces[-1]) + 1 + len(sentence) <= limit:
+            pieces[-1] = f"{pieces[-1]} {sentence}"
+        else:
+            pieces.append(sentence)
+    return pieces
 
 
 class GgnHomeVoiceAgent(Agent):
@@ -208,7 +231,31 @@ def build_speech_services() -> tuple[Any, Any]:
             # Headerless PCM streams back faster than WAV.
             response_format="pcm",
         )
+    backups = backup_tts()
+    if backups:
+        # If the main voice fails (quota, terms not accepted, outage) the next one speaks instead.
+        from livekit.agents import tts as agents_tts
+
+        tts = agents_tts.FallbackAdapter([tts, *backups])
     return stt, tts
+
+
+def backup_tts() -> list[Any]:
+    """Any other voice provider with a key set, used only when the main one fails."""
+    backups: list[Any] = []
+    if TTS_PROVIDER != "deepgram" and os.getenv("DEEPGRAM_API_KEY"):
+        from livekit.plugins import deepgram
+
+        backups.append(deepgram.TTS(model=DEEPGRAM_TTS_MODEL))
+    if TTS_PROVIDER != "cartesia" and os.getenv("CARTESIA_API_KEY"):
+        from livekit.plugins import cartesia
+
+        backups.append(cartesia.TTS(model=CARTESIA_TTS_MODEL, language="en"))
+    if TTS_PROVIDER != "groq" and GROQ_SPEECH_KEY:
+        from livekit.plugins import groq
+
+        backups.append(groq.TTS(model=GROQ_TTS_MODEL, voice=GROQ_TTS_VOICE, api_key=GROQ_SPEECH_KEY))
+    return backups
 
 
 # LiveKit Agents marks a worker "full" above a CPU load threshold (0.7 by default
@@ -292,9 +339,9 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
             return
         current_lang["value"] = lang
         try:
-            if TTS_PROVIDER == "local":
+            if TTS_PROVIDER == "local" and hasattr(tts, "update_options"):
                 tts.update_options(voice=TTS_VOICES[lang])
-            elif TTS_PROVIDER == "sarvam":
+            elif TTS_PROVIDER == "sarvam" and hasattr(tts, "update_options"):
                 tts.update_options(target_language_code=SARVAM_LANGS[lang])
             stt_lang = STT_LANGUAGES[lang]
             if stt_lang:
@@ -336,7 +383,7 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
     def on_error(event: Any) -> None:
         source = type(getattr(event, "source", None)).__name__.lower()
         status = "stt_error" if "stt" in source else "tts_error" if "tts" in source else "agent_error"
-        logger.warning("Voice pipeline error from %s", source or "unknown")
+        logger.warning("Voice pipeline error from %s: %s", source or "unknown", getattr(event, "error", ""))
         message = {"type": "voice_status", "status": status}
         if status == "tts_error" and speaking_id["value"]:
             message["id"] = speaking_id["value"]
@@ -353,11 +400,14 @@ async def ggn_home_voice(ctx: agents.JobContext) -> None:
             await send({"type": "speech_started", "id": message_id})
             interrupted = False
             try:
-                handle = session.say(text, allow_interruptions=interruptible, add_to_chat_ctx=False)
-                await handle
-                interrupted = bool(handle.interrupted)
+                for piece in speech_pieces(text):
+                    handle = session.say(piece, allow_interruptions=interruptible, add_to_chat_ctx=False)
+                    await handle
+                    if handle.interrupted:
+                        interrupted = True
+                        break
             except Exception:
-                logger.exception("Local TTS failed for a voice response")
+                logger.exception("TTS failed for a voice response")
                 await send({"type": "voice_status", "status": "tts_error", "id": message_id})
             finally:
                 # Let the last audio frames leave the speaker before listening.

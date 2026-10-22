@@ -442,3 +442,8 @@
     max-width: 330px;
   }
 }
+
+/* Riya in the header and beside her chat messages */
+.gai-riya-btn { flex-shrink: 0; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; line-height: 0; }
+.gai-riya-btn:focus-visible { outline: 3px solid var(--ai-sun); outline-offset: 2px; }
+.gai-avatar.riya { padding: 0; background: none; overflow: hidden; }

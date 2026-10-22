@@ -23,11 +23,13 @@ const {
   smsConsoleLoginLimiter,
   aiTurnLimiter,
   aiSearchLimiter,
+  aiSpeechLimiter,
   locationLookupLimiter,
 } = require("../middleware/rateLimit");
 const aiConsultant = require("../controllers/aiConsultant.controller");
 const partnerLocation = require("../controllers/partnerLocation.controller");
 const livekitVoice = require("../controllers/livekitVoice.controller");
+const speech = require("../controllers/speech.controller");
 const voiceQueue = require("../controllers/voiceQueue.controller");
 
 // Controllers
@@ -380,6 +382,9 @@ router.post("/api/ai-consultant/voice-queue/heartbeat", aiTurnLimiter, voiceQueu
 router.post("/api/ai-consultant/voice-queue/leave", aiTurnLimiter, voiceQueue.leave);
 router.post("/api/ai-consultant/livekit/token", aiTurnLimiter, livekitVoice.createToken);
 router.post("/api/ai-consultant/livekit/end", aiTurnLimiter, livekitVoice.endSession);
+router.get("/api/ai-consultant/speech/config", speech.config);
+router.post("/api/ai-consultant/speech/tts", aiSpeechLimiter, speech.tts);
+router.post("/api/ai-consultant/speech/stt", aiSpeechLimiter, express.raw({ type: ["audio/*", "application/octet-stream"], limit: "3mb" }), speech.stt);
 router.get("/api/admin/ai-consultant/livekit/health", verifyToken, checkAdminEmail, livekitVoice.health);
 router.get("/api/ai-consultant/config", aiConsultant.getConfig);
 router.post("/api/ai-consultant/turn", aiTurnLimiter, aiConsultant.turn);

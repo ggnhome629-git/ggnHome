@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
-import { Bot, ExternalLink, Maximize2, SendHorizontal, X } from "lucide-react";
+import { ExternalLink, Maximize2, SendHorizontal, X } from "lucide-react";
+import RiyaAvatar from "./voice/RiyaAvatar";
 import VoiceBar from "./voice/VoiceBar";
 
 /**
@@ -19,10 +20,10 @@ export default function FloatingConsultant({ items, chips, busy, input, onInput,
     <aside className="gaf" role="complementary" aria-label="GgnHome AI Consultant chat">
       <header className="gaf-head">
         <span className={`gaf-avatar${busy ? " busy" : ""}`} aria-hidden="true">
-          <Bot size={16} />
+          <RiyaAvatar size={30} />
         </span>
         <div className="gaf-title">
-          <strong>AI Consultant</strong>
+          <strong>Riya · AI property advisor</strong>
           <small>{busy ? "Working on it…" : "Live GgnHome listings"}</small>
         </div>
         <button type="button" className="gaf-icon" onClick={onExpand} aria-label="Open the full consultant" title="Open full view">

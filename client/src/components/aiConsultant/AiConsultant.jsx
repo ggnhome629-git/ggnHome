@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, useMediaQuery } from "@mui/material";
-import { Bot, Mic, MicOff, Minimize2, RotateCcw, Search, SendHorizontal, X } from "lucide-react";
+import { Mic, MicOff, Minimize2, RotateCcw, Search, SendHorizontal, X } from "lucide-react";
 import "./aiConsultant.css";
 import { consultantApi, newIdempotencyKey } from "./consultantApi";
 import SearchScanner from "./SearchScanner";
 import FloatingConsultant from "./FloatingConsultant";
 import { useVoiceAssistant } from "./voice/useVoiceAssistant";
-import VoiceStage from "./voice/VoiceStage";
 import VoiceBar from "./voice/VoiceBar";
-import CallScreen from "./voice/CallScreen";
+import RiyaScreen from "./voice/RiyaScreen";
+import RiyaAvatar from "./voice/RiyaAvatar";
 import "./voice/voice.css";
 import ResultCard from "./ResultCard";
 import ReviewCard from "./ReviewCard";
@@ -118,16 +118,34 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   const [busy, setBusy] = useState(false);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
-  // While voice is on, the conversation is shown as a phone call; the chat view is one tap away.
-  const [callView, setCallView] = useState(true);
-  // The centered voice screen shows until the visitor starts voice, chooses to
-  // type, or the conversation is under way.
-  const [stageDismissed, setStageDismissed] = useState(Boolean(persisted?.items?.some((it) => it.type === "user")));
+  // Riya's screen (one question at a time) is the main view; the full chat is one tap away.
+  const [riyaView, setRiyaView] = useState(true);
+  const riyaViewRef = useRef(true);
+  riyaViewRef.current = riyaView;
+  // Riya reads her replies out loud even when the mic is off; the visitor can turn that off.
+  const [riyaVoiceOn, setRiyaVoiceOn] = useState(() => {
+    try {
+      return window.localStorage.getItem("ggn_riya_voice") !== "off";
+    } catch (_) {
+      return true;
+    }
+  });
+  const riyaVoiceRef = useRef(riyaVoiceOn);
+  riyaVoiceRef.current = riyaVoiceOn;
+  const toggleRiyaVoice = () => {
+    const next = !riyaVoiceOn;
+    setRiyaVoiceOn(next);
+    if (!next) voiceRef.current.stopAloud();
+    try {
+      window.localStorage.setItem("ggn_riya_voice", next ? "on" : "off");
+    } catch (_) {
+      // a convenience only
+    }
+  };
   const busyRef = useRef(false);
   const queuedTranscriptRef = useRef(null);
   const sendRef = useRef(null);
   const gateAnswerRef = useRef(null);
-  const stageVisibleRef = useRef(false);
   const [aiAvailable, setAiAvailable] = useState(null);
   const [basicMode, setBasicMode] = useState(Boolean(persisted?.basicMode));
   const [queueTicket, setQueueTicket] = useState(() => { try { return window.sessionStorage.getItem("ggn_voice_queue_ticket") || null; } catch (_) { return null; } });
@@ -185,13 +203,6 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   const voiceRef = useRef(voice);
   voiceRef.current = voice;
 
-  // While the centered voice card is showing, keep it in view instead of
-  // auto-scrolling past it to the newest message.
-  const stageVisible = !stageDismissed && !voice.active;
-  stageVisibleRef.current = stageVisible;
-  useEffect(() => {
-    if (stageVisible && streamRef.current) streamRef.current.scrollTo({ top: 0, behavior: "auto" });
-  }, [stageVisible, items, chips]);
 
   // Persist the conversation so closing and reopening continues it.
   useEffect(() => {
@@ -210,7 +221,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
 
   useEffect(() => {
     const el = streamRef.current;
-    if (el && !stageVisibleRef.current) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [items, chips]);
 
   const pushItems = useCallback((...list) => setItems((prev) => [...prev, ...list].slice(-MAX_ITEMS)), []);
@@ -221,7 +232,10 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   // voice controller, so the assistant never hears itself.
   const speakReply = useCallback((r) => {
     const v = voiceRef.current;
-    if (!v.active) return;
+    if (!v.active) {
+      if (riyaViewRef.current && riyaVoiceRef.current) v.sayAloud(speechFor(r));
+      return;
+    }
     v.speak(speechFor(r));
   }, []);
 
@@ -346,8 +360,12 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
       if (!text || busy) return;
       clearTimeout(autoSendRef.current);
       setTyping(false);
-      setStageDismissed(true);
       if (!options.voice && voiceRef.current.phase === "speaking") voiceRef.current.interrupt();
+      if (!options.voice) {
+        // A tap or typed message: stop any reply being read out and let the next one play on phones.
+        voiceRef.current.stopAloud();
+        voiceRef.current.prime();
+      }
       pushItems({ id: uid(), type: "user", text: display || text, voice: Boolean(options.voice) });
       setInput("");
       setChips(null);
@@ -543,16 +561,12 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   // Don't listen while the visitor is typing or filling in the contact form.
   useEffect(() => setHold((typing && input.trim().length > 0) || reviewOpen), [typing, input, reviewOpen, setHold]);
 
-  useEffect(() => {
-    if (queueTicket && !voice.active) setStageDismissed(false);
-  }, [queueTicket, voice.active]);
 
   const forgetStoredQueueTicket = useCallback(() => {
     try { window.sessionStorage.removeItem("ggn_voice_queue_ticket"); } catch (_) { /* optional */ }
   }, []);
 
   const joinVoiceQueue = useCallback(async () => {
-    setStageDismissed(false);
     if (queue.state === "joining" || queue.state === "waiting" || queue.state === "ready" || queue.state === "in_session") return;
     setQueue({ state: "joining", message: "Joining the voice queue…" });
     try {
@@ -573,7 +587,6 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   const useBasicConsultant = useCallback(() => {
     leaveVoiceQueue();
     setBasicMode(true);
-    setStageDismissed(true);
     if (!convState) callTurn(undefined, { type: "start", lang, langLocked: true }, { disableLLM: true });
   }, [leaveVoiceQueue, convState, callTurn, lang]);
 
@@ -612,8 +625,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   }, [queue.state, queueTicket, voice.phase, voice.end]);
 
   const startVoice = useCallback(() => {
-    setStageDismissed(true);
-    setCallView(true);
+    setRiyaView(true);
     const greeting = voiceOpening(items);
     if (voiceRef.current.engine === "livekit") {
       if (queueTicket && queue.state === "ready") {
@@ -631,8 +643,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
 
   const startQueuedVoice = useCallback(() => {
     if (!queueTicket || queue.state !== "ready") return;
-    setStageDismissed(true);
-    setCallView(true);
+    setRiyaView(true);
     forgetStoredQueueTicket();
     setQueue((current) => ({ ...current, state: "in_session" }));
     const greeting = voiceOpening(items);
@@ -675,7 +686,7 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
   // Results, the number card and the review form need the screen: show the chat for them.
   const lastItemType = items.length ? items[items.length - 1].type : null;
   useEffect(() => {
-    if (["scanner", "results", "leadgate", "review"].includes(lastItemType)) setCallView(false);
+    if (["scanner", "results", "leadgate", "review"].includes(lastItemType)) setRiyaView(false);
   }, [lastItemType]);
 
   /* ------------------------------------------------------------ render */
@@ -744,7 +755,40 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
     return -1;
   })();
 
-  const callOpen = callView && (voice.active || voice.phase === "error");
+  // How the mic button starts voice, in words that fit the current voice set-up.
+  const voiceStart = (() => {
+    const realTime = voice.engine === "livekit";
+    const needsPermission = voice.permission !== "granted";
+    const basic = realTime ? (
+      <button type="button" onClick={useBasicConsultant}>
+        Use basic consultant (no wait)
+      </button>
+    ) : null;
+    if (voice.engine === "checking") return { label: "Getting voice ready…", disabled: true, hint: "Getting my voice ready — you can type meanwhile." };
+    if (voice.engine === "none") return { label: "Voice unavailable", disabled: true, hint: "Voice isn't available here — type to me below." };
+    if (needsPermission && voice.permission === "denied") {
+      return { label: "Allow microphone", onClick: () => voice.requestPermission(), hint: "The microphone is blocked. Allow it in your browser or app settings, then tap the mic." };
+    }
+    if (realTime) {
+      if (queue.state === "joining") return { label: "Joining…", disabled: true, hint: "Getting a voice slot for you…", extra: basic };
+      if (queue.state === "waiting") {
+        return {
+          label: `In line · ${queue.position || "…"}`,
+          disabled: true,
+          hint: `Everyone's voice slots are busy — you're number ${queue.position || "…"} in line. Type meanwhile if you like.`,
+          extra: (
+            <>
+              <button type="button" onClick={leaveVoiceQueue}>Leave line</button>
+              {basic}
+            </>
+          ),
+        };
+      }
+      if (queue.state === "ready") return { label: "Start talking", onClick: startQueuedVoice, hint: "Your turn — tap the mic to start talking.", extra: basic };
+      if (queue.state === "error") return { label: "Try again", onClick: joinVoiceQueue, hint: queue.message || "Voice is busy — tap the mic to try again, or type.", extra: basic };
+    }
+    return { label: "Talk to Riya", onClick: startVoice, hint: "Tap the mic and talk to me, or type below." };
+  })();
   const lastUserIndex = (() => {
     for (let i = items.length - 1; i >= 0; i -= 1) if (items[i].type === "user") return i;
     return -1;
@@ -803,13 +847,11 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
       <div className="gai-root">
 
         <header className="gai-header">
-          <div className={`gai-orb${busy ? " thinking" : ""}`} aria-hidden="true">
-            <i>
-              <Bot size={18} />
-            </i>
-          </div>
+          <button type="button" className="gai-riya-btn" onClick={() => setRiyaView(true)} aria-label="Talk to Riya" title="Talk to Riya">
+            <RiyaAvatar size={40} mood={busy ? "think" : "idle"} />
+          </button>
           <div className="gai-title">
-            <strong id="gai-title">Riya · GgnHome AI Consultant</strong>
+            <strong id="gai-title">Riya · GgnHome property advisor</strong>
             <small>
               <span className={`gai-live-dot${aiAvailable === false ? " offline" : ""}`} />
               {basicMode || aiAvailable === false ? "Basic rule-based mode · live listings" : "Rule engine + AI · live Gurgaon listings"}
@@ -840,18 +882,29 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
           </button>
         </header>
 
-        {callOpen ? (
-          <CallScreen
+        {riyaView ? (
+          <RiyaScreen
             voice={voice}
+            start={voiceStart}
             question={currentQuestion}
             lastAnswer={lastAnswer}
             chips={chips}
             busy={busy}
             summary={summary}
             progress={progress}
+            input={input}
+            onInput={(value) => {
+              clearTimeout(autoSendRef.current);
+              setTyping(true);
+              setInput(value);
+            }}
+            onSend={() => send(input)}
             onChip={(c) => send(c.value, c.label)}
-            onShowChat={() => setCallView(false)}
+            onShowChat={() => setRiyaView(false)}
             onRetry={startVoice}
+            voiceOn={riyaVoiceOn}
+            onToggleVoice={toggleRiyaVoice}
+            placeholder={PLACEHOLDER[lang] || PLACEHOLDER.en}
           />
         ) : (
         <>
@@ -877,13 +930,9 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
         <div className="gai-body">
           <div className="gai-stream" ref={streamRef}>
             <div className="gai-stream-inner" aria-live="polite" aria-relevant="additions">
-              {stageVisible ? (
-                <VoiceStage voice={voice} queue={queue} onStart={startVoice} onJoinQueue={joinVoiceQueue} onStartQueued={startQueuedVoice} onLeaveQueue={leaveVoiceQueue} onUseBasic={useBasicConsultant} onTypeInstead={() => { leaveVoiceQueue(); setStageDismissed(true); setTimeout(() => inputRef.current && inputRef.current.focus(), 50); }} />
-              ) : (
-                <div className="gai-voicebar-slot">
-                  <VoiceBar voice={voice} onStart={startVoice} onOpenCall={() => setCallView(true)} />
+              <div className="gai-voicebar-slot">
+                <VoiceBar voice={voice} onStart={startVoice} onOpenCall={() => setRiyaView(true)} />
                 </div>
-              )}
               {items.map((it, i) => {
                 if (it.type === "user")
                   return (
@@ -897,8 +946,8 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
                 if (it.type === "typing")
                   return (
                     <div key={it.id} className="gai-row">
-                      <div className="gai-avatar" aria-hidden="true">
-                        <Bot size={16} />
+                      <div className="gai-avatar riya" aria-hidden="true">
+                        <RiyaAvatar size={32} />
                       </div>
                       <div className="gai-bubble bot gai-typing" aria-label="Assistant is typing">
                         <span />
@@ -955,8 +1004,8 @@ export default function AiConsultant({ open, minimized = false, onClose, onMinim
                   );
                 return (
                   <div key={it.id} className="gai-row">
-                    <div className="gai-avatar" aria-hidden="true">
-                      <Bot size={16} />
+                    <div className="gai-avatar riya" aria-hidden="true">
+                      <RiyaAvatar size={32} />
                     </div>
                     <div className={`gai-bubble bot${it.kind === "faq" ? " faq" : ""}${it.kind === "error" ? " error" : ""}`}>
                       {it.text}
