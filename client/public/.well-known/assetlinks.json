@@ -4,7 +4,8 @@
     "namespace": "android_app",
     "package_name": "com.tanush.ggnhome",
     "sha256_cert_fingerprints": [
-      "1F:A4:27:08:0F:5F:20:B7:AD:31:36:0E:2C:AB:D7:6E:64:37:D8:4F:22:F2:CD:D9:2E:01:E8:93:2A:CA:09:4D"
+      "1F:A4:27:08:0F:5F:20:B7:AD:31:36:0E:2C:AB:D7:6E:64:37:D8:4F:22:F2:CD:D9:2E:01:E8:93:2A:CA:09:4D",
+      "CB:BF:11:FA:F6:3A:1D:0B:30:64:84:F7:5B:C1:7D:02:7B:92:6C:39:6A:12:A9:2D:39:AC:C5:37:52:F4:EE:88"
     ]
   }
 }]
