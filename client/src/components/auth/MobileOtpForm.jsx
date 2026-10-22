@@ -38,6 +38,20 @@ export default function MobileOtpForm({ onVerified, submitLabel = "Verify & Cont
       const res = await fetch(`${base}/login/request-otp`, { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ mobileNumber: mobile }) });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "Couldn't send the code. Please try again.");
+      // Allowlisted testing numbers receive a short-lived code from the server.
+      // Verify it through the same endpoint so normal session/role checks still run.
+      if (data.channel === "direct-test" && data.directOtp) {
+        const verifyRes = await fetch(`${base}/login/verify-otp`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ mobileNumber: mobile, otp: data.directOtp }),
+        });
+        const verified = await verifyRes.json().catch(() => ({}));
+        if (!verifyRes.ok) throw new Error(verified.message || "Direct test login failed. Please try again.");
+        await onVerified(verified, mobile);
+        return;
+      }
       setStep("code");
       setCode("");
       setWait(RESEND_AFTER);
