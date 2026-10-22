@@ -46,9 +46,10 @@ describe("quest answer options", () => {
     for (const [mode, options] of Object.entries(mission("budget").options)) {
       for (const o of options) {
         const r = parsed(o.value, "budget", mode === "buy" ? "sale" : "rent");
-        expect([o.value, Boolean(r.budgetMax || r.budgetMin || r.budgetFlexible)]).toEqual([o.value, true]);
+        expect([o.value, Boolean(r.budgetMax || r.budgetMin)]).toEqual([o.value, true]);
       }
     }
+    expect(parsed(mission("budget").flexible.value, "budget").budgetFlexible).toBe(true);
   });
 
   test("every BHK option", () => {
@@ -69,6 +70,9 @@ describe("quest answer options", () => {
   test("every mission has its words in all three languages", () => {
     for (const m of flow.missions) {
       for (const key of ["label", "ask"]) expect(Object.keys(m[key]).sort()).toEqual(["en", "hi", "hinglish"]);
+      for (const o of Array.isArray(m.options) ? m.options : []) {
+        if (typeof o.label === "object") expect(Object.keys(o.label).sort()).toEqual(["en", "hi", "hinglish"]);
+      }
       expect(Object.keys(m.achievement.text).sort()).toEqual(["en", "hi", "hinglish"]);
     }
   });

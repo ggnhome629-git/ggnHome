@@ -26,18 +26,30 @@
    "options": [
     {
      "value": "rent",
+     "icon": "🔑",
      "label": {
-      "en": "🔑 Rent a home",
-      "hinglish": "🔑 Rent pe lena hai",
-      "hi": "🔑 किराये पर"
+      "en": "Rent",
+      "hinglish": "Rent",
+      "hi": "किराया"
+     },
+     "sub": {
+      "en": "Move in fast, pay monthly",
+      "hinglish": "Jaldi shift, monthly rent",
+      "hi": "जल्दी शिफ़्ट, मासिक किराया"
      }
     },
     {
      "value": "buy",
+     "icon": "🏡",
      "label": {
-      "en": "🏡 Buy a home",
-      "hinglish": "🏡 Khareedna hai",
-      "hi": "🏡 ख़रीदना है"
+      "en": "Buy",
+      "hinglish": "Buy",
+      "hi": "ख़रीदें"
+     },
+     "sub": {
+      "en": "Own a home of your own",
+      "hinglish": "Apna khud ka ghar",
+      "hi": "अपना ख़ुद का घर"
      }
     }
    ]
@@ -239,7 +251,12 @@
        "value": "Sector 23",
        "label": "Sector 23"
       }
-     ]
+     ],
+     "map": {
+      "x": 160,
+      "y": 62
+     },
+     "short": "Old Gurgaon"
     },
     {
      "id": "dlf",
@@ -312,7 +329,12 @@
        "value": "Sector 28",
        "label": "Sector 28"
       }
-     ]
+     ],
+     "map": {
+      "x": 262,
+      "y": 40
+     },
+     "short": "DLF · MG Rd"
     },
     {
      "id": "central",
@@ -389,7 +411,12 @@
        "value": "Sector 46",
        "label": "Sector 46"
       }
-     ]
+     ],
+     "map": {
+      "x": 214,
+      "y": 104
+     },
+     "short": "Central"
     },
     {
      "id": "gcr",
@@ -430,7 +457,12 @@
        "value": "Sector 56",
        "label": "Sector 56"
       }
-     ]
+     ],
+     "map": {
+      "x": 292,
+      "y": 108
+     },
+     "short": "Golf Course"
     },
     {
      "id": "sohna",
@@ -559,7 +591,12 @@
        "value": "Sector 71",
        "label": "Sector 71"
       }
-     ]
+     ],
+     "map": {
+      "x": 184,
+      "y": 160
+     },
+     "short": "Sohna Road"
     },
     {
      "id": "gcer",
@@ -652,7 +689,12 @@
        "value": "Sector 80",
        "label": "Sector 80"
       }
-     ]
+     ],
+     "map": {
+      "x": 270,
+      "y": 170
+     },
+     "short": "GC Ext · SPR"
     },
     {
      "id": "new",
@@ -745,7 +787,12 @@
        "value": "Sector 98",
        "label": "Sector 98"
       }
-     ]
+     ],
+     "map": {
+      "x": 80,
+      "y": 126
+     },
+     "short": "New Gurgaon"
     },
     {
      "id": "dwarka",
@@ -826,7 +873,12 @@
        "value": "Sector 115",
        "label": "Sector 115"
       }
-     ]
+     ],
+     "map": {
+      "x": 78,
+      "y": 42
+     },
+     "short": "Dwarka Expy"
     },
     {
      "id": "outer",
@@ -843,7 +895,12 @@
        "value": "Sohna town",
        "label": "Sohna"
       }
-     ]
+     ],
+     "map": {
+      "x": 104,
+      "y": 202
+     },
+     "short": "Manesar · Sohna"
     }
    ]
   },
@@ -917,10 +974,6 @@
      {
       "value": "under 2 lakh",
       "label": "Under ₹2 lakh"
-     },
-     {
-      "value": "budget is flexible",
-      "label": "Flexible"
      }
     ],
     "buy": [
@@ -971,12 +1024,32 @@
      {
       "value": "above 10 crore",
       "label": "₹10 Cr+"
-     },
-     {
-      "value": "budget is flexible",
-      "label": "Flexible"
      }
     ]
+   },
+   "slider": {
+    "rent": {
+     "unit": {
+      "en": "/month",
+      "hinglish": "/mahina",
+      "hi": "/माह"
+     }
+    },
+    "buy": {
+     "unit": {
+      "en": "",
+      "hinglish": "",
+      "hi": ""
+     }
+    }
+   },
+   "flexible": {
+    "value": "budget is flexible",
+    "label": {
+     "en": "I'm flexible",
+     "hinglish": "Flexible hoon",
+     "hi": "लचीला है"
+    }
    }
   },
   {
@@ -1003,31 +1076,101 @@
    "options": [
     {
      "value": "1 RK",
-     "label": "1 RK"
+     "icon": "🛋️",
+     "label": {
+      "en": "1 RK",
+      "hinglish": "1 RK",
+      "hi": "1 RK"
+     },
+     "sub": {
+      "en": "Studio",
+      "hinglish": "Studio",
+      "hi": "स्टूडियो"
+     }
     },
     {
      "value": "1 BHK",
-     "label": "1 BHK"
+     "icon": "🛏️",
+     "label": {
+      "en": "1 BHK",
+      "hinglish": "1 BHK",
+      "hi": "1 BHK"
+     },
+     "sub": {
+      "en": "1 bedroom",
+      "hinglish": "1 bedroom",
+      "hi": "1 बेडरूम"
+     }
     },
     {
      "value": "2 BHK",
-     "label": "2 BHK"
+     "icon": "🛏️",
+     "label": {
+      "en": "2 BHK",
+      "hinglish": "2 BHK",
+      "hi": "2 BHK"
+     },
+     "sub": {
+      "en": "2 bedrooms",
+      "hinglish": "2 bedroom",
+      "hi": "2 बेडरूम"
+     }
     },
     {
      "value": "3 BHK",
-     "label": "3 BHK"
+     "icon": "🏠",
+     "label": {
+      "en": "3 BHK",
+      "hinglish": "3 BHK",
+      "hi": "3 BHK"
+     },
+     "sub": {
+      "en": "3 bedrooms",
+      "hinglish": "3 bedroom",
+      "hi": "3 बेडरूम"
+     }
     },
     {
      "value": "4 BHK",
-     "label": "4 BHK"
+     "icon": "🏘️",
+     "label": {
+      "en": "4 BHK",
+      "hinglish": "4 BHK",
+      "hi": "4 BHK"
+     },
+     "sub": {
+      "en": "4 bedrooms",
+      "hinglish": "4 bedroom",
+      "hi": "4 बेडरूम"
+     }
     },
     {
      "value": "5 BHK",
-     "label": "5 BHK"
+     "icon": "🏰",
+     "label": {
+      "en": "5+ BHK",
+      "hinglish": "5+ BHK",
+      "hi": "5+ BHK"
+     },
+     "sub": {
+      "en": "Big family",
+      "hinglish": "Bada parivaar",
+      "hi": "बड़ा परिवार"
+     }
     },
     {
      "value": "any bhk",
-     "label": "Any"
+     "icon": "✨",
+     "label": {
+      "en": "Any",
+      "hinglish": "Koi bhi",
+      "hi": "कोई भी"
+     },
+     "sub": {
+      "en": "Show me everything",
+      "hinglish": "Sab dikhao",
+      "hi": "सब दिखाओ"
+     }
     }
    ]
   },
@@ -1056,31 +1199,66 @@
    "options": [
     {
      "value": "metro",
-     "label": "🚇 Metro"
+     "icon": "🚇",
+     "label": {
+      "en": "Metro",
+      "hinglish": "Metro",
+      "hi": "मेट्रो"
+     }
     },
     {
      "value": "market",
-     "label": "🛒 Market"
+     "icon": "🛒",
+     "label": {
+      "en": "Market",
+      "hinglish": "Market",
+      "hi": "बाज़ार"
+     }
     },
     {
      "value": "park",
-     "label": "🌳 Park"
+     "icon": "🌳",
+     "label": {
+      "en": "Park",
+      "hinglish": "Park",
+      "hi": "पार्क"
+     }
     },
     {
      "value": "school",
-     "label": "🎓 School"
+     "icon": "🎓",
+     "label": {
+      "en": "School",
+      "hinglish": "School",
+      "hi": "स्कूल"
+     }
     },
     {
      "value": "hospital",
-     "label": "🏥 Hospital"
+     "icon": "🏥",
+     "label": {
+      "en": "Hospital",
+      "hinglish": "Hospital",
+      "hi": "अस्पताल"
+     }
     },
     {
      "value": "mall",
-     "label": "🛍️ Mall"
+     "icon": "🛍️",
+     "label": {
+      "en": "Mall",
+      "hinglish": "Mall",
+      "hi": "मॉल"
+     }
     },
     {
      "value": "corner",
-     "label": "📐 Corner home"
+     "icon": "📐",
+     "label": {
+      "en": "Corner home",
+      "hinglish": "Corner ghar",
+      "hi": "कॉर्नर घर"
+     }
     }
    ],
    "done": {
@@ -1153,5 +1331,22 @@
    "bhk",
    "priorities"
   ]
+ },
+ "intro": {
+  "title": {
+   "en": "Find your Gurgaon home in 5 quick taps",
+   "hinglish": "5 tap mein Gurgaon ka ghar",
+   "hi": "5 टैप में गुड़गाँव का घर"
+  },
+  "sub": {
+   "en": "No forms, no calls. Answer a few fun questions and watch your matches appear.",
+   "hinglish": "Na form, na call. Kuch mazedaar sawaal, aur matches turant.",
+   "hi": "न फ़ॉर्म, न कॉल। कुछ मज़ेदार सवाल, और मैच तुरंत।"
+  },
+  "start": {
+   "en": "Let's go",
+   "hinglish": "Chalo shuru karein",
+   "hi": "चलिए शुरू करें"
+  }
  }
 }

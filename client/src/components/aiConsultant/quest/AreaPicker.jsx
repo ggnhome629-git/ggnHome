@@ -8,9 +8,48 @@ const distanceKm = (aLat, aLng, bLat, bLng) => {
   return 12742 * Math.asin(Math.sqrt(h));
 };
 
+/** A schematic map of Gurgaon: tap a zone bubble to see its sectors and areas. */
+function ZoneMap({ zones, active, onSelect }) {
+  return (
+    <svg className="qzm" viewBox="0 0 340 248" role="group" aria-label="Gurgaon zones">
+      {/* main roads, for orientation only */}
+      <path className="qzm-road" d="M20 18 L320 210" />
+      <path className="qzm-road" d="M262 40 L292 108 L270 170" />
+      <path className="qzm-road" d="M78 42 L160 62 L262 40" />
+      <path className="qzm-road" d="M214 104 L184 160 L104 200" />
+      <text className="qzm-tag" x="300" y="200">NH-48</text>
+      {zones.map((z) => {
+        const on = active === z.id;
+        return (
+          <g
+            key={z.id}
+            className={`qzm-zone${on ? " on" : ""}`}
+            transform={`translate(${z.map.x} ${z.map.y})`}
+            role="button"
+            tabIndex={0}
+            aria-pressed={on}
+            aria-label={z.label}
+            onClick={() => onSelect(on ? null : z.id)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelect(on ? null : z.id);
+              }
+            }}
+          >
+            <circle r="23" />
+            <text className="qzm-emoji" y="6">{z.emoji}</text>
+            <text className="qzm-label" y="37">{z.short}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 /**
- * The easy way to answer "which area?": one tap for areas near you, the popular
- * ones, a search box over every sector and locality, or browsing by zone.
+ * Answering "which area?" the easy way: areas near you in one tap, a search over
+ * every sector and locality, popular picks, or tapping a zone on the map.
  */
 export default function AreaPicker({ mission, mode, lang, onPick, disabled }) {
   const [query, setQuery] = useState("");
@@ -22,43 +61,43 @@ export default function AreaPicker({ mission, mode, lang, onPick, disabled }) {
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase().replace(/^sec(tor)?\s*/, "");
     if (!q) return [];
-    return all.filter((o) => o.label.toLowerCase().includes(q) || o.label.toLowerCase().replace("sector ", "") === q).slice(0, 12);
+    return all.filter((o) => o.label.toLowerCase().includes(q)).slice(0, 12);
   }, [all, query]);
 
   const findNearMe = () => {
     if (!navigator.geolocation) {
-      setNear({ state: "error", areas: [], message: "Location isn't available here — search or pick below." });
+      setNear({ state: "error", areas: [], message: "Location isn't available here — use the map or search." });
       return;
     }
     setNear({ state: "loading", areas: [], message: "" });
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
         const { latitude: lat, longitude: lng } = coords;
+        const nearestZone = [...mission.zones].sort((a, b) => distanceKm(lat, lng, a.lat, a.lng) - distanceKm(lat, lng, b.lat, b.lng))[0];
         try {
           const data = await consultantApi.nearbyAreas(lat, lng);
           if (data.outside) {
-            setNear({ state: "error", areas: [], message: "You seem to be outside Gurgaon — search or pick an area below." });
+            setNear({ state: "error", areas: [], message: "You seem to be outside Gurgaon — tap a zone on the map instead." });
             return;
           }
           if (data.areas?.length) {
-            setNear({ state: "ready", areas: data.areas, message: "" });
+            setZone(nearestZone.id);
+            setNear({ state: "ready", areas: data.areas, message: "Closest areas with homes right now:" });
             return;
           }
         } catch (_) {
-          // fall back to the nearest zones below
+          // fall back to the nearest zone
         }
-        // No listings close by (or the server is busy): suggest the nearest zones.
-        const zones = [...mission.zones].sort((a, b) => distanceKm(lat, lng, a.lat, a.lng) - distanceKm(lat, lng, b.lat, b.lng));
-        setZone(zones[0].id);
-        setNear({ state: "ready", areas: zones[0].options.slice(0, 8), message: `Closest zone: ${zones[0].emoji} ${zones[0].label}` });
+        setZone(nearestZone.id);
+        setNear({ state: "ready", areas: nearestZone.options.slice(0, 8), message: `You're near ${nearestZone.label}:` });
       },
-      () => setNear({ state: "error", areas: [], message: "Location permission was declined — search or pick below." }),
+      () => setNear({ state: "error", areas: [], message: "Location was declined — use the map or search." }),
       { enableHighAccuracy: false, timeout: 9000, maximumAge: 10 * 60 * 1000 }
     );
   };
 
-  const chip = (o, i, extra = "") => (
-    <button key={`${o.value}-${i}`} type="button" className={`qst-answer${extra}`} style={{ "--hue": `${(i * 47) % 360}`, animationDelay: `${i * 40}ms` }} onClick={() => onPick(o.value, o.label)} disabled={disabled}>
+  const pill = (o, i, extra = "") => (
+    <button key={`${o.value}-${i}`} type="button" className={`qpill${extra}`} style={{ animationDelay: `${Math.min(i, 10) * 30}ms` }} onClick={() => onPick(o.value, o.label)} disabled={disabled}>
       {o.label}
       {Number.isFinite(o.km) ? <small>{o.km < 1 ? `${Math.round(o.km * 1000)} m` : `${o.km} km`}</small> : null}
     </button>
@@ -66,53 +105,52 @@ export default function AreaPicker({ mission, mode, lang, onPick, disabled }) {
   const zoneOpen = mission.zones.find((z) => z.id === zone);
 
   return (
-    <div className="qst-area">
-      <div className="qst-area-top">
-        <button type="button" className="qst-near" onClick={findNearMe} disabled={disabled || near.state === "loading"}>
-          <LocateFixed size={17} /> {near.state === "loading" ? "Finding areas near you…" : "Near me"}
+    <div className="qarea">
+      <div className="qarea-top">
+        <button type="button" className="qarea-near" onClick={findNearMe} disabled={disabled || near.state === "loading"}>
+          <LocateFixed size={18} /> {near.state === "loading" ? "Finding…" : "Near me"}
         </button>
-        <label className="qst-area-search">
-          <Search size={16} aria-hidden="true" />
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search sector or area — e.g. 57, DLF, Sohna" aria-label="Search sector or area" />
+        <label className="qarea-search">
+          <Search size={17} aria-hidden="true" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Sector 57, DLF, Sohna…" aria-label="Search sector or area" />
         </label>
       </div>
 
-      {near.message ? <p className="qst-area-note">{near.message}</p> : null}
-      {near.areas.length ? (
-        <div className="qst-answers" role="group" aria-label="Areas near you">
-          {near.areas.map((o, i) => chip(o, i, " near"))}
-        </div>
-      ) : null}
-
       {query.trim() ? (
-        <div className="qst-answers" role="group" aria-label="Matching areas">
-          {matches.length ? matches.map((o, i) => chip(o, i)) : <p className="qst-area-note">No match — press send to use what you typed.</p>}
+        <div className="qpills" role="group" aria-label="Matching areas">
+          {matches.map((o, i) => pill(o, i))}
+          <button type="button" className="qpill use" onClick={() => onPick(query.trim(), query.trim())} disabled={disabled}>
+            Use “{query.trim()}” →
+          </button>
         </div>
       ) : (
         <>
-          <div className="qst-answers" role="group" aria-label="Popular areas">
-            {popular.map((v, i) => chip({ value: v, label: v }, i))}
-            {chip({ value: mission.anywhere.value, label: mission.anywhere.label[lang] || mission.anywhere.label.en }, popular.length, " ghost")}
-          </div>
-          <div className="qst-zones" role="tablist" aria-label="Browse by zone">
-            {mission.zones.map((z) => (
-              <button key={z.id} type="button" role="tab" aria-selected={zone === z.id} className={zone === z.id ? "on" : ""} onClick={() => setZone(zone === z.id ? null : z.id)}>
-                {z.emoji} {z.label}
-              </button>
-            ))}
-          </div>
-          {zoneOpen ? (
-            <div className="qst-answers qst-zone-list" role="group" aria-label={zoneOpen.label}>
-              {zoneOpen.options.map((o, i) => chip(o, i))}
+          {near.message ? <p className="qarea-note">{near.message}</p> : null}
+          {near.areas.length ? (
+            <div className="qpills" role="group" aria-label="Areas near you">
+              {near.areas.map((o, i) => pill(o, i, " near"))}
             </div>
           ) : null}
+
+          <ZoneMap zones={mission.zones} active={zone} onSelect={setZone} />
+
+          {zoneOpen ? (
+            <div className="qarea-zone">
+              <p className="qarea-note">
+                {zoneOpen.emoji} <strong>{zoneOpen.label}</strong> — tap your area
+              </p>
+              <div className="qpills scroll" role="group" aria-label={zoneOpen.label}>
+                {zoneOpen.options.map((o, i) => pill(o, i))}
+              </div>
+            </div>
+          ) : (
+            <div className="qpills" role="group" aria-label="Popular areas">
+              {popular.map((v, i) => pill({ value: v, label: v }, i))}
+              {pill({ value: mission.anywhere.value, label: mission.anywhere.label[lang] || mission.anywhere.label.en }, popular.length, " soft")}
+            </div>
+          )}
         </>
       )}
-      {query.trim() ? (
-        <button type="button" className="qst-use-typed" onClick={() => onPick(query.trim(), query.trim())} disabled={disabled}>
-          Use “{query.trim()}” →
-        </button>
-      ) : null}
     </div>
   );
 }

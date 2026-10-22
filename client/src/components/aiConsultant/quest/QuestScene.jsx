@@ -1,115 +1,134 @@
 import React from "react";
 
-// Fixed positions (not random) so the scene looks the same on every render and never reflows.
-const STARS = [
-  [6, 8], [14, 22], [22, 6], [31, 15], [38, 4], [47, 19], [55, 9], [63, 24], [71, 5],
-  [79, 17], [86, 7], [93, 21], [10, 32], [42, 30], [67, 33], [90, 31], [27, 27], [58, 28],
+const TOWERS = [
+  [10, 70, 34], [48, 46, 26], [78, 92, 30], [112, 58, 24], [140, 104, 34], [178, 66, 28], [210, 120, 36],
+  [250, 78, 26], [280, 96, 30], [314, 54, 24], [342, 112, 34], [380, 72, 28], [412, 88, 30], [446, 60, 24],
+  [474, 126, 36], [514, 70, 28], [546, 98, 32], [582, 56, 24], [610, 108, 34], [648, 74, 28], [680, 90, 30],
+  [714, 62, 26], [744, 116, 36],
 ];
-const SKY = [
-  { e: "✈️", cls: "plane", top: 10, dur: 26, delay: -4 },
-  { e: "🚁", cls: "heli", top: 22, dur: 19, delay: -11 },
-  { e: "✈️", cls: "plane far", top: 5, dur: 38, delay: -22 },
-  { e: "🪁", cls: "kite", top: 30, dur: 30, delay: -8 },
-  { e: "🕊️", cls: "bird", top: 16, dur: 22, delay: -15 },
-];
-const TREES = ["🌳", "🌴", "🌲", "🌳", "🌴", "🌳", "🌲", "🌴", "🌳", "🌲", "🌳", "🌴"];
-const ANIMALS = [
-  { e: "🦚", left: 12, cls: "peacock" },
-  { e: "🐒", left: 38, cls: "monkey" },
-  { e: "🦌", left: 63, cls: "deer" },
-  { e: "🐘", left: 84, cls: "elephant" },
-];
-const LANE_A = [
-  { e: "🚗", dur: 11, delay: 0 },
-  { e: "🛺", dur: 14, delay: -5 },
-  { e: "🚌", dur: 17, delay: -9 },
-  { e: "🏍️", dur: 9, delay: -3 },
-];
-const LANE_B = [
-  { e: "🚕", dur: 12, delay: -2 },
-  { e: "🚙", dur: 15, delay: -8 },
-  { e: "🛵", dur: 10, delay: -6 },
-];
-
-/** Gurgaon skyline: a few towers with lit windows (Cyber City style). */
-function Skyline() {
-  const towers = [
-    [0, 70, 26], [28, 52, 22], [52, 84, 30], [84, 60, 20], [106, 96, 28], [136, 66, 24],
-    [162, 110, 30], [194, 74, 22], [218, 88, 26], [246, 58, 20], [268, 100, 30], [300, 64, 24],
-    [326, 80, 26], [354, 54, 20], [376, 92, 24],
-  ];
-  return (
-    <svg className="qsc-skyline" viewBox="0 0 400 120" preserveAspectRatio="none" aria-hidden="true">
-      {towers.map(([x, h, w]) => (
-        <g key={x}>
-          <rect x={x} y={120 - h} width={w} height={h} rx="2" fill="#24405e" />
-          {Array.from({ length: Math.floor(h / 14) }).map((_, r) =>
-            [0, 1].map((c) => (
-              <rect key={`${r}-${c}`} className={(r + c + x) % 3 === 0 ? "lit" : ""} x={x + 5 + c * (w / 2 - 2)} y={120 - h + 6 + r * 14} width={w / 2 - 8} height="5" fill="#3b5a7c" />
-            ))
-          )}
-        </g>
-      ))}
-    </svg>
-  );
-}
+const TREES = [20, 64, 118, 170, 236, 300, 356, 420, 488, 552, 604, 668, 730, 780];
 
 /**
- * The living background behind the robot: twinkling stars, planes and a
- * helicopter crossing the sky, Gurgaon's skyline with the Rapid Metro, a strip
- * of jungle with animals, and traffic both ways. Decorative only; it never
- * takes taps, and it stops moving for visitors who prefer reduced motion.
+ * A calm, living strip of Gurgaon along the bottom of the quest: planes and a
+ * helicopter in the sky, the skyline with the Rapid Metro, trees with an
+ * elephant, a peacock and a deer, and traffic both ways. Flat SVG in soft
+ * colours so it never competes with the question. Decorative only.
  */
-export default function QuestScene({ celebrate = 0 }) {
+export default function QuestScene() {
   return (
-    <div className="qsc" aria-hidden="true" data-celebrate={celebrate % 2}>
-      <div className="qsc-sky" />
-      <div className="qsc-sun" />
-      {STARS.map(([left, top], i) => (
-        <span key={i} className="qsc-star" style={{ left: `${left}%`, top: `${top}%`, animationDelay: `${-(i * 0.37) % 3}s` }}>
-          ✦
-        </span>
-      ))}
-      {SKY.map((s, i) => (
-        <span key={i} className={`qsc-fly ${s.cls}`} style={{ top: `${s.top}%`, animationDuration: `${s.dur}s`, animationDelay: `${s.delay}s` }}>
-          <i>{s.e}</i>
-        </span>
-      ))}
-      <div className="qsc-city">
-        <Skyline />
-        <div className="qsc-metro">
-          <span className="qsc-train">🚝</span>
-        </div>
-      </div>
-      <div className="qsc-jungle">
-        {TREES.map((t, i) => (
-          <span key={i} className="qsc-tree" style={{ left: `${(i / TREES.length) * 100 + 2}%`, fontSize: `${26 + ((i * 7) % 14)}px`, animationDelay: `${-i * 0.4}s` }}>
-            {t}
-          </span>
-        ))}
-        {ANIMALS.map((a) => (
-          <span key={a.cls} className={`qsc-animal ${a.cls}`} style={{ left: `${a.left}%` }}>
-            {a.e}
-          </span>
-        ))}
-      </div>
-      <div className="qsc-road">
-        <div className="qsc-lane a">
-          {LANE_A.map((v, i) => (
-            <span key={i} className="qsc-car" style={{ animationDuration: `${v.dur}s`, animationDelay: `${v.delay}s` }}>
-              <i>{v.e}</i>
-            </span>
+    <div className="qsc" aria-hidden="true">
+      <svg className="qsc-sky" viewBox="0 0 800 220" preserveAspectRatio="xMidYMin slice">
+        <g className="qsc-cloud c1">
+          <ellipse cx="0" cy="0" rx="34" ry="12" />
+          <ellipse cx="22" cy="-8" rx="22" ry="12" />
+          <ellipse cx="-20" cy="-4" rx="18" ry="9" />
+        </g>
+        <g className="qsc-cloud c2">
+          <ellipse cx="0" cy="0" rx="28" ry="10" />
+          <ellipse cx="18" cy="-7" rx="18" ry="10" />
+        </g>
+        <g className="qsc-plane">
+          <path d="M0 0 L46 -4 Q56 -4 58 0 Q56 4 46 4 Z" />
+          <path d="M22 -2 L10 -20 L18 -20 L34 -2 Z" />
+          <path d="M22 2 L10 18 L18 18 L34 2 Z" />
+          <path d="M2 -1 L-4 -12 L2 -12 L10 -1 Z" />
+        </g>
+        <g className="qsc-heli">
+          <rect className="qsc-rotor" x="-26" y="-16" width="52" height="3" rx="1.5" />
+          <rect x="-1.5" y="-14" width="3" height="6" />
+          <ellipse cx="0" cy="0" rx="16" ry="9" />
+          <rect x="12" y="-3" width="26" height="4" rx="2" />
+          <path d="M36 -8 L40 -8 L40 6 L36 6 Z" />
+          <path d="M-10 9 L-12 13 M10 9 L12 13 M-16 13 L16 13" strokeWidth="2" fill="none" />
+        </g>
+        <g className="qsc-birds">
+          <path d="M0 0 q6 -6 12 0 q6 -6 12 0" />
+          <path d="M30 10 q5 -5 10 0 q5 -5 10 0" />
+          <path d="M18 22 q4 -4 8 0 q4 -4 8 0" />
+        </g>
+      </svg>
+
+      <svg className="qsc-ground" viewBox="0 0 800 170" preserveAspectRatio="xMidYMax slice">
+        {/* skyline */}
+        <g className="qsc-city">
+          {TOWERS.map(([x, h, w]) => (
+            <g key={x}>
+              <rect x={x} y={110 - h} width={w} height={h} rx="3" />
+              {Array.from({ length: Math.floor(h / 16) }).map((_, r) => (
+                <rect key={r} className={(r + x) % 4 === 0 ? "win lit" : "win"} x={x + 6} y={116 - h + r * 16} width={w - 12} height="4" rx="1" />
+              ))}
+            </g>
           ))}
-        </div>
-        <div className="qsc-lane b">
-          {LANE_B.map((v, i) => (
-            <span key={i} className="qsc-car" style={{ animationDuration: `${v.dur}s`, animationDelay: `${v.delay}s` }}>
-              <i>{v.e}</i>
-            </span>
+        </g>
+        {/* Rapid Metro on its viaduct */}
+        <g className="qsc-viaduct">
+          <rect x="0" y="96" width="800" height="5" />
+          {[60, 200, 340, 480, 620, 760].map((x) => (
+            <rect key={x} x={x} y="101" width="8" height="14" />
           ))}
-        </div>
-        <span className="qsc-cow">🐄</span>
-      </div>
+        </g>
+        <g className="qsc-train">
+          <rect x="0" y="80" width="120" height="16" rx="6" />
+          {[10, 34, 58, 82, 104].map((x) => (
+            <rect key={x} className="win" x={x} y="84" width="12" height="6" rx="1.5" />
+          ))}
+        </g>
+        {/* trees and animals */}
+        <g className="qsc-trees">
+          {TREES.map((x, i) => (
+            <g key={x} className="qsc-tree" style={{ animationDelay: `${-i * 0.5}s` }}>
+              <rect x={x - 2} y="118" width="4" height="14" />
+              <circle cx={x} cy={i % 2 ? 112 : 110} r={i % 3 === 0 ? 14 : 11} />
+            </g>
+          ))}
+        </g>
+        <g className="qsc-elephant">
+          <path d="M0 120 Q0 100 20 100 L42 100 Q56 100 56 114 L56 128 L50 128 L50 120 L44 120 L44 128 L38 128 L38 120 L14 120 L14 128 L8 128 L8 120 Z" />
+          <path d="M50 104 Q66 104 64 122 L60 122 Q61 110 52 110 Z" />
+          <circle cx="52" cy="106" r="1.6" className="eye" />
+        </g>
+        <g className="qsc-peacock">
+          <path d="M-14 128 Q-20 104 2 98 Q18 104 12 128 Z" className="tail" />
+          <circle cx="-6" cy="108" r="2.4" className="dot" />
+          <circle cx="2" cy="104" r="2.4" className="dot" />
+          <circle cx="8" cy="112" r="2.4" className="dot" />
+          <path d="M0 128 Q-2 116 4 114 Q10 116 8 128 Z" className="body" />
+          <path d="M5 114 Q6 106 10 104" strokeWidth="2.4" fill="none" className="neck" />
+        </g>
+        <g className="qsc-deer">
+          <path d="M0 116 Q2 108 12 108 L26 108 Q32 108 32 114 L32 128 L29 128 L29 118 L6 118 L6 128 L3 128 Z" />
+          <path d="M28 108 L32 98 L36 98 L34 106 Z" />
+          <path d="M32 98 L30 92 M34 98 L38 92" strokeWidth="1.6" fill="none" />
+        </g>
+        {/* road */}
+        <rect className="qsc-road" x="0" y="132" width="800" height="38" />
+        <rect className="qsc-lane" x="0" y="150" width="800" height="2" />
+        <g className="qsc-car a">
+          <rect x="0" y="136" width="34" height="10" rx="4" />
+          <rect x="7" y="130" width="18" height="8" rx="3" />
+          <circle cx="8" cy="147" r="3" className="wheel" />
+          <circle cx="26" cy="147" r="3" className="wheel" />
+        </g>
+        <g className="qsc-bus">
+          <rect x="0" y="134" width="60" height="14" rx="3" />
+          {[6, 18, 30, 42].map((x) => (
+            <rect key={x} className="win" x={x} y="137" width="9" height="5" rx="1" />
+          ))}
+          <circle cx="12" cy="149" r="3" className="wheel" />
+          <circle cx="48" cy="149" r="3" className="wheel" />
+        </g>
+        <g className="qsc-auto">
+          <path d="M0 166 L0 156 Q2 150 10 150 L22 150 L26 158 L26 166 Z" />
+          <circle cx="5" cy="167" r="2.6" className="wheel" />
+          <circle cx="21" cy="167" r="2.6" className="wheel" />
+        </g>
+        <g className="qsc-car b">
+          <rect x="0" y="154" width="32" height="10" rx="4" />
+          <rect x="7" y="148" width="16" height="8" rx="3" />
+          <circle cx="7" cy="165" r="3" className="wheel" />
+          <circle cx="25" cy="165" r="3" className="wheel" />
+        </g>
+      </svg>
     </div>
   );
 }

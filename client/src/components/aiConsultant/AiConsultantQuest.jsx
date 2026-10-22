@@ -471,13 +471,12 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
     persistConversation();
   }, [open, minimized, persistConversation]);
 
-  // Results, the number card and the review form need the screen: show the chat for them.
+  // Results, the number card and the review form live in the chat. The quest ends on a
+  // results reveal with a "See my matches" button; a follow-up question after the
+  // results (refinements, the review form) opens the chat directly.
   const lastItemType = items.length ? items[items.length - 1].type : null;
   useEffect(() => {
-    if (!["scanner", "results", "leadgate", "review"].includes(lastItemType)) return undefined;
-    // Let the final sprinkles and trophy play for a moment, then show the results and forms.
-    const t = setTimeout(() => setQuestView(false), 1800);
-    return () => clearTimeout(t);
+    if (lastItemType === "review") setQuestView(false);
   }, [lastItemType]);
 
   /* ------------------------------------------------------------- quest */
