@@ -69,6 +69,13 @@ export const consultantApi = {
   search: (state, more = false) => post("/api/ai-consultant/search", { state, more }, { timeoutMs: 25000 }),
   lead: (payload) => post("/api/ai-consultant/lead", payload, { auth: true }),
   enquiry: (payload) => post("/api/ai-consultant/enquiry", payload, { auth: true }),
+  preview: (state) => post("/api/ai-consultant/preview", { state }, { timeoutMs: 15000 }),
+  nearbyAreas: async (lat, lng) => {
+    const res = await fetch(`${BASE}/api/ai-consultant/nearby-areas?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}`, { credentials: "omit" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || "Couldn't find nearby areas right now.");
+    return data;
+  },
   metric: (name) => post("/api/ai-consultant/metric", { name }).catch(() => {}),
 };
 

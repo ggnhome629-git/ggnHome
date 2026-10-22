@@ -1,0 +1,1157 @@
+{
+ "version": 1,
+ "about": "GgnBot quest: the short question flow on the AI assistant. Every option 'value' is text the consultant's server parser understands (checked by server/tests/questFlow.test.js). The server still decides the question order and wording; this file supplies richer, instant answer options, the area browser, 'near me' zones and the rewards.",
+ "missions": [
+  {
+   "slot": "mode",
+   "label": {
+    "en": "Rent or buy",
+    "hinglish": "Rent ya buy",
+    "hi": "किराया या ख़रीद"
+   },
+   "icon": "🔑",
+   "ask": {
+    "en": "Are you looking to rent or to buy?",
+    "hinglish": "Rent pe lena hai ya khareedna hai?",
+    "hi": "किराये पर लेना है या ख़रीदना है?"
+   },
+   "achievement": {
+    "icon": "🔑",
+    "text": {
+     "en": "Mission 1 cleared — plan locked in!",
+     "hinglish": "Mission 1 clear — plan pakka!",
+     "hi": "मिशन 1 पूरा — प्लान तय!"
+    }
+   },
+   "options": [
+    {
+     "value": "rent",
+     "label": {
+      "en": "🔑 Rent a home",
+      "hinglish": "🔑 Rent pe lena hai",
+      "hi": "🔑 किराये पर"
+     }
+    },
+    {
+     "value": "buy",
+     "label": {
+      "en": "🏡 Buy a home",
+      "hinglish": "🏡 Khareedna hai",
+      "hi": "🏡 ख़रीदना है"
+     }
+    }
+   ]
+  },
+  {
+   "slot": "location",
+   "label": {
+    "en": "Area",
+    "hinglish": "Area",
+    "hi": "इलाक़ा"
+   },
+   "icon": "📍",
+   "ask": {
+    "en": "Which part of Gurgaon are you eyeing?",
+    "hinglish": "Gurgaon mein kaunsa area?",
+    "hi": "गुड़गाँव में कौन-सा इलाक़ा?"
+   },
+   "achievement": {
+    "icon": "🧭",
+    "text": {
+     "en": "Explorer badge — area found!",
+     "hinglish": "Explorer badge — area mil gaya!",
+     "hi": "एक्सप्लोरर बैज — इलाक़ा मिल गया!"
+    }
+   },
+   "nearMe": true,
+   "searchable": true,
+   "popular": {
+    "rent": [
+     "Sector 57",
+     "Sohna Road",
+     "Golf Course Road",
+     "DLF Phase 4",
+     "Sushant Lok",
+     "Sector 49"
+    ],
+    "buy": [
+     "Golf Course Extension Road",
+     "Dwarka Expressway",
+     "New Gurgaon",
+     "Sohna Road",
+     "Sector 65",
+     "Golf Course Road"
+    ]
+   },
+   "anywhere": {
+    "value": "anywhere",
+    "label": {
+     "en": "🌏 Anywhere in Gurgaon",
+     "hinglish": "🌏 Gurgaon mein kahin bhi",
+     "hi": "🌏 गुड़गाँव में कहीं भी"
+    }
+   },
+   "zones": [
+    {
+     "id": "old",
+     "label": "Old Gurgaon",
+     "emoji": "🏛️",
+     "lat": 28.4656,
+     "lng": 77.03,
+     "options": [
+      {
+       "value": "Old Gurgaon",
+       "label": "Old Gurgaon"
+      },
+      {
+       "value": "Civil Lines",
+       "label": "Civil Lines"
+      },
+      {
+       "value": "Sadar Bazar",
+       "label": "Sadar Bazar"
+      },
+      {
+       "value": "Ashok Vihar",
+       "label": "Ashok Vihar"
+      },
+      {
+       "value": "Shivaji Nagar",
+       "label": "Shivaji Nagar"
+      },
+      {
+       "value": "Laxman Vihar",
+       "label": "Laxman Vihar"
+      },
+      {
+       "value": "Saraswati Vihar",
+       "label": "Saraswati Vihar"
+      },
+      {
+       "value": "Palam Vihar",
+       "label": "Palam Vihar"
+      },
+      {
+       "value": "Udyog Vihar",
+       "label": "Udyog Vihar"
+      },
+      {
+       "value": "Sector 14 Market",
+       "label": "Sector 14 Market"
+      },
+      {
+       "value": "Rajiv Chowk",
+       "label": "Rajiv Chowk"
+      },
+      {
+       "value": "Subhash Chowk",
+       "label": "Subhash Chowk"
+      },
+      {
+       "value": "Sector 1",
+       "label": "Sector 1"
+      },
+      {
+       "value": "Sector 2",
+       "label": "Sector 2"
+      },
+      {
+       "value": "Sector 3",
+       "label": "Sector 3"
+      },
+      {
+       "value": "Sector 4",
+       "label": "Sector 4"
+      },
+      {
+       "value": "Sector 5",
+       "label": "Sector 5"
+      },
+      {
+       "value": "Sector 6",
+       "label": "Sector 6"
+      },
+      {
+       "value": "Sector 7",
+       "label": "Sector 7"
+      },
+      {
+       "value": "Sector 8",
+       "label": "Sector 8"
+      },
+      {
+       "value": "Sector 9",
+       "label": "Sector 9"
+      },
+      {
+       "value": "Sector 10",
+       "label": "Sector 10"
+      },
+      {
+       "value": "Sector 11",
+       "label": "Sector 11"
+      },
+      {
+       "value": "Sector 12",
+       "label": "Sector 12"
+      },
+      {
+       "value": "Sector 13",
+       "label": "Sector 13"
+      },
+      {
+       "value": "Sector 14",
+       "label": "Sector 14"
+      },
+      {
+       "value": "Sector 15",
+       "label": "Sector 15"
+      },
+      {
+       "value": "Sector 16",
+       "label": "Sector 16"
+      },
+      {
+       "value": "Sector 17",
+       "label": "Sector 17"
+      },
+      {
+       "value": "Sector 18",
+       "label": "Sector 18"
+      },
+      {
+       "value": "Sector 19",
+       "label": "Sector 19"
+      },
+      {
+       "value": "Sector 20",
+       "label": "Sector 20"
+      },
+      {
+       "value": "Sector 21",
+       "label": "Sector 21"
+      },
+      {
+       "value": "Sector 22",
+       "label": "Sector 22"
+      },
+      {
+       "value": "Sector 23",
+       "label": "Sector 23"
+      }
+     ]
+    },
+    {
+     "id": "dlf",
+     "label": "DLF & MG Road",
+     "emoji": "🏙️",
+     "lat": 28.481,
+     "lng": 77.09,
+     "options": [
+      {
+       "value": "DLF Phase 1",
+       "label": "DLF Phase 1"
+      },
+      {
+       "value": "DLF Phase 2",
+       "label": "DLF Phase 2"
+      },
+      {
+       "value": "DLF Phase 3",
+       "label": "DLF Phase 3"
+      },
+      {
+       "value": "DLF Phase 4",
+       "label": "DLF Phase 4"
+      },
+      {
+       "value": "DLF Phase 5",
+       "label": "DLF Phase 5"
+      },
+      {
+       "value": "DLF Cyber City",
+       "label": "DLF Cyber City"
+      },
+      {
+       "value": "MG Road",
+       "label": "MG Road"
+      },
+      {
+       "value": "Sikanderpur",
+       "label": "Sikanderpur"
+      },
+      {
+       "value": "Chakkarpur",
+       "label": "Chakkarpur"
+      },
+      {
+       "value": "Nathupur",
+       "label": "Nathupur"
+      },
+      {
+       "value": "IFFCO Chowk",
+       "label": "IFFCO Chowk"
+      },
+      {
+       "value": "Sector 24",
+       "label": "Sector 24"
+      },
+      {
+       "value": "Sector 25",
+       "label": "Sector 25"
+      },
+      {
+       "value": "Sector 26",
+       "label": "Sector 26"
+      },
+      {
+       "value": "Sector 27",
+       "label": "Sector 27"
+      },
+      {
+       "value": "Sector 28",
+       "label": "Sector 28"
+      }
+     ]
+    },
+    {
+     "id": "central",
+     "label": "Central (Huda City Centre)",
+     "emoji": "🚇",
+     "lat": 28.4593,
+     "lng": 77.0724,
+     "options": [
+      {
+       "value": "Huda City Centre",
+       "label": "Huda City Centre"
+      },
+      {
+       "value": "Sector 29",
+       "label": "Sector 29"
+      },
+      {
+       "value": "Sector 30",
+       "label": "Sector 30"
+      },
+      {
+       "value": "Sector 31",
+       "label": "Sector 31"
+      },
+      {
+       "value": "Sector 32",
+       "label": "Sector 32"
+      },
+      {
+       "value": "Sector 33",
+       "label": "Sector 33"
+      },
+      {
+       "value": "Sector 34",
+       "label": "Sector 34"
+      },
+      {
+       "value": "Sector 35",
+       "label": "Sector 35"
+      },
+      {
+       "value": "Sector 36",
+       "label": "Sector 36"
+      },
+      {
+       "value": "Sector 37",
+       "label": "Sector 37"
+      },
+      {
+       "value": "Sector 38",
+       "label": "Sector 38"
+      },
+      {
+       "value": "Sector 39",
+       "label": "Sector 39"
+      },
+      {
+       "value": "Sector 40",
+       "label": "Sector 40"
+      },
+      {
+       "value": "Sector 41",
+       "label": "Sector 41"
+      },
+      {
+       "value": "Sector 44",
+       "label": "Sector 44"
+      },
+      {
+       "value": "Sector 45",
+       "label": "Sector 45"
+      },
+      {
+       "value": "Sector 46",
+       "label": "Sector 46"
+      }
+     ]
+    },
+    {
+     "id": "gcr",
+     "label": "Golf Course Road",
+     "emoji": "⛳",
+     "lat": 28.442,
+     "lng": 77.1,
+     "options": [
+      {
+       "value": "Golf Course Road",
+       "label": "Golf Course Road"
+      },
+      {
+       "value": "Wazirabad",
+       "label": "Wazirabad"
+      },
+      {
+       "value": "Sector 42",
+       "label": "Sector 42"
+      },
+      {
+       "value": "Sector 43",
+       "label": "Sector 43"
+      },
+      {
+       "value": "Sector 53",
+       "label": "Sector 53"
+      },
+      {
+       "value": "Sector 54",
+       "label": "Sector 54"
+      },
+      {
+       "value": "Sector 55",
+       "label": "Sector 55"
+      },
+      {
+       "value": "Sector 56",
+       "label": "Sector 56"
+      }
+     ]
+    },
+    {
+     "id": "sohna",
+     "label": "Sohna Road",
+     "emoji": "🛣️",
+     "lat": 28.413,
+     "lng": 77.045,
+     "options": [
+      {
+       "value": "Sohna Road",
+       "label": "Sohna Road"
+      },
+      {
+       "value": "Sushant Lok 1",
+       "label": "Sushant Lok 1"
+      },
+      {
+       "value": "Sushant Lok 2",
+       "label": "Sushant Lok 2"
+      },
+      {
+       "value": "Sushant Lok 3",
+       "label": "Sushant Lok 3"
+      },
+      {
+       "value": "Sushant Lok",
+       "label": "Sushant Lok"
+      },
+      {
+       "value": "South City 1",
+       "label": "South City 1"
+      },
+      {
+       "value": "South City 2",
+       "label": "South City 2"
+      },
+      {
+       "value": "South City",
+       "label": "South City"
+      },
+      {
+       "value": "Nirvana Country",
+       "label": "Nirvana Country"
+      },
+      {
+       "value": "Malibu Towne",
+       "label": "Malibu Towne"
+      },
+      {
+       "value": "Mayfield Garden",
+       "label": "Mayfield Garden"
+      },
+      {
+       "value": "Uppal Southend",
+       "label": "Uppal Southend"
+      },
+      {
+       "value": "Vatika City",
+       "label": "Vatika City"
+      },
+      {
+       "value": "Rosewood City",
+       "label": "Rosewood City"
+      },
+      {
+       "value": "Greenwood City",
+       "label": "Greenwood City"
+      },
+      {
+       "value": "Sun City",
+       "label": "Sun City"
+      },
+      {
+       "value": "Ardee City",
+       "label": "Ardee City"
+      },
+      {
+       "value": "Badshahpur",
+       "label": "Badshahpur"
+      },
+      {
+       "value": "Sector 47",
+       "label": "Sector 47"
+      },
+      {
+       "value": "Sector 48",
+       "label": "Sector 48"
+      },
+      {
+       "value": "Sector 49",
+       "label": "Sector 49"
+      },
+      {
+       "value": "Sector 50",
+       "label": "Sector 50"
+      },
+      {
+       "value": "Sector 51",
+       "label": "Sector 51"
+      },
+      {
+       "value": "Sector 52",
+       "label": "Sector 52"
+      },
+      {
+       "value": "Sector 66",
+       "label": "Sector 66"
+      },
+      {
+       "value": "Sector 67",
+       "label": "Sector 67"
+      },
+      {
+       "value": "Sector 68",
+       "label": "Sector 68"
+      },
+      {
+       "value": "Sector 69",
+       "label": "Sector 69"
+      },
+      {
+       "value": "Sector 70",
+       "label": "Sector 70"
+      },
+      {
+       "value": "Sector 71",
+       "label": "Sector 71"
+      }
+     ]
+    },
+    {
+     "id": "gcer",
+     "label": "Golf Course Ext. Road & SPR",
+     "emoji": "🌆",
+     "lat": 28.402,
+     "lng": 77.087,
+     "options": [
+      {
+       "value": "Golf Course Extension Road",
+       "label": "Golf Course Extension Road"
+      },
+      {
+       "value": "Southern Peripheral Road",
+       "label": "Southern Peripheral Road"
+      },
+      {
+       "value": "Gwal Pahari",
+       "label": "Gwal Pahari"
+      },
+      {
+       "value": "Sector 57",
+       "label": "Sector 57"
+      },
+      {
+       "value": "Sector 58",
+       "label": "Sector 58"
+      },
+      {
+       "value": "Sector 59",
+       "label": "Sector 59"
+      },
+      {
+       "value": "Sector 60",
+       "label": "Sector 60"
+      },
+      {
+       "value": "Sector 61",
+       "label": "Sector 61"
+      },
+      {
+       "value": "Sector 62",
+       "label": "Sector 62"
+      },
+      {
+       "value": "Sector 63",
+       "label": "Sector 63"
+      },
+      {
+       "value": "Sector 64",
+       "label": "Sector 64"
+      },
+      {
+       "value": "Sector 65",
+       "label": "Sector 65"
+      },
+      {
+       "value": "Sector 72",
+       "label": "Sector 72"
+      },
+      {
+       "value": "Sector 73",
+       "label": "Sector 73"
+      },
+      {
+       "value": "Sector 74",
+       "label": "Sector 74"
+      },
+      {
+       "value": "Sector 75",
+       "label": "Sector 75"
+      },
+      {
+       "value": "Sector 76",
+       "label": "Sector 76"
+      },
+      {
+       "value": "Sector 77",
+       "label": "Sector 77"
+      },
+      {
+       "value": "Sector 78",
+       "label": "Sector 78"
+      },
+      {
+       "value": "Sector 79",
+       "label": "Sector 79"
+      },
+      {
+       "value": "Sector 80",
+       "label": "Sector 80"
+      }
+     ]
+    },
+    {
+     "id": "new",
+     "label": "New Gurgaon",
+     "emoji": "🏗️",
+     "lat": 28.4,
+     "lng": 76.96,
+     "options": [
+      {
+       "value": "New Gurgaon",
+       "label": "New Gurgaon"
+      },
+      {
+       "value": "Pataudi Road",
+       "label": "Pataudi Road"
+      },
+      {
+       "value": "Hero Honda Chowk",
+       "label": "Hero Honda Chowk"
+      },
+      {
+       "value": "Sector 81",
+       "label": "Sector 81"
+      },
+      {
+       "value": "Sector 82",
+       "label": "Sector 82"
+      },
+      {
+       "value": "Sector 83",
+       "label": "Sector 83"
+      },
+      {
+       "value": "Sector 84",
+       "label": "Sector 84"
+      },
+      {
+       "value": "Sector 85",
+       "label": "Sector 85"
+      },
+      {
+       "value": "Sector 86",
+       "label": "Sector 86"
+      },
+      {
+       "value": "Sector 87",
+       "label": "Sector 87"
+      },
+      {
+       "value": "Sector 88",
+       "label": "Sector 88"
+      },
+      {
+       "value": "Sector 89",
+       "label": "Sector 89"
+      },
+      {
+       "value": "Sector 90",
+       "label": "Sector 90"
+      },
+      {
+       "value": "Sector 91",
+       "label": "Sector 91"
+      },
+      {
+       "value": "Sector 92",
+       "label": "Sector 92"
+      },
+      {
+       "value": "Sector 93",
+       "label": "Sector 93"
+      },
+      {
+       "value": "Sector 94",
+       "label": "Sector 94"
+      },
+      {
+       "value": "Sector 95",
+       "label": "Sector 95"
+      },
+      {
+       "value": "Sector 96",
+       "label": "Sector 96"
+      },
+      {
+       "value": "Sector 97",
+       "label": "Sector 97"
+      },
+      {
+       "value": "Sector 98",
+       "label": "Sector 98"
+      }
+     ]
+    },
+    {
+     "id": "dwarka",
+     "label": "Dwarka Expressway",
+     "emoji": "🛫",
+     "lat": 28.51,
+     "lng": 76.995,
+     "options": [
+      {
+       "value": "Dwarka Expressway",
+       "label": "Dwarka Expressway"
+      },
+      {
+       "value": "Sector 99",
+       "label": "Sector 99"
+      },
+      {
+       "value": "Sector 100",
+       "label": "Sector 100"
+      },
+      {
+       "value": "Sector 101",
+       "label": "Sector 101"
+      },
+      {
+       "value": "Sector 102",
+       "label": "Sector 102"
+      },
+      {
+       "value": "Sector 103",
+       "label": "Sector 103"
+      },
+      {
+       "value": "Sector 104",
+       "label": "Sector 104"
+      },
+      {
+       "value": "Sector 105",
+       "label": "Sector 105"
+      },
+      {
+       "value": "Sector 106",
+       "label": "Sector 106"
+      },
+      {
+       "value": "Sector 107",
+       "label": "Sector 107"
+      },
+      {
+       "value": "Sector 108",
+       "label": "Sector 108"
+      },
+      {
+       "value": "Sector 109",
+       "label": "Sector 109"
+      },
+      {
+       "value": "Sector 110",
+       "label": "Sector 110"
+      },
+      {
+       "value": "Sector 111",
+       "label": "Sector 111"
+      },
+      {
+       "value": "Sector 112",
+       "label": "Sector 112"
+      },
+      {
+       "value": "Sector 113",
+       "label": "Sector 113"
+      },
+      {
+       "value": "Sector 114",
+       "label": "Sector 114"
+      },
+      {
+       "value": "Sector 115",
+       "label": "Sector 115"
+      }
+     ]
+    },
+    {
+     "id": "outer",
+     "label": "Manesar & Sohna",
+     "emoji": "🌄",
+     "lat": 28.3,
+     "lng": 77.0,
+     "options": [
+      {
+       "value": "Manesar",
+       "label": "Manesar"
+      },
+      {
+       "value": "Sohna town",
+       "label": "Sohna"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "slot": "budget",
+   "label": {
+    "en": "Budget",
+    "hinglish": "Budget",
+    "hi": "बजट"
+   },
+   "icon": "💰",
+   "ask": {
+    "en": "What budget works for you?",
+    "hinglish": "Budget kitna hai?",
+    "hi": "बजट कितना है?"
+   },
+   "achievement": {
+    "icon": "💰",
+    "text": {
+     "en": "Budget boss — money sorted!",
+     "hinglish": "Budget boss — paisa set!",
+     "hi": "बजट बॉस — पैसा तय!"
+    }
+   },
+   "options": {
+    "rent": [
+     {
+      "value": "under 10k",
+      "label": "Under ₹10k"
+     },
+     {
+      "value": "under 15k",
+      "label": "Under ₹15k"
+     },
+     {
+      "value": "under 20k",
+      "label": "Under ₹20k"
+     },
+     {
+      "value": "under 25k",
+      "label": "Under ₹25k"
+     },
+     {
+      "value": "under 30k",
+      "label": "Under ₹30k"
+     },
+     {
+      "value": "under 40k",
+      "label": "Under ₹40k"
+     },
+     {
+      "value": "under 50k",
+      "label": "Under ₹50k"
+     },
+     {
+      "value": "under 60k",
+      "label": "Under ₹60k"
+     },
+     {
+      "value": "under 80k",
+      "label": "Under ₹80k"
+     },
+     {
+      "value": "under 1 lakh",
+      "label": "Under ₹1 lakh"
+     },
+     {
+      "value": "under 1.5 lakh",
+      "label": "Under ₹1.5 lakh"
+     },
+     {
+      "value": "under 2 lakh",
+      "label": "Under ₹2 lakh"
+     },
+     {
+      "value": "budget is flexible",
+      "label": "Flexible"
+     }
+    ],
+    "buy": [
+     {
+      "value": "under 30 lakh",
+      "label": "Under ₹30 L"
+     },
+     {
+      "value": "under 50 lakh",
+      "label": "Under ₹50 L"
+     },
+     {
+      "value": "under 75 lakh",
+      "label": "Under ₹75 L"
+     },
+     {
+      "value": "under 1 crore",
+      "label": "Under ₹1 Cr"
+     },
+     {
+      "value": "under 1.5 crore",
+      "label": "Under ₹1.5 Cr"
+     },
+     {
+      "value": "under 2 crore",
+      "label": "Under ₹2 Cr"
+     },
+     {
+      "value": "under 3 crore",
+      "label": "Under ₹3 Cr"
+     },
+     {
+      "value": "under 4 crore",
+      "label": "Under ₹4 Cr"
+     },
+     {
+      "value": "under 5 crore",
+      "label": "Under ₹5 Cr"
+     },
+     {
+      "value": "under 7 crore",
+      "label": "Under ₹7 Cr"
+     },
+     {
+      "value": "under 10 crore",
+      "label": "Under ₹10 Cr"
+     },
+     {
+      "value": "above 10 crore",
+      "label": "₹10 Cr+"
+     },
+     {
+      "value": "budget is flexible",
+      "label": "Flexible"
+     }
+    ]
+   }
+  },
+  {
+   "slot": "bhk",
+   "label": {
+    "en": "Rooms",
+    "hinglish": "Rooms",
+    "hi": "कमरे"
+   },
+   "icon": "🛏️",
+   "ask": {
+    "en": "How many bedrooms?",
+    "hinglish": "Kitne BHK chahiye?",
+    "hi": "कितने BHK चाहिए?"
+   },
+   "achievement": {
+    "icon": "🛏️",
+    "text": {
+     "en": "Room planner — space sorted!",
+     "hinglish": "Room planner — jagah set!",
+     "hi": "रूम प्लानर — जगह तय!"
+    }
+   },
+   "options": [
+    {
+     "value": "1 RK",
+     "label": "1 RK"
+    },
+    {
+     "value": "1 BHK",
+     "label": "1 BHK"
+    },
+    {
+     "value": "2 BHK",
+     "label": "2 BHK"
+    },
+    {
+     "value": "3 BHK",
+     "label": "3 BHK"
+    },
+    {
+     "value": "4 BHK",
+     "label": "4 BHK"
+    },
+    {
+     "value": "5 BHK",
+     "label": "5 BHK"
+    },
+    {
+     "value": "any bhk",
+     "label": "Any"
+    }
+   ]
+  },
+  {
+   "slot": "priorities",
+   "label": {
+    "en": "Nearby",
+    "hinglish": "Aas-paas",
+    "hi": "आस-पास"
+   },
+   "icon": "⭐",
+   "multi": true,
+   "ask": {
+    "en": "Anything important nearby? Pick as many as you like.",
+    "hinglish": "Aas-paas kya zaroori hai? Jitne chahe chuniye.",
+    "hi": "आस-पास क्या ज़रूरी है? जितने चाहें चुनिए।"
+   },
+   "achievement": {
+    "icon": "🏆",
+    "text": {
+     "en": "Wishlist wizard — all missions done!",
+     "hinglish": "Wishlist wizard — saare mission poore!",
+     "hi": "विशलिस्ट विज़ार्ड — सारे मिशन पूरे!"
+    }
+   },
+   "options": [
+    {
+     "value": "metro",
+     "label": "🚇 Metro"
+    },
+    {
+     "value": "market",
+     "label": "🛒 Market"
+    },
+    {
+     "value": "park",
+     "label": "🌳 Park"
+    },
+    {
+     "value": "school",
+     "label": "🎓 School"
+    },
+    {
+     "value": "hospital",
+     "label": "🏥 Hospital"
+    },
+    {
+     "value": "mall",
+     "label": "🛍️ Mall"
+    },
+    {
+     "value": "corner",
+     "label": "📐 Corner home"
+    }
+   ],
+   "done": {
+    "value": "none of these",
+    "label": {
+     "en": "Show homes now →",
+     "hinglish": "Ghar dikhao →",
+     "hi": "घर दिखाओ →"
+    }
+   }
+  }
+ ],
+ "reactions": {
+  "en": [
+   "Nice pick! ✨",
+   "Ooh, great choice! 🎯",
+   "Got it — on it! 🚀",
+   "Love it! 💫",
+   "Perfect! 🌟"
+  ],
+  "hinglish": [
+   "Badhiya! ✨",
+   "Wah, mast choice! 🎯",
+   "Samajh gaya — chalo! 🚀",
+   "Zabardast! 💫",
+   "Perfect! 🌟"
+  ],
+  "hi": [
+   "बढ़िया! ✨",
+   "वाह, शानदार! 🎯",
+   "समझ गया — चलिए! 🚀",
+   "ज़बरदस्त! 💫",
+   "बिलकुल सही! 🌟"
+  ]
+ },
+ "quickPicks": [
+  {
+   "label": "🔑 Rent · 1 BHK · Sector 57 · ₹20k",
+   "value": "rent 1 bhk in sector 57 under 20k"
+  },
+  {
+   "label": "🔑 Rent · 2 BHK · Sohna Road · ₹30k",
+   "value": "rent 2 bhk in sohna road under 30k"
+  },
+  {
+   "label": "🔑 Rent · 3 BHK · DLF Phase 4 · ₹60k",
+   "value": "rent 3 bhk in dlf phase 4 under 60k"
+  },
+  {
+   "label": "🏡 Buy · 2 BHK · New Gurgaon · ₹1 Cr",
+   "value": "buy 2 bhk in new gurgaon under 1 crore"
+  },
+  {
+   "label": "🏡 Buy · 3 BHK · Golf Course Ext. · ₹2 Cr",
+   "value": "buy 3 bhk on golf course extension road under 2 crore"
+  },
+  {
+   "label": "🏡 Buy · 4 BHK · Golf Course Road · ₹5 Cr",
+   "value": "buy 4 bhk on golf course road under 5 crore"
+  }
+ ],
+ "skip": {
+  "value": "skip",
+  "label": {
+   "en": "Skip ⏭️",
+   "hinglish": "Skip ⏭️",
+   "hi": "छोड़ें ⏭️"
+  },
+  "slots": [
+   "bhk",
+   "priorities"
+  ]
+ }
+}

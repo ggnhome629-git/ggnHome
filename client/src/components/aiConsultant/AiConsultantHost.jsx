@@ -2,7 +2,9 @@ import React, { createContext, lazy, Suspense, useCallback, useContext, useEffec
 import { consultantApi } from "./consultantApi";
 import { useAiConsultantEnabled } from "./featureFlag";
 
-const AiConsultant = lazy(() => import("./AiConsultant"));
+// Live: the GgnBot quest (text and taps, no sound or mic). The voice version stays in
+// ./AiConsultant — switch this import back to bring it live again.
+const AiConsultant = lazy(() => import("./AiConsultantQuest"));
 
 const AiConsultantContext = createContext({
   isOpen: false,
@@ -28,7 +30,7 @@ function AiConsultantSession({ children }) {
   // so the consultant (and voice) answer quickly when the visitor opens it.
   useEffect(() => {
     const base = process.env.REACT_APP_Base_API || "";
-    fetch(`${base}/api/ai-consultant/livekit/config`, { credentials: "omit" }).catch(() => {});
+    fetch(`${base}/api/ai-consultant/config`, { credentials: "omit" }).catch(() => {});
   }, []);
   const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);

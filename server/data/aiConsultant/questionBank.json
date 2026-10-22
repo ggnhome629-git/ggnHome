@@ -3029,13 +3029,13 @@
       ],
       "reply": {
         "en": [
-          "I'm Riya, GgnHome's AI property advisor. I'm rule-based at heart with an optional AI helper, and I only show real, live GgnHome listings — never invented ones."
+          "I'm GgnHome's AI property assistant. I'm rule-based at heart with an optional AI helper, and I only show real, live GgnHome listings — never invented ones."
         ],
         "hinglish": [
-          "Main Riya hoon, GgnHome ki AI property advisor. Main sirf asli, live GgnHome listings dikhati hoon — kabhi bhi banayi hui nahi."
+          "Main GgnHome ka AI property assistant hoon. Main sirf asli, live GgnHome listings dikhati hoon — kabhi bhi banayi hui nahi."
         ],
         "hi": [
-          "मैं GgnHome की AI प्रॉपर्टी सलाहकार रिया हूँ। मैं सिर्फ़ असली, लाइव GgnHome लिस्टिंग दिखाती हूँ — कभी भी बनाई हुई नहीं।"
+          "मैं GgnHome का AI प्रॉपर्टी सहायक हूँ। मैं सिर्फ़ असली, लाइव GgnHome लिस्टिंग दिखाती हूँ — कभी भी बनाई हुई नहीं।"
         ]
       }
     },
@@ -4480,13 +4480,13 @@
   "responses": {
     "welcome": {
       "en": [
-        "Hi, I'm Riya, your GgnHome property advisor 👋 I'll ask you a few quick questions to find the right home — or just tell me what you're looking for."
+        "Hi! I'm your GgnHome property assistant 👋 I'll ask you a few quick questions to find the right home — or just tell me what you're looking for."
       ],
       "hinglish": [
-        "Namaste, main Riya hoon, GgnHome se aapki property advisor 👋 Main aapse kuch chhote sawaal poochungi — ya seedha bataiye aapko kya chahiye."
+        "Namaste! Main GgnHome ka property assistant hoon 👋 Main aapse kuch chhote sawaal poochungi — ya seedha bataiye aapko kya chahiye."
       ],
       "hi": [
-        "नमस्ते, मैं रिया हूँ, GgnHome से आपकी प्रॉपर्टी सलाहकार 👋 मैं आपसे कुछ छोटे सवाल पूछूँगी — या सीधे बताइए आपको क्या चाहिए।"
+        "नमस्ते! मैं GgnHome का प्रॉपर्टी सहायक हूँ 👋 मैं आपसे कुछ छोटे सवाल पूछूँगी — या सीधे बताइए आपको क्या चाहिए।"
       ]
     },
     "welcomeBack": {

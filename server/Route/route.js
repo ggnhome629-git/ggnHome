@@ -389,6 +389,8 @@ router.get("/api/admin/ai-consultant/livekit/health", verifyToken, checkAdminEma
 router.get("/api/ai-consultant/config", aiConsultant.getConfig);
 router.post("/api/ai-consultant/turn", aiTurnLimiter, aiConsultant.turn);
 router.post("/api/ai-consultant/search", aiSearchLimiter, aiConsultant.search);
+router.post("/api/ai-consultant/preview", aiTurnLimiter, aiConsultant.preview);
+router.get("/api/ai-consultant/nearby-areas", aiTurnLimiter, aiConsultant.nearbyAreas);
 router.post("/api/ai-consultant/enquiry", verifyTokenOptional, guestFormLimiter, aiConsultant.createEnquiry);
 router.post("/api/ai-consultant/lead", verifyTokenOptional, guestFormLimiter, aiConsultant.captureLead);
 router.post("/api/ai-consultant/metric", aiTurnLimiter, aiConsultant.metric);

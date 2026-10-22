@@ -125,6 +125,121 @@ exports.search = async (req, res) => {
   }
 };
 
+/**
+ * Live shortlist while the visitor is still answering: the best few homes for
+ * whatever is known so far (works from the first answer on). Cached briefly per
+ * requirement set, so the same answers never hit the database twice in a row.
+ * The full ranked results and the lead step are unchanged.
+ */
+const PREVIEW_TTL_MS = 2 * 60 * 1000;
+const PREVIEW_CACHE_SIZE = 300;
+const previewCache = new Map();
+exports._previewCache = previewCache;
+exports._matcher = () => require("../services/aiConsultant/matcher");
+
+exports.preview = async (req, res) => {
+  try {
+    const s = engine.sanitizeState(req.body?.state);
+    const key = JSON.stringify([s.lang, s.req]);
+    const hit = previewCache.get(key);
+    if (hit && Date.now() - hit.at < PREVIEW_TTL_MS) {
+      res.set("Cache-Control", "no-store");
+      return res.json({ success: true, cached: true, ...hit.data });
+    }
+    const { results, total } = await exports._matcher().search(s.req, { lang: s.lang, offset: 0, pageSize: 6 });
+    const data = {
+      total,
+      mode: s.req.mode === "sale" ? "sale" : "rent",
+      results: results.map((c) => ({
+        id: c.id,
+        url: c.url,
+        title: c.title,
+        sector: c.sector,
+        priceLabel: c.priceLabel,
+        bhkLabel: c.bhkLabel,
+        image: c.image,
+        score: c.score,
+      })),
+    };
+    previewCache.delete(key);
+    previewCache.set(key, { at: Date.now(), data });
+    if (previewCache.size > PREVIEW_CACHE_SIZE) previewCache.delete(previewCache.keys().next().value);
+    res.set("Cache-Control", "no-store");
+    return res.json({ success: true, cached: false, ...data });
+  } catch (err) {
+    console.error("aiConsultant.preview failed:", err.message);
+    return bad(res, 500, "Shortlist is unavailable right now.");
+  }
+};
+
+/**
+ * "Near me" for the area question: the sectors/areas with live listings closest
+ * to the visitor's position, nearest first. Coordinates are only used for this
+ * lookup (rounded, never stored). Cached per ~1 km cell.
+ */
+const NEAR_TTL_MS = 10 * 60 * 1000;
+const nearCache = new Map();
+exports._nearCache = nearCache;
+exports._listingCoords = async (box) => {
+  const filter = { isActive: true, latitude: { $gte: box.s, $lte: box.n }, longitude: { $gte: box.w, $lte: box.e } };
+  const select = "Sector latitude longitude";
+  const [rentals, sales] = await Promise.all([
+    RentalProperty.find(filter).select(select).limit(3000).lean(),
+    SaleProperty.find(filter).select(select).limit(3000).lean(),
+  ]);
+  return [...rentals, ...sales];
+};
+
+function kmBetween(aLat, aLng, bLat, bLng) {
+  const r = (d) => (d * Math.PI) / 180;
+  const h = Math.sin(r(bLat - aLat) / 2) ** 2 + Math.cos(r(aLat)) * Math.cos(r(bLat)) * Math.sin(r(bLng - aLng) / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(h));
+}
+
+/** "Sector-57", "57", "sector 57 A" -> "Sector 57"; other names are kept as written. */
+function areaName(raw) {
+  const text = String(raw || "").trim();
+  const n = text.match(/^(?:sector|sec)?\s*[-.]?\s*(\d{1,3})\b/i);
+  if (n && Number(n[1]) >= 1 && Number(n[1]) <= 115) return `Sector ${Number(n[1])}`;
+  return text.slice(0, 60);
+}
+
+exports.nearbyAreas = async (req, res) => {
+  const lat = Number(req.query?.lat);
+  const lng = Number(req.query?.lng);
+  res.set("Cache-Control", "no-store");
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return bad(res, 400, "A valid location is needed.");
+  // Far from Gurgaon: nothing to suggest (the page shows the area list instead).
+  if (kmBetween(lat, lng, 28.4595, 77.0266) > 60) return res.json({ success: true, outside: true, areas: [] });
+  const cell = `${lat.toFixed(2)},${lng.toFixed(2)}`;
+  const hit = nearCache.get(cell);
+  if (hit && Date.now() - hit.at < NEAR_TTL_MS) return res.json({ success: true, outside: false, areas: hit.areas });
+  try {
+    const box = { n: lat + 0.06, s: lat - 0.06, e: lng + 0.07, w: lng - 0.07 }; // about 6-7 km each way
+    const docs = await exports._listingCoords(box);
+    const byArea = new Map();
+    for (const d of docs) {
+      const name = areaName(d.Sector);
+      if (!name || !Number.isFinite(d.latitude) || !Number.isFinite(d.longitude)) continue;
+      const km = kmBetween(lat, lng, d.latitude, d.longitude);
+      const cur = byArea.get(name) || { value: name, label: name, km: Infinity, homes: 0 };
+      cur.km = Math.min(cur.km, km);
+      cur.homes += 1;
+      byArea.set(name, cur);
+    }
+    const areas = [...byArea.values()]
+      .sort((a, b) => a.km - b.km)
+      .slice(0, 8)
+      .map((a) => ({ ...a, km: Math.round(a.km * 10) / 10 }));
+    nearCache.set(cell, { at: Date.now(), areas });
+    if (nearCache.size > 500) nearCache.delete(nearCache.keys().next().value);
+    return res.json({ success: true, outside: false, areas });
+  } catch (err) {
+    console.error("aiConsultant.nearbyAreas failed:", err.message);
+    return bad(res, 500, "Couldn't find nearby areas right now.");
+  }
+};
+
 async function matchesFor(shown) {
   const ids = { rental: [], sale: [] };
   for (const s of (shown || []).slice(0, 12)) ids[s.listingType].push(s.id);

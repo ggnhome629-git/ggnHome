@@ -7,7 +7,7 @@ import VoiceBar from "./voice/VoiceBar";
  * Compact, non-blocking chat docked on the right. The conversation and any
  * voice session keep running while the visitor scrolls or opens listings.
  */
-export default function FloatingConsultant({ items, chips, busy, input, onInput, onSubmit, onChip, onAsk, onExpand, onClose, voice, onStartVoice, placeholder }) {
+export default function FloatingConsultant({ items, chips, busy, input, onInput, onSubmit, onChip, onAsk, onExpand, onClose, voice, onStartVoice, placeholder, avatar, title }) {
   const listRef = useRef(null);
   useEffect(() => {
     const el = listRef.current;
@@ -20,10 +20,10 @@ export default function FloatingConsultant({ items, chips, busy, input, onInput,
     <aside className="gaf" role="complementary" aria-label="GgnHome AI Consultant chat">
       <header className="gaf-head">
         <span className={`gaf-avatar${busy ? " busy" : ""}`} aria-hidden="true">
-          <RiyaAvatar size={30} />
+          {avatar || <RiyaAvatar size={30} />}
         </span>
         <div className="gaf-title">
-          <strong>Riya · AI property advisor</strong>
+          <strong>{title || "Riya · AI property advisor"}</strong>
           <small>{busy ? "Working on it…" : "Live GgnHome listings"}</small>
         </div>
         <button type="button" className="gaf-icon" onClick={onExpand} aria-label="Open the full consultant" title="Open full view">
@@ -87,7 +87,7 @@ export default function FloatingConsultant({ items, chips, busy, input, onInput,
         ) : null}
       </div>
 
-      <VoiceBar voice={voice} onStart={onStartVoice} compact />
+      {voice ? <VoiceBar voice={voice} onStart={onStartVoice} compact /> : null}
 
       <form
         className="gaf-composer"
