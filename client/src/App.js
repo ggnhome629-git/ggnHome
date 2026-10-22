@@ -186,8 +186,9 @@ function App() {
       <Route path="/admin/ping" element={<AdminPing />} />
       {/* Separate admin sign-in: public page, but the server only lets admin numbers through. */}
       <Route path="/admin/login" element={<AdminLoginPage />} />
-      {/* Hidden SMS Service console: not linked anywhere; has its own owner password */}
+      {/* SMS Service console: both URLs open the owner-password-protected console. */}
       <Route path="/sms-service/app/manage" element={<SmsConsole />} />
+      <Route path="/admin/sms-console" element={<SmsConsole />} />
       <Route path="/Rentaldetails/:id" element={<RentalPropertydetails />} />
       <Route path="/Saledetails/:id" element={<SalePropertyPage />} />
 

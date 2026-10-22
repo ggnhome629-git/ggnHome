@@ -34,7 +34,7 @@ const PORTALS = [
   { name: "Admin login", url: `${SITE}/admin/login`, who: "Admins only (OTP; role verified before OTP is sent)", status: "Live", icon: ShieldCheck },
   { name: "Admin portal", url: `${SITE}/admin/Landingpage`, who: "Signed-in admins", status: "Live", icon: ShieldCheck },
   { name: "Partner Hub", url: `${SITE}/partner/login`, who: "Approved partners (OTP login)", status: "Live", icon: Building2 },
-  { name: "SMS gateway console", url: `${SITE}/sms-service/app/manage`, who: "Owner with SMS key", status: "Live (hidden page)", icon: Smartphone },
+  { name: "SMS Console (OTP / Direct Login)", url: `${SITE}/admin/sms-console`, who: "Owner console password; manages SMS gateway and user/partner/admin login mode", status: "Live (separate sign-in)", icon: Smartphone },
   { name: "App downloads page", url: `${SITE}/apps`, who: "Everyone", status: "Live", icon: Download },
   { name: "API backend", url: "https://api.ggnhome.com", who: "All apps and the website", status: "Live", icon: Server },
   { name: "Partner Hub (standalone site)", url: "Host not in repo", who: "Partners", status: "Confirm", icon: Building2 },
@@ -75,7 +75,7 @@ const LIVE = [
   "Post property (owner and partner)",
   "Partner Hub: dashboard, properties, leads, enquiries, profile (OTP login)",
   "Admin: inventory, users, enquiries, payments, rewards, property manager, settings, feature toggles, app downloads, partner access, callback requests",
-  "SMS gateway console and OTP-display mode",
+  "SMS Console: SMS gateway, logs/tests, and a direct-login toggle for user/partner/admin (ON skips SMS; OFF restores SMS OTP)",
   "App downloads page",
 ];
 
