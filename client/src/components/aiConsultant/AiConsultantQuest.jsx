@@ -709,6 +709,7 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
             achievement={achievement}
             shortlist={shortlist}
             onShowChat={() => setQuestView(false)}
+            req={convState?.req}
           />
         ) : (
         <>

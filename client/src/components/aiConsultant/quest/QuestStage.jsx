@@ -1,11 +1,15 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Check, Keyboard, MessagesSquare, SendHorizontal } from "lucide-react";
 import QuestBot from "./QuestBot";
 import QuestScene from "./QuestScene";
 import AreaPicker from "./AreaPicker";
+import TowerPicker from "./TowerPicker";
 import flow from "../../../data/questFlow.json";
 import { cloudinaryUrl } from "../../../utils/cloudinaryImage";
 
+// the 3D map world (MapLibre) is only downloaded once someone reaches it
+const QuestWorld = lazy(() => import("./world/QuestWorld"));
+const WORLD_SLOTS = ["location", "budget", "bhk", "priorities"];
 export const QUEST_SLOTS = flow.missions.map((m) => m.slot);
 const word = (value, lang) => (value && typeof value === "object" ? value[lang] || value.en : value);
 const SPARK_COLOURS = ["#ffb703", "#fb8500", "#00a79d", "#2ec4b6", "#ff5d8f", "#8338ec", "#3a86ff", "#06d6a0"];
@@ -141,6 +145,7 @@ export default function QuestStage({
   achievement,
   shortlist,
   onShowChat,
+  req,
 }) {
   const total = missions.length;
   const doneCount = missions.filter((m) => m.done).length;
@@ -150,6 +155,8 @@ export default function QuestStage({
   const [picked, setPicked] = useState([]);
   const [chosen, setChosen] = useState(null); // the card just tapped, while the answer is sent
   const [reaction, setReaction] = useState("");
+  const [worldFailed, setWorldFailed] = useState(false);
+  const onWorldFail = useCallback(() => setWorldFailed(true), []);
   useEffect(() => {
     setPicked([]);
     setChosen(null);
@@ -171,7 +178,9 @@ export default function QuestStage({
     onAnswer(value, label);
   };
 
-  const cards = !mission
+  const cards = mission?.slot === "bhk"
+    ? []
+    : !mission
     ? (serverChips?.list || []).map((c) => ({ value: c.value, label: c.label }))
     : Array.isArray(mission.options)
       ? mission.options.map((o) => ({ value: o.value, icon: o.icon, label: word(o.label, lang), sub: word(o.sub, lang) }))
@@ -269,26 +278,179 @@ export default function QuestStage({
   }
 
   /* ---------------------------------------------------------- question */
+  const header = (
+    <header className="qhead">
+      <button type="button" className="qicon" onClick={() => previous && onBack(previous.slot)} disabled={!previous || busy} aria-label="Back to the previous question">
+        <ArrowLeft size={20} />
+      </button>
+      <ol className="qprogress" aria-label={`${doneCount} of ${total} answered`}>
+        {missions.map((m) => (
+          <li key={m.slot} className={m.done ? "done" : m.slot === slot ? "now" : ""}>
+            <span />
+          </li>
+        ))}
+      </ol>
+      <span className="qstep">
+        {step}/{total}
+      </span>
+    </header>
+  );
+
+  const matchLine = (
+    <span>
+      {shortlist.state === "loading" && !matchCount ? (
+        "Counting homes…"
+      ) : matchCount ? (
+        <>
+          <strong>
+            <CountUp value={matchCount} />
+          </strong>{" "}
+          {matchCount === 1 ? "home matches" : "homes match"} so far
+        </>
+      ) : (
+        "Your matches appear here as you answer"
+      )}
+    </span>
+  );
+
+  const bubble = (
+    <div className="qbubble" aria-live="polite">
+      {reaction ? (
+        <p className="qline qreact">{reaction}</p>
+      ) : busy ? (
+        <p className="qline qdots">
+          <span />
+          <span />
+          <span />
+        </p>
+      ) : (
+        <TypedLine text={question || word(mission?.ask, lang) || ""} />
+      )}
+    </div>
+  );
+
+  const cardGrid = cards.length ? (
+    <div className={`qcards${cards.some((c) => c.sub) ? "" : " compact"}${cards.length === 2 ? " two" : ""}`} role="group" aria-label={multi ? "Pick one or more" : "Pick one"}>
+      {cards.map((c, i) => {
+        const on = multi ? picked.includes(c.value) : chosen === c.value;
+        return (
+          <button
+            key={`${c.value}-${c.label}`}
+            type="button"
+            className={`qcard${on ? " on" : ""}`}
+            style={{ animationDelay: `${i * 45}ms` }}
+            aria-pressed={multi ? on : undefined}
+            disabled={busy}
+            onClick={() => (multi ? setPicked((p) => (p.includes(c.value) ? p.filter((v) => v !== c.value) : [...p, c.value])) : answer(c.value, c.label))}
+          >
+            {on ? (
+              <span className="qcard-check" aria-hidden="true">
+                <Check size={14} strokeWidth={3} />
+              </span>
+            ) : null}
+            {c.icon ? <span className="qcard-icon">{c.icon}</span> : null}
+            <span className="qcard-title">{c.label}</span>
+            {c.sub ? <span className="qcard-sub">{c.sub}</span> : null}
+          </button>
+        );
+      })}
+    </div>
+  ) : null;
+
+  const typeForm = typing ? (
+    <form
+      className="qtype"
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSend();
+      }}
+    >
+      <input autoFocus value={input} onChange={(e) => onInput(e.target.value)} placeholder={placeholder} aria-label="Type your answer" maxLength={600} enterKeyHint="send" />
+      <button type="submit" disabled={!input.trim() || busy} aria-label="Send">
+        <SendHorizontal size={18} />
+      </button>
+    </form>
+  ) : null;
+
+  const links = (
+    <div className="qlinks">
+      {!typing ? (
+        <button type="button" onClick={() => setTyping(true)}>
+          <Keyboard size={15} /> Type instead
+        </button>
+      ) : null}
+      {canSkip && !busy ? (
+        <button type="button" onClick={() => answer(flow.skip.value, word(flow.skip.label, lang))}>
+          {word(flow.skip.label, lang)}
+        </button>
+      ) : null}
+      <button type="button" onClick={onShowChat}>
+        <MessagesSquare size={15} /> Chat
+      </button>
+    </div>
+  );
+
+  const toast = achievement ? (
+    <div className="qtoast" key={achievement.id} role="status">
+      <span>{achievement.icon}</span>
+      <strong>{word(achievement.text, lang)}</strong>
+    </div>
+  ) : null;
+
+  /* ------------------------------------------- the 3D map world (after rent/buy) */
+  const modeDone = missions.find((m) => m.slot === "mode")?.done;
+  if (modeDone && !worldFailed) {
+    const inWorldSlot = WORLD_SLOTS.includes(slot);
+    return (
+      <section className="qst qst-world" aria-label={`Question ${step} of ${total}`}>
+        <Suspense
+          fallback={
+            <div className="qw-loading">
+              <span className="qw-globe">🗺️</span>
+              Loading the map of Gurgaon…
+            </div>
+          }
+        >
+          <QuestWorld slot={slot} mode={mode} lang={lang} req={req} busy={busy} onAnswer={answer} onFail={onWorldFail} />
+        </Suspense>
+        <Sparkles burst={celebrate} />
+
+        <div className="qw-top">
+          {header}
+          <div className="qw-ask" key={slot || "free"}>
+            <div className="qask-bot">
+              <QuestBot mood={busy ? "think" : reaction ? "happy" : "idle"} size={52} />
+            </div>
+            {bubble}
+          </div>
+          <div className="qw-meta">
+            <span className="qw-count">🏠 {matchLine}</span>
+            {links}
+          </div>
+          {typeForm}
+        </div>
+
+        {!inWorldSlot && !busy && (cardGrid || multi) ? (
+          <div className="qw-panel qw-sheet" key={slot || "free"}>
+            {cardGrid}
+            {multi ? (
+              <button type="button" className="qcta wide" onClick={finishMulti}>
+                {picked.length ? `Continue with ${picked.length} →` : word(mission?.done?.label, lang) || "Continue →"}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+        {toast}
+      </section>
+    );
+  }
+
   return (
     <section className="qst" aria-label={`Question ${step} of ${total}`}>
       <QuestScene />
       <Sparkles burst={celebrate} />
 
-      <header className="qhead">
-        <button type="button" className="qicon" onClick={() => previous && onBack(previous.slot)} disabled={!previous || busy} aria-label="Back to the previous question">
-          <ArrowLeft size={20} />
-        </button>
-        <ol className="qprogress" aria-label={`${doneCount} of ${total} answered`}>
-          {missions.map((m) => (
-            <li key={m.slot} className={m.done ? "done" : m.slot === slot ? "now" : ""}>
-              <span />
-            </li>
-          ))}
-        </ol>
-        <span className="qstep">
-          {step}/{total}
-        </span>
-      </header>
+      {header}
 
       <div className="qmatch" aria-live="polite">
         {thumbs.length ? (
@@ -300,20 +462,7 @@ export default function QuestStage({
         ) : (
           <span className="qmatch-icon" aria-hidden="true">🏠</span>
         )}
-        <span>
-          {shortlist.state === "loading" && !matchCount ? (
-            "Counting homes…"
-          ) : matchCount ? (
-            <>
-              <strong>
-                <CountUp value={matchCount} />
-              </strong>{" "}
-              {matchCount === 1 ? "home matches" : "homes match"} so far
-            </>
-          ) : (
-            "Your matches appear here as you answer"
-          )}
-        </span>
+        {matchLine}
       </div>
 
       <div className="qbody" key={slot || "free"}>
@@ -321,51 +470,14 @@ export default function QuestStage({
           <div className="qask-bot">
             <QuestBot mood={busy ? "think" : reaction ? "happy" : "idle"} size={84} />
           </div>
-          <div className="qbubble" aria-live="polite">
-            {reaction ? (
-              <p className="qline qreact">{reaction}</p>
-            ) : busy ? (
-              <p className="qline qdots">
-                <span />
-                <span />
-                <span />
-              </p>
-            ) : (
-              <TypedLine text={question || word(mission?.ask, lang) || ""} />
-            )}
-          </div>
+          {bubble}
         </div>
 
         {!busy && mission?.slot === "location" ? <AreaPicker mission={mission} mode={mode} lang={lang} onPick={answer} disabled={busy} /> : null}
+        {!busy && mission?.slot === "bhk" ? <TowerPicker mission={mission} lang={lang} onPick={answer} /> : null}
         {!busy && mission?.slot === "budget" ? <BudgetSlider mission={mission} mode={mode} lang={lang} onPick={answer} /> : null}
 
-        {cards.length ? (
-          <div className={`qcards${cards.some((c) => c.sub) ? "" : " compact"}${cards.length === 2 ? " two" : ""}`} role="group" aria-label={multi ? "Pick one or more" : "Pick one"}>
-            {cards.map((c, i) => {
-              const on = multi ? picked.includes(c.value) : chosen === c.value;
-              return (
-                <button
-                  key={`${c.value}-${c.label}`}
-                  type="button"
-                  className={`qcard${on ? " on" : ""}`}
-                  style={{ animationDelay: `${i * 45}ms` }}
-                  aria-pressed={multi ? on : undefined}
-                  disabled={busy}
-                  onClick={() => (multi ? setPicked((p) => (p.includes(c.value) ? p.filter((v) => v !== c.value) : [...p, c.value])) : answer(c.value, c.label))}
-                >
-                  {on ? (
-                    <span className="qcard-check" aria-hidden="true">
-                      <Check size={14} strokeWidth={3} />
-                    </span>
-                  ) : null}
-                  {c.icon ? <span className="qcard-icon">{c.icon}</span> : null}
-                  <span className="qcard-title">{c.label}</span>
-                  {c.sub ? <span className="qcard-sub">{c.sub}</span> : null}
-                </button>
-              );
-            })}
-          </div>
-        ) : null}
+        {cardGrid}
       </div>
 
       <footer className="qfoot">
@@ -374,43 +486,11 @@ export default function QuestStage({
             {picked.length ? `Continue with ${picked.length} →` : word(mission?.done?.label, lang) || "Continue →"}
           </button>
         ) : null}
-        {typing ? (
-          <form
-            className="qtype"
-            onSubmit={(e) => {
-              e.preventDefault();
-              onSend();
-            }}
-          >
-            <input autoFocus value={input} onChange={(e) => onInput(e.target.value)} placeholder={placeholder} aria-label="Type your answer" maxLength={600} enterKeyHint="send" />
-            <button type="submit" disabled={!input.trim() || busy} aria-label="Send">
-              <SendHorizontal size={18} />
-            </button>
-          </form>
-        ) : null}
-        <div className="qlinks">
-          {!typing ? (
-            <button type="button" onClick={() => setTyping(true)}>
-              <Keyboard size={15} /> Type instead
-            </button>
-          ) : null}
-          {canSkip && !busy ? (
-            <button type="button" onClick={() => answer(flow.skip.value, word(flow.skip.label, lang))}>
-              {word(flow.skip.label, lang)}
-            </button>
-          ) : null}
-          <button type="button" onClick={onShowChat}>
-            <MessagesSquare size={15} /> Chat
-          </button>
-        </div>
+        {typeForm}
+        {links}
       </footer>
 
-      {achievement ? (
-        <div className="qtoast" key={achievement.id} role="status">
-          <span>{achievement.icon}</span>
-          <strong>{word(achievement.text, lang)}</strong>
-        </div>
-      ) : null}
+      {toast}
     </section>
   );
 }

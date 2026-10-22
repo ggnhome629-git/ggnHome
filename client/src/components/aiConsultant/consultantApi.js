@@ -55,7 +55,7 @@ async function get(path, { timeoutMs = 10000 } = {}) {
   try {
     const res = await fetch(`${BASE}${path}`, { credentials: "omit", signal: controller.signal });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) { const err = new Error(data.message || "Voice queue is unavailable."); err.status = res.status; err.code = data.code; throw err; }
+    if (!res.ok) { const err = new Error(data.message || "This is unavailable right now."); err.status = res.status; err.code = data.code; throw err; }
     return data;
   } finally { clearTimeout(timer); }
 }
@@ -76,6 +76,9 @@ export const consultantApi = {
     if (!res.ok) throw new Error(data.message || "Couldn't find nearby areas right now.");
     return data;
   },
+  mapConfig: () => get("/api/ai-consultant/map/config"),
+  lane: (mode, q) => get(`/api/ai-consultant/map/lane?mode=${mode === "sale" ? "sale" : "rent"}&q=${encodeURIComponent(q)}`, { timeoutMs: 15000 }),
+  areaAmenities: (lat, lng) => get(`/api/ai-consultant/map/amenities?lat=${lat.toFixed(4)}&lng=${lng.toFixed(4)}`, { timeoutMs: 12000 }),
   metric: (name) => post("/api/ai-consultant/metric", { name }).catch(() => {}),
 };
 

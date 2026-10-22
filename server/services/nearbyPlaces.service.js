@@ -111,4 +111,72 @@ async function findNearbyParameters({ address, sector, latitude, longitude }) {
   return result;
 }
 
-module.exports = { findNearbyParameters, haversineMeters, providerConfig };
+/**
+ * Every useful place around a point, grouped by the property parameters
+ * (metro, hospital, school, …): up to `perCategory` per group, nearest first.
+ * Used by the quest's map to draw amenities around the sectors a visitor picked.
+ */
+async function listNearbyPlaces({ latitude, longitude, radius = 2500, perCategory = 6 }) {
+  const provider = providerConfig();
+  if (!provider) {
+    const err = new Error("Nearby lookup is not configured.");
+    err.status = 503;
+    throw err;
+  }
+  const lat = Number(latitude);
+  const lon = Number(longitude);
+  const cacheKey = `list:${lat.toFixed(3)},${lon.toFixed(3)}:${radius}`;
+  const cached = cacheGet(cacheKey);
+  if (cached) return cached;
+
+  const nearby = async (tag, r, retried = false) => {
+    try {
+      const { data } = await axios.get(`${provider.base}/nearby.php`, { params: { key: provider.key, lat, lon, tag, radius: r, limit: 50, format: "json" }, timeout: 8000 });
+      return (Array.isArray(data) ? data : []).filter((p) => p && p.lat && p.lon);
+    } catch (err) {
+      if (err.response?.status === 404) return []; // "No results found"
+      if (err.response?.status === 429 && !retried) {
+        await new Promise((res) => setTimeout(res, 1200));
+        return nearby(tag, r, true);
+      }
+      throw err;
+    }
+  };
+  // The general search fills up with shops and clinics within 50 results, so
+  // stations get their own wider search (Gurgaon's metro stops are often named
+  // just "Sector 55–56", hence no name test for them).
+  // Parks get one too: a greengrocer's "green" otherwise passes for a park.
+  // One after another, to stay inside LocationIQ's requests-per-second limit.
+  const pause = () => new Promise((r) => setTimeout(r, 350));
+  const general = await nearby("amenity,shop,healthcare,education", radius);
+  await pause();
+  const stations = await nearby("railway:station,railway:halt", Math.max(radius, 5000));
+  await pause();
+  const parks = await nearby("leisure:park,leisure:garden,leisure:playground", radius);
+  const pool = { metro: stations, park: parks };
+  const seen = new Set();
+  const groups = NEARBY_PARAMETERS.map((param) => {
+    const items = (pool[param.key] || general)
+      .filter((p) => pool[param.key] || param.query.test(`${p.name || ""} ${p.type || ""} ${p.class || ""}`))
+      .map((p) => ({
+        name: String(p.name || param.short || param.label).slice(0, 120),
+        latitude: Number(p.lat),
+        longitude: Number(p.lon),
+        distanceMeters: Math.round(haversineMeters(lat, lon, Number(p.lat), Number(p.lon))),
+      }))
+      .filter((p) => {
+        const key = `${p.latitude.toFixed(5)},${p.longitude.toFixed(5)}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .sort((a, b) => a.distanceMeters - b.distanceMeters)
+      .slice(0, perCategory);
+    return { category: param.key, label: param.short || param.label, items };
+  });
+  const result = { latitude: lat, longitude: lon, radius, groups, distanceType: "straight_line" };
+  cacheSet(cacheKey, result);
+  return result;
+}
+
+module.exports = { findNearbyParameters, listNearbyPlaces, haversineMeters, providerConfig };

@@ -24,7 +24,8 @@ function submittedReply(lang, leadRef, duplicate) {
     chips: localChips(bank.responses.refineChips.concat(bank.responses.afterResultsChips.filter((c) => c.value === "start over")), l),
   };
 }
-const { findNearbyParameters } = require("../services/nearbyPlaces.service");
+const { findNearbyParameters, listNearbyPlaces } = require("../services/nearbyPlaces.service");
+const { parseMessage } = require("../services/aiConsultant/parser");
 
 const MAX_PARTNERS = AiConsultantLead.MAX_PARTNERS;
 const PARTNER_STATUSES = ["contacted", "viewing_scheduled", "converted", "lost"];
@@ -237,6 +238,67 @@ exports.nearbyAreas = async (req, res) => {
   } catch (err) {
     console.error("aiConsultant.nearbyAreas failed:", err.message);
     return bad(res, 500, "Couldn't find nearby areas right now.");
+  }
+};
+
+/* ----------------------------------------------- the quest's 3D map world */
+
+/**
+ * Which map style the quest's 3D map loads. LocationIQ's vector tiles need a
+ * browser-side key, so only a separate public key (restricted to our domains in
+ * the LocationIQ dashboard) is ever sent; without one, OpenFreeMap's keyless
+ * tiles are used. The server-side LocationIQ key never leaves the server.
+ */
+exports.mapConfig = (req, res) => {
+  const publicKey = (process.env.LOCATIONIQ_PUBLIC_KEY || "").trim();
+  res.set("Cache-Control", "public, max-age=3600");
+  res.json({
+    success: true,
+    provider: publicKey ? "locationiq" : "openfreemap",
+    style: publicKey ? `https://tiles.locationiq.com/v3/streets/vector.json?key=${encodeURIComponent(publicKey)}` : "https://tiles.openfreemap.org/styles/liberty",
+  });
+};
+
+/**
+ * Homes for the "lane" scene: live listings in the picked areas with the picked
+ * size, cheapest first, with the price spread so the visitor can choose a
+ * budget by pointing at a house. `q` is the same text the quest sends
+ * ("Sector 57 and Sector 49 3 BHK"), parsed by the consultant's parser.
+ */
+exports.lane = async (req, res) => {
+  const mode = req.query?.mode === "sale" ? "sale" : "rent";
+  const q = String(req.query?.q || "").slice(0, 300);
+  res.set("Cache-Control", "no-store");
+  try {
+    const f = parseMessage(q, {});
+    const r = { mode, sectors: f.sectors || [], localities: f.localities || [], bhk: f.bhk || [], bhkAny: !f.bhk?.length };
+    if (!r.sectors.length && !r.localities.length) r.anywhere = true;
+    const { results, total } = await exports._matcher().search(r, { lang: "en", offset: 0, pageSize: 24 });
+    const homes = results
+      .filter((c) => c.price > 0)
+      .map((c) => ({ id: c.id, url: c.url, title: c.title, sector: c.sector, price: c.price, priceLabel: c.priceLabel, bhkLabel: c.bhkLabel, areaSqft: c.areaSqft, furnishing: c.furnishing, image: c.image }))
+      .sort((a, b) => a.price - b.price);
+    const prices = homes.map((h) => h.price);
+    const stats = prices.length ? { min: prices[0], median: prices[Math.floor(prices.length / 2)], max: prices[prices.length - 1] } : null;
+    return res.json({ success: true, mode, total, homes, stats });
+  } catch (err) {
+    console.error("aiConsultant.lane failed:", err.message);
+    return bad(res, 500, "Couldn't load homes for this lane right now.");
+  }
+};
+
+/** Amenities around one picked area, grouped like the "what matters nearby" question. */
+exports.areaAmenities = async (req, res) => {
+  const lat = Number(req.query?.lat);
+  const lng = Number(req.query?.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || kmBetween(lat, lng, 28.4595, 77.0266) > 60) return bad(res, 400, "A location in Gurgaon is needed.");
+  try {
+    const data = await listNearbyPlaces({ latitude: lat, longitude: lng, radius: 2500 });
+    res.set("Cache-Control", "public, max-age=86400");
+    return res.json({ success: true, ...data });
+  } catch (err) {
+    console.error("aiConsultant.areaAmenities failed:", err.message);
+    return bad(res, err.status === 503 ? 503 : 502, "Nearby places are unavailable right now.");
   }
 };
 
