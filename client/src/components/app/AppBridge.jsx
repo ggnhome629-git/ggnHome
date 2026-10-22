@@ -176,6 +176,9 @@ export default function AppBridge() {
 
   useEffect(() => {
     if (!inApp) return undefined;
+    // Registering for push in an APK built without Firebase (google-services.json) crashes the app
+    // natively, so the build adds "GgnHomePush" to the user agent only when Firebase is configured.
+    if (!/GgnHomePush/i.test(navigator.userAgent || "")) return undefined;
     const Push = nativePlugin("PushNotifications");
     if (!Push) return undefined;
     const handles = [];

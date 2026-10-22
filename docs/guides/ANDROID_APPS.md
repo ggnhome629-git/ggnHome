@@ -46,3 +46,10 @@ Without the secrets the workflow still works: it signs with a debug key that it 
 1. Merge to `main`. The workflow builds and replaces the four files in the `latest-apks` release, plus `SHA256SUMS.txt`.
 2. Open https://www.ggnhome.com/apps and download one app to check.
 3. After a website deploy, use Admin → Clear all caches only if a deploy cache clear was skipped (the API clears the caches by itself for every new build).
+
+## Push notifications (optional)
+
+The apps only ask for notification permission and register for push when the build has Firebase. Add the GitHub secret
+`GOOGLE_SERVICES_JSON` (the `google-services.json` of a Firebase project that has `com.tanush.ggnhome`,
+`com.tanush.ggnhomepartner` and `com.tanush.ggnhomeadmin`). Without it the apps work normally, with no push.
+Registering for push in a build without Firebase closes the app, so never skip this gate.

@@ -91,6 +91,21 @@ jobs:
           npm install --no-audit --no-fund
           mkdir -p www
 
+      # Push notifications need Firebase. Add the secret GOOGLE_SERVICES_JSON (the google-services.json of a
+      # Firebase project that has all three app ids). Without it the apps run fine but never ask for or
+      # register for push, because registering without Firebase crashes the app.
+      - name: Firebase config for push notifications (optional)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            echo "$GOOGLE_SERVICES_JSON" > mobile/android/app/google-services.json
+            sed -i 's#GgnHomeApp/1.0.0#GgnHomeApp/1.0.0 GgnHomePush#' mobile/capacitor.config.json
+            echo "Push notifications are ON in the apps."
+          else
+            echo "::warning title=Push notifications off::GOOGLE_SERVICES_JSON secret is missing, so the apps do not ask for or use push notifications."
+          fi
+
       - name: Make the Partner and Admin wrappers
         run: |
           rm -rf partner-build admin-build
