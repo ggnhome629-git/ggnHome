@@ -288,8 +288,8 @@ function GgnhomeTab({ data, reload, notify }) {
   const s = data.ggnhome.settings;
   const [form, setForm] = useState(null);
   useEffect(() => {
-    setForm({ showOtpOnAndroid: !!s.showOtpOnAndroid, mode: s.mode, dailyLimit: s.dailyLimit ?? s.effective.dailyLimit, hourlyLimit: s.hourlyLimit ?? s.effective.hourlyLimit, gapMinSec: s.gapMinSec ?? s.effective.gapMinSec, gapMaxSec: s.gapMaxSec ?? s.effective.gapMaxSec });
-  }, [s.showOtpOnAndroid, s.mode, s.dailyLimit, s.hourlyLimit, s.gapMinSec, s.gapMaxSec, s.effective]);
+    setForm({ showOtpOnAndroid: !!s.showOtpOnAndroid, directOtpEnabled: s.directOtpEnabled !== false, mode: s.mode, dailyLimit: s.dailyLimit ?? s.effective.dailyLimit, hourlyLimit: s.hourlyLimit ?? s.effective.hourlyLimit, gapMinSec: s.gapMinSec ?? s.effective.gapMinSec, gapMaxSec: s.gapMaxSec ?? s.effective.gapMaxSec });
+  }, [s.showOtpOnAndroid, s.directOtpEnabled, s.mode, s.dailyLimit, s.hourlyLimit, s.gapMinSec, s.gapMaxSec, s.effective]);
   if (!form) return null;
   const save = async () => {
     try {
@@ -303,7 +303,7 @@ function GgnhomeTab({ data, reload, notify }) {
   const eff = s.effective;
   return (
     <Stack spacing={2}>
-      <Typography color="text.secondary">Choose how GGN Home login codes are delivered. SMS mode keeps the existing SMS gateway and SIM sending. App mode shows OTPs in the Android app instead of sending SMS.</Typography>
+      <Typography color="text.secondary">Choose how GGN Home login codes are delivered. SMS mode keeps the existing SMS gateway and SIM sending. App mode shows OTPs in the Android app instead of sending SMS. Direct testing is available only for phone numbers listed in the server environment variable DIRECT_OTP_TEST_NUMBERS.</Typography>
       <Paper sx={{ p: 2.5 }}>
         <Stack spacing={2}>
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
@@ -312,7 +312,14 @@ function GgnhomeTab({ data, reload, notify }) {
               control={<Switch checked={!!form.showOtpOnAndroid} onChange={(e) => setForm({ ...form, showOtpOnAndroid: e.target.checked })} />}
               label={form.showOtpOnAndroid ? "Show OTP in app (no SMS)" : "Send OTP as SMS"}
             />
+            <FormControlLabel
+              control={<Switch checked={form.directOtpEnabled !== false} onChange={(e) => setForm({ ...form, directOtpEnabled: e.target.checked })} />}
+              label={form.directOtpEnabled !== false ? "Direct OTP testing ON" : "Direct OTP testing OFF"}
+            />
           </Stack>
+          <Typography variant="body2" color="text.secondary">
+            When enabled, allowlisted test numbers auto-fill the code and sign in without SMS. All other numbers keep the normal SMS flow; do not use direct testing for public users.
+          </Typography>
           <Stack direction="row" spacing={2} alignItems="center">
             <Typography fontWeight={600}>Limits</Typography>
             <ModeSwitch mode={form.mode} setMode={(mode) => setForm({ ...form, mode })} />
