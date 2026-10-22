@@ -38,6 +38,7 @@ import { useAuth } from "../../../Context/AuthContext";
 import { ADMIN_NAV, ADMIN_NAV_ITEMS, adminCrumb } from "./adminNav";
 import { useHiddenTools, visibleNav } from "./hiddenTools";
 import { NotSetUpBanner } from "./adminUi";
+import AiAssistantSwitch from "./AiAssistantSwitch";
 
 // Shared "alive" button treatment for every admin screen: gradient primary
 // buttons that lift on hover, tinted outlined buttons, rounded colourful chips.
@@ -596,6 +597,8 @@ export default function AdminLayout() {
           <IconButton onClick={() => setPaletteOpen(true)} aria-label="Search" sx={{ display: { xs: "inline-flex", lg: "none" } }}>
             <Search size={18} color="#5B6B7B" />
           </IconButton>
+
+          <AiAssistantSwitch />
 
           <Tooltip title="Quick actions">
             <IconButton onClick={(e) => setQuickAnchor(e.currentTarget)} aria-label="Quick actions">

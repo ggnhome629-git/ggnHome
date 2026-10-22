@@ -23,7 +23,7 @@ import ListingRow from "../../components/manage/ListingRow";
 import ListingToolbar from "../../components/manage/ListingToolbar";
 import ShareDialog from "../../components/ui/ShareDialog";
 import PostPromos from "../../components/postForm/PostPromos";
-import { AI_CONSULTANT_ENABLED } from "../../components/aiConsultant/featureFlag";
+import { useAiConsultantEnabled } from "../../components/aiConsultant/featureFlag";
 
 const PER_PAGE = 10;
 
@@ -110,6 +110,7 @@ export default function ManageProperties({
   supportPath = "/support",
   loginPath = "/login",
 }) {
+  const aiEnabled = useAiConsultantEnabled();
   const navigate = useNavigate();
   const base = process.env.REACT_APP_Base_API;
   const authHeaders = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
@@ -259,7 +260,7 @@ export default function ManageProperties({
           <Button variant="outlined" size="small" startIcon={<LifeBuoy size={15} />} onClick={() => navigate(supportPath)} sx={{ borderRadius: 999, fontWeight: 700 }}>
             Support
           </Button>
-          {AI_CONSULTANT_ENABLED && (
+          {aiEnabled && (
           <Button variant="outlined" size="small" startIcon={<MessageCircle size={15} />} onClick={() => navigate("/chatbot")} sx={{ borderRadius: 999, fontWeight: 700 }}>
             Chat
           </Button>

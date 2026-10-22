@@ -9,7 +9,7 @@ import AppLaunchIntro from "./components/app/AppLaunchIntro";
 import CacheRefreshWatcher from "./components/app/CacheRefreshWatcher";
 import Dashboard from "./screens/Dashboard/dashboard";
 import { AiConsultantProvider } from "./components/aiConsultant/AiConsultantHost";
-import { AI_CONSULTANT_ENABLED } from "./components/aiConsultant/featureFlag";
+import { useAiConsultantEnabled } from "./components/aiConsultant/featureFlag";
 import LoginModal from "./screens/Login Page/login";
 const PropertyCheckout = lazy(() => import("./screens/Visit Schedule/Clientvist"));
 
@@ -142,6 +142,7 @@ const VoiceAssistantSaleResponsive = makeResponsiveComponent(VoiceAssistantSale,
 const PARTNER_SHELL_PATHS = /^\/partner\/(dashboard|properties|leads|enquiries|profile)(\/|$)/;
 
 function App() {
+  const aiEnabled = useAiConsultantEnabled();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -203,10 +204,10 @@ function App() {
       <Route path="/app/settings" element={<AppSettingsPage />} />
       <Route path="/app/notifications" element={<NotificationsPage />} />
       <Route element={<ProtectedRoutes />}>
-        {/* AI pages are off on this build (AI_CONSULTANT_ENABLED); send visitors home. */}
-        <Route path="/AIassistant" element={AI_CONSULTANT_ENABLED ? <PropertySearchInterface /> : <Navigate replace to="/" />} />
-        <Route path="/AIassistant-Rent" element={AI_CONSULTANT_ENABLED ? <VoiceAssistantRentResponsive /> : <Navigate replace to="/" />} />
-        <Route path="/AIassistant-Sale" element={AI_CONSULTANT_ENABLED ? <VoiceAssistantSaleResponsive /> : <Navigate replace to="/" />} />
+        {/* AI pages are off on this build (aiEnabled); send visitors home. */}
+        <Route path="/AIassistant" element={aiEnabled ? <PropertySearchInterface /> : <Navigate replace to="/" />} />
+        <Route path="/AIassistant-Rent" element={aiEnabled ? <VoiceAssistantRentResponsive /> : <Navigate replace to="/" />} />
+        <Route path="/AIassistant-Sale" element={aiEnabled ? <VoiceAssistantSaleResponsive /> : <Navigate replace to="/" />} />
         <Route path="/add-property" element={<PropertyListingForm />} />
         {/* COMMENTED: Flatmates route - controlled by feature toggles */}
         {/* <Route path="/flatmateslistingform" element={<CreateFlatmateListing />} /> */}
@@ -218,7 +219,7 @@ function App() {
         <Route path="/price-predictor" element={<PricePredictor />} />
         <Route path="/investrealestate" element={<InvestRealEstatePage />} />
         <Route path="/support" element={<CustomerSupportPage />} />
-        <Route path="/chatbot" element={AI_CONSULTANT_ENABLED ? <Chatbot /> : <Navigate replace to="/" />} />
+        <Route path="/chatbot" element={aiEnabled ? <Chatbot /> : <Navigate replace to="/" />} />
         <Route path="/seeAllproperties" element={<SeeAllProperties />} />
         <Route path="/savedproperties" element={<Savedproperties />} />
         <Route path="/property-analytics/:id" element={<PropertyAnalytics />} />

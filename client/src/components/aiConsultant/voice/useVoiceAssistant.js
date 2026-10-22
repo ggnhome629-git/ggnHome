@@ -30,6 +30,9 @@ const IDLE_WARN_MS = 120000;
 const IDLE_END_MS = 150000;
 const IDLE_MESSAGE = "Voice paused after a quiet while — tap the mic to talk again.";
 const Recognition = typeof window !== "undefined" ? window.SpeechRecognition || window.webkitSpeechRecognition : null;
+// Ask the microphone for echo cancellation, noise suppression and level control, mono, so room noise
+// and the assistant's own voice from the speaker are not picked up as speech.
+const MIC_CONSTRAINTS = { audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 } };
 const synthesisSupported = typeof window !== "undefined" && "speechSynthesis" in window;
 
 export const VOICE_ERRORS = {
@@ -296,7 +299,8 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
   const [loopTick, setLoopTick] = useState(0);
   useEffect(() => {
     if (activeEngine !== "browser" || !activeRef.current) return undefined;
-    const canListen = (phase === "listening" || phase === "hearing" || phase === "speaking") && !holdRef.current && !muted;
+    // Not while the assistant is speaking: the microphone would hear its own voice and answer itself.
+    const canListen = (phase === "listening" || phase === "hearing") && !holdRef.current && !muted;
     if (!canListen) {
       stopRecognition();
       return undefined;
@@ -329,13 +333,20 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
         const id = newId();
         const utterance = new SpeechSynthesisUtterance(clean);
         utterance.lang = cbRef.current.speechLang || "en-IN";
-        utterance.rate = 1.03;
+        utterance.rate = 0.96;
+        utterance.pitch = 1;
+        utterance.volume = 0.95;
         const voices = window.speechSynthesis.getVoices();
         const prefix = utterance.lang.split("-")[0];
+        // Best first: neural "Natural" voices (Edge, Windows), then Google/online voices, then any voice
+        // for the language. The plain offline voices are the harsh robotic ones.
+        const sameLang = voices.filter((v) => v.lang === utterance.lang || v.lang?.replace("_", "-") === utterance.lang);
+        const pool = sameLang.length ? sameLang : voices.filter((v) => v.lang?.startsWith(prefix));
         const voice =
-          voices.find((v) => v.lang === utterance.lang && /natural|neural|google|online/i.test(v.name)) ||
-          voices.find((v) => v.lang === utterance.lang) ||
-          voices.find((v) => v.lang?.startsWith(prefix));
+          pool.find((v) => /natural|neural/i.test(v.name)) ||
+          pool.find((v) => /google|online/i.test(v.name)) ||
+          pool.find((v) => !v.localService) ||
+          pool[0];
         if (voice) utterance.voice = voice;
         const timer = setTimeout(() => settle(id, { spoken: true, timeout: true }), Math.min(30000, 2500 + clean.length * 85));
         pendingRef.current.set(id, { resolve, timer });
@@ -548,7 +559,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
     const room = new Room({
       adaptiveStream: true,
       dynacast: true,
-      audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      audioCaptureDefaults: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, voiceIsolation: true, channelCount: 1 },
     });
     roomRef.current = room;
     // Called inside the tap that started voice, so browsers allow playback.
@@ -699,7 +710,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
     setError(null);
     setPhase("requesting");
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS);
       stream.getTracks().forEach((t) => t.stop());
       setPermission("granted");
       setPhase("off");
@@ -745,7 +756,7 @@ export function useVoiceAssistant({ speechLang = "en-IN", lang = "en", onTranscr
       // competes with a permission prompt.
       setPhase("requesting");
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia(MIC_CONSTRAINTS);
         stream.getTracks().forEach((t) => t.stop());
         setPermission("granted");
       } catch (micError) {

@@ -1,6 +1,6 @@
 import React, { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { consultantApi } from "./consultantApi";
-import { AI_CONSULTANT_ENABLED } from "./featureFlag";
+import { useAiConsultantEnabled } from "./featureFlag";
 
 const AiConsultant = lazy(() => import("./AiConsultant"));
 
@@ -16,9 +16,10 @@ const AiConsultantContext = createContext({
  * conversation and any voice session survive page navigation.
  */
 export function AiConsultantProvider({ children }) {
+  const aiEnabled = useAiConsultantEnabled();
   // Disabled build: render no consultant and no wake-up call. The default
   // context value (closed, open is a no-op) keeps every caller working.
-  if (!AI_CONSULTANT_ENABLED) return children;
+  if (!aiEnabled) return children;
   return <AiConsultantSession>{children}</AiConsultantSession>;
 }
 

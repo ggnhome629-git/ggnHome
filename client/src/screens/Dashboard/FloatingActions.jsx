@@ -14,7 +14,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { MessageCircle, SlidersHorizontal, X } from "lucide-react";
 import { motionDuration, motionEase } from "../../theme/motion";
 import { radii } from "../../theme/theme";
-import { AI_CONSULTANT_ENABLED } from "../../components/aiConsultant/featureFlag";
+import { useAiConsultantEnabled } from "../../components/aiConsultant/featureFlag";
 
 const Chatbot = React.lazy(() => import("./ChatBot"));
 
@@ -29,6 +29,7 @@ const NUDGE_REPEAT_MS = 120000;
  * personalisation below, with a single dismissible nudge.
  */
 export default function FloatingActions({ onOpenPreferences }) {
+  const aiEnabled = useAiConsultantEnabled();
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const [chatOpen, setChatOpen] = useState(false);
@@ -143,7 +144,7 @@ export default function FloatingActions({ onOpenPreferences }) {
           </IconButton>
         </Tooltip>
 
-        {AI_CONSULTANT_ENABLED && (
+        {aiEnabled && (
         <Tooltip title="Ask our assistant" placement="left">
           <IconButton
             component={motion.button}
@@ -167,7 +168,7 @@ export default function FloatingActions({ onOpenPreferences }) {
       </Stack>
 
       <Dialog
-        open={AI_CONSULTANT_ENABLED && chatOpen}
+        open={aiEnabled && chatOpen}
         onClose={() => setChatOpen(false)}
         fullScreen={fullScreen}
         maxWidth="xs"
