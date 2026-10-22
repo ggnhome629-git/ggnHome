@@ -208,7 +208,8 @@ async function requestOtpFor(req, res, directRoles) {
 
     // Direct login: no code is shown or sent. The account is signed in straight away.
     if (channel === "sms" && directRoles.includes(user.role) && (await isDirectLoginOn())) {
-      return finishLogin(req, res, user);
+      // The pages look for channel "direct" to know they are already signed in and skip the code step.
+      return finishLogin(req, res, user, { channel: "direct" });
     }
 
     // SMS channel
@@ -398,8 +399,8 @@ exports.setPassword = async (req, res) => {
 
 // Verify OTP
 // Signs the account in: sets the session cookies and returns the login payload.
-// Used by OTP login and by direct login (no code is entered).
-async function finishLogin(req, res, user) {
+// Used by OTP login and by direct login (no code is entered). `extra` is added to the payload.
+async function finishLogin(req, res, user, extra = {}) {
   user.isVerified = true;
   user.otpVerifiedAt = new Date();
   // clear one-time OTP fields (single use, all roles)
@@ -440,6 +441,7 @@ async function finishLogin(req, res, user) {
   }
 
   return res.json({
+    ...extra,
     message: "Login successful",
     accessToken,
     refreshToken,
