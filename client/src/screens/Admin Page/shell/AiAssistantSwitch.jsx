@@ -9,7 +9,7 @@ const API = process.env.REACT_APP_Base_API || "";
  * It reads and saves through the same admin feature-toggle API as the Feature Toggles page,
  * sending the other two switches back unchanged.
  */
-export default function AiAssistantSwitch() {
+export default function AiAssistantSwitch({ onDark = false }) {
   const [toggles, setToggles] = useState(null); // { flatmates, agentPortal, aiAssistant }
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState("");
@@ -60,10 +60,10 @@ export default function AiAssistantSwitch() {
   const on = toggles?.aiAssistant === true;
   return (
     <Tooltip title={problem || (on ? "AI assistant is ON for visitors" : "AI assistant is OFF for visitors")}>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, px: 1, py: 0.25, borderRadius: 999, border: "1px solid", borderColor: problem ? "error.main" : on ? "#00A79D" : "#E5E9EE", backgroundColor: on ? "rgba(0,167,157,0.08)" : "transparent" }}>
-        <Sparkles size={15} color={on ? "#00A79D" : "#9AA7B4"} />
-        <Typography variant="caption" sx={{ fontWeight: 700, color: on ? "#00796B" : "text.secondary", display: { xs: "none", sm: "inline" } }}>
-          AI assistant
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, px: 1, py: 0.25, borderRadius: 999, border: "1px solid", borderColor: problem ? "error.main" : onDark ? (on ? "#5EEAD4" : "rgba(255,255,255,.35)") : on ? "#00A79D" : "#E5E9EE", backgroundColor: onDark ? "rgba(255,255,255,.12)" : on ? "rgba(0,167,157,0.08)" : "transparent" }}>
+        <Sparkles size={15} color={onDark ? (on ? "#5EEAD4" : "#fff") : on ? "#00A79D" : "#9AA7B4"} />
+        <Typography variant="caption" sx={{ fontWeight: 700, color: onDark ? "#fff" : on ? "#00796B" : "text.secondary", display: onDark ? "inline" : { xs: "none", sm: "inline" } }}>
+          {onDark ? `AI assistant for visitors: ${on ? "ON" : "OFF"}` : "AI assistant"}
         </Typography>
         {busy ? <CircularProgress size={18} sx={{ mx: 1 }} /> : <Switch size="small" checked={on} onChange={change} disabled={!toggles} inputProps={{ "aria-label": "AI assistant on or off for visitors" }} />}
       </Box>
