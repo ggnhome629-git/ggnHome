@@ -203,8 +203,8 @@ exports.requestOtp = async (req, res) => {
       const directOtpEnabled = !setting || setting.directOtpEnabled !== false;
       const testNumbers = String(process.env.DIRECT_OTP_TEST_NUMBERS || "")
         .split(",")
-        .map((number) => number.replace(/\\D/g, "").slice(-10))
-        .filter((number) => /^\\d{10}$/.test(number));
+        .map((number) => number.replace(/\D/g, "").slice(-10))
+        .filter((number) => /^\d{10}$/.test(number));
       if (directOtpEnabled && testNumbers.includes(user.mobileNumber)) {
         return res.status(200).json({
           message: "Testing code ready",
