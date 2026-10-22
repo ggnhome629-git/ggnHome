@@ -195,20 +195,16 @@ exports.requestOtp = async (req, res) => {
       });
     }
 
-    // Direct OTP is a testing convenience only. The server must explicitly allowlist
-    // test numbers; never expose a live OTP to arbitrary public login requests.
+    // Direct login (SMS Console toggle, default off): the code is returned to the
+    // website to auto-fill and sign in, and no SMS is sent. Privileged roles always use SMS.
     if (channel === "sms") {
       const SmsSetting = require("../models/SmsSetting.model");
       const setting = await SmsSetting.findOne({ key: "ggnhome" }).lean();
-      const directOtpEnabled = !setting || setting.directOtpEnabled !== false;
-      const testNumbers = String(process.env.DIRECT_OTP_TEST_NUMBERS || "")
-        .split(",")
-        .map((number) => number.replace(/\D/g, "").slice(-10))
-        .filter((number) => /^\d{10}$/.test(number));
-      if (directOtpEnabled && ["renter", "owner"].includes(user.role) && testNumbers.includes(user.mobileNumber)) {
+      const directOtpEnabled = !!(setting && setting.directOtpEnabled);
+      if (directOtpEnabled && ["renter", "owner"].includes(user.role)) {
         return res.status(200).json({
-          message: "Testing code ready",
-          channel: "direct-test",
+          message: "Direct login ready",
+          channel: "direct",
           directOtp: otp,
           maskedMobile: maskMobile(user.mobileNumber),
           expiresInSeconds: Math.floor(OTP_TTL_MS / 1000),

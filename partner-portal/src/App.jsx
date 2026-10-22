@@ -49,13 +49,15 @@ function AuthScreen({ onLogin }) {
     setBusy(true);
     try {
       const data = await request("/login/request-otp", { method: "POST", body: JSON.stringify({ mobileNumber: normalized }) });
+      // Direct login is on: the code is returned instead of sent by SMS, so sign in with it straight away.
+      if (data.channel === "direct" && data.directOtp) return await verifyOtp(data.directOtp);
       setSent(true); setNotice(data.message || "OTP sent. It is valid for 5 minutes.");
     } catch (e) { setError(e.message); } finally { setBusy(false); }
   }
 
-  async function verifyOtp() {
+  async function verifyOtp(submitted) {
     setError(""); setNotice("");
-    const code = otp.trim().toUpperCase();
+    const code = String(typeof submitted === "string" ? submitted : otp).trim().toUpperCase();
     if (!/^[A-Z]{4}$/.test(code)) return setError("Enter the 4-letter OTP you received.");
     setBusy(true);
     try {
@@ -97,7 +99,7 @@ function AuthScreen({ onLogin }) {
           {!sent ? <button className="primary full" onClick={sendOtp} disabled={busy}>{busy ? "Sending code…" : "Send OTP"} <ArrowRight size={17} /></button> : <>
             <label>4-letter OTP</label>
             <input className="otp-input" value={otp} onChange={e => setOtp(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4))} placeholder="e.g. KQMX" maxLength={4} disabled={busy} />
-            <button className="primary full" onClick={verifyOtp} disabled={busy}>{busy ? "Verifying…" : "Verify OTP and sign in"} <ArrowRight size={17} /></button>
+            <button className="primary full" onClick={() => verifyOtp()} disabled={busy}>{busy ? "Verifying…" : "Verify OTP and sign in"} <ArrowRight size={17} /></button>
             <button className="text-button" onClick={() => { setSent(false); setOtp(""); setError(""); setNotice(""); }} disabled={busy}>Change mobile number</button>
           </>}
           <p className="fine-print">Need access? Ask a GgnHome administrator to register your mobile number. Self-registration is disabled.</p>
