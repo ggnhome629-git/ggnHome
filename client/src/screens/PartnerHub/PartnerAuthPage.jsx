@@ -142,7 +142,7 @@ export default function PartnerAuthPage() {
                   disabled={busy}
                   fullWidth
                   inputProps={{ maxLength: 4, autoComplete: "one-time-code", style: { textTransform: "uppercase", letterSpacing: 8, fontWeight: 800 } }}
-                  placeholder="e.g. KQMX"
+                  placeholder="e.g. ABCF"
                 />
                 <Button variant="contained" size="large" disabled={busy} onClick={() => verifyOtp()} sx={{ py: 1.4, bgcolor: "#0f766e", fontWeight: 800, textTransform: "none" }}>
                   {busy ? "Verifying…" : "Verify OTP and sign in"}

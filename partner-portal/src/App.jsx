@@ -103,7 +103,7 @@ function AuthScreen({ onLogin }) {
           <div className="input-with-prefix"><span>+91</span><input value={mobile} onChange={e => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="10-digit mobile number" inputMode="numeric" disabled={sent || busy} /></div>
           {!sent ? <button className="primary full" onClick={sendOtp} disabled={busy}>{busy ? "Sending code…" : "Send OTP"} <ArrowRight size={17} /></button> : <>
             <label>4-letter OTP</label>
-            <input className="otp-input" value={otp} onChange={e => setOtp(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4))} placeholder="e.g. KQMX" maxLength={4} disabled={busy} />
+            <input className="otp-input" value={otp} onChange={e => setOtp(e.target.value.toUpperCase().replace(/[^A-Z]/g, "").slice(0, 4))} placeholder="e.g. ABCF" maxLength={4} disabled={busy} />
             <button className="primary full" onClick={verifyOtp} disabled={busy}>{busy ? "Verifying…" : "Verify OTP and sign in"} <ArrowRight size={17} /></button>
             <button className="text-button" onClick={() => { setSent(false); setOtp(""); setError(""); setNotice(""); }} disabled={busy}>Change mobile number</button>
           </>}

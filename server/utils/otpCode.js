@@ -1,21 +1,24 @@
 const crypto = require("crypto");
 
-// Login codes are 4 random LETTERS (e.g. "KQMX"), not digits.
+// Login codes are 4 LETTERS in alphabetical order, e.g. "ABCF" or "CDET".
 //
-// Consonants only: a random 4-letter string can otherwise spell a real (or
-// rude) word, and I/O/Y are left out so nothing is confused with 1/0.
-// 20 letters ^ 4 = 160,000 codes. That is safe here because each code is valid
-// for 5 minutes and is cancelled after 5 wrong guesses.
-const ALPHABET = "BCDFGHJKLMNPQRSTVWXZ";
+// Four different letters, always sorted A to Z, are easy to read out and to remember ("a, b, c, f").
+// I, L and O are left out so nothing is confused with 1, 0 or each other.
+// 23 letters choose 4 = 8,855 codes. That is much fewer than random letters, so the safety comes from the
+// limits around the code: it is valid for 5 minutes, it is cancelled after 5 wrong guesses, and the number
+// of codes one person can ask for is rate limited.
+const ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ";
 const CODE_LENGTH = 4;
 
 function generateCode() {
-  let code = "";
-  for (let i = 0; i < CODE_LENGTH; i++) code += ALPHABET[crypto.randomInt(ALPHABET.length)];
-  return code;
+  // Pick CODE_LENGTH different letters, then put them in order.
+  const pool = ALPHABET.split("");
+  const picked = [];
+  for (let i = 0; i < CODE_LENGTH; i++) picked.push(pool.splice(crypto.randomInt(pool.length), 1)[0]);
+  return picked.sort().join("");
 }
 
-// People type "kqmx", " KQMX " or paste with spaces — all mean KQMX.
+// People type "abcf", " ABCF " or paste with spaces — all mean ABCF.
 function normalizeCode(input) {
   return String(input == null ? "" : input).replace(/\s+/g, "").toUpperCase();
 }

@@ -73,7 +73,7 @@ const SUPPORT_MOBILE = "9654131789";
 const SUPPORT_EMAIL = "support@ggnhome.com";
 
 // The SMS people receive:
-// "Hi, the code for ggnhome.com is KQMX. For help call 9654131789 or email support@ggnhome.com"
+// "Hi, the code for ggnhome.com is ABCF. For help call 9654131789 or email support@ggnhome.com"
 function otpSmsText(otp) {
   return `Hi, the code for ggnhome.com is ${otp}. For help call ${SUPPORT_MOBILE} or email ${SUPPORT_EMAIL}`;
 }

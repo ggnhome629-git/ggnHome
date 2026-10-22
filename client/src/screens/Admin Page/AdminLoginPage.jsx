@@ -140,7 +140,7 @@ export default function AdminLoginPage() {
                   disabled={busy}
                   fullWidth
                   inputProps={{ maxLength: 4, autoComplete: "one-time-code", style: { textTransform: "uppercase", letterSpacing: 8, fontWeight: 800 } }}
-                  placeholder="e.g. KQMX"
+                  placeholder="e.g. ABCF"
                 />
                 <Button variant="contained" size="large" disabled={busy} onClick={() => verifyOtp()} sx={{ py: 1.4, bgcolor: "#003366", fontWeight: 800, textTransform: "none", "&:hover": { bgcolor: "#002244" } }}>
                   {busy ? "Verifying…" : "Verify OTP and open admin"}
