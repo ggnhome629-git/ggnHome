@@ -85,7 +85,25 @@ export default function RealEstateDashboard() {
   // carousel's "nothing to explore" empty state.
   const [feedLoading, setFeedLoading] = useState(true);
 
-  const [userLocation, setUserLocation] = useState(null);
+  // The last known area is used straight away, so "properties near you" loads while the phone is
+  // still finding its position. A fresh position replaces it only when the area actually changed.
+  const [userLocation, setUserLocationState] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("ggn:lastLocation") || "null");
+      return saved && (saved.area || saved.city) ? saved : null;
+    } catch {
+      return null;
+    }
+  });
+  const setUserLocation = useCallback((next) => {
+    const same = (a, b) => ["area", "village", "city_district", "county", "state_district", "state"].every((k) => (a?.[k] || null) === (b?.[k] || null));
+    setUserLocationState((prev) => (prev && same(prev, next) ? prev : next));
+    try {
+      localStorage.setItem("ggn:lastLocation", JSON.stringify(next));
+    } catch {
+      /* storage can be blocked; the location still works for this visit */
+    }
+  }, []);
   const [propertiesInArea, setPropertiesInArea] = useState([]);
   const [areaPage, setAreaPage] = useState(1);
   const [areaLimit] = useState(10);

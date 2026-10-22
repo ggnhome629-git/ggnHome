@@ -7,6 +7,7 @@ const SaleProperty = require("../models/SaleProperty.model");
 const SearchHistory = require("../models/SearchHistory.model");
 const UserPreferencesARIA = require("../models/UserPreferencesARIA.model");
 const PropertyAnalysis = require("../models/PropertyAnalysis.model");
+const cache = require("../utils/cache");
 const { NEARBY_PARAMETERS } = require("../config/propertyParameters");
 const NEARBY_DEFAULT_METERS = Object.fromEntries(NEARBY_PARAMETERS.map((p) => [p.key, p.defaultMeters]));
 
@@ -652,14 +653,14 @@ exports.searchPropertiesonLocation = async (req, res) => {
 
     const userId = req.user?._id;
     // Add pagination parameters (global pagination applied after merging models)
-    const { limit: parsedLimit, skip } = getPagination(req);
+    const { limit: parsedLimit, skip, page } = getPagination(req);
 
     if (!queryFields || !Array.isArray(queryFields) || queryFields.length === 0) {
       return res.status(400).json({ message: "Search query is required" });
     }
 
-    // ----- Save user search history (no duplicates) -----
-    if (userId) {
+    // ----- Save user search history (no duplicates), once per search (first page) -----
+    if (userId && page === 1) {
       const currentQuery = queryFields.join(", ");
       const exists = await SearchHistory.findOne({ user: userId, query: currentQuery });
       if (!exists) {
@@ -669,6 +670,13 @@ exports.searchPropertiesonLocation = async (req, res) => {
 
     // ----- Build OR search conditions (dedupe & robust field coverage) -----
     const uniqueFields = [...new Set(queryFields.filter(Boolean))];
+
+    // The same area is opened by many people, so the answer is shared (Redis when attached, else memory).
+    // Key: the area words (order does not matter), page and page size. New listings show within 5 minutes.
+    const areaKey = `area:${uniqueFields.map((f) => String(f).trim().toLowerCase()).sort().join("|").slice(0, 300)}:${page}:${parsedLimit}`;
+    const cachedArea = await cache.get(areaKey);
+    if (cachedArea) return res.status(200).json(cachedArea);
+
     const orConditions = uniqueFields.flatMap((field) => {
       // field is user-supplied (req.body.queryFields) -- escape before building
       // a RegExp or a crafted pattern can hang MongoDB's regex engine (ReDoS).
@@ -731,6 +739,7 @@ exports.searchPropertiesonLocation = async (req, res) => {
     // console.log("🔍 Location-based returned page size:", pageSlice.length, "page:", Math.floor(skip / parsedLimit) + 1);
 
     // ----- Return results (array to keep API backward-compatible) -----
+    await cache.set(areaKey, pageSlice, 300);
     return res.status(200).json(pageSlice);
   } catch (error) {
     console.error("❌ Location-based search error:", error);
