@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { ArrowRight, ExternalLink, LocateFixed, Maximize, Minus, Plus, Search, X } from "lucide-react";
 import { consultantApi } from "../../consultantApi";
 import { cloudinaryUrl } from "../../../../utils/cloudinaryImage";
 import flow from "../../../../data/questFlow.json";
-import { TowerBuilding, FloorControls, sizeOption } from "../TowerPicker";
+import { HomePlan, BedroomStepper, sizeOption } from "../HomePlan";
 import {
   AMENITY_ICONS,
   FALLBACK_STYLE,
@@ -19,6 +18,8 @@ import {
   kmBetween,
   laneRoad,
   lanePlots,
+  pickStreet,
+  streetPlots,
   loadAreas,
   outlineCollection,
 } from "./worldData";
@@ -114,15 +115,15 @@ function addWorldLayers(map, areas) {
  *  - area (explore): every sector as a 3D block and pin; pick up to three and
  *    GgnHome's agent flies to each.
  *  - size + budget (lane): the camera drops onto a street in the sector; knock
- *    floors off a building for the BHK, then real homes from our listings line
- *    the lane with their rent / price — tap the one that fits your budget.
+ *    bedrooms in a floor plan for the BHK, then real homes from our listings line
+ *    a real street of the sector with their rent / price — tap the one that fits.
  *  - nearby (priorities): zoom back out with hospitals, schools, metro… around
  *    the picked areas; tap the ones that matter.
  * Other questions float over a slowly turning map. Calls `onFail` when WebGL or
  * the map can't load, so the classic pickers take over.
  */
-export default function QuestWorld({ slot, mode, lang, req, busy, onAnswer, onFail }) {
-  const worldMode = modeOf(slot);
+export default function QuestWorld({ slot, finale = false, mode, lang, req, busy, onAnswer, onFail }) {
+  const worldMode = finale ? "finale" : modeOf(slot);
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const agentRef = useRef(null);
@@ -133,7 +134,6 @@ export default function QuestWorld({ slot, mode, lang, req, busy, onAnswer, onFa
   const homeMarkers = useRef([]);
   const amenityMarkers = useRef([]);
   const youMarker = useRef(null);
-  const towerMarker = useRef(null);
   const handlers = useRef({});
   const modeRef = useRef(worldMode);
   modeRef.current = worldMode;
@@ -149,11 +149,11 @@ export default function QuestWorld({ slot, mode, lang, req, busy, onAnswer, onFa
   const [near, setNear] = useState({ state: "idle", values: new Set() });
   // lane
   const [laneIdx, setLaneIdx] = useState(0);
-  const [floors, setFloors] = useState(3);
+  const [bedrooms, setBedrooms] = useState(2);
+  const [street, setStreet] = useState({ state: "idle", data: null });
   const [size, setSize] = useState(null); // { value, label } once chosen
   const [lane, setLane] = useState({ state: "idle", homes: [], stats: null, key: "" });
   const [home, setHome] = useState(null);
-  const [towerEl, setTowerEl] = useState(null);
   // nearby
   const [places, setPlaces] = useState({ state: "idle", groups: {} });
   const [chosen, setChosen] = useState([]);
@@ -306,6 +306,27 @@ export default function QuestWorld({ slot, mode, lang, req, busy, onAnswer, onFa
     return { top: Math.max(0, top - squeeze), bottom: Math.max(0, bottom - squeeze), left: 0, right: 0 };
   }, []);
 
+  // frame areas in the gap between GgnBot's line and the panel — but never let
+  // the margins eat the view, and never zoom out past the neighbourhood
+  const frameAreas = useCallback(
+    (spots, pitch, bearing) => {
+      const map = mapRef.current;
+      if (!map) return;
+      const bounds = new maplibregl.LngLatBounds();
+      spots.forEach((s) => {
+        bounds.extend([s.lng - 0.022, s.lat - 0.02]);
+        bounds.extend([s.lng + 0.022, s.lat + 0.02]);
+      });
+      const pad = framePadding();
+      const h = map.getContainer().clientHeight;
+      const fit = Math.min(1, (h * 0.55) / Math.max(1, pad.top + pad.bottom));
+      const padding = { top: Math.round(pad.top * fit) + 20, bottom: Math.round(pad.bottom * fit) + 20, left: 40, right: 60 };
+      const cam = map.cameraForBounds(bounds, { padding: { top: 20, bottom: 20, left: 40, right: 60 }, maxZoom: 14.2 });
+      map.easeTo({ center: cam?.center || [spots[0].lng, spots[0].lat], zoom: clamp(cam?.zoom ?? 13.2, 12.3, 14.2), pitch, bearing, padding, duration: reducedMotion() ? 0 : 2600 });
+    },
+    [framePadding]
+  );
+
   const flyAgent = useCallback((to, cam, caption) => {
     const map = mapRef.current;
     const agent = agentRef.current;
@@ -322,7 +343,7 @@ export default function QuestWorld({ slot, mode, lang, req, busy, onAnswer, onFa
       setFlying(null);
     };
     if (reducedMotion() || dist < 0.03) {
-      map.easeTo({ center: [to.lng, to.lat], zoom: cam.zoom, pitch: cam.pitch, bearing: cam.bearing, padding, duration: reducedMotion() ? 0 : 900 });
+      map.easeTo({ center: [cam.center?.lng ?? to.lng, cam.center?.lat ?? to.lat], zoom: cam.zoom, pitch: cam.pitch, bearing: cam.bearing, padding, duration: reducedMotion() ? 0 : 900 });
       done();
       return new Promise((r) => setTimeout(r, reducedMotion() ? 0 : 900));
     }
@@ -356,7 +377,9 @@ export default function QuestWorld({ slot, mode, lang, req, busy, onAnswer, onFa
         const t = ease(p);
         const pos = at(t);
         const zoom = p < 0.5 ? lerp(z0, zMid, ease(p / 0.5)) : lerp(zMid, cam.zoom, ease((p - 0.5) / 0.5));
-        map.jumpTo({ center: [pos.lng, pos.lat], zoom, pitch: lerp(p0, cam.pitch ?? p0, t), bearing: lerp(b0, b1, t), padding });
+        // the camera may end up looking at a point other than the one the agent lands on
+        const lead = cam.center ? { lng: (cam.center.lng - to.lng) * t, lat: (cam.center.lat - to.lat) * t } : { lng: 0, lat: 0 };
+        map.jumpTo({ center: [pos.lng + lead.lng, pos.lat + lead.lat], zoom, pitch: lerp(p0, cam.pitch ?? p0, t), bearing: lerp(b0, b1, t), padding });
         agent.marker.setLngLat([pos.lng, pos.lat]);
         agentPos.current = pos;
         const ahead = at(Math.min(1, t + 0.02));
@@ -500,41 +523,53 @@ export default function QuestWorld({ slot, mode, lang, req, busy, onAnswer, onFa
   const laneArea = picks[laneIdx] || picks[0] || null;
   const laneCenter = laneArea ? { lng: laneArea.lng, lat: laneArea.lat } : { ...GURGAON };
 
-  // lane: drop onto the street of the current area
+  // lane: land in the area, find a real street there, then stand on it looking down the road
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !ready || worldMode !== "lane") return undefined;
     clearMarkers(amenityMarkers);
     youMarker.current?.remove();
-    const bearing = laneBearing(laneIdx);
     map.getSource("gg-lane")?.setData(EMPTY);
+    setStreet({ state: "finding", data: null });
     let alive = true;
-    flyAgent(laneCenter, { zoom: 16.9, pitch: 68, bearing, lift: 150 }, laneArea ? `Landing in ${laneArea.label}…` : "Landing in Gurgaon…").then(() => {
+    const settle = () =>
+      new Promise((resolve) => {
+        const t = setTimeout(resolve, 2500);
+        map.once("idle", () => {
+          clearTimeout(t);
+          resolve();
+        });
+      });
+    (async () => {
+      await flyAgent(laneCenter, { zoom: 16.6, pitch: 55, bearing: map.getBearing(), lift: 0 }, laneArea ? `Landing in ${laneArea.label}…` : "Landing in Gurgaon…");
       if (!alive) return;
-      map.getSource("gg-lane")?.setData(laneRoad(laneCenter, bearing));
-    });
+      await settle();
+      if (!alive) return;
+      const c = map.project([laneCenter.lng, laneCenter.lat]);
+      const box = [
+        [c.x - 220, c.y - 220],
+        [c.x + 220, c.y + 220],
+      ];
+      const found = pickStreet(map.queryRenderedFeatures(box), laneCenter);
+      if (!found) {
+        map.getSource("gg-lane")?.setData(laneRoad(laneCenter, laneBearing(laneIdx)));
+        map.easeTo({ center: [laneCenter.lng, laneCenter.lat], zoom: 16.9, pitch: 66, bearing: laneBearing(laneIdx), padding: framePadding(), duration: reducedMotion() ? 0 : 1400 });
+        setStreet({ state: "none", data: null });
+        return;
+      }
+      // you stand at the start of the street; the camera sits behind and looks down it
+      const start = found.at(0);
+      const ahead = found.at(Math.min(found.length * 0.5, 120));
+      agentPos.current = { lng: start.lng, lat: start.lat };
+      agentRef.current?.marker.setLngLat([start.lng, start.lat]);
+      map.easeTo({ center: [ahead.lng, ahead.lat], zoom: 17.5, pitch: 68, bearing: start.bearing, padding: framePadding(), duration: reducedMotion() ? 0 : 1700 });
+      setStreet({ state: "ready", data: found });
+    })();
     return () => {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [worldMode, ready, laneIdx, laneArea?.value]);
-
-  // lane: the building you knock floors off, standing on the street
-  useEffect(() => {
-    const map = mapRef.current;
-    const showTower = map && ready && worldMode === "lane" && !size && !flying;
-    if (!showTower) {
-      towerMarker.current?.remove();
-      towerMarker.current = null;
-      setTowerEl(null);
-      return;
-    }
-    if (towerMarker.current) return;
-    const node = el("div", "qw-tower");
-    towerMarker.current = new maplibregl.Marker({ element: node, anchor: "bottom" }).setLngLat([laneCenter.lng, laneCenter.lat]).addTo(map);
-    setTowerEl(node);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [worldMode, ready, size, flying, laneArea?.value]);
 
   // lane: fetch real homes once the size is set
   const laneKey = `${mode}|${picks.map((p) => p.value).join(" and ")}|${size?.value || ""}`;
@@ -563,12 +598,14 @@ export default function QuestWorld({ slot, mode, lang, req, busy, onAnswer, onFa
   useEffect(() => {
     const map = mapRef.current;
     clearMarkers(homeMarkers);
-    if (!map || !ready || worldMode !== "lane" || !size || flying || lane.state !== "ready") return;
-    const plots = lanePlots(laneCenter, laneBearing(laneIdx), laneHomes.length);
+    if (!map || !ready || worldMode !== "lane" || !size || flying || lane.state !== "ready" || !["ready", "none"].includes(street.state)) return;
+    const plots = street.data ? streetPlots(street.data, laneHomes.length) : lanePlots(laneCenter, laneBearing(laneIdx), laneHomes.length);
     laneHomes.forEach((h, i) => {
       const node = el("button", "qw-home");
       node.type = "button";
       node.style.setProperty("--d", `${i * 90}ms`);
+      // homes further down the street are smaller, so the lane has depth
+      node.style.setProperty("--s", String(street.data ? Math.max(0.62, 1 - plots[i].depth * 0.09) : 1));
       node.setAttribute("aria-label", `${h.bhkLabel || ""} ${h.priceLabel} in ${h.sector}`.trim());
       node.appendChild(el("span", "qw-home-tag", h.priceLabel.replace(/\s*\/\s*month$/i, "")));
       const house = el("span", "qw-home-house");
@@ -594,7 +631,7 @@ export default function QuestWorld({ slot, mode, lang, req, busy, onAnswer, onFa
       homeMarkers.current.push(new maplibregl.Marker({ element: wrap, anchor: "bottom" }).setLngLat([plots[i].lng, plots[i].lat]).addTo(map));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [laneHomes, worldMode, ready, size, flying, lane.state]);
+  }, [laneHomes, worldMode, ready, size, flying, lane.state, street.state]);
 
   handlers.current.openHome = (h) => setHome(h);
   useEffect(() => {
@@ -609,15 +646,8 @@ export default function QuestWorld({ slot, mode, lang, req, busy, onAnswer, onFa
     map.getSource("gg-lane")?.setData(EMPTY);
     map.getSource("gg-trail")?.setData(EMPTY);
     const spots = picks.length ? picks : [{ ...GURGAON, value: "gurgaon", label: "Gurgaon" }];
-    const bounds = new maplibregl.LngLatBounds();
-    spots.forEach((s) => {
-      bounds.extend([s.lng - 0.022, s.lat - 0.02]);
-      bounds.extend([s.lng + 0.022, s.lat + 0.02]);
-    });
-    const pad = framePadding();
-    map.setPadding({ top: 0, bottom: 0, left: 0, right: 0 });
-    map.fitBounds(bounds, { padding: { ...pad, top: pad.top + 20, bottom: pad.bottom + 20, left: 30, right: 60 }, pitch: 50, bearing: -15, maxZoom: 14.2, duration: reducedMotion() ? 0 : 2600 });
-    agentRef.current?.marker.setLngLat([spots[0].lng, spots[0].lat]);
+    frameAreas(spots, 50, -15);
+        agentRef.current?.marker.setLngLat([spots[0].lng, spots[0].lat]);
     agentPos.current = { lng: spots[0].lng, lat: spots[0].lat };
 
     let alive = true;
@@ -679,6 +709,33 @@ export default function QuestWorld({ slot, mode, lang, req, busy, onAnswer, onFa
       node.classList.toggle("dim", chosen.length > 0 && !chosen.includes(node.dataset.cat));
     });
   }, [chosen, places]);
+
+  // finale: pull back over the areas you hunted in and let the agent circle them
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready || worldMode !== "finale") return undefined;
+    clearMarkers(homeMarkers);
+    clearMarkers(amenityMarkers);
+    map.getSource("gg-lane")?.setData(EMPTY);
+    map.getSource("gg-trail")?.setData(EMPTY);
+    const spots = picks.length ? picks : [{ ...GURGAON, value: "gurgaon", label: "Gurgaon" }];
+    frameAreas(spots, 58, map.getBearing());
+    agentRef.current?.marker.setLngLat([spots[0].lng, spots[0].lat]);
+    agentPos.current = { lng: spots[0].lng, lat: spots[0].lat };
+    if (reducedMotion()) return undefined;
+    const t = setTimeout(() => {
+      const spin = () => {
+        map.setBearing(map.getBearing() + 0.07);
+        orbitRaf.current = requestAnimationFrame(spin);
+      };
+      orbitRaf.current = requestAnimationFrame(spin);
+    }, 2800);
+    return () => {
+      clearTimeout(t);
+      cancelAnimationFrame(orbitRaf.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [worldMode, ready]);
 
   // any other question: the map turns slowly in the background
   useEffect(() => {
@@ -745,11 +802,12 @@ export default function QuestWorld({ slot, mode, lang, req, busy, onAnswer, onFa
         </div>
       ) : null;
     if (!size) {
-      const option = sizeOption(MISSION.bhk, floors, lang);
+      const option = sizeOption(MISSION.bhk, bedrooms, lang);
       panel = (
         <div className="qw-panel">
-          <p className="qw-tip">🏗️ Knock floors off the building — one floor is one bedroom</p>
-          <FloorControls compact floors={floors} setFloors={setFloors} option={option} />
+          <p className="qw-tip">🛏️ Furnish your home — tap the bedrooms you need</p>
+          <HomePlan bedrooms={bedrooms} onChange={setBedrooms} />
+          <BedroomStepper bedrooms={bedrooms} setBedrooms={setBedrooms} option={option} />
           <div className="qw-row">
             <button type="button" className="qpill soft" onClick={() => setSize({ value: "any bhk", label: word(MISSION.bhk.options.find((o) => o.value === "any bhk")?.label, lang) || "Any" })}>
               Any size
@@ -955,7 +1013,6 @@ export default function QuestWorld({ slot, mode, lang, req, busy, onAnswer, onFa
       ) : null}
 
       {panel}
-      {towerEl ? createPortal(<TowerBuilding floors={floors} onFloor={setFloors} />, towerEl) : null}
     </div>
   );
 }

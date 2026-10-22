@@ -52,7 +52,7 @@ const heading = (deg) => [Math.sin((deg * Math.PI) / 180), Math.cos((deg * Math.
  * so the lane runs across the screen: the cheaper half lines the near side of
  * the road and the rest the far side, each row left to right by price.
  */
-export function lanePlots(center, bearing, count, spacing = 46) {
+export function lanePlots(center, bearing, count, spacing = 52) {
   const across = heading(bearing + 90);
   const ahead = heading(bearing);
   const front = Math.ceil(count / 2);
@@ -61,7 +61,7 @@ export function lanePlots(center, bearing, count, spacing = 46) {
     const inRow = row === 0 ? i : i - front;
     const rowSize = row === 0 ? front : count - front;
     const along = (inRow - (rowSize - 1) / 2) * spacing;
-    const side = row === 0 ? -26 : 26;
+    const side = row === 0 ? -34 : 34;
     return offsetMeters(center, across[0] * along + ahead[0] * side, across[1] * along + ahead[1] * side);
   });
 }
@@ -119,4 +119,78 @@ export function outlineCollection(areas) {
       .filter((a) => a.outline)
       .map((a) => ({ type: "Feature", id: a.id, properties: { value: a.value, colour: ZONE_COLOURS[a.zone] || "#00a79d" }, geometry: a.outline })),
   };
+}
+
+/* ---------------------------------------------------- a real street */
+
+// road classes (OpenMapTiles schema) that are a street you could stand in, best first
+const STREET_PENALTY = { residential: 0, minor: 0, street: 0, living_street: 0, tertiary: 8, secondary: 18, service: 26, primary: 34 };
+const M_LAT = 110540;
+const mLng = (lat) => 111320 * Math.cos((lat * Math.PI) / 180);
+const metres = (a, b) => Math.hypot((b[0] - a[0]) * mLng(a[1]), (b[1] - a[1]) * M_LAT);
+const bearingOf = (a, b) => ((Math.atan2((b[0] - a[0]) * mLng(a[1]), (b[1] - a[1]) * M_LAT) * 180) / Math.PI + 360) % 360;
+
+/** A polyline you can walk: position and heading at any distance along it. */
+function walkable(points) {
+  const cum = [0];
+  for (let i = 1; i < points.length; i += 1) cum.push(cum[i - 1] + metres(points[i - 1], points[i]));
+  const length = cum[cum.length - 1];
+  const at = (d) => {
+    const t = Math.min(Math.max(d, 0), length);
+    let i = 1;
+    while (i < cum.length - 1 && cum[i] < t) i += 1;
+    const span = cum[i] - cum[i - 1] || 1;
+    const f = (t - cum[i - 1]) / span;
+    const a = points[i - 1];
+    const b = points[i];
+    return { lng: a[0] + (b[0] - a[0]) * f, lat: a[1] + (b[1] - a[1]) * f, bearing: bearingOf(a, b) };
+  };
+  return { length, at };
+}
+
+const linesOf = (g) => (g?.type === "LineString" ? [g.coordinates] : g?.type === "MultiLineString" ? g.coordinates : []);
+
+/**
+ * From the road features the map is drawing around `center`, picks the nearest
+ * real street that runs far enough to line homes along, and returns it as a
+ * walkable stretch heading away from the centre. null when there is none.
+ */
+export function pickStreet(features, center, maxLength = 340, minLength = 120) {
+  const here = [center.lng, center.lat];
+  const candidates = [];
+  for (const f of features || []) {
+    const penalty = STREET_PENALTY[f.properties?.class];
+    if (penalty === undefined) continue;
+    for (const line of linesOf(f.geometry)) {
+      if (line.length < 2) continue;
+      let best = { d: Infinity, k: 0 };
+      line.forEach((pt, k) => {
+        const d = metres(here, pt);
+        if (d < best.d) best = { d, k };
+      });
+      candidates.push({ line, k: best.k, score: best.d + penalty });
+    }
+  }
+  candidates.sort((a, b) => a.score - b.score);
+  for (const c of candidates.slice(0, 12)) {
+    const forward = walkable(c.line.slice(c.k));
+    const backward = walkable(c.line.slice(0, c.k + 1).reverse());
+    const pick = forward.length >= backward.length ? forward : backward;
+    if (pick.length >= minLength) return { at: pick.at, length: Math.min(pick.length, maxLength) };
+  }
+  return null;
+}
+
+/** Homes in pairs down the street (one each side), cheapest nearest the camera. */
+export function streetPlots(street, count, offset = 23) {
+  const pairs = Math.ceil(count / 2);
+  const gap = pairs > 1 ? Math.min(38, (street.length - 46) / (pairs - 1)) : 0;
+  return Array.from({ length: count }).map((_, i) => {
+    const pair = Math.floor(i / 2);
+    const side = i % 2 === 0 ? -1 : 1;
+    const p = street.at(30 + pair * gap);
+    const east = Math.sin(((p.bearing + 90 * side) * Math.PI) / 180) * offset;
+    const north = Math.cos(((p.bearing + 90 * side) * Math.PI) / 180) * offset;
+    return { ...offsetMeters(p, east, north), depth: pair, pairs };
+  });
 }

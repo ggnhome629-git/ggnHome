@@ -3,7 +3,7 @@ import { ArrowLeft, Check, Keyboard, MessagesSquare, SendHorizontal } from "luci
 import QuestBot from "./QuestBot";
 import QuestScene from "./QuestScene";
 import AreaPicker from "./AreaPicker";
-import TowerPicker from "./TowerPicker";
+import HomePicker from "./HomePlan";
 import flow from "../../../data/questFlow.json";
 import { cloudinaryUrl } from "../../../utils/cloudinaryImage";
 
@@ -156,6 +156,10 @@ export default function QuestStage({
   const [chosen, setChosen] = useState(null); // the card just tapped, while the answer is sent
   const [reaction, setReaction] = useState("");
   const [worldFailed, setWorldFailed] = useState(false);
+  // warm the 3D map's code while the title screen is up, so "Let's go" lands in the game
+  useEffect(() => {
+    if (!started) import("./world/QuestWorld").catch(() => {});
+  }, [started]);
   const onWorldFail = useCallback(() => setWorldFailed(true), []);
   useEffect(() => {
     setPicked([]);
@@ -236,6 +240,62 @@ export default function QuestStage({
   }
 
   /* ------------------------------------------------------------ reveal */
+  const revealBody = (
+    <>
+      <p className="qreveal-kicker">🏆 Mission complete!</p>
+      <h2>
+        {matchCount ? (
+          <>
+            <span className="qreveal-num">
+              <CountUp value={matchCount} />
+            </span>{" "}
+            {matchCount === 1 ? "home matches you" : "homes match you"}
+          </>
+        ) : busy || shortlist.state === "loading" ? (
+          "Finding your best homes…"
+        ) : (
+          "Your search is ready"
+        )}
+      </h2>
+      {shortlist.results?.length ? (
+        <div className="qreveal-fan">
+          {shortlist.results.slice(0, 3).map((c, i) => (
+            <a key={c.id} className={`qreveal-card c${i}`} href={c.url} target="_blank" rel="noopener noreferrer">
+              <span className="img">{c.image ? <img src={cloudinaryUrl(c.image, { width: 360 })} alt="" loading="lazy" /> : <span>🏡</span>}</span>
+              <b>{c.priceLabel}</b>
+              <small>{[c.bhkLabel, c.sector].filter(Boolean).join(" · ")}</small>
+            </a>
+          ))}
+        </div>
+      ) : null}
+      <button type="button" className="qcta big" onClick={onShowChat}>
+        See my matches →
+      </button>
+    </>
+  );
+
+  if (complete && !worldFailed) {
+    return (
+      <section className="qst qst-world qst-finale" aria-label="Your matches">
+        <Suspense
+          fallback={
+            <div className="qw-loading">
+              <span className="qw-globe">🗺️</span>
+              Loading the map of Gurgaon…
+            </div>
+          }
+        >
+          <QuestWorld slot={null} finale mode={mode} lang={lang} req={req} busy={busy} onAnswer={answer} onFail={onWorldFail} />
+        </Suspense>
+        <Sparkles burst={celebrate} />
+        <div className="qw-finale">
+          <QuestBot mood={busy ? "think" : "happy"} size={72} />
+          {revealBody}
+        </div>
+      </section>
+    );
+  }
+
   if (complete) {
     return (
       <section className="qst qst-reveal" aria-label="Your matches">
@@ -243,35 +303,7 @@ export default function QuestStage({
         <Sparkles burst={celebrate} />
         <div className="qreveal">
           <QuestBot mood={busy ? "think" : "happy"} size={120} />
-          <p className="qreveal-kicker">🏆 All done!</p>
-          <h2>
-            {matchCount ? (
-              <>
-                <span className="qreveal-num">
-                  <CountUp value={matchCount} />
-                </span>{" "}
-                {matchCount === 1 ? "home matches you" : "homes match you"}
-              </>
-            ) : busy || shortlist.state === "loading" ? (
-              "Finding your best homes…"
-            ) : (
-              "Your search is ready"
-            )}
-          </h2>
-          {shortlist.results?.length ? (
-            <div className="qreveal-fan">
-              {shortlist.results.slice(0, 3).map((c, i) => (
-                <a key={c.id} className={`qreveal-card c${i}`} href={c.url} target="_blank" rel="noopener noreferrer">
-                  <span className="img">{c.image ? <img src={cloudinaryUrl(c.image, { width: 360 })} alt="" loading="lazy" /> : <span>🏡</span>}</span>
-                  <b>{c.priceLabel}</b>
-                  <small>{[c.bhkLabel, c.sector].filter(Boolean).join(" · ")}</small>
-                </a>
-              ))}
-            </div>
-          ) : null}
-          <button type="button" className="qcta big" onClick={onShowChat}>
-            See my matches →
-          </button>
+          {revealBody}
         </div>
       </section>
     );
@@ -398,8 +430,7 @@ export default function QuestStage({
   ) : null;
 
   /* ------------------------------------------- the 3D map world (after rent/buy) */
-  const modeDone = missions.find((m) => m.slot === "mode")?.done;
-  if (modeDone && !worldFailed) {
+  if (!worldFailed) {
     const inWorldSlot = WORLD_SLOTS.includes(slot);
     return (
       <section className="qst qst-world" aria-label={`Question ${step} of ${total}`}>
@@ -474,7 +505,7 @@ export default function QuestStage({
         </div>
 
         {!busy && mission?.slot === "location" ? <AreaPicker mission={mission} mode={mode} lang={lang} onPick={answer} disabled={busy} /> : null}
-        {!busy && mission?.slot === "bhk" ? <TowerPicker mission={mission} lang={lang} onPick={answer} /> : null}
+        {!busy && mission?.slot === "bhk" ? <HomePicker mission={mission} lang={lang} onPick={answer} /> : null}
         {!busy && mission?.slot === "budget" ? <BudgetSlider mission={mission} mode={mode} lang={lang} onPick={answer} /> : null}
 
         {cardGrid}
