@@ -94,7 +94,7 @@ const DISABLED = [
   ["Flatmates (user pages)", "Routes commented out; feature toggle defaults to off"],
   ["Agent portal", "Routes commented out; /agent/register redirects to admin; toggle off"],
   ["Public partner self-registration", "Backend returns 410; admin adds partners instead"],
-  ["AI assistant on the site", "Consultant, AI Search pages, floating assistant and Chatbot follow the "AI assistant" switch at the top of the admin panel (off by default)"],
+  ["AI assistant on the site", "Consultant, AI Search pages, floating assistant and Chatbot follow the AI assistant switch at the top of the admin panel (off by default)"],
   ["Hidden SMS devices page", "/admin/sms-devices redirects to the admin home page"],
 ];
 
