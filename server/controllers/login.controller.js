@@ -205,7 +205,7 @@ exports.requestOtp = async (req, res) => {
         .split(",")
         .map((number) => number.replace(/\D/g, "").slice(-10))
         .filter((number) => /^\d{10}$/.test(number));
-      if (directOtpEnabled && testNumbers.includes(user.mobileNumber)) {
+      if (directOtpEnabled && ["renter", "owner"].includes(user.role) && testNumbers.includes(user.mobileNumber)) {
         return res.status(200).json({
           message: "Testing code ready",
           channel: "direct-test",
