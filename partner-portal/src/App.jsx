@@ -48,7 +48,7 @@ function AuthScreen({ onLogin }) {
     if (!/^[6-9]\d{9}$/.test(normalized)) return setError("Enter a valid 10-digit Indian mobile number.");
     setBusy(true);
     try {
-      const data = await request("/login/request-otp", { method: "POST", body: JSON.stringify({ mobileNumber: normalized }) });
+      const data = await request("/partner/login/request-otp", { method: "POST", body: JSON.stringify({ mobileNumber: normalized }) });
       // Direct login is on: the code is returned instead of sent by SMS, so sign in with it straight away.
       if (data.channel === "direct" && data.directOtp) return await verifyOtp(data.directOtp);
       setSent(true); setNotice(data.message || "OTP sent. It is valid for 5 minutes.");
@@ -61,7 +61,7 @@ function AuthScreen({ onLogin }) {
     if (!/^[A-Z]{4}$/.test(code)) return setError("Enter the 4-letter OTP you received.");
     setBusy(true);
     try {
-      const data = await request("/login/verify-otp", { method: "POST", body: JSON.stringify({ mobileNumber: normalized, otp: code }) });
+      const data = await request("/partner/login/verify-otp", { method: "POST", body: JSON.stringify({ mobileNumber: normalized, otp: code }) });
       if (!data.accessToken) throw new Error("OTP was verified but no login token was returned.");
       if (data.agent?.role === "Agent") throw new Error("This number is registered as a standard Agent, not a Partner. Contact GgnHome admin.");
       if (data.agent?.role !== "Partner") throw new Error("This mobile number is not registered for Partner Portal access. Ask a GgnHome administrator to register it first.");

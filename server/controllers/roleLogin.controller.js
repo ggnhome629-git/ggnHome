@@ -10,7 +10,14 @@ const User = require("../models/user.model");
 const Agent = require("../models/Agent.model");
 const SaleProperty = require("../models/SaleProperty.model");
 const RentalProperty = require("../models/Rentalproperty.model");
-const { requestOtp, verifyOtp } = require("./login.controller");
+const { requestOtpFor, verifyOtp } = require("./login.controller");
+
+// Direct login (one SMS Console switch) applies to the partner and admin sign-ins too.
+// Partners are Agent-backed, so any non-admin role may receive the code; admins only get admins.
+const PARTNER_DIRECT_ROLES = ["renter", "owner", "Agent", "Partner"];
+const ADMIN_DIRECT_ROLES = ["admin"];
+const partnerRequestOtp = (req, res) => requestOtpFor(req, res, PARTNER_DIRECT_ROLES);
+const adminRequestOtp = (req, res) => requestOtpFor(req, res, ADMIN_DIRECT_ROLES);
 
 const MOBILE_RE = /^\d{10}$/;
 
@@ -87,7 +94,7 @@ const gate = (problemFor, handler, label) => async (req, res) => {
   }
 };
 
-exports.partnerRequestOtp = gate(partnerProblem, requestOtp, "partnerRequestOtp");
+exports.partnerRequestOtp = gate(partnerProblem, partnerRequestOtp, "partnerRequestOtp");
 exports.partnerVerifyOtp = gate(partnerProblem, verifyOtp, "partnerVerifyOtp");
-exports.adminRequestOtp = gate(adminProblem, requestOtp, "adminRequestOtp");
+exports.adminRequestOtp = gate(adminProblem, adminRequestOtp, "adminRequestOtp");
 exports.adminVerifyOtp = gate(adminProblem, verifyOtp, "adminVerifyOtp");

@@ -288,7 +288,7 @@ function GgnhomeTab({ data, reload, notify }) {
   const s = data.ggnhome.settings;
   const [form, setForm] = useState(null);
   useEffect(() => {
-    setForm({ showOtpOnAndroid: !!s.showOtpOnAndroid, directOtpEnabled: !!s.directOtpEnabled, mode: s.mode, dailyLimit: s.dailyLimit ?? s.effective.dailyLimit, hourlyLimit: s.hourlyLimit ?? s.effective.hourlyLimit, gapMinSec: s.gapMinSec ?? s.effective.gapMinSec, gapMaxSec: s.gapMaxSec ?? s.effective.gapMaxSec });
+    setForm({ showOtpOnAndroid: !!s.showOtpOnAndroid, directOtpEnabled: s.directOtpEnabled !== false, mode: s.mode, dailyLimit: s.dailyLimit ?? s.effective.dailyLimit, hourlyLimit: s.hourlyLimit ?? s.effective.hourlyLimit, gapMinSec: s.gapMinSec ?? s.effective.gapMinSec, gapMaxSec: s.gapMaxSec ?? s.effective.gapMaxSec });
   }, [s.showOtpOnAndroid, s.directOtpEnabled, s.mode, s.dailyLimit, s.hourlyLimit, s.gapMinSec, s.gapMaxSec, s.effective]);
   if (!form) return null;
   const save = async () => {
@@ -322,8 +322,8 @@ function GgnhomeTab({ data, reload, notify }) {
           </Stack>
           <Typography variant="body2" color="text.secondary">
             {form.directOtpEnabled
-              ? "Direct auto login is on: the code is filled in automatically and the user is signed in, with no SMS sent. Use only while the site is not live to public users."
-              : "Normal SMS login is on: the code is sent by SMS and the user enters it."}
+              ? "Direct auto login is on for user, partner and admin sign-in: the code is filled in automatically and the user is signed in, with no SMS sent. Turn it off to use the normal SMS flow for all three."
+              : "Normal SMS login is on for user, partner and admin sign-in: the code is sent by SMS and the user enters it."}
           </Typography>
           <Stack direction="row" spacing={2} alignItems="center">
             <Typography fontWeight={600}>Limits</Typography>

@@ -97,10 +97,21 @@ async function sendOtpEmail(user, otp) {
   await sendEmail(emailParams);
 }
 
+// Roles that may use direct login on the user/agent login. Admins always use SMS here.
+const USER_DIRECT_ROLES = ["renter", "owner"];
+
+// Direct login is one switch in the SMS Console (SmsSetting.directOtpEnabled), default on.
+async function isDirectLoginOn() {
+  const SmsSetting = require("../models/SmsSetting.model");
+  const setting = await SmsSetting.findOne({ key: "ggnhome" }).lean();
+  return !setting || setting.directOtpEnabled !== false;
+}
+
 // Request OTP
 //   { mobileNumber }  -> OTP by SMS (creates the account for a new number)
 //   { email }         -> OTP by email, for an existing account (email login)
-exports.requestOtp = async (req, res) => {
+// directRoles: which account roles get the code back for direct login instead of SMS.
+async function requestOtpFor(req, res, directRoles) {
   try {
     if (tooManyFromIp(req)) {
       return res.status(429).json({ message: "Too many requests. Please try again in a minute." });
@@ -195,21 +206,15 @@ exports.requestOtp = async (req, res) => {
       });
     }
 
-    // Direct login (SMS Console toggle, default off): the code is returned to the
-    // website to auto-fill and sign in, and no SMS is sent. Privileged roles always use SMS.
-    if (channel === "sms") {
-      const SmsSetting = require("../models/SmsSetting.model");
-      const setting = await SmsSetting.findOne({ key: "ggnhome" }).lean();
-      const directOtpEnabled = !!(setting && setting.directOtpEnabled);
-      if (directOtpEnabled && ["renter", "owner"].includes(user.role)) {
-        return res.status(200).json({
-          message: "Direct login ready",
-          channel: "direct",
-          directOtp: otp,
-          maskedMobile: maskMobile(user.mobileNumber),
-          expiresInSeconds: Math.floor(OTP_TTL_MS / 1000),
-        });
-      }
+    // Direct login: the code is returned to the website to auto-fill and sign in, and no SMS is sent.
+    if (channel === "sms" && directRoles.includes(user.role) && (await isDirectLoginOn())) {
+      return res.status(200).json({
+        message: "Direct login ready",
+        channel: "direct",
+        directOtp: otp,
+        maskedMobile: maskMobile(user.mobileNumber),
+        expiresInSeconds: Math.floor(OTP_TTL_MS / 1000),
+      });
     }
 
     // SMS channel
@@ -263,7 +268,10 @@ exports.requestOtp = async (req, res) => {
     console.error("requestOtp failed:", error?.name, error?.message, error?.code || "", error?.stack?.split("\n").slice(0, 4).join(" | "));
     res.status(500).json({ message: "Server error" });
   }
-};
+}
+
+exports.requestOtp = (req, res) => requestOtpFor(req, res, USER_DIRECT_ROLES);
+exports.requestOtpFor = requestOtpFor;
 
 // Login with Password
 exports.loginWithPassword = async (req, res) => {

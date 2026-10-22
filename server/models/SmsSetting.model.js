@@ -7,8 +7,9 @@ const SmsSettingSchema = new mongoose.Schema(
     key: { type: String, required: true, unique: true },
     // When true, show GGN Home OTPs in the Android app instead of sending SMS. False preserves SMS delivery by default.
     showOtpOnAndroid: { type: Boolean, default: false },
-    // Direct login: when true, website login auto-fills the OTP and signs in without SMS. False uses normal SMS.
-    directOtpEnabled: { type: Boolean, default: false },
+    // Direct login for the user, partner and admin sign-ins: when true, the OTP is auto-filled and signed in without SMS.
+    // False uses the normal SMS flow.
+    directOtpEnabled: { type: Boolean, default: true },
     mode: { type: String, enum: ["auto", "custom"], default: "auto" },
     dailyLimit: { type: Number },
     hourlyLimit: { type: Number },

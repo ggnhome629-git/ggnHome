@@ -371,7 +371,7 @@ function AccessDenied() {
           This console is limited to GgnHome administrators. Sign in with an admin account, or head back to the site.
         </Typography>
         <Stack direction="row" spacing={2}>
-          <Button variant="contained" onClick={() => navigate("/login")}>
+          <Button variant="contained" onClick={() => navigate("/admin/login")}>
             Sign in
           </Button>
           <Button variant="outlined" onClick={() => navigate("/")} sx={{ borderColor: "divider", color: "text.secondary" }}>

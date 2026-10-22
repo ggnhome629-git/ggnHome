@@ -49,6 +49,11 @@ export default function AdminLoginPage() {
         if (res.status === 429 && data.retryAfterSec) resend.start(Math.min(data.retryAfterSec, 120));
         throw new Error(data.message || "Could not send OTP.");
       }
+      // Direct login is on: the code comes back instead of an SMS, so sign in with it straight away.
+      if (data.channel === "direct" && data.directOtp) {
+        await verifyOtp(data.directOtp);
+        return;
+      }
       setOtpSent(true);
       setOtp("");
       resend.start(30);
@@ -60,9 +65,9 @@ export default function AdminLoginPage() {
     }
   }
 
-  async function verifyOtp() {
+  async function verifyOtp(submitted) {
     setError(""); setNotice("");
-    const code = otp.trim().toUpperCase();
+    const code = String(typeof submitted === "string" ? submitted : otp).trim().toUpperCase();
     if (!/^[A-Z]{4}$/.test(code)) {
       setError("Enter the 4-letter OTP you received.");
       return;
@@ -137,7 +142,7 @@ export default function AdminLoginPage() {
                   inputProps={{ maxLength: 4, autoComplete: "one-time-code", style: { textTransform: "uppercase", letterSpacing: 8, fontWeight: 800 } }}
                   placeholder="e.g. KQMX"
                 />
-                <Button variant="contained" size="large" disabled={busy} onClick={verifyOtp} sx={{ py: 1.4, bgcolor: "#003366", fontWeight: 800, textTransform: "none", "&:hover": { bgcolor: "#002244" } }}>
+                <Button variant="contained" size="large" disabled={busy} onClick={() => verifyOtp()} sx={{ py: 1.4, bgcolor: "#003366", fontWeight: 800, textTransform: "none", "&:hover": { bgcolor: "#002244" } }}>
                   {busy ? "Verifying…" : "Verify OTP and open admin"}
                 </Button>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
