@@ -196,6 +196,10 @@ function App() {
       
       <Route path="/about" element={<AboutPage />} />
       <Route path="/property-visit/:id" element={<PropertyCheckout />} />
+      {/* Public, indexable SEO landing pages for high-intent Gurgaon searches. */}
+      <Route path="/flats-for-rent-in-gurgaon" element={<Searchproperty landingType="rent" />} />
+      <Route path="/flats-for-sale-in-gurgaon" element={<Searchproperty landingType="sale" />} />
+      <Route path="/properties-in-gurgaon/:localitySlug" element={<Searchproperty seoLocalityLanding />} />
       <Route path="/search" element={<Searchproperty />} />
       <Route path="/search/:query" element={<Searchproperty />} />
       <Route path="/userpreferenceform" element={<UserPreferenceForm />} />
