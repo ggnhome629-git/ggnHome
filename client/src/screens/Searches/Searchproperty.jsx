@@ -466,12 +466,25 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
     ? [sectorNum - 2, sectorNum - 1, sectorNum + 1, sectorNum + 2].filter((n) => n > 0).map((n) => `Sector ${n}`)
     : [];
 
-  useEffect(() => {
-    document.title = `${heading} | GgnHome`;
-  }, [heading]);
-
   return (
     <Box sx={{ backgroundColor: "background.default", minHeight: "100vh" }}>
+      <Helmet>
+        <title>{seoTitle}</title>
+        <meta name="description" content={seoDescription} />
+        <meta name="robots" content={canIndexLanding ? "index,follow,max-image-preview:large" : "noindex,follow"} />
+        <link rel="canonical" href={canonicalUrl} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="GgnHome" />
+        <meta property="og:title" content={seoTitle} />
+        <meta property="og:description" content={seoDescription} />
+        <meta property="og:url" content={canonicalUrl} />
+        <meta property="og:locale" content="en_IN" />
+        <meta property="og:image" content="https://www.ggnhome.com/og-image-whatsapp.jpg?v=2" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={seoTitle} />
+        <meta name="twitter:description" content={seoDescription} />
+        <meta name="twitter:image" content="https://www.ggnhome.com/og-image-whatsapp.jpg?v=2" />
+      </Helmet>
       <Suspense fallback={<Box sx={{ height: 64 }} />}>
         <TopNavigationBar navItems={NAV_ITEMS} />
       </Suspense>
@@ -481,15 +494,19 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
         onQueryChange={setInputText}
         onSearch={handleSearch}
         type={type}
-        onTypeChange={(t) =>
+        onTypeChange={(t) => {
+          if (landingType) {
+            navigate(t === "rent" ? "/flats-for-rent-in-gurgaon" : t === "sale" ? "/flats-for-sale-in-gurgaon" : "/search");
+            return;
+          }
           // Sale listings have no property type, parking or move-in date fields.
-          updateParams({ type: t, ...(t === "sale" ? { propertyType: "", parking: "", moveInBy: "" } : {}) })
-        }
+          updateParams({ type: t, ...(t === "sale" ? { propertyType: "", parking: "", moveInBy: "" } : {}) });
+        }}
         recentSearches={recentSearches}
         areaSuggestions={areaSuggestions}
         onHome={() => navigate("/")}
         headingPrefix={headingPrefix}
-        place={where}
+        place={headingLocation}
         total={loading ? undefined : error ? null : total ?? results.length}
       />
 
@@ -515,6 +532,21 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
       <ShareDialog open={Boolean(shareLink)} onClose={() => setShareLink("")} link={shareLink} title={shareTitle} />
 
       <Container ref={resultsTopRef} maxWidth="xl" sx={{ px: { xs: 4, sm: 6, md: 8 }, py: { xs: 6, md: 8 } }}>
+        {isSeoLanding && (
+          <Box sx={{ maxWidth: 1040, mb: 5 }}>
+            <Typography component="p" variant="body2" sx={{ color: "text.secondary", lineHeight: 1.8, mb: 2 }}>
+              {seoIntro}
+            </Typography>
+            <Stack component="nav" aria-label="Browse Gurgaon property categories" direction="row" useFlexGap flexWrap="wrap" gap={3}>
+              <Typography component="a" href="/flats-for-rent-in-gurgaon" variant="body2" sx={{ color: "primary.main", fontWeight: 700, textDecoration: "underline" }}>
+                Flats for rent in Gurgaon
+              </Typography>
+              <Typography component="a" href="/flats-for-sale-in-gurgaon" variant="body2" sx={{ color: "primary.main", fontWeight: 700, textDecoration: "underline" }}>
+                Flats for sale in Gurgaon
+              </Typography>
+            </Stack>
+          </Box>
+        )}
         <QuickPicks filters={filters} type={type} onPick={(patch) => updateParams(patch)} />
 
         {/* Result summary: total count for the area, range shown, active filters */}
