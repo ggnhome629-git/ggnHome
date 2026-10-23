@@ -392,8 +392,47 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
   const hasMoreFallback = total == null && results.length === PAGE_LIMIT;
 
   const where = query ? titleCase(query) : "Gurgaon";
-  const headingPrefix = type === "rent" ? "Homes For Rent In" : type === "sale" ? "Homes For Sale In" : "Homes In";
-  const heading = `${headingPrefix} ${where}`;
+  const headingLocation = seoLocalityLanding && query ? `${where}, Gurgaon` : where;
+  const headingPrefix = landingType === "rent"
+    ? "Flats for Rent in"
+    : landingType === "sale"
+    ? "Flats for Sale in"
+    : type === "rent"
+    ? "Homes For Rent In"
+    : type === "sale"
+    ? "Homes For Sale In"
+    : "Homes In";
+  const heading = `${headingPrefix} ${headingLocation}`;
+  const isSeoLanding = Boolean(landingType || seoLocalityLanding);
+  const canonicalUrl = landingType === "rent"
+    ? "https://www.ggnhome.com/flats-for-rent-in-gurgaon"
+    : landingType === "sale"
+    ? "https://www.ggnhome.com/flats-for-sale-in-gurgaon"
+    : seoLocalityLanding
+    ? `https://www.ggnhome.com/properties-in-gurgaon/${encodeURIComponent(localitySlug.toLowerCase())}`
+    : "https://www.ggnhome.com/search";
+  const canIndexLanding = isSeoLanding && !searchParams.toString();
+  const seoTitle = landingType === "rent"
+    ? "Flats for Rent in Gurgaon | GgnHome"
+    : landingType === "sale"
+    ? "Flats for Sale in Gurgaon | GgnHome"
+    : seoLocalityLanding
+    ? `${type === "rent" ? "Flats for Rent" : type === "sale" ? "Flats for Sale" : "Properties"} in ${headingLocation} | GgnHome`
+    : `${heading} | GgnHome`;
+  const seoDescription = landingType === "rent"
+    ? "Browse flats for rent in Gurgaon by BHK, budget, furnishing and neighbourhood. Compare listing details and confirm current rent and availability directly."
+    : landingType === "sale"
+    ? "Explore flats for sale in Gurgaon by BHK, budget, property type and locality. Compare listed prices and details, then contact the listing provider to arrange a visit."
+    : seoLocalityLanding
+    ? `Explore homes in ${headingLocation}. Filter available property listings by rent or sale, BHK, budget and property features. Confirm current availability with the listing provider.`
+    : "Search homes to rent or buy in Gurgaon. Filter property listings by location, BHK, budget, furnishing and other features on GgnHome.";
+  const seoIntro = landingType === "rent"
+    ? "Explore current rental listings across Gurgaon. Compare asking rent, BHK configuration, furnishing and neighbourhood, then confirm deposit, terms and availability with the listing provider."
+    : landingType === "sale"
+    ? "Explore homes for sale across Gurgaon. Compare asking prices, BHK configuration, property type and area, and contact the listing provider to verify details before arranging a visit."
+    : seoLocalityLanding
+    ? `Browse current property listings in ${headingLocation}. Use the filters to narrow homes by rent or sale, BHK, budget and property features. Listing information can change, so confirm details with the provider.`
+    : "";
   const shownCount = total != null ? total : results.length;
   const countLabel = `${shownCount.toLocaleString("en-IN")} ${shownCount === 1 ? "Home" : "Homes"}${query ? ` In ${where}` : ""}`;
 
