@@ -7,6 +7,7 @@ import SearchScanner from "./SearchScanner";
 import FloatingConsultant from "./FloatingConsultant";
 import QuestStage, { QUEST_SLOTS } from "./quest/QuestStage";
 import QuestBot from "./quest/QuestBot";
+import QuestHandoff from "./quest/QuestHandoff";
 import questFlow from "../../data/questFlow.json";
 import "./quest/quest.css";
 import ResultCard from "./ResultCard";
@@ -106,6 +107,7 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
   const [input, setInput] = useState("");
   // The quest (one question at a time) is the main view; the full chat is one tap away.
   const [questView, setQuestView] = useState(true);
+  const [handoffView, setHandoffView] = useState(false);
   const [celebrate, setCelebrate] = useState(0);
   const [achievement, setAchievement] = useState(null);
   const [shortlist, setShortlist] = useState({ state: "idle", total: 0, results: [] });
@@ -330,6 +332,8 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
 
   const restart = () => {
     if (busy) return;
+    setQuestView(true);
+    setHandoffView(false);
     clearStore();
     setBasicMode(false);
     idemRef.current = null;
@@ -472,12 +476,13 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
     persistConversation();
   }, [open, minimized, persistConversation]);
 
-  // Results, the number card and the review form live in the chat. The quest ends on a
-  // results reveal with a "See my matches" button; a follow-up question after the
-  // results (refinements, the review form) opens the chat directly.
+  // Follow-up chat and review actions stay inside the quest-styled handoff screen.
   const lastItemType = items.length ? items[items.length - 1].type : null;
   useEffect(() => {
-    if (lastItemType === "review") setQuestView(false);
+    if (lastItemType === "review") {
+      setQuestView(true);
+      setHandoffView(true);
+    }
   }, [lastItemType]);
 
   /* ------------------------------------------------------------- quest */
@@ -618,7 +623,7 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
       onExpand={onExpand}
       onClose={() => close("dismiss")}
       avatar={<QuestBot size={30} mood={busy ? "think" : "idle"} />}
-      title="GgnBot · AI property finder V2"
+      title="GgnBot · AI property finder"
       placeholder={PLACEHOLDER[lang] || PLACEHOLDER.en}
     />
   ) : null;
@@ -653,7 +658,7 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
       <div className="gai-root">
 
         <header className="gai-header">
-          <button type="button" className="gai-riya-btn" onClick={() => setQuestView(true)} aria-label="Back to the quick questions" title="Back to the quick questions">
+          <button type="button" className="gai-riya-btn" onClick={() => { setQuestView(true); setHandoffView(false); }} aria-label="Back to the home quest" title="Back to the home quest">
             <QuestBot size={42} mood={busy ? "think" : "idle"} />
           </button>
           <div className="gai-title">
@@ -688,7 +693,7 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
           </button>
         </header>
 
-        {questView ? (
+        {questView && !handoffView ? (
           <QuestStage
             question={currentQuestion}
             slot={convState?.slot || null}
@@ -698,6 +703,23 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
             onAnswer={questAnswer}
             onBack={questBack}
             busy={busy}
+            missions={missions}
+            celebrate={celebrate}
+            achievement={achievement}
+            shortlist={shortlist}
+            onShowChat={() => { setQuestView(true); setHandoffView(true); }}
+            onTypeInstead={() => { setQuestView(true); setHandoffView(true); }}
+            req={convState?.req}
+          />
+        ) : handoffView ? (
+          <QuestHandoff
+            items={items}
+            renderItem={renderHandoffItem}
+            chips={chips}
+            selected={selected}
+            onChip={onChip}
+            onSendSelected={sendSelected}
+            busy={busy}
             input={input}
             onInput={(value) => {
               clearTimeout(autoSendRef.current);
@@ -705,12 +727,7 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
             }}
             onSend={() => send(input)}
             placeholder={PLACEHOLDER[lang] || PLACEHOLDER.en}
-            missions={missions}
-            celebrate={celebrate}
-            achievement={achievement}
-            shortlist={shortlist}
-            onShowChat={() => setQuestView(false)}
-            req={convState?.req}
+            onBack={() => { setQuestView(true); setHandoffView(false); }}
           />
         ) : (
         <>
