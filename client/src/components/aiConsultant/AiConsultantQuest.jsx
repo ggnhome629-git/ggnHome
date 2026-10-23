@@ -618,7 +618,7 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
       onExpand={onExpand}
       onClose={() => close("dismiss")}
       avatar={<QuestBot size={30} mood={busy ? "think" : "idle"} />}
-      title="GgnBot · AI property finder"
+      title="GgnBot · AI property finder V2"
       placeholder={PLACEHOLDER[lang] || PLACEHOLDER.en}
     />
   ) : null;
