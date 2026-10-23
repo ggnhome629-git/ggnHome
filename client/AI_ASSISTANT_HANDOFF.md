@@ -9,3 +9,5 @@ The public AI property consultant uses the quest flow in \`client/src/components
 - The public V2/version badge and its frontend manifest checker have been removed. The existing site-wide \`CacheRefreshWatcher\` remains responsible for the established server cache-version refresh mechanism.
 
 When changing the flow, verify both entry points—Chat and Type a message—plus result cards, guest lead capture, and enquiry review on desktop and mobile.
+
+Build verification: run `npm ci --prefix client` and `npm run build --prefix client`, then inspect the Client UI Build workflow for integration checks.
