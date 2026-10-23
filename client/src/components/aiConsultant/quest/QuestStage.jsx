@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Check, Keyboard, MessagesSquare, SendHorizontal } from "lucide-react";
+import { ArrowLeft, Check, MessagesSquare } from "lucide-react";
 import QuestBot from "./QuestBot";
 import QuestScene from "./QuestScene";
 import AreaPicker from "./AreaPicker";
@@ -137,10 +137,7 @@ export default function QuestStage({
   onAnswer,
   onBack,
   busy,
-  input,
-  onInput,
-  onSend,
-  placeholder,
+  onTypeInstead,
   missions,
   celebrate,
   achievement,
@@ -152,7 +149,6 @@ export default function QuestStage({
   const doneCount = missions.filter((m) => m.done).length;
   const complete = doneCount >= total;
   const [started, setStarted] = useState(doneCount > 0);
-  const [typing, setTyping] = useState(false);
   const [picked, setPicked] = useState([]);
   const [chosen, setChosen] = useState(null); // the card just tapped, while the answer is sent
   const [reaction, setReaction] = useState("");
@@ -210,7 +206,6 @@ export default function QuestStage({
       <section className="qst qst-intro" aria-label="Find your home">
         <QuestScene />
         <div className="qintro">
-          <span className="qintro-v2-tag">✨ GGNHOME QUEST V2</span>
           <div className="qintro-bot">
             <QuestBot mood="happy" size={150} />
           </div>
@@ -457,28 +452,11 @@ export default function QuestStage({
     </div>
   ) : null;
 
-  const typeForm = typing ? (
-    <form
-      className="qtype"
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSend();
-      }}
-    >
-      <input autoFocus value={input} onChange={(e) => onInput(e.target.value)} placeholder={placeholder} aria-label="Type your answer" maxLength={600} enterKeyHint="send" />
-      <button type="submit" disabled={!input.trim() || busy} aria-label="Send">
-        <SendHorizontal size={18} />
-      </button>
-    </form>
-  ) : null;
-
   const links = (
     <div className="qlinks">
-      {!typing ? (
-        <button type="button" onClick={() => setTyping(true)}>
-          <Keyboard size={15} /> Type instead
-        </button>
-      ) : null}
+      <button type="button" onClick={onTypeInstead}>
+        <MessagesSquare size={15} /> Type a message
+      </button>
       {canSkip && !busy ? (
         <button type="button" onClick={() => answer(flow.skip.value, word(flow.skip.label, lang))}>
           {word(flow.skip.label, lang)}
@@ -526,7 +504,7 @@ export default function QuestStage({
             <span className="qw-count">🏠 {matchLine}</span>
             {links}
           </div>
-          {typeForm}
+
         </div>
 
         {!inWorldSlot && !busy && (cardGrid || multi) ? (
@@ -585,7 +563,7 @@ export default function QuestStage({
             {picked.length ? `Continue with ${picked.length} →` : word(mission?.done?.label, lang) || "Continue →"}
           </button>
         ) : null}
-        {typeForm}
+
         {links}
       </footer>
 
