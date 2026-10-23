@@ -750,3 +750,165 @@
  .qdrive-controls { grid-template-columns:1fr 1fr; }.qdrive-controls .qdrive-play { grid-column:1 / -1; grid-row:1; }
 }
 @media(prefers-reduced-motion:reduce) { .qdrive-scene { animation:none; } }
+
+
+/* ---------------------------------------------------------------- in-quest chat handoff */
+.qhandoff {
+  --ai-bg: #faf7f2;
+  --ai-bg-2: #f3ede4;
+  --ai-card: #fff;
+  --ai-surface: #fff;
+  --ai-surface-2: #f6f1ea;
+  --ai-border: #e6ded2;
+  --ai-border-strong: #cfc2b0;
+  --ai-text: #1e2a2f;
+  --ai-muted: #6b645b;
+  --ai-dim: #9a9186;
+  --ai-teal: #0f766e;
+  --ai-teal-dark: #0b5a54;
+  --ai-teal-soft: #e5f1ef;
+  --ai-clay: #c2562e;
+  --ai-sun: #c98a1b;
+  --ai-sun-soft: #fbf1dc;
+  --ai-green: #2f855a;
+  display: flex;
+  min-height: 0;
+  isolation: isolate;
+}
+.qhandoff-frame {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 12px clamp(10px, 2vw, 22px) 10px;
+  gap: 10px;
+}
+.qhandoff-head {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 13px;
+  border: 1px solid rgba(210, 224, 230, .92);
+  border-radius: 19px;
+  background: rgba(255,255,255,.94);
+  box-shadow: 0 7px 24px rgba(15,34,51,.08);
+  backdrop-filter: blur(8px);
+}
+.qhandoff-back {
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  flex: 0 0 auto;
+  border: 1px solid #dbe6e9;
+  border-radius: 13px;
+  background: #fff;
+  color: #254050;
+  cursor: pointer;
+}
+.qhandoff-back:focus-visible,
+.qhandoff-composer input:focus-visible,
+.qhandoff-composer button:focus-visible,
+.qhandoff-answers button:focus-visible { outline: 3px solid #00a79d; outline-offset: 2px; }
+.qhandoff-heading { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.qhandoff-heading strong { color: #102d43; font-size: clamp(14px, 2vw, 17px); font-weight: 850; }
+.qhandoff-heading span { display: flex; align-items: center; gap: 6px; color: #647884; font-size: 11px; }
+.qhandoff-heading span i { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: #22b87b; }
+.qhandoff-heading span i.busy { background: #e9a23b; animation: qbot-glow 1s ease-in-out infinite; }
+.qhandoff-mode { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; padding: 8px 10px; border-radius: 999px; color: #0b7069; background: #e5f7f3; font-size: 9px; font-weight: 900; letter-spacing: .08em; }
+.qhandoff-helper {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  flex: 0 0 auto;
+  padding: 10px 13px;
+  border: 1px solid rgba(207, 224, 230, .92);
+  border-radius: 15px;
+  background: rgba(239, 249, 251, .94);
+  color: #47606e;
+  font-size: 12px;
+  line-height: 1.45;
+}
+.qhandoff-helper svg { flex: 0 0 auto; color: #9872e8; }
+.qhandoff-helper b { color: #143448; }
+.qhandoff-thread {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 13px clamp(3px, 1vw, 12px);
+  border: 1px solid rgba(221, 230, 231, .9);
+  border-radius: 20px;
+  background: rgba(255,255,255,.82);
+  scroll-behavior: smooth;
+}
+.qhandoff-thread::-webkit-scrollbar { width: 7px; }
+.qhandoff-thread::-webkit-scrollbar-thumb { border-radius: 8px; background: #c8d8dc; }
+.qhandoff-thread .gai-row { position: relative; z-index: 1; }
+.qhandoff-thread .gai-bubble { font-size: 13.5px; }
+.qhandoff-thread .gai-bubble.bot { background: #fff; border-color: #e3e9e8; color: #203b48; }
+.qhandoff-thread .gai-bubble.user { background: #0f766e; color: #fff; }
+.qhandoff-thread .gai-chips { padding-left: 0; }
+.qhandoff-thread .gai-stats { display: flex; flex-wrap: wrap; gap: 7px; font-size: 10px; }
+.qhandoff-thread .gai-disclaimer { color: #718087; font-size: 10px; line-height: 1.4; }
+.qhandoff-thread .gai-results { grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr)); padding: 0; gap: 8px; }
+.qhandoff-thread .gai-card-title { font-size: 12px; }
+.qhandoff-thread .gai-card-body { padding: 9px; gap: 7px; }
+.qhandoff-empty { display: grid; flex: 1; align-content: center; justify-items: center; gap: 8px; padding: 18px; text-align: center; }
+.qhandoff-empty strong { color: #15364b; font-size: 16px; }
+.qhandoff-empty span { max-width: 340px; color: #71828b; font-size: 12px; line-height: 1.5; }
+.qhandoff-answers { display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 8px; max-height: 110px; overflow-y: auto; padding: 0 2px 3px; }
+.qhandoff-answers .qpill { animation: none; }
+.qhandoff-composer {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 9px;
+  padding: 8px;
+  border: 1px solid #cbdadd;
+  border-radius: 18px;
+  background: rgba(255,255,255,.97);
+  box-shadow: 0 6px 20px rgba(15,34,51,.08);
+}
+.qhandoff-composer input {
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  padding: 11px 10px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #17374a;
+  font: 500 14px/1.35 Inter, system-ui, sans-serif;
+}
+.qhandoff-composer input::placeholder { color: #899aa1; }
+.qhandoff-composer .qcta { min-height: 42px; padding: 0 15px; border-radius: 13px; font-size: 13px; box-shadow: 0 3px 0 var(--q-brand-dark); }
+.qhandoff-composer .qcta svg { width: 16px; height: 16px; }
+.qhandoff-foot { margin: 0; flex: 0 0 auto; text-align: center; color: #75858c; font-size: 10px; line-height: 1.4; }
+.qintro-v2-tag { display: none !important; }
+@media (max-width: 520px) {
+  .qhandoff-frame { padding: 7px 7px calc(8px + env(safe-area-inset-bottom, 0px)); gap: 7px; }
+  .qhandoff-head { gap: 8px; padding: 8px; border-radius: 15px; }
+  .qhandoff-head > .qbot { width: 38px; height: 38px; }
+  .qhandoff-back { width: 35px; height: 35px; border-radius: 11px; }
+  .qhandoff-heading strong { font-size: 14px; }
+  .qhandoff-heading span { max-width: 48vw; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .qhandoff-mode { padding: 7px; font-size: 8px; }
+  .qhandoff-helper { padding: 8px 10px; font-size: 11px; }
+  .qhandoff-thread { padding: 10px 6px; border-radius: 15px; }
+  .qhandoff-thread .gai-avatar { width: 25px; height: 25px; }
+  .qhandoff-thread .gai-bubble { max-width: 92%; padding: 10px 11px; font-size: 12.5px; }
+  .qhandoff-composer { gap: 5px; padding: 5px; }
+  .qhandoff-composer input { padding: 10px 7px; font-size: 13px; }
+  .qhandoff-composer .qcta { min-height: 40px; padding: 0 11px; }
+  .qhandoff-foot { font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .qhandoff-thread { scroll-behavior: auto; }
+}
