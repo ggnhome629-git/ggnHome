@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dialog, useMediaQuery } from "@mui/material";
-import { Minimize2, RotateCcw, Search, SendHorizontal, Sparkles, X } from "lucide-react";
+import { Minimize2, RotateCcw, Search, X } from "lucide-react";
 import "./aiConsultant.css";
 import { consultantApi, newIdempotencyKey } from "./consultantApi";
 import SearchScanner from "./SearchScanner";
@@ -106,7 +106,6 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
   const [busy, setBusy] = useState(false);
   const [input, setInput] = useState("");
   // The quest (one question at a time) is the main view; the full chat is one tap away.
-  const [questView, setQuestView] = useState(true);
   const [handoffView, setHandoffView] = useState(false);
   const [celebrate, setCelebrate] = useState(0);
   const [achievement, setAchievement] = useState(null);
@@ -129,8 +128,6 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
   capturedRef.current = leadCaptured;
   const stateRef = useRef(convState);
   stateRef.current = convState;
-  const streamRef = useRef(null);
-  const inputRef = useRef(null);
   const startedRef = useRef(false);
   const autoSendRef = useRef(null);
 
@@ -155,11 +152,6 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
       items: items.filter((it) => it.type !== "typing" && it.type !== "scanner" && it.type !== "leadgate").slice(-MAX_ITEMS),
     });
   }, [convState, items, ui, chips, review.success, basicMode, leadCaptured]);
-
-  useEffect(() => {
-    const el = streamRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [items, chips]);
 
   const pushItems = useCallback((...list) => setItems((prev) => [...prev, ...list].slice(-MAX_ITEMS)), []);
   const replaceItem = useCallback((id, next) => setItems((prev) => prev.map((it) => (it.id === id ? (typeof next === "function" ? next(it) : next) : it))), []);
@@ -269,10 +261,6 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
     if (!items.length) callTurn(undefined, { type: "start" });
   }, [open, items.length, callTurn]);
 
-  useEffect(() => {
-    if (open && !compact) setTimeout(() => inputRef.current && inputRef.current.focus({ preventScroll: true }), 250);
-  }, [open, compact]);
-
   /* ------------------------------------------------------------ actions */
 
   const send = useCallback(
@@ -332,7 +320,6 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
 
   const restart = () => {
     if (busy) return;
-    setQuestView(true);
     setHandoffView(false);
     clearStore();
     setBasicMode(false);
@@ -479,10 +466,7 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
   // Follow-up chat and review actions stay inside the quest-styled handoff screen.
   const lastItemType = items.length ? items[items.length - 1].type : null;
   useEffect(() => {
-    if (lastItemType === "review") {
-      setQuestView(true);
-      setHandoffView(true);
-    }
+    if (lastItemType === "review") setHandoffView(true);
   }, [lastItemType]);
 
   /* ------------------------------------------------------------- quest */
@@ -538,63 +522,8 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
   /* ------------------------------------------------------------ render */
 
   const summary = ui?.summary || [];
-  const progress = ui?.progress || { done: 0, total: 10 };
-  const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
   const priorities = convState?.req?.priorities || {};
   const wantCorner = convState?.req?.corner;
-
-  const brief = (
-    <aside className="gai-brief" aria-label="Your requirements">
-      <div className="gai-brief-section">
-        <h4>Your brief</h4>
-        <div className="gai-progress">
-          <div className="gai-ring" style={{ "--p": pct }}>
-            <b>{pct}%</b>
-          </div>
-          <div style={{ fontSize: 13, color: "var(--ai-muted)" }}>
-            {progress.done} of {progress.total} answered
-            <br />
-            <span style={{ fontSize: 11.5 }}>Tap any item to change it</span>
-          </div>
-        </div>
-        {summary.length ? (
-          summary.map((row) => (
-            <button type="button" key={row.slot} className="gai-req" onClick={() => edit(row.slot)} disabled={busy}>
-              <span>{row.label}</span>
-              <b>{row.value}</b>
-            </button>
-          ))
-        ) : (
-          <p style={{ fontSize: 13, color: "var(--ai-dim)" }}>Your answers will appear here.</p>
-        )}
-      </div>
-      <div className="gai-brief-section">
-        <h4>7 property parameters</h4>
-        <div className="gai-params">
-          {NEARBY_PARAMETERS.map((p) => {
-            const on = p.key in priorities;
-            const Icon = p.icon;
-            return (
-              <div key={p.key} className={`gai-param${on ? " on" : ""}`} style={{ "--pc": p.color }}>
-                <Icon size={16} color={on ? p.color : "#b5ab9d"} />
-                <div>
-                  {p.short}
-                  <small>{on ? (priorities[p.key] ? `≤ ${formatDistance(priorities[p.key])}` : "nearby") : "—"}</small>
-                </div>
-              </div>
-            );
-          })}
-          <div className={`gai-param${wantCorner && wantCorner !== "any" ? " on" : ""}`} style={{ "--pc": POSITION_PARAMETER.color }}>
-            <PositionIcon size={16} color={wantCorner && wantCorner !== "any" ? POSITION_PARAMETER.color : "#b5ab9d"} />
-            <div>
-              Position
-              <small>{wantCorner ? (wantCorner === "any" ? "any" : wantCorner) : "—"}</small>
-            </div>
-          </div>
-        </div>
-      </div>
-    </aside>
-  );
 
   const lastBotIndex = (() => {
     for (let i = items.length - 1; i >= 0; i -= 1) if (items[i].type === "bot") return i;
@@ -740,7 +669,7 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
       <div className="gai-root">
 
         <header className="gai-header">
-          <button type="button" className="gai-riya-btn" onClick={() => { setQuestView(true); setHandoffView(false); }} aria-label="Back to the home quest" title="Back to the home quest">
+          <button type="button" className="gai-riya-btn" onClick={() => setHandoffView(false)} aria-label="Back to the home quest" title="Back to the home quest">
             <QuestBot size={42} mood={busy ? "think" : "idle"} />
           </button>
           <div className="gai-title">
@@ -775,25 +704,7 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
           </button>
         </header>
 
-        {questView && !handoffView ? (
-          <QuestStage
-            question={currentQuestion}
-            slot={convState?.slot || null}
-            mode={convState?.req?.mode}
-            lang={lang}
-            serverChips={chips}
-            onAnswer={questAnswer}
-            onBack={questBack}
-            busy={busy}
-            missions={missions}
-            celebrate={celebrate}
-            achievement={achievement}
-            shortlist={shortlist}
-            onShowChat={() => { setQuestView(true); setHandoffView(true); }}
-            onTypeInstead={() => { setQuestView(true); setHandoffView(true); }}
-            req={convState?.req}
-          />
-        ) : handoffView ? (
+        {handoffView ? (
           <QuestHandoff
             items={items}
             renderItem={renderHandoffItem}
@@ -809,185 +720,26 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
             }}
             onSend={() => send(input)}
             placeholder={PLACEHOLDER[lang] || PLACEHOLDER.en}
-            onBack={() => { setQuestView(true); setHandoffView(false); }}
+            onBack={() => setHandoffView(false)}
           />
         ) : (
-        <>
-        <nav className="gai-strip" aria-label="Your requirements">
-          {compact && (
-            <div className="gai-seg" role="group" aria-label="Language" style={{ flexShrink: 0 }}>
-              {LANGS.map((l) => (
-                <button key={l.id} type="button" aria-pressed={lang === l.id} onClick={() => changeLang(l.id)}>
-                  {l.label}
-                </button>
-              ))}
-            </div>
-          )}
-          <span className="gai-pill progress">{pct}%</span>
-          {summary.map((row) => (
-            <button type="button" key={row.slot} className="gai-pill" onClick={() => edit(row.slot)} disabled={busy}>
-              <em>{row.label}</em>
-              {row.value}
-            </button>
-          ))}
-        </nav>
-
-        <div className="gai-body">
-          <div className="gai-stream" ref={streamRef}>
-            <div className="gai-stream-inner" aria-live="polite" aria-relevant="additions">
-              <button type="button" className="gai-quest-back" onClick={() => setQuestView(true)}>
-                <Sparkles size={15} /> Back to GgnBot's quick questions
-              </button>
-              {items.map((it, i) => {
-                if (it.type === "user")
-                  return (
-                    <div key={it.id} className="gai-row user">
-                      <div className="gai-bubble user">
-                        {it.text}
-                      </div>
-                    </div>
-                  );
-                if (it.type === "typing")
-                  return (
-                    <div key={it.id} className="gai-row">
-                      <div className="gai-avatar riya" aria-hidden="true">
-                        <QuestBot size={32} />
-                      </div>
-                      <div className="gai-bubble bot gai-typing" aria-label="Assistant is typing">
-                        <span />
-                        <span />
-                        <span />
-                      </div>
-                    </div>
-                  );
-                if (it.type === "scanner")
-                  return <SearchScanner key={it.id} response={it.response} criteria={it.criteria} tips={it.tips} onDone={() => finishScan(it)} />;
-                if (it.type === "results")
-                  return (
-                    <React.Fragment key={it.id}>
-                      {it.stats ? (
-                        <div className="gai-stats">
-                          <span>
-                            scanned <b>{Number(it.stats.scanned || 0).toLocaleString("en-IN")}</b>
-                          </span>
-                          <span>
-                            passed must-haves <b>{it.stats.afterHardFilters}</b>
-                          </span>
-                          <span>
-                            verified distances <b>{it.stats.withVerifiedDistances}</b>
-                          </span>
-                          <span>
-                            ranked in <b>{it.stats.tookMs} ms</b>
-                          </span>
-                        </div>
-                      ) : null}
-                      <div className="gai-results">
-                        {it.results.map((card, k) => (
-                          <ResultCard key={card.id} card={card} index={(it.startIndex || 0) + k} priorities={priorities} wantCorner={wantCorner} onAsk={(n) => send(`tell me about #${n}`, `Tell me about #${n}`)} onOpen={() => consultantApi.metric("result_clicked")} />
-                        ))}
-                      </div>
-                      <div className="gai-disclaimer">Distances are approx. straight-line estimates from listing partners and map data — not road distances. “n/a” means not verified yet.</div>
-                    </React.Fragment>
-                  );
-                if (it.type === "leadgate")
-                  return gate ? <LeadGateCard key={it.id} gate={gate} onChange={patchGate} onContinue={continuePhone} onConfirm={confirmGate} onEdit={() => patchGate({ stage: "edit" })} onSave={saveGateEdit} /> : null;
-                if (it.type === "review")
-                  return (
-                    <ReviewCard
-                      key={it.id}
-                      summary={summary}
-                      contact={ui?.contact || {}}
-                      consentText={it.consentText}
-                      onEdit={edit}
-                      onEditContact={editContact}
-                      onSubmit={submitEnquiry}
-                      submitting={review.submitting}
-                      error={review.error}
-                      success={review.success}
-                    />
-                  );
-                return (
-                  <div key={it.id} className="gai-row">
-                    <div className="gai-avatar riya" aria-hidden="true">
-                      <QuestBot size={32} />
-                    </div>
-                    <div className={`gai-bubble bot${it.kind === "faq" ? " faq" : ""}${it.kind === "error" ? " error" : ""}`}>
-                      {it.text}
-                      {it.hint && i === lastBotIndex ? <span className="gai-hint">{it.hint}</span> : null}
-                      {it.listing ? (
-                        <span className="gai-hint">
-                          <a href={it.listing.url} target="_blank" rel="noopener noreferrer" style={{ color: "#0f766e", fontWeight: 600 }}>
-                            Open listing ↗
-                          </a>
-                        </span>
-                      ) : null}
-                      {it.retry && i === items.length - 1 ? (
-                        <span className="gai-hint">
-                          <button type="button" className="gai-chip" onClick={() => retry(it.retry)} disabled={busy}>
-                            Try again
-                          </button>
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })}
-
-              {chips && chips.list.length && !busy ? (
-                <div className="gai-chips" role="group" aria-label={chips.multi ? "Choose one or more" : "Quick answers"}>
-                  {chips.list.map((c) => (
-                    <button key={`${c.value}-${c.label}`} type="button" className={`gai-chip${selected.includes(c.value) ? " selected" : ""}${c.value === "show results" ? " ghost" : ""}`} aria-pressed={chips.multi ? selected.includes(c.value) : undefined} onClick={() => onChip(c)}>
-                      {c.label}
-                    </button>
-                  ))}
-                  {chips.multi && selected.length ? (
-                    <button type="button" className="gai-chip primary" onClick={sendSelected}>
-                      Done ({selected.length}) →
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          </div>
-          {brief}
-        </div>
-
-        <footer className="gai-composer">
-          <form
-            className="gai-composer-inner"
-            onSubmit={(e) => {
-              e.preventDefault();
-              send(input);
-            }}
-          >
-            <div className="gai-input-wrap">
-              <input
-                ref={inputRef}
-                className="gai-input"
-                value={input}
-                onChange={(e) => {
-                  clearTimeout(autoSendRef.current);
-                  setInput(e.target.value);
-                }}
-                placeholder={PLACEHOLDER[lang] || PLACEHOLDER.en}
-                aria-label="Message the AI consultant"
-                maxLength={600}
-                type="text"
-                inputMode={chips?.inputType === "tel" || ui?.slot === "phone" ? "tel" : ui?.slot === "email" ? "email" : "text"}
-                autoComplete={ui?.slot === "phone" ? "tel" : ui?.slot === "email" ? "email" : ui?.slot === "name" ? "name" : "off"}
-                enterKeyHint="send"
-              />
-              <button type="submit" className="gai-send" disabled={!input.trim() || busy} aria-label="Send">
-                <SendHorizontal size={18} />
-              </button>
-            </div>
-          </form>
-          <div className="gai-composer-foot">
-            <span>Type in English, हिन्दी or Hinglish · change any answer anytime</span>
-            <span>Real listings only — never invented</span>
-          </div>
-        </footer>
-        </>
+          <QuestStage
+            question={currentQuestion}
+            slot={convState?.slot || null}
+            mode={convState?.req?.mode}
+            lang={lang}
+            serverChips={chips}
+            onAnswer={questAnswer}
+            onBack={questBack}
+            busy={busy}
+            missions={missions}
+            celebrate={celebrate}
+            achievement={achievement}
+            shortlist={shortlist}
+            onShowChat={() => setHandoffView(true)}
+            onTypeInstead={() => setHandoffView(true)}
+            req={convState?.req}
+          />
         )}
       </div>
     </Dialog>
