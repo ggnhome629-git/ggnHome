@@ -10,8 +10,8 @@ const VERSION_ENDPOINT = (process.env.PUBLIC_URL || "").replace(/\/+$/, "") + "/
 const RECHECK_MS = 5 * 60 * 1000;
 
 function compareVersions(left, right) {
-  const a = (String(left).match(/\\d+/g) || []).map(Number);
-  const b = (String(right).match(/\\d+/g) || []).map(Number);
+  const a = (String(left).match(/\d+/g) || []).map(Number);
+  const b = (String(right).match(/\d+/g) || []).map(Number);
   for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
     const av = a[i] || 0;
     const bv = b[i] || 0;
@@ -57,7 +57,8 @@ export default function AppVersionBadge() {
       }
       setReleaseManifest(manifest);
       setCheckedAt(Date.now());
-      const comparison = compareVersions(manifest.version.trim(), APP_VERSION);\n      setStatus(comparison === 0 ? "current" : comparison > 0 ? "update" : "mismatch");
+      const comparison = compareVersions(manifest.version.trim(), APP_VERSION);
+      setStatus(comparison === 0 ? "current" : comparison > 0 ? "update" : "mismatch");
     } catch {
       setCheckedAt(Date.now());
       setStatus((previous) => previous === "update" || previous === "mismatch" ? previous : "unavailable");
