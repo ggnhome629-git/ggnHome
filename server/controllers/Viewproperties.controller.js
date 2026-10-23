@@ -89,28 +89,23 @@ const getPropertyById = async (req, res) => {
     // One cache entry per id covers both collections, so a hit costs a single
     // lookup instead of the rental-then-sale probe below.
     const cacheKey = cache.key(`properties:any:${id}`);
-    const cached = await cache.get(cacheKey);
-    if (cached) return res.status(200).json(cached);
-
-    // Both collections are probed in parallel — the rental-first sequence
-    // made every sale property pay for a failed rental lookup first.
-    const [rental, sale] = await Promise.all([
-      RentalProperty.findById(id).populate("owner", "name email").lean(),
-      SaleProperty.findById(id).populate("ownerId", "name email").lean(),
-    ]);
-
-    const property = rental
-      ? { ...rental, propertyCategory: "rental" }
-      : sale
-      ? { ...sale, propertyCategory: "sale" }
-      : null;
+    const { value: property, hit } = await cache.getOrSet(cacheKey, cache.ttl.propertyDetail, async () => {
+      // Both collections are probed in parallel — the rental-first sequence
+      // made every sale property pay for a failed rental lookup first.
+      const [rental, sale] = await Promise.all([
+        RentalProperty.findById(id).populate("owner", "name email").lean(),
+        SaleProperty.findById(id).populate("ownerId", "name email").lean(),
+      ]);
+      return rental ? { ...rental, propertyCategory: "rental" } : sale ? { ...sale, propertyCategory: "sale" } : null;
+    });
 
     // If property not found in either collection, respond with 404
     if (!property) {
       return res.status(404).json({ message: "Property not found" });
     }
 
-    await cache.set(cacheKey, property, cache.ttl.propertyDetail);
+    res.set("Cache-Control", "public, max-age=15, stale-while-revalidate=30");
+    if (hit) res.set("X-Cache", "HIT");
     return res.status(200).json(property);
   } catch (error) {
     // Handle server errors during fetch operation
@@ -175,52 +170,48 @@ const getAllActiveProperties = async (req, res) => {
     const window = skip + limit;
 
     const cacheKey = cache.key("properties:active", { page, limit });
-    const cached = await cache.get(cacheKey);
-    if (cached) {
-      res.set("X-Cache", "HIT");
-      return res.status(200).json(cached);
-    }
+    const { value: properties, hit } = await cache.getOrSet(cacheKey, cache.ttl.propertyList, async () => {
+      const [rentalProperties, saleProperties] = await Promise.all([
+        RentalProperty.find({ isActive: true })
+          .select(RENTAL_CARD_FIELDS)
+          .sort({ createdAt: -1, _id: -1 })
+          .limit(window)
+          .lean(),
+        SaleProperty.find({ isActive: true })
+          .select(SALE_CARD_FIELDS)
+          .sort({ createdAt: -1, _id: -1 })
+          .limit(window)
+          .lean(),
+      ]);
 
-    const [rentalProperties, saleProperties] = await Promise.all([
-      RentalProperty.find({ isActive: true })
-        .select(RENTAL_CARD_FIELDS)
-        .sort({ createdAt: -1, _id: -1 })
-        .limit(window)
-        .lean(),
-      SaleProperty.find({ isActive: true })
-        .select(SALE_CARD_FIELDS)
-        .sort({ createdAt: -1, _id: -1 })
-        .limit(window)
-        .lean(),
-    ]);
+      // Merge both collections into one recency-ordered feed, then take the
+      // requested slice.
+      const merged = [
+        ...rentalProperties.map((prop) => ({ ...prop, defaultpropertytype: "rental" })),
+        ...saleProperties.map((prop) => ({ ...prop, defaultpropertytype: "sale" })),
+      ]
+        .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+        .slice(skip, skip + limit);
 
-    // Merge both collections into one recency-ordered feed, then take the
-    // requested slice.
-    const merged = [
-      ...rentalProperties.map((prop) => ({ ...prop, defaultpropertytype: "rental" })),
-      ...saleProperties.map((prop) => ({ ...prop, defaultpropertytype: "sale" })),
-    ]
-      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-      .slice(skip, skip + limit);
+      // Review flags for just this page, not the whole collection.
+      const pageIds = merged.map((prop) => prop._id);
+      const reviewStatuses = pageIds.length
+        ? await PropertyReviewStatus.find({ propertyId: { $in: pageIds } })
+            .select("propertyId isReviewed")
+            .lean()
+        : [];
+      const reviewedById = new Map(
+        reviewStatuses.map((review) => [String(review.propertyId), review.isReviewed])
+      );
 
-    // Review flags for just this page, not the whole collection.
-    const pageIds = merged.map((prop) => prop._id);
-    const reviewStatuses = pageIds.length
-      ? await PropertyReviewStatus.find({ propertyId: { $in: pageIds } })
-          .select("propertyId isReviewed")
-          .lean()
-      : [];
-    const reviewedById = new Map(
-      reviewStatuses.map((review) => [String(review.propertyId), review.isReviewed])
-    );
-
-    const properties = merged.map((prop) =>
-      toCardPayload(prop, prop.defaultpropertytype, reviewedById.get(String(prop._id)) || false)
-    );
-
-    await cache.set(cacheKey, properties, cache.ttl.propertyList);
-    res.set("X-Cache", "MISS");
-    res.status(200).json(properties);
+      const properties = merged.map((prop) =>
+        toCardPayload(prop, prop.defaultpropertytype, reviewedById.get(String(prop._id)) || false)
+      );
+      return properties;
+    });
+    res.set("Cache-Control", "public, max-age=20, stale-while-revalidate=40");
+    res.set("X-Cache", hit ? "HIT" : "MISS");
+    return res.status(200).json(properties);
   } catch (error) {
     console.error("Error fetching all properties:", error);
     res.status(500).json({

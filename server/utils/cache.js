@@ -77,6 +77,29 @@ async function set(key, value, ttl = 600) {
 }
 
 /**
+ * Read-through with single flight: if many requests miss the same key together (cache expiry, a
+ * traffic spike), only ONE runs the database query; the others wait for its answer. A loader that
+ * throws or returns null/undefined is not cached and not shared past that moment.
+ */
+const inflight = new Map();
+async function getOrSet(key, ttl, loader) {
+  const hit = await get(key);
+  if (hit) return { value: hit, hit: true };
+  if (inflight.has(key)) return { value: await inflight.get(key), hit: false };
+  const run = (async () => {
+    const value = await loader();
+    if (value !== null && value !== undefined) await set(key, value, ttl);
+    return value;
+  })();
+  inflight.set(key, run);
+  try {
+    return { value: await run, hit: false };
+  } finally {
+    inflight.delete(key);
+  }
+}
+
+/**
  * Delete from cache (both L1 and L2)
  */
 async function invalidate(key) {
@@ -256,6 +279,7 @@ module.exports = {
   // Low-level ops
   get,
   set,
+  getOrSet,
   invalidate,
   clear,
   cacheKeys,
