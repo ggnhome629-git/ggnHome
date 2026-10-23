@@ -139,12 +139,32 @@ const VoiceAssistantSaleResponsive = makeResponsiveComponent(VoiceAssistantSale,
 
 
 
+// Warm the most-used page chunks once the home screen is idle, so taps open instantly.
+const prefetchCommonRoutes = () => {
+  [
+    () => import("./screens/Searches/Searchproperty"),
+    () => import("./screens/Property View/RentalPropertyPageView"),
+    () => import("./screens/Property View/SalePropertyPageView"),
+    () => import("./screens/Dashboard/SeeAllProperties"),
+    () => import("./screens/Dashboard/savedproperties"),
+    () => import("./screens/App/ForYouPage"),
+  ].forEach((load, i) => setTimeout(() => load().catch(() => {}), i * 400));
+};
+
 const PARTNER_SHELL_PATHS = /^\/partner\/(dashboard|properties|leads|enquiries|profile)(\/|$)/;
 
 function App() {
   const aiEnabled = useAiConsultantEnabled();
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 2500));
+    const conn = navigator.connection;
+    if (conn?.saveData) return undefined;
+    const id = idle(prefetchCommonRoutes, { timeout: 5000 });
+    return () => (window.cancelIdleCallback ? window.cancelIdleCallback(id) : clearTimeout(id));
+  }, []);
 
   useEffect(() => {
     setupInterceptors(navigate);
@@ -165,7 +185,7 @@ function App() {
     <AiConsultantProvider>
     <AppLaunchIntro />
     <CacheRefreshWatcher />
-    <AnimatePresence mode="wait" initial={false}>
+    <AnimatePresence mode="popLayout" initial={false}>
       <motion.div
         key={transitionKey}
         initial="initial"

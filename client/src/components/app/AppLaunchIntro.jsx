@@ -11,7 +11,7 @@ import { isNativeApp, nativePlugin } from "../../utils/nativeApp";
  * transform only (GPU-composited), no blur filters, no JS animation loop.
  */
 const SEEN_KEY = "ggn:introSeen";
-const SHOW_MS = 2100;
+const SHOW_MS = 1000;
 
 const shouldPlay = () => {
   try {

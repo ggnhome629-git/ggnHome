@@ -48,17 +48,9 @@ export const staggerItemVariants = slideUpVariants;
 
 // Applied to a route's outer wrapper via AnimatePresence in App.js.
 export const pageTransitionVariants = {
-  initial: { opacity: 0, y: 12 },
-  animate: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: motionDuration.normal, ease: motionEase.decelerate },
-  },
-  exit: {
-    opacity: 0,
-    y: -8,
-    transition: { duration: motionDuration.fast, ease: motionEase.accelerate },
-  },
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 0.12, ease: motionEase.decelerate } },
+  exit: { opacity: 0, transition: { duration: 0.06 } },
 };
 
 export const hoverLiftTransition = {
