@@ -5,6 +5,7 @@
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#003366" />
+    <meta name="ggnhome-frontend-version" content="2.0.0" />
     <link rel="preconnect" href="https://api.ggnhome.com" crossorigin />
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -99,6 +100,59 @@
         if(p.indexOf("/admin")===0||sessionStorage.getItem("ggn:introSeen"))return;
         if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)return;
         if(/GgnHomeApp/i.test(ua)||p==="/")document.getElementById("ggn-boot").style.display="flex";}catch(e){}})();
+    </script>
+    <style>
+      #ggn-build-status{position:fixed;right:12px;bottom:calc(82px + env(safe-area-inset-bottom,0px));z-index:1500;display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 12px;border:1px solid rgba(171,159,255,.58);border-radius:999px;color:#fff;background:linear-gradient(115deg,#4526bc,#782ee8 58%,#b12fcf);box-shadow:0 5px 18px rgba(57,35,145,.28);font:800 12px/1 Inter,system-ui,sans-serif;letter-spacing:.025em;cursor:pointer}
+      #ggn-build-status .dot{width:7px;height:7px;border-radius:50%;background:#75dca1;box-shadow:0 0 0 3px rgba(117,220,161,.13)}
+      #ggn-build-status.update .dot{background:#ffd166;box-shadow:0 0 0 3px rgba(255,209,102,.16)}
+      #ggn-build-status.unavailable .dot{background:#c1ccd9;box-shadow:none}
+      #ggn-build-status:focus-visible{outline:3px solid #60f4e7;outline-offset:3px}
+      @media(max-width:520px){#ggn-build-status{right:8px;bottom:calc(82px + env(safe-area-inset-bottom,0px));min-height:34px;padding:0 10px}}
+    </style>
+    <button id="ggn-build-status" class="checking" type="button" aria-label="Check GgnHome frontend version" title="Checking the live frontend version">
+      <span aria-hidden="true">✨</span><span class="label">V2 · CHECK</span><span class="dot" aria-hidden="true"></span>
+    </button>
+    <script>
+      (function(){
+        var button=document.getElementById("ggn-build-status");
+        var meta=document.querySelector('meta[name="ggnhome-frontend-version"]');
+        if(!button||!meta)return;
+        if(/^\/(admin|partner|agent|sms-service)(\/|$)/i.test(location.pathname)){button.remove();return;}
+        var bundle=meta.content||"0.0.0";
+        var label=button.querySelector(".label");
+        function setState(state,text,title){button.className=state;label.textContent=text;button.title=title;}
+        async function check(){
+          try{
+            var response=await fetch("/version.json?check="+Date.now(),{cache:"no-store",headers:{Accept:"application/json"}});
+            if(!response.ok)throw new Error("Version check failed");
+            var live=await response.json();
+            if(!live||typeof live.version!=="string")throw new Error("Version manifest invalid");
+            if(live.version===bundle){
+              setState("current","V"+bundle.split(".")[0]+" · LIVE","Frontend bundle v"+bundle+" matches the live version manifest");
+            }else{
+              setState("update","V"+bundle.split(".")[0]+" · UPDATE","This tab has frontend v"+bundle+"; the server publishes v"+live.version+". Click to clear browser caches and reload.");
+            }
+          }catch(e){
+            setState("unavailable","V"+bundle.split(".")[0]+" · VERIFY","Could not verify the live frontend version. Click to check again.");
+          }
+        }
+        button.addEventListener("click",async function(){
+          if(button.className==="update"){
+            label.textContent="REFRESHING…";
+            var tasks=[];
+            try{
+              if("caches" in window)tasks.push(caches.keys().then(function(names){return Promise.all(names.map(function(name){return caches.delete(name);}));}));
+              if(navigator.serviceWorker&&navigator.serviceWorker.getRegistrations)tasks.push(navigator.serviceWorker.getRegistrations().then(function(regs){return Promise.all(regs.map(function(reg){return reg.unregister();}));}));
+              await Promise.all(tasks);
+            }catch(e){}
+            window.location.reload();
+            return;
+          }
+          setState("checking","V"+bundle.split(".")[0]+" · CHECK","Checking the live frontend version");
+          await check();
+        });
+        check();
+      })();
     </script>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
