@@ -492,6 +492,34 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
         <meta name="twitter:title" content={seoTitle} />
         <meta name="twitter:description" content={seoDescription} />
         <meta name="twitter:image" content="https://www.ggnhome.com/og-image-whatsapp.jpg?v=2" />
+        {canIndexLanding && (
+          <script type="application/ld+json">
+            {JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "CollectionPage",
+              name: seoTitle,
+              description: seoDescription,
+              url: canonicalUrl,
+              inLanguage: "en-IN",
+              isPartOf: {
+                "@type": "WebSite",
+                name: "GgnHome",
+                url: "https://www.ggnhome.com/",
+              },
+              mainEntity: {
+                "@type": "ItemList",
+                itemListElement: results
+                  .filter((property) => property?._id || property?.id)
+                  .map((property, index) => ({
+                    "@type": "ListItem",
+                    position: index + 1,
+                    name: property.title || seoTitle,
+                    url: `https://www.ggnhome.com${propertyDetailPath(property)}`,
+                  })),
+              },
+            })}
+          </script>
+        )}
       </Helmet>
       <Suspense fallback={<Box sx={{ height: 64 }} />}>
         <TopNavigationBar navItems={NAV_ITEMS} />
