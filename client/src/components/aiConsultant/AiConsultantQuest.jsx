@@ -466,7 +466,7 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
   // Follow-up chat and review actions stay inside the quest-styled handoff screen.
   const lastItemType = items.length ? items[items.length - 1].type : null;
   useEffect(() => {
-    if (lastItemType === "review") setHandoffView(true);
+    if (lastItemType === "review" || lastItemType === "leadgate") setHandoffView(true);
   }, [lastItemType]);
 
   /* ------------------------------------------------------------- quest */
