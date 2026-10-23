@@ -4,6 +4,11 @@ const { createServiceRequest, getServiceRequests, updateServiceRequestStatus } =
 ;
 const express = require("express");
 const router = express.Router();
+const { servePropertySitemap, serveLocalitySitemap } = require("../controllers/seoSitemap.controller");
+
+// Public XML sitemaps use live, active listing data rather than placeholder IDs.
+router.get("/sitemap-properties.xml", servePropertySitemap);
+router.get("/sitemap-localities.xml", serveLocalitySitemap);
 const User = require("../models/user.model.js");
 const { getPublicFeatureToggles, getAdminFeatureToggles, updateAdminFeatureToggles } = require("../controllers/featureToggle.controller");
 const { getAppDownloads, updateAppDownloads, downloadApk } = require("../controllers/appDownload.controller");
