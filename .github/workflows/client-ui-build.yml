@@ -53,6 +53,7 @@ jobs:
           node --check server/index.js
           node --check server/controllers/adminPartnerAccess.controller.js
           node --check server/controllers/adminDashboardPreferences.controller.js
+          node --check server/controllers/seoSitemap.controller.js
           node --check server/controllers/appDownload.controller.js
           node --check server/controllers/livekitVoice.controller.js
           node --check server/controllers/voiceQueue.controller.js
