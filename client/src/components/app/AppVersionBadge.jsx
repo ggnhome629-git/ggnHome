@@ -100,7 +100,9 @@ export default function AppVersionBadge() {
     ? "This tab's frontend bundle matches the live version manifest."
     : status === "update"
       ? "A newer frontend build is published. This browser may still be using cached JavaScript."
-      : status === "checking"
+      : status === "mismatch"
+        ? "This tab reports a newer bundle than the live manifest. Deployment metadata may still be catching up; check again before refreshing."
+        : status === "checking"
         ? "Checking which frontend build is live…"
         : "Couldn't verify the live version. The displayed version is the bundle loaded in this tab.";
 
