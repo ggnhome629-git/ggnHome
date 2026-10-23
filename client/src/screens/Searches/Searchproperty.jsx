@@ -170,7 +170,8 @@ export default function Searchproperty() {
   // ------------------------------------------------------------- results --
   const paramsKey = searchParams.toString();
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
+    const { signal } = controller;
     const params = new URLSearchParams();
     if (query) params.set("query", query);
     if (type) params.set("type", type);
@@ -178,71 +179,67 @@ export default function Searchproperty() {
     params.set("sort", sortBy);
     params.set("page", String(page));
     params.set("limit", String(PAGE_LIMIT));
-
-    const cacheKey = `search_${paramsKey}`;
+    const paramsString = params.toString();
 
     const loadResults = async () => {
       try {
         setLoading(true);
         setError(false);
 
-        // Try to get from cache first (30 minute cache for search results)
-        const cached = await cacheUtils.getSearchResults(params.toString());
-        if (cached && !cancelled) {
+        // Render cached results immediately; refresh them in the background.
+        const cached = await cacheUtils.getSearchResults(paramsString);
+        if (signal.aborted) return;
+        if (cached && Array.isArray(cached.list)) {
           setResults(cached.list.slice(0, PAGE_LIMIT));
           setTotal(cached.total);
           setLoading(false);
-          // Fetch fresh data in background
-          fetchAndCacheSearchResults(params.toString());
+          fetchAndCacheSearchResults(paramsString, signal);
           return;
         }
 
-        // No cache, fetch immediately
-        await fetchAndCacheSearchResults(params.toString());
+        await fetchAndCacheSearchResults(paramsString, signal);
       } catch (err) {
-        if (!cancelled) {
-          setResults([]);
-          setTotal(null);
-          setError(true);
-          setLoading(false);
-        }
+        if (signal.aborted || axios.isCancel(err)) return;
+        setResults([]);
+        setTotal(null);
+        setError(true);
+        setLoading(false);
       }
     };
 
     loadResults();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, paramsKey, reloadKey]);
 
-  const fetchAndCacheSearchResults = async (paramsString) => {
+  const fetchAndCacheSearchResults = async (paramsString, signal) => {
     try {
       const res = await axios.get(`${process.env.REACT_APP_SEARCH_PROPERTIES_API}?${paramsString}`, {
         withCredentials: true,
         headers: authHeaders(),
+        signal,
       });
+      if (signal?.aborted) return;
 
       const list = Array.isArray(res.data) ? res.data : [];
       const header = res.headers?.["x-total-count"];
       const total = header != null && header !== "" ? Number(header) : null;
-
       const searchData = { list, total };
 
-      // Cache search results for 30 minutes
       await cacheUtils.cacheSearchResults(paramsString, searchData);
+      if (signal?.aborted) return;
 
       setResults(list.slice(0, PAGE_LIMIT));
       setTotal(total);
       setError(false);
     } catch (err) {
+      if (signal?.aborted || axios.isCancel(err)) return;
       console.error("Search error:", err);
       setResults([]);
       setTotal(null);
       setError(true);
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
   };
 
@@ -264,18 +261,26 @@ export default function Searchproperty() {
       setAreaSuggestions([]);
       return undefined;
     }
+
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
         const res = await axios.get(
           `${process.env.REACT_APP_SEARCH_AREAS_API}?query=${encodeURIComponent(text)}`,
-          { withCredentials: true }
+          { withCredentials: true, signal: controller.signal }
         );
-        setAreaSuggestions((res.data?.sectors || []).map((s) => s.name || s).filter(Boolean).slice(0, 8));
+        if (!controller.signal.aborted) {
+          setAreaSuggestions((res.data?.sectors || []).map((s) => s.name || s).filter(Boolean).slice(0, 8));
+        }
       } catch (err) {
-        setAreaSuggestions([]);
+        if (!controller.signal.aborted && !axios.isCancel(err)) setAreaSuggestions([]);
       }
     }, 250);
-    return () => clearTimeout(timer);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [inputText, query]);
 
   // ------------------------------------------------------------- saves --
