@@ -178,7 +178,7 @@ const SeeAllProperties = ({ properties = [] }) => {
     >
       <div style={{ position: 'relative', height: '200px', overflow: 'hidden' }}>
         <img 
-          src={property.images?.[0] || '/default-property.jpg'} 
+          src={property.images?.[0] || '/default-property.jpg'} loading="lazy" decoding="async" 
           alt={property.propertyType || 'Property'}
           style={{
             width: '100%',

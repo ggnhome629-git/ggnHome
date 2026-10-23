@@ -503,7 +503,7 @@ export default function InvestRealEstatePage() {
               >
                 <div style={{ position: "relative" }}>
                   <img
-                    src={prop.imageUrl || "/default-property.jpg"}
+                    src={prop.imageUrl || "/default-property.jpg"} loading="lazy" decoding="async"
                     alt={prop.name || "Property"}
                     style={{
                       width: "100%",
