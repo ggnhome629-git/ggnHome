@@ -8,6 +8,7 @@ const { enforceEnv } = require("./config/validateEnv");
 const { capPagination } = require("./middleware/capPagination");
 const mongoose = require("mongoose");
 const helmet = require("helmet");
+const compression = require("compression");
 const routes = require("./Route/route");
 const { requestId, notFound, errorHandler } = require("./middleware/errorHandler");
 const { apiLimiter } = require("./middleware/rateLimit");
@@ -58,6 +59,8 @@ app.set("trust proxy", 1); // Render sits behind a proxy; needed for real client
 // Middleware
 app.use(requestId);
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+// Shrink JSON/HTML responses (property lists are big); skips tiny bodies and already-compressed files.
+app.use(compression({ threshold: 1024 }));
 app.use(express.json({ limit: "1mb" }));
 app.use(cookieParser()); // must be before routes
 

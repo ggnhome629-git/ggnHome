@@ -79,11 +79,25 @@ export function AuthProvider({ children }) {
     // Always validate auth with backend on first load
     fetchUser({ force: true });
 
-    const id = setInterval(() => {
+    // Re-check the session in the background, but never from a hidden tab (a phone in a pocket makes no calls);
+    // when the tab comes back after a long gap, check once then.
+    let last = Date.now();
+    const recheck = () => {
+      last = Date.now();
       fetchUser({ force: true });
+    };
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") recheck();
     }, REVALIDATE_INTERVAL_MS);
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && Date.now() - last >= REVALIDATE_INTERVAL_MS) recheck();
+    };
+    document.addEventListener("visibilitychange", onVisible);
 
-    return () => clearInterval(id);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, []);
 
   useEffect(() => {
