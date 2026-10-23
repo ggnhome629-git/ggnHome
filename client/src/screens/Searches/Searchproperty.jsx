@@ -15,6 +15,7 @@ import {
 import axios from "axios";
 import { ArrowRight, MapPin, RefreshCw, SearchX, Share2 } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Helmet } from "react-helmet";
 import { useAuth } from "../../Context/AuthContext";
 import { propertyDetailPath } from "../../components/property/PropertyCard";
 import SearchHero from "./SearchHero";
@@ -126,9 +127,9 @@ function ResultSkeleton() {
   );
 }
 
-export default function Searchproperty() {
-  const { query: rawQuery = "" } = useParams();
-  const query = rawQuery.trim();
+export default function Searchproperty({ landingType = "", seoLocalityLanding = false } = {}) {
+  const { query: rawQuery = "", localitySlug = "" } = useParams();
+  const query = (rawQuery || (seoLocalityLanding ? titleCase(localitySlug.replace(/-/g, " ")) : "")).trim();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -137,7 +138,8 @@ export default function Searchproperty() {
 
   const type = (() => {
     const t = (searchParams.get("type") || "").toLowerCase();
-    return t === "rent" || t === "sale" ? t : "";
+    if (t === "rent" || t === "sale") return t;
+    return landingType === "rent" || landingType === "sale" ? landingType : "";
   })();
   const sortBy = SORT_OPTIONS.some((o) => o.value === searchParams.get("sort"))
     ? searchParams.get("sort")
@@ -210,7 +212,7 @@ export default function Searchproperty() {
     loadResults();
     return () => controller.abort();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, paramsKey, reloadKey]);
+  }, [query, paramsKey, reloadKey, landingType]);
 
   const fetchAndCacheSearchResults = async (paramsString, signal) => {
     try {
