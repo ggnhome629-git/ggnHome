@@ -352,6 +352,7 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
       writeRecent(nextRecent);
     }
     const next = new URLSearchParams(searchParams);
+    if (landingType && !next.has("type")) next.set("type", landingType);
     next.delete("page");
     const qs = next.toString();
     navigate(`/search${value ? `/${encodeURIComponent(value)}` : ""}${qs ? `?${qs}` : ""}`);
@@ -377,7 +378,7 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
 
   const clearAllFilters = () => {
     const next = new URLSearchParams();
-    if (type) next.set("type", type);
+    if (type && !landingType) next.set("type", type);
     if (sortBy !== "relevance") next.set("sort", sortBy);
     setSearchParams(next);
   };
