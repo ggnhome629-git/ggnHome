@@ -246,7 +246,7 @@ export default function QuestStage({
 
   const revealBody = (
     <>
-      <p className="qreveal-kicker">🏆 Mission complete!</p>
+      <p className="qreveal-kicker">🏆 GURGAON HOME QUEST · MISSION COMPLETE</p>
       <h2>
         {matchCount ? (
           <>
@@ -282,9 +282,9 @@ export default function QuestStage({
     return (
       <section className="qst qst-reveal qst-match-results" aria-label="Matching properties">
         <div className="qreveal-panel">
-          <p className="qreveal-kicker">🔎 Your property shortlist</p>
-          <h2>{shortlist.results?.length || 0} matching homes</h2>
-          <p>Showing the preferences used for this search. Matches are based on the listing data available.</p>
+          <p className="qreveal-kicker">📖 QUEST JOURNAL · YOUR DISCOVERED HOMES</p>
+          <h2>{shortlist.results?.length || 0} homes discovered</h2>
+          <p>Your collection of homes matching this quest. Explore a home, compare your finalists, and refine your mission with Riya.</p>
           {filterEntries.length ? (
             <div className="qmatch-filters">
               {filterEntries.map(([key, value]) => (
