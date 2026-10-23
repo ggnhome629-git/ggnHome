@@ -157,6 +157,8 @@ export default function QuestStage({
   const [reaction, setReaction] = useState("");
   const [worldFailed, setWorldFailed] = useState(false);
   const [showMatches, setShowMatches] = useState(false);
+  const [collectionIds, setCollectionIds] = useState([]);
+  const [showCompare, setShowCompare] = useState(false);
   // warm the 3D map's code while the title screen is up, so "Let's go" lands in the game
   useEffect(() => {
     if (!started) import("./world/QuestWorld").catch(() => {});
@@ -293,15 +295,40 @@ export default function QuestStage({
             </div>
           ) : null}
           {shortlist.results?.length ? (
-            <div className="qmatch-list">
-              {shortlist.results.map((c, i) => (
-                <a key={c.id || i} className="qmatch-listing" href={c.url} target="_blank" rel="noopener noreferrer">
-                  <span className="qmatch-image">{c.image ? <img src={cloudinaryUrl(c.image, { width: 520 })} alt="" loading="lazy" /> : <span>🏡</span>}</span>
-                  <span className="qmatch-info"><b>{c.priceLabel || "Price on request"}</b><strong>{[c.bhkLabel, c.propertyType, c.sector].filter(Boolean).join(" · ")}</strong><small>{[c.areaSqft ? `${c.areaSqft} sq ft` : null, c.furnishing].filter(Boolean).join(" · ")}</small></span>
-                  <span className="qmatch-open">View ↗</span>
-                </a>
-              ))}
-            </div>
+            <>
+              <div className="qjournal-intro"><b>Quest Journal</b><span>Collect homes you like, then compare your finalists.</span></div>
+              <div className="qmatch-list">
+                {shortlist.results.map((c, i) => {
+                  const homeId = String(c.id || c.url || i);
+                  const collected = collectionIds.includes(homeId);
+                  return (
+                    <article key={homeId} className={"qmatch-listing" + (collected ? " collected" : "")}>
+                      <span className="qmatch-image">{c.image ? <img src={cloudinaryUrl(c.image, { width: 520 })} alt="" loading="lazy" /> : <span>🏡</span>}</span>
+                      <span className="qmatch-info"><b>{c.priceLabel || "Price on request"}</b><strong>{[c.bhkLabel, c.propertyType, c.sector].filter(Boolean).join(" · ")}</strong><small>{[c.areaSqft ? c.areaSqft + " sq ft" : null, c.furnishing].filter(Boolean).join(" · ")}</small><a className="qmatch-open" href={c.url} target="_blank" rel="noopener noreferrer">Explore home ↗</a></span>
+                      <button type="button" className="qmatch-collect" aria-pressed={collected} onClick={() => setCollectionIds((ids) => collected ? ids.filter((id) => id !== homeId) : [...ids, homeId])}>{collected ? "✓ Collected" : "+ Collect"}</button>
+                    </article>
+                  );
+                })}
+              </div>
+              {collectionIds.length >= 2 ? (
+                <div className="qcompare-launch"><span><b>{collectionIds.length} homes in your collection</b><small>Ready for your final face-off</small></span><button type="button" className="qcta" onClick={() => setShowCompare((value) => !value)}>{showCompare ? "Hide comparison" : "Compare homes →"}</button></div>
+              ) : <p className="qcompare-hint">Collect at least 2 homes to unlock your final face-off.</p>}
+              {showCompare ? (
+                <div className="qcompare-table-wrap">
+                  <h3>🏁 Your Home Face-Off</h3>
+                  <div className="qcompare-table">
+                    <div className="qcompare-row qcompare-head"><b>Details</b>{shortlist.results.filter((c, i) => collectionIds.includes(String(c.id || c.url || i))).slice(0, 3).map((c, i) => <b key={c.id || c.url || i}>{[c.bhkLabel, c.sector].filter(Boolean).join(" · ") || "Home " + (i + 1)}</b>)}</div>
+                    {[
+                      ["Price", (c) => c.priceLabel || "Not listed"],
+                      ["Type", (c) => c.propertyType || c.bhkLabel || "Not listed"],
+                      ["Area", (c) => c.areaSqft ? c.areaSqft + " sq ft" : "Not listed"],
+                      ["Furnishing", (c) => c.furnishing || "Not listed"]
+                    ].map(([label, getValue]) => <div className="qcompare-row" key={label}><b>{label}</b>{shortlist.results.filter((c, i) => collectionIds.includes(String(c.id || c.url || i))).slice(0, 3).map((c, i) => <span key={c.id || c.url || i}>{getValue(c)}</span>)}</div>)}
+                  </div>
+                  <p>Riya compares available listing details. Missing information is shown as “Not listed” rather than guessed.</p>
+                </div>
+              ) : null}
+            </>
           ) : <p>{shortlist.state === "loading" ? "Searching listings…" : "No exact matches found for these preferences yet."}</p>}
           <button type="button" className="qcta big" onClick={onShowChat}>Refine filters in chat →</button>
           <button type="button" className="qcta" onClick={() => setShowMatches(false)}>← Back to overview</button>
