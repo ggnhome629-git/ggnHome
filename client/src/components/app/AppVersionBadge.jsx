@@ -187,7 +187,7 @@ export default function AppVersionBadge() {
                 <RefreshCcw size={13} /> Check again
               </button>
             </div>
-            <small className="ggn-v2-footnote">For each frontend release, bump the bundle version and update client/public/version.json with the new version and release notes.</small>
+            <small className="ggn-v2-footnote">For each frontend release, bump APP_VERSION here, the ggnhome-frontend-version meta in client/public/index.html, and client/public/version.json together; add the new release notes.</small>
           </div>
         </section>
       ) : null}
