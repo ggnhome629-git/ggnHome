@@ -55,12 +55,45 @@ const NAV_ITEMS = [
  * on scroll. Sections that ship their own heading keep it — this only adds
  * the shared rhythm.
  */
-function LazySection({ fallback, children, sx }) {
+function LazySection({ fallback, children, sx, rootMargin = "650px" }) {
+  const sectionRef = useRef(null);
+  const [shouldMount, setShouldMount] = useState(false);
+
+  useEffect(() => {
+    if (shouldMount) return undefined;
+    const node = sectionRef.current;
+    if (!node) return undefined;
+
+    // Keep below-the-fold sections out of the React tree until they're near
+    // the viewport. This delays both their JS chunk download and their work.
+    if (typeof IntersectionObserver === "undefined") {
+      setShouldMount(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldMount(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin, threshold: 0 }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [rootMargin, shouldMount]);
+
   return (
-    <Box sx={sx}>
-      <Suspense fallback={fallback}>
-        <Reveal amount={0.05}>{children}</Reveal>
-      </Suspense>
+    <Box ref={sectionRef} sx={sx}>
+      {shouldMount ? (
+        <Suspense fallback={fallback}>
+          <Reveal amount={0.05}>{children}</Reveal>
+        </Suspense>
+      ) : (
+        fallback
+      )}
     </Box>
   );
 }
@@ -135,31 +168,42 @@ export default function RealEstateDashboard() {
 
   // ---------------------------------------------------------------- search --
 
-  // Area suggestions as the user types.
+  // Debounce autocomplete and cancel stale requests while the user types.
   useEffect(() => {
-    if (!searchQuery.trim()) {
+    const query = searchQuery.trim();
+    if (!query) {
       setAreaSuggestions([]);
-      return;
+      return undefined;
     }
-    const fetchSuggestions = async () => {
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(async () => {
       try {
         const res = await fetch(
-          `${process.env.REACT_APP_SEARCH_AREAS_API}?query=${encodeURIComponent(
-            searchQuery.trim()
-          )}`,
-          { method: "GET", credentials: "include" }
+          `${process.env.REACT_APP_SEARCH_AREAS_API}?query=${encodeURIComponent(query)}`,
+          {
+            method: "GET",
+            credentials: "include",
+            signal: controller.signal,
+          }
         );
-        if (res.ok) {
-          const data = await res.json();
-          setAreaSuggestions(data.sectors || []);
-        } else {
+        if (!res.ok) {
           setAreaSuggestions([]);
+          return;
+        }
+        const data = await res.json();
+        if (!controller.signal.aborted) {
+          setAreaSuggestions(Array.isArray(data?.sectors) ? data.sectors : []);
         }
       } catch (err) {
-        setAreaSuggestions([]);
+        if (err?.name !== "AbortError") setAreaSuggestions([]);
       }
+    }, 250);
+
+    return () => {
+      clearTimeout(timeoutId);
+      controller.abort();
     };
-    fetchSuggestions();
   }, [searchQuery]);
 
   // Takes the term explicitly so a suggestion click searches what was clicked
