@@ -28,6 +28,10 @@ export default function LeadGateCard({ gate, onChange, onContinue, onConfirm, on
             <span style={{ fontWeight: 700 }}>+91</span>
             <input className="gai-input" style={{ flex: 1, border: "1px solid #e6ded2", borderRadius: 12, padding: "10px 12px" }} value={phone} onChange={(e) => onChange({ phone: e.target.value.replace(/\D/g, "").slice(0, 10) })} inputMode="tel" autoComplete="tel-national" placeholder="10-digit mobile number" aria-label="Mobile number" maxLength={10} />
           </div>
+          <label style={{ display: "grid", gap: 4, marginTop: 10, fontSize: 13 }}>
+            Your name
+            <input className="gai-input" style={{ border: "1px solid #e6ded2", borderRadius: 12, padding: "10px 12px" }} value={name} onChange={(e) => onChange({ name: e.target.value.slice(0, 60) })} autoComplete="name" placeholder="Enter your name" maxLength={60} />
+          </label>
           {error ? (
             <p role="alert" style={{ color: "#b83a2b", fontSize: 13, margin: "8px 0 0" }}>
               {error}
@@ -73,7 +77,7 @@ export default function LeadGateCard({ gate, onChange, onContinue, onConfirm, on
             </p>
           ) : null}
           <div className="gai-card-actions">
-            <button type="submit" className="gai-btn primary" disabled={phone.length !== 10}>
+            <button type="submit" className="gai-btn primary" disabled={phone.length !== 10 || name.trim().length < 2}>
               Save
             </button>
           </div>
