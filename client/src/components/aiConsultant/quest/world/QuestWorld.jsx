@@ -571,6 +571,17 @@ export default function QuestWorld({ slot, finale = false, mode, lang, req, busy
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [worldMode, ready, laneIdx, laneArea?.value]);
 
+  // Hide the abstract sector extrusions while the camera is street-level.
+  // Real building footprints from the basemap remain visible for the 3D lane view.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !styleVersion) return;
+    const visibility = worldMode === "lane" ? "none" : "visible";
+    ["gg-sector-block", "gg-sector-edge"].forEach((id) => {
+      if (map.getLayer(id)) map.setLayoutProperty(id, "visibility", visibility);
+    });
+  }, [worldMode, styleVersion]);
+
   // lane: fetch real homes once the size is set
   const laneKey = `${mode}|${picks.map((p) => p.value).join(" and ")}|${size?.value || ""}`;
   useEffect(() => {
@@ -607,7 +618,10 @@ export default function QuestWorld({ slot, finale = false, mode, lang, req, busy
       // homes further down the street are smaller, so the lane has depth
       node.style.setProperty("--s", String(street.data ? Math.max(0.62, 1 - plots[i].depth * 0.09) : 1));
       node.setAttribute("aria-label", `${h.bhkLabel || ""} ${h.priceLabel} in ${h.sector}`.trim());
-      node.appendChild(el("span", "qw-home-tag", h.priceLabel.replace(/\s*\/\s*month$/i, "")));
+      const priceTag = el("span", "qw-home-tag");
+      priceTag.appendChild(el("strong", "qw-home-price", h.priceLabel.replace(/\\s*\\/\\s*month$/i, "").replace(/\\s*per month$/i, "")));
+      if (mode === "rent") priceTag.appendChild(el("small", "qw-home-period", " / month"));
+      node.appendChild(priceTag);
       const house = el("span", "qw-home-house");
       house.appendChild(el("span", "qw-home-roof"));
       const body = el("span", "qw-home-body");
