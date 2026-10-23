@@ -298,7 +298,7 @@ export default function PropertyDetailPage({ type, partnerView = false }) {
     );
   }
 
-  const shareLink = `${window.location.origin}${ROUTE_BASE[type]}/${property.id}`;
+  const shareLink = `https://www.ggnhome.com${ROUTE_BASE[type]}/${property.id}`;
   const pageTitle = `${property.configuration || property.propertyType || "Property"} ${
     property.isRental ? "for Rent" : "for Sale"
   } in ${property.sector || "Gurgaon"} | GgnHome`;
@@ -313,6 +313,7 @@ export default function PropertyDetailPage({ type, partnerView = false }) {
       ) : (
         <Helmet>
           <title>{pageTitle}</title>
+          <meta name="robots" content="index,follow,max-image-preview:large" />
           <meta
             name="description"
             content={`${property.title} — ${property.priceDisplay || "price on request"}${
