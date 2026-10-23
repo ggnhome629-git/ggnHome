@@ -72,3 +72,94 @@ code {
 .admin-table-wrap .admin-table td { text-align: left; padding: 12px 14px; border-bottom: 1px solid #E5E9EE; vertical-align: middle; }
 .admin-table-wrap .admin-table th { white-space: nowrap; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; color: #003366; background: #F0F6F9; }
 .admin-table-wrap .admin-table .admin-table-align-center { text-align: center; }
+
+
+/* ---- Device-friendly defaults ------------------------------------------
+   Keep interaction responsive on entry-level phones and older browsers.
+   Decorative motion is progressively enhanced, never required for content.
+*/
+:root {
+  color-scheme: light;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  --ggn-motion-fast: 140ms;
+  --ggn-motion-medium: 220ms;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  min-width: 320px;
+  overscroll-behavior-y: contain;
+}
+
+/* Avoid hover-driven work on touch devices; tap feedback remains available. */
+@media (hover: none), (pointer: coarse) {
+  .dash-live .MuiCard-root:hover,
+  .admin-live .MuiGrid-container > .MuiGrid-root > .MuiCard-root:hover,
+  .admin-live .MuiGrid-container > .MuiGrid-root > * > .MuiCard-root:hover {
+    transform: none;
+    box-shadow: inherit;
+  }
+
+  .dash-live .MuiCard-root img,
+  .dash-live .MuiCard-root:hover img {
+    transform: none;
+  }
+
+  .dash-live .MuiButton-contained::after {
+    animation: none;
+  }
+}
+
+/* Reduced motion is respected globally, including component-library effects. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* When a device has no hover capability, keep controls predictable. */
+@media (hover: none) {
+  .admin-live .admin-table-row {
+    transition: none;
+  }
+}
+
+/* Prevent media from causing layout shifts and exceeding small viewports. */
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+img,
+video {
+  height: auto;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+/* Safer focus visibility for keyboard and switch-access users. */
+:focus-visible {
+  outline: 2px solid #00A79D;
+  outline-offset: 2px;
+}
