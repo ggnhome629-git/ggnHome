@@ -891,7 +891,6 @@
 .qhandoff-composer .qcta { min-height: 42px; padding: 0 15px; border-radius: 13px; font-size: 13px; box-shadow: 0 3px 0 var(--q-brand-dark); }
 .qhandoff-composer .qcta svg { width: 16px; height: 16px; }
 .qhandoff-foot { margin: 0; flex: 0 0 auto; text-align: center; color: #75858c; font-size: 10px; line-height: 1.4; }
-.qintro-v2-tag { display: none !important; }
 @media (max-width: 520px) {
   .qhandoff-frame { padding: 7px 7px calc(8px + env(safe-area-inset-bottom, 0px)); gap: 7px; }
   .qhandoff-head { gap: 8px; padding: 8px; border-radius: 15px; }
