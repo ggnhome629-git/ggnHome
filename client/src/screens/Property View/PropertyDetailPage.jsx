@@ -549,24 +549,30 @@ export default function PropertyDetailPage({ type, partnerView = false }) {
         )}
 
         <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} link={shareLink} />
-        <Suspense fallback={null}>
-          <EmiCalculatorDialog open={emiOpen} onClose={() => setEmiOpen(false)} propertyPrice={property.price} />
-        </Suspense>
+        {emiOpen && (
+          <Suspense fallback={null}>
+            <EmiCalculatorDialog open={emiOpen} onClose={() => setEmiOpen(false)} propertyPrice={property.price} />
+          </Suspense>
+        )}
         {!partnerView && (
           <Suspense fallback={null}>
             <>
-              <CallbackDialog
-                open={callbackOpen}
-                onClose={() => setCallbackOpen(false)}
-                property={property}
-                onEvent={emit}
-              />
-              <ScheduleVisitDialog
-                open={visitOpen}
-                onClose={() => setVisitOpen(false)}
-                property={property}
-                onEvent={emit}
-              />
+              {callbackOpen && (
+                <CallbackDialog
+                  open={callbackOpen}
+                  onClose={() => setCallbackOpen(false)}
+                  property={property}
+                  onEvent={emit}
+                />
+              )}
+              {visitOpen && (
+                <ScheduleVisitDialog
+                  open={visitOpen}
+                  onClose={() => setVisitOpen(false)}
+                  property={property}
+                  onEvent={emit}
+                />
+              )}
             </>
           </Suspense>
         )}
