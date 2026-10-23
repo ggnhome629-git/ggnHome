@@ -411,15 +411,9 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
     : seoLocalityLanding
     ? `https://www.ggnhome.com/properties-in-gurgaon/${encodeURIComponent(localitySlug.toLowerCase())}`
     : "https://www.ggnhome.com/search";
-  const localityHasEnoughInventory = total !== null && total !== undefined
-    ? total >= 10
-    : results.length >= 10;
-  const hasIndexableInventory = !loading && !error && results.length > 0;
-  const canIndexLanding =
-    isSeoLanding &&
-    !searchParams.toString() &&
-    hasIndexableInventory &&
-    (!seoLocalityLanding || localityHasEnoughInventory);
+  // Keep robots directives stable during rendering. Locality URLs enter the
+  // sitemap only when active inventory reaches the quality threshold.
+  const canIndexLanding = isSeoLanding && !searchParams.toString();
   const seoTitle = landingType === "rent"
     ? "Flats for Rent in Gurgaon | GgnHome"
     : landingType === "sale"
