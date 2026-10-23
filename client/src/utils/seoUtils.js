@@ -116,74 +116,49 @@ export const addStructuredData = (schemaData) => {
 /**
  * Property Schema (for Property Detail Pages)
  */
-export const propertySchema = ({
-  id,
-  name,
-  description,
-  price,
-  currency = 'INR',
-  image,
-  address,
-  floor,
-  bhk,
-  bath,
-  sqft,
-  furnishing,
-  parking,
-  possession,
-  isRental = false,
-}) => {
-  const basePrice = {
-    '@type': 'PriceSpecification',
-    priceCurrency: currency,
-    price: price.toString(),
-  };
-
-  if (isRental) {
-    basePrice.priceValidUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split('T')[0];
-  }
-
-  return {
+export const propertySchema = (options = {}) => {
+  const {
+    id, name, description, price, currency = 'INR', image, address,
+    bhk, bath, sqft, furnishing, parking, possession, isRental = false,
+  } = options;
+  const hasPrice = price !== null && price !== undefined && price !== '' && Number.isFinite(Number(price)) && Number(price) >= 0;
+  const numericPrice = hasPrice ? Number(price) : null;
+  const hasFloorSize = sqft !== null && sqft !== undefined && sqft !== '' && Number.isFinite(Number(sqft)) && Number(sqft) > 0;
+  const numericBhk = Number(bhk);
+  const numericBath = Number(bath);
+  const propertyAddress = address || 'Gurgaon';
+  const propertyUrl = id ? `https://www.ggnhome.com/${isRental ? 'Rentaldetails' : 'Saledetails'}/${encodeURIComponent(id)}` : undefined;
+  const result = {
     '@context': 'https://schema.org',
     '@type': 'RealEstateProperty',
-    name: name || `${bhk} BHK Property in ${address}`,
-    description:
-      description ||
-      `${bhk} BHK ${isRental ? 'rental' : 'sale'} property in ${address}. ₹${price}`,
+    name: name || `${bhk ? `${bhk} BHK ` : ''}Property in ${propertyAddress}` ,
+    description: description || `${bhk ? `${bhk} BHK ` : ''}${isRental ? 'rental' : 'sale'} property in ${propertyAddress}${hasPrice ? `; asking price ₹${numericPrice.toLocaleString('en-IN')}` : ''}.`,
     image: image || 'https://www.ggnhome.com/og-image-whatsapp.jpg',
     address: {
       '@type': 'PostalAddress',
-      streetAddress: address,
-      addressLocality: 'Gurgaon',
+      addressLocality: propertyAddress,
       addressRegion: 'Haryana',
       addressCountry: 'IN',
     },
-    numberOfRooms: bhk || 1,
-    numberOfBathroomsTotal: bath || 1,
-    floorSize: {
-      '@type': 'QuantitativeValue',
-      unitCode: 'FTK',
-      value: sqft,
-    },
-    pricingInfo: basePrice,
+    ...(Number.isFinite(numericBhk) && numericBhk > 0 ? { numberOfRooms: numericBhk } : {}),
+    ...(Number.isFinite(numericBath) && numericBath > 0 ? { numberOfBathroomsTotal: numericBath } : {}),
+    ...(hasFloorSize ? { floorSize: { '@type': 'QuantitativeValue', unitCode: 'FTK', value: Number(sqft) } } : {}),
     amenityFeature: [
       furnishing && { '@type': 'LocationFeatureSpecification', name: furnishing },
       parking && { '@type': 'LocationFeatureSpecification', name: `${parking} Parking` },
       possession && { '@type': 'LocationFeatureSpecification', name: `Possession: ${possession}` },
     ].filter(Boolean),
-    url: `https://www.ggnhome.com/${isRental ? 'Rentaldetails' : 'Saledetails'}/${encodeURIComponent(id)}`,
-    offers: {
+    ...(propertyUrl ? { url: propertyUrl } : {}),
+    ...(hasPrice ? { offers: {
       '@type': 'Offer',
       availability: 'https://schema.org/InStock',
       priceCurrency: currency,
-      price: price.toString(),
-      pricingInfo: basePrice,
-    },
+      price: numericPrice,
+      url: propertyUrl,
+    } } : {}),
   };
+  return result;
 };
-
 /**
  * Organization Schema (for Homepage/Footer)
  */
