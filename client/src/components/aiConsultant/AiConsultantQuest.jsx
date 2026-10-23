@@ -361,6 +361,7 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
   const continuePhone = () => {
     const g = gateRef.current;
     if (!g) return;
+    if (g.name.trim().length < 2) return patchGate({ error: "Please enter your name." });
     if (!/^[6-9]\d{9}$/.test(g.phone)) return patchGate({ error: "Enter a valid 10-digit Indian mobile number." });
     gateToConfirm(g.phone);
   };
