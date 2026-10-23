@@ -6,6 +6,7 @@ import AreaPicker from "./AreaPicker";
 import HomePicker from "./HomePlan";
 import flow from "../../../data/questFlow.json";
 import { cloudinaryUrl } from "../../../utils/cloudinaryImage";
+import PropertyDrive from "./PropertyDrive";
 
 // the 3D map world (MapLibre) is only downloaded once someone reaches it
 const QuestWorld = lazy(() => import("./world/QuestWorld"));
@@ -159,6 +160,7 @@ export default function QuestStage({
   const [showMatches, setShowMatches] = useState(false);
   const [collectionIds, setCollectionIds] = useState([]);
   const [showCompare, setShowCompare] = useState(false);
+  const [showDrive, setShowDrive] = useState(false);
   // warm the 3D map's code while the title screen is up, so "Let's go" lands in the game
   useEffect(() => {
     if (!started) import("./world/QuestWorld").catch(() => {});
@@ -297,6 +299,8 @@ export default function QuestStage({
           {shortlist.results?.length ? (
             <>
               <div className="qjournal-intro"><b>Quest Journal</b><span>Collect homes you like, then compare your finalists.</span></div>
+              <div className="qdrive-launch-row"><span><b>🚘 Property Drive</b><small>Let Riya show you each matching home in sequence.</small></span><button type="button" className="qcta" onClick={() => setShowDrive((v) => !v)}>{showDrive ? "Close drive" : "Start property drive →"}</button></div>
+              {showDrive ? <PropertyDrive listings={shortlist.results} onClose={() => setShowDrive(false)} onRefine={onShowChat} /> : null}
               <div className="qmatch-list">
                 {shortlist.results.map((c, i) => {
                   const homeId = String(c.id || c.url || i);
