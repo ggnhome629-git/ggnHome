@@ -31,6 +31,8 @@
 .ggn-v2-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #7cf5b4; box-shadow: 0 0 0 3px rgba(124,245,180,.13); }
 .ggn-v2-trigger.update .ggn-v2-live-dot { background: #ffd166; box-shadow: 0 0 0 3px rgba(255,209,102,.16); }
 .ggn-v2-trigger.unavailable .ggn-v2-live-dot { background: #c1ccd9; box-shadow: none; }
+.ggn-v2-trigger.mismatch .ggn-v2-live-dot { background: #ffd166; box-shadow: 0 0 0 3px rgba(255,209,102,.16); }
+.ggn-v2-state.mismatch { color: #ffe8b0; border-color: rgba(255,209,102,.25); background: rgba(179,117,21,.14); }
 .ggn-v2-trigger.checking .ggn-v2-live-dot { background: #75d7ff; }
 .ggn-v2-status { font-size: 9px; font-weight: 850; letter-spacing: .1em; opacity: .92; }
 .ggn-v2-panel {
