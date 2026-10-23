@@ -9,6 +9,18 @@ const APP_VERSION = "2.0.0";
 const VERSION_ENDPOINT = (process.env.PUBLIC_URL || "").replace(/\/+$/, "") + "/version.json";
 const RECHECK_MS = 5 * 60 * 1000;
 
+function compareVersions(left, right) {
+  const a = (String(left).match(/\\d+/g) || []).map(Number);
+  const b = (String(right).match(/\\d+/g) || []).map(Number);
+  for (let i = 0; i < Math.max(a.length, b.length); i += 1) {
+    const av = a[i] || 0;
+    const bv = b[i] || 0;
+    if (av > bv) return 1;
+    if (av < bv) return -1;
+  }
+  return 0;
+}
+
 const FALLBACK_RELEASES = [
   {
     version: APP_VERSION,
@@ -45,10 +57,10 @@ export default function AppVersionBadge() {
       }
       setReleaseManifest(manifest);
       setCheckedAt(Date.now());
-      setStatus(manifest.version.trim() === APP_VERSION ? "current" : "update");
+      const comparison = compareVersions(manifest.version.trim(), APP_VERSION);\n      setStatus(comparison === 0 ? "current" : comparison > 0 ? "update" : "mismatch");
     } catch {
       setCheckedAt(Date.now());
-      setStatus((previous) => previous === "update" ? "update" : "unavailable");
+      setStatus((previous) => previous === "update" || previous === "mismatch" ? previous : "unavailable");
     }
   }, []);
 
@@ -82,7 +94,7 @@ export default function AppVersionBadge() {
     ? releaseManifest.releases.slice(0, 4)
     : FALLBACK_RELEASES;
   const liveVersion = releaseManifest?.version || null;
-  const versionStatus = status === "current" ? "LIVE" : status === "update" ? "UPDATE" : status === "checking" ? "CHECK" : "VERIFY";
+  const versionStatus = status === "current" ? "LIVE" : status === "update" ? "UPDATE" : status === "mismatch" ? "MISMATCH" : status === "checking" ? "CHECK" : "VERIFY";
   const statusMessage = status === "current"
     ? "This tab's frontend bundle matches the live version manifest."
     : status === "update"
