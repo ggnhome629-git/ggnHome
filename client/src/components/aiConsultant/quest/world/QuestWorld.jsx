@@ -619,7 +619,7 @@ export default function QuestWorld({ slot, finale = false, mode, lang, req, busy
       node.style.setProperty("--s", String(street.data ? Math.max(0.62, 1 - plots[i].depth * 0.09) : 1));
       node.setAttribute("aria-label", `${h.bhkLabel || ""} ${h.priceLabel} in ${h.sector}`.trim());
       const priceTag = el("span", "qw-home-tag");
-      priceTag.appendChild(el("strong", "qw-home-price", h.priceLabel.replace(/\\s*\\/\\s*month$/i, "").replace(/\\s*per month$/i, "")));
+      priceTag.appendChild(el("strong", "qw-home-price", h.priceLabel.replace(/\s*\/\s*month$/i, "").replace(/\s*per month$/i, "")));
       if (mode === "rent") priceTag.appendChild(el("small", "qw-home-period", " / month"));
       node.appendChild(priceTag);
       const house = el("span", "qw-home-house");
