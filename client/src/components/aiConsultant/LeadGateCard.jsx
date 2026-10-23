@@ -34,7 +34,7 @@ export default function LeadGateCard({ gate, onChange, onContinue, onConfirm, on
             </p>
           ) : null}
           <div className="gai-card-actions">
-            <button type="submit" className="gai-btn primary" disabled={phone.length !== 10}>
+            <button type="submit" className="gai-btn primary" disabled={phone.length !== 10 || name.trim().length < 2}>
               Continue
             </button>
           </div>
@@ -64,7 +64,7 @@ export default function LeadGateCard({ gate, onChange, onContinue, onConfirm, on
             </div>
           </label>
           <label style={{ display: "grid", gap: 4, fontSize: 13 }}>
-            Your name (optional)
+            Your name
             <input className="gai-input" style={{ border: "1px solid #e6ded2", borderRadius: 12, padding: "10px 12px" }} value={name} onChange={(e) => onChange({ name: e.target.value.slice(0, 60) })} autoComplete="name" maxLength={60} />
           </label>
           {error ? (
@@ -88,7 +88,7 @@ export default function LeadGateCard({ gate, onChange, onContinue, onConfirm, on
         <Phone size={18} color="#0f766e" /> Is this number correct?
       </h3>
       <p style={{ fontSize: 24, fontWeight: 800, margin: "8px 0 2px", letterSpacing: 0.5 }}>+91 {fmtPhone(phone)}</p>
-      <p style={{ color: "var(--ai-muted)", margin: "0 0 4px", fontSize: 14 }}>{name ? `Name: ${name}` : "No name added"}</p>
+      <p style={{ color: "var(--ai-muted)", margin: "0 0 4px", fontSize: 14 }}>{name ? `Name: ${name}` : "Name missing"}</p>
       <p style={{ color: "var(--ai-muted)", margin: "0 0 8px", fontSize: 12 }}>{consent}</p>
       {error ? (
         <p role="alert" style={{ color: "#b83a2b", fontSize: 13, margin: "0 0 8px" }}>
