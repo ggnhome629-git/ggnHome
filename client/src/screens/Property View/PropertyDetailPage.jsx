@@ -27,17 +27,12 @@ import {
   trackEvent,
 } from "../../utils/propertyAnalytics";
 import PartnerPropertyBar from "../PartnerHub/Properties/PartnerPropertyBar";
-const MapIntegration = React.lazy(() => import("./mapsintegration"));
-const SimilarProperties = React.lazy(() => import("./Similarproperties"));
 import PropertyHero from "./sections/PropertyHero";
 import PropertyGalleryPro from "./sections/PropertyGalleryPro";
 import { QuickActionsBar, StickyActionBar } from "./sections/PropertyActions";
 import EnquiryCard from "./sections/EnquiryCard";
 import ContactCard from "./sections/ContactCard";
 import PriceActionsCard from "./sections/PriceActionsCard";
-const CallbackDialog = React.lazy(() => import("./sections/CallbackDialog"));
-const EmiCalculatorDialog = React.lazy(() => import("./sections/EmiCalculatorDialog"));
-const ScheduleVisitDialog = React.lazy(() => import("./sections/ScheduleVisitDialog"));
 import RecentlyViewed from "./sections/RecentlyViewed";
 import {
   AmenitiesSection,
@@ -52,6 +47,12 @@ import {
   PropertyParametersSection,
   SaleSpecificSection,
 } from "./sections/ContentSections";
+
+const MapIntegration = React.lazy(() => import("./mapsintegration"));
+const SimilarProperties = React.lazy(() => import("./Similarproperties"));
+const CallbackDialog = React.lazy(() => import("./sections/CallbackDialog"));
+const EmiCalculatorDialog = React.lazy(() => import("./sections/EmiCalculatorDialog"));
+const ScheduleVisitDialog = React.lazy(() => import("./sections/ScheduleVisitDialog"));
 
 const TopNavigationBar = React.lazy(() => import("../Dashboard/TopNavigationBar"));
 
