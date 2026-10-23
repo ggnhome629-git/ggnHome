@@ -27,17 +27,17 @@ import {
   trackEvent,
 } from "../../utils/propertyAnalytics";
 import PartnerPropertyBar from "../PartnerHub/Properties/PartnerPropertyBar";
-import MapIntegration from "./mapsintegration";
-import SimilarProperties from "./Similarproperties";
+const MapIntegration = React.lazy(() => import("./mapsintegration"));
+const SimilarProperties = React.lazy(() => import("./Similarproperties"));
 import PropertyHero from "./sections/PropertyHero";
 import PropertyGalleryPro from "./sections/PropertyGalleryPro";
 import { QuickActionsBar, StickyActionBar } from "./sections/PropertyActions";
 import EnquiryCard from "./sections/EnquiryCard";
 import ContactCard from "./sections/ContactCard";
 import PriceActionsCard from "./sections/PriceActionsCard";
-import CallbackDialog from "./sections/CallbackDialog";
-import EmiCalculatorDialog from "./sections/EmiCalculatorDialog";
-import ScheduleVisitDialog from "./sections/ScheduleVisitDialog";
+const CallbackDialog = React.lazy(() => import("./sections/CallbackDialog"));
+const EmiCalculatorDialog = React.lazy(() => import("./sections/EmiCalculatorDialog"));
+const ScheduleVisitDialog = React.lazy(() => import("./sections/ScheduleVisitDialog"));
 import RecentlyViewed from "./sections/RecentlyViewed";
 import {
   AmenitiesSection,
@@ -54,6 +54,34 @@ import {
 } from "./sections/ContentSections";
 
 const TopNavigationBar = React.lazy(() => import("../Dashboard/TopNavigationBar"));
+
+// Keep expensive below-the-fold widgets out of the initial render/network path.
+function DeferredMount({ children, rootMargin = "350px", minHeight = 0 }) {
+  const ref = React.useRef(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === "undefined") {
+      setReady(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setReady(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [rootMargin]);
+
+  return <Box ref={ref} sx={{ minHeight: ready ? 0 : minHeight }}>{ready ? children : null}</Box>;
+}
 
 const NAV_ITEMS = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
 
@@ -137,31 +165,39 @@ export default function PropertyDetailPage({ type, partnerView = false }) {
   // ------------------------------------------------------------- data load --
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
+    const { signal } = controller;
+
     (async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${process.env[DETAIL_API[type]]}/${id}`, { credentials: "include" });
+        const res = await fetch(`${process.env[DETAIL_API[type]]}/${id}`, {
+          credentials: "include",
+          signal,
+        });
         if (!res.ok) {
-          if (!cancelled) setRaw(null);
+          if (!signal.aborted) setRaw(null);
           return;
         }
+
         const data = await res.json();
+        if (signal.aborted) return;
         if (!previewMode && data?.isActive === false) {
-          if (!cancelled) setRaw(null);
+          setRaw(null);
           return;
         }
-        if (!cancelled) setRaw(data);
+        setRaw(data);
       } catch (error) {
-        console.error("Error fetching property:", error);
-        if (!cancelled) setRaw(null);
+        if (error?.name !== "AbortError") {
+          console.error("Error fetching property:", error);
+          if (!signal.aborted) setRaw(null);
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!signal.aborted) setLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+
+    return () => controller.abort();
   }, [id, previewMode, type]);
 
   // Record the view once, and remember it for "Recently viewed" elsewhere.
@@ -434,7 +470,13 @@ export default function PropertyDetailPage({ type, partnerView = false }) {
               <LocationSection
                 property={property}
                 onDirections={() => emit(EVENTS.DIRECTIONS_CLICKED)}
-                mapSlot={<MapIntegration sector={property.sector} type={property.propertyType} />}
+                mapSlot={
+                  <DeferredMount rootMargin="400px" minHeight="100%">
+                    <Suspense fallback={<Skeleton variant="rounded" width="100%" height="100%" />}>
+                      <MapIntegration sector={property.sector} type={property.propertyType} />
+                    </Suspense>
+                  </DeferredMount>
+                }
               />
 
               <DocumentsSection documents={property.documents} onDownload={() => emit(EVENTS.BROCHURE_DOWNLOAD)} />
@@ -479,7 +521,11 @@ export default function PropertyDetailPage({ type, partnerView = false }) {
 
           {!partnerView && (
             <Box sx={{ mt: 10 }}>
-              <SimilarProperties sector={property.sector} currentPropertyId={property.id} />
+              <DeferredMount rootMargin="500px" minHeight={300}>
+                <Suspense fallback={<Skeleton variant="rounded" height={300} />}>
+                  <SimilarProperties sector={property.sector} currentPropertyId={property.id} />
+                </Suspense>
+              </DeferredMount>
             </Box>
           )}
 
@@ -503,22 +549,26 @@ export default function PropertyDetailPage({ type, partnerView = false }) {
         )}
 
         <ShareDialog open={shareOpen} onClose={() => setShareOpen(false)} link={shareLink} />
-        <EmiCalculatorDialog open={emiOpen} onClose={() => setEmiOpen(false)} propertyPrice={property.price} />
+        <Suspense fallback={null}>
+          <EmiCalculatorDialog open={emiOpen} onClose={() => setEmiOpen(false)} propertyPrice={property.price} />
+        </Suspense>
         {!partnerView && (
-          <>
-            <CallbackDialog
-              open={callbackOpen}
-              onClose={() => setCallbackOpen(false)}
-              property={property}
-              onEvent={emit}
-            />
-            <ScheduleVisitDialog
-              open={visitOpen}
-              onClose={() => setVisitOpen(false)}
-              property={property}
-              onEvent={emit}
-            />
-          </>
+          <Suspense fallback={null}>
+            <>
+              <CallbackDialog
+                open={callbackOpen}
+                onClose={() => setCallbackOpen(false)}
+                property={property}
+                onEvent={emit}
+              />
+              <ScheduleVisitDialog
+                open={visitOpen}
+                onClose={() => setVisitOpen(false)}
+                property={property}
+                onEvent={emit}
+              />
+            </>
+          </Suspense>
         )}
       </Box>
     </>
