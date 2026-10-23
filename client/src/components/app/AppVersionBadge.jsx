@@ -56,6 +56,9 @@ export default function AppVersionBadge() {
     const isPrivateArea = /^\/(admin|partner|agent|sms-service)(\/|$)/i.test(location.pathname);
     if (isPrivateArea) return undefined;
 
+    // The static HTML badge covers the first paint and stale JS bundles; replace it once React is live.
+    document.getElementById("ggn-build-status")?.remove();
+
     const handleVisibility = () => {
       if (document.visibilityState === "visible") checkLiveVersion();
     };
