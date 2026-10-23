@@ -452,6 +452,16 @@ export default function RealEstateDashboard() {
         onOpenAi={aiEnabled ? () => openAi("hero") : undefined}
       />
 
+      <Box component="nav" aria-label="Popular property searches in Gurgaon" sx={{ py: 2, px: { xs: 3, md: 6 }, backgroundColor: "background.paper", borderBottom: "1px solid", borderColor: "divider" }}>
+        <Container maxWidth="xl">
+          <Stack direction={{ xs: "column", sm: "row" }} alignItems={{ xs: "flex-start", sm: "center" }} useFlexGap flexWrap="wrap" gap={2}>
+            <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 700 }}>Explore Gurgaon properties:</Typography>
+            <Button component="a" href="/flats-for-rent-in-gurgaon" size="small" variant="text" sx={{ fontWeight: 700 }}>Flats for rent in Gurgaon</Button>
+            <Button component="a" href="/flats-for-sale-in-gurgaon" size="small" variant="text" sx={{ fontWeight: 700 }}>Flats for sale in Gurgaon</Button>
+          </Stack>
+        </Container>
+      </Box>
+
       {/* Sticky search bar on scroll - disabled
       <StickySearchBar
         query={searchQuery}
