@@ -662,3 +662,42 @@
   .qmatch-info b { font-size:17px; }
   .qmatch-open { grid-column:2; justify-self:start; }
 }
+
+/* Gurgaon Home Quest polish: clearer game progression and phone-first actions. */
+.qreveal-kicker { letter-spacing: .09em; font-size: 10px; font-weight: 900; color: #087f73; }
+.qquest-progress { width: min(100%, 420px); display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; color: #63747b; font-size: 10px; font-weight: 750; }
+.qquest-progress b { color: #087f73; }
+.qquest-progress-track { height: 5px; overflow: hidden; border-radius: 99px; background: #e7eee9; }
+.qquest-progress-track i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#00a79d,#8bd7bd); }
+.qjournal-intro { display: flex; flex-direction: column; gap: 3px; margin: 12px 0 8px; color: #263e48; }
+.qjournal-intro span { color: #718087; font-size: 12px; }
+.qmatch-listing { position: relative; }
+.qmatch-listing.collected { border-color: #00a79d; background: #f0fbf7; }
+.qmatch-listing .qmatch-info { align-self: center; }
+.qmatch-collect { justify-self: end; align-self: center; min-height: 38px; padding: 0 11px; border: 1px solid #b8dcd3; border-radius: 12px; background: #f4fbf8; color: #087f73; font-size: 12px; font-weight: 850; white-space: nowrap; cursor: pointer; }
+.qmatch-collect[aria-pressed="true"] { background: #087f73; color: #fff; border-color: #087f73; }
+.qcompare-launch { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; padding: 12px; border: 1px solid #cce5dc; border-radius: 16px; background: #effaf5; }
+.qcompare-launch span { display: flex; flex-direction: column; gap: 3px; color: #1d4a42; }
+.qcompare-launch small,.qcompare-hint { color: #718087; font-size: 12px; }
+.qcompare-hint { margin: 12px 0; }
+.qcompare-table-wrap { margin-top: 14px; padding: 12px; border: 1px solid #e4e9e4; border-radius: 16px; background: #fff; }
+.qcompare-table-wrap h3 { margin: 0 0 10px; font-size: 16px; }
+.qcompare-table { overflow-x: auto; }
+.qcompare-row { display: grid; grid-template-columns: 82px repeat(2,minmax(110px,1fr)); gap: 8px; padding: 9px 0; border-top: 1px solid #edf0ed; color: #52646b; font-size: 12px; }
+.qcompare-row b { color: #263e48; }
+.qcompare-row.qcompare-head { border-top: 0; }
+.qcompare-table-wrap > p { color: #718087; font-size: 11px; }
+@media(max-width:520px) {
+  .qst-match-results { padding: 10px; }
+  .qreveal-panel { width: 100%; padding: 14px; border-radius: 20px; }
+  .qmatch-list { max-height: none; overflow: visible; }
+  .qmatch-listing { grid-template-columns: 72px minmax(0,1fr); align-items: start; padding: 9px; }
+  .qmatch-image { width: 72px; height: 72px; }
+  .qmatch-info b { font-size: 17px; }
+  .qmatch-info strong { font-size: 12px; line-height: 1.35; }
+  .qmatch-info small { font-size: 11px; line-height: 1.4; }
+  .qmatch-collect { grid-column: 2; justify-self: start; min-height: 42px; margin-top: 4px; }
+  .qcompare-launch { align-items: stretch; flex-direction: column; }
+  .qcompare-launch .qcta { width: 100%; min-height: 44px; }
+  .qcompare-row { grid-template-columns: 68px repeat(2,minmax(108px,1fr)); }
+}
