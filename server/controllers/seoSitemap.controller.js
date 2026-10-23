@@ -14,7 +14,7 @@ const xmlEscape = (value) =>
     .replace(/'/g, "&apos;");
 
 const xmlHeader = () => '<?xml version="1.0" encoding="UTF-8"?>';
-const urlsetOpen = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+const urlsetOpen = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">';
 const urlsetClose = "</urlset>";
 
 function dateOnly(value) {
@@ -37,7 +37,7 @@ function propertyEntry(property, routeBase) {
   ];
   if (image) {
     lines.push(
-      "<image:image xmlns:image=\"http://www.google.com/schemas/sitemap-image/1.1\">",
+      "<image:image>",
       `<image:loc>${xmlEscape(image)}</image:loc>`,
       property.title ? `<image:title>${xmlEscape(property.title)}</image:title>` : "",
       "</image:image>"
@@ -102,7 +102,7 @@ function slugifyLocality(name) {
 
 async function localityCounts(Model) {
   return Model.aggregate([
-    { $match: { isActive: true, Sector: { $type: "string", $ne: "" } } },
+    { $match: { isActive: true, "ranking.status": { $nin: ["QUARANTINED", "REJECTED"] }, Sector: { $type: "string", $ne: "" } } },
     {
       $group: {
         _id: "$Sector",
