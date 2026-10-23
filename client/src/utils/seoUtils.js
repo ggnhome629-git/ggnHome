@@ -48,9 +48,7 @@ export const setPageMeta = ({
   updateMetaTag('author', author);
 
   // Set canonical URL
-  if (canonical) {
-    updateCanonicalLink(canonical);
-  }
+  updateCanonicalLink(canonical || `${window.location.origin}${window.location.pathname}`);
 };
 
 /**
@@ -160,20 +158,14 @@ export const propertySchema = ({
       streetAddress: address,
       addressLocality: 'Gurgaon',
       addressRegion: 'Haryana',
-      postalCode: 'India',
       addressCountry: 'IN',
-    },
-    geo: {
-      '@type': 'GeoCoordinates',
-      latitude: '28.4595',
-      longitude: '77.0266',
     },
     numberOfRooms: bhk || 1,
     numberOfBathroomsTotal: bath || 1,
     floorSize: {
       '@type': 'QuantitativeValue',
-      unitCode: 'SQM',
-      value: sqft || 'Variable',
+      unitCode: 'FTK',
+      value: sqft,
     },
     pricingInfo: basePrice,
     amenityFeature: [
@@ -181,7 +173,7 @@ export const propertySchema = ({
       parking && { '@type': 'LocationFeatureSpecification', name: `${parking} Parking` },
       possession && { '@type': 'LocationFeatureSpecification', name: `Possession: ${possession}` },
     ].filter(Boolean),
-    url: `https://www.ggnhome.com/${isRental ? 'Rentaldetails' : 'Saledetails'}/prop_${id}`,
+    url: `https://www.ggnhome.com/${isRental ? 'Rentaldetails' : 'Saledetails'}/${encodeURIComponent(id)}`,
     offers: {
       '@type': 'Offer',
       availability: 'https://schema.org/InStock',
@@ -202,7 +194,6 @@ export const organizationSchema = () => ({
   url: 'https://www.ggnhome.com',
   logo: 'https://www.ggnhome.com/Logo2.jpg',
   description: 'Search, rent or buy verified properties in Gurgaon',
-  telephone: '+91-XXXXXXXXXX',
   email: 'support@ggnhome.com',
   sameAs: [
     'https://www.facebook.com/GgnHome',
@@ -260,7 +251,6 @@ export const localBusinessSchema = () => ({
   image: 'https://www.ggnhome.com/Logo2.jpg',
   description: 'Real estate platform for property search, rental and sales in Gurgaon',
   url: 'https://www.ggnhome.com',
-  telephone: '+91-XXXXXXXXXX',
   email: 'support@ggnhome.com',
   address: {
     '@type': 'PostalAddress',
@@ -274,12 +264,6 @@ export const localBusinessSchema = () => ({
     'https://www.facebook.com/GgnHome',
     'https://www.twitter.com/GgnHome',
   ],
-  priceRange: '₹20L - ₹50Cr',
-  aggregateRating: {
-    '@type': 'AggregateRating',
-    ratingValue: '4.5',
-    reviewCount: '1250',
-  },
 });
 
 /**
