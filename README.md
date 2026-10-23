@@ -652,3 +652,7 @@ docs: update project overview and setup
 **Backend entry point:** `server/index.js`  
 **Main client:** `client/`  
 **PartnerHub:** `partner-portal/`
+
+## Several databases acting as one (federation)
+
+Set `MONGO_POOL_MODE=federated` and give the server `MONGO_URI` (database 1, home of the core data) plus `MONGO_URI_2`, `MONGO_URI_3`, ... (separate accounts, **not** copies of database 1). New records go to the first database below `MONGO_FULL_PERCENT` (90) of `MONGO_QUOTA_MB` (512); reads, updates, deletes, counts and aggregates look in every database. Unique fields (phone, email, `_id`) are checked across all databases. Small system collections (counters, job locks, settings, SMS queue) stay in database 1. Without `MONGO_POOL_MODE=federated` the extra URIs are failover copies, as before. See `server/services/federation.js`. Admin > System & Usage shows which database is saving, saved, or full.

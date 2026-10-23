@@ -197,6 +197,7 @@ app.use(errorHandler);
 if (require.main === module) {
   enforceEnv();
   db();
+  require('./services/federation').install();
 
   // Every new deploy clears the browser, Redis and Cloudflare caches once (see cachePurge.controller).
   if (process.env.NODE_ENV !== "test") {
@@ -232,7 +233,7 @@ if (require.main === module) {
   const server = app.listen(PORT, () => {
     console.log(`API listening on ${PORT}`);
   });
-  require('./services/dbPool').start();
+  require('./services/dbPool').start(); // also starts monitoring when not federated
 
   // The host's load balancer keeps connections open ~60 s: stay open a little longer than that, or it will
   // reuse a connection this server just closed and show the visitor a 502.

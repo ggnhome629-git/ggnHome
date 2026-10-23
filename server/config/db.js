@@ -22,6 +22,10 @@ const num = (name, fallback) => {
   return Number.isFinite(n) && n > 0 ? n : fallback;
 };
 
+// MONGO_POOL_MODE=federated: the URIs are separate databases that together hold the data (see
+// services/federation.js). Otherwise they are interchangeable failover copies, as before.
+const isFederated = (env = process.env) => String(env.MONGO_POOL_MODE || "").toLowerCase() === "federated";
+
 function mongoUris(env = process.env) {
   const uris = [];
   if (env.MONGO_URI && env.MONGO_URI.trim()) uris.push(env.MONGO_URI.trim());
@@ -53,7 +57,8 @@ let downTimer = null;
 let listening = false;
 
 async function connectInOrder(startAt = 0) {
-  const uris = mongoUris();
+  // Federated: database 1 is the home of the core data and must never be swapped for another one.
+  const uris = isFederated() ? mongoUris().slice(0, 1) : mongoUris();
   if (!uris.length) throw new Error("MONGO_URI is not set");
   const rounds = num("MONGO_CONNECT_ROUNDS", 4);
   let lastError;
@@ -93,7 +98,7 @@ function watchConnection() {
       downTimer = null;
       if (shuttingDown || switching || mongoose.connection.readyState === 1) return;
       const uris = mongoUris();
-      if (uris.length < 2) return; // nowhere else to go: keep retrying the same one
+      if (uris.length < 2 || isFederated()) return; // nowhere else to go: keep retrying the same one
       switching = true;
       try {
         console.warn("MongoDB stayed down. Switching to the next database.");
@@ -142,3 +147,4 @@ module.exports = connectDB;
 module.exports.closeDB = closeDB;
 module.exports.dbStatus = dbStatus;
 module.exports.mongoUris = mongoUris;
+module.exports.isFederated = isFederated;

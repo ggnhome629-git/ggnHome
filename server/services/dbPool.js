@@ -74,13 +74,29 @@ async function refresh() {
 
 const getSnapshot = async (force = false) => (force || Date.now() - snapshot.at > REFRESH_MS ? refresh() : snapshot);
 
+let started = false;
 function start() {
-  if (mongoUris().length < 2) return;
+  if (started || mongoUris().length < 2) return;
+  started = true;
   refresh().catch(() => {});
   setInterval(() => refresh().catch(() => {}), REFRESH_MS).unref();
 }
 
+const downUntil = new Map();
+const markDown = (i, ms = 30000) => downUntil.set(i, Date.now() + ms);
+const isDown = (i) => (downUntil.get(i) || 0) > Date.now();
+// Databases that can be used right now (reachable per the last check, and not failing).
+const usableSlots = () => {
+  const n = mongoUris().length;
+  return Array.from({ length: n }, (_, i) => i).filter((i) => i === 0 || (!isDown(i) && snapshot.slots[i]?.ok !== false));
+};
+const activeIndex = () => {
+  const a = snapshot.activeIndex || 0;
+  return usableSlots().includes(a) ? a : 0;
+};
 const activeConnection = () => connectionFor(snapshot.activeIndex || 0);
 const allConnections = () => mongoUris().map((_, i) => connectionFor(i));
 
-module.exports = { start, getSnapshot, refresh, activeConnection, allConnections, connectionFor };
+const _forceActive = (i) => { snapshot = { ...snapshot, at: Date.now() + 3600e3, activeIndex: i, slots: [] }; };
+
+module.exports = { _forceActive, markDown, isDown, usableSlots, activeIndex, start, getSnapshot, refresh, activeConnection, allConnections, connectionFor };

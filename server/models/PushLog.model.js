@@ -13,4 +13,4 @@ const pushLogSchema = new mongoose.Schema(
   { timestamps: false }
 );
 
-module.exports = require("./overflow")("PushLog", pushLogSchema);
+module.exports = mongoose.model("PushLog", pushLogSchema);

@@ -61,7 +61,7 @@ exports.sendMessage = async (req, res) => {
     session.lastActive = new Date();
     await session.save();
 
-    await ChatMessage.createOverflow({ sessionId: session._id.toString(), role: "user", text: userText });
+    await ChatMessage.create({ sessionId: session._id.toString(), role: "user", text: userText });
 
     // Echo the reply as a record too.
     const replyRecord = {
@@ -72,7 +72,7 @@ exports.sendMessage = async (req, res) => {
     };
     session.messages.push(replyRecord);
     await session.save();
-    await ChatMessage.createOverflow({ sessionId: session._id.toString(), role: "assistant", text: reply, cards });
+    await ChatMessage.create({ sessionId: session._id.toString(), role: "assistant", text: reply, cards });
 
     // Keep only the last 50 messages in the session doc.
     if (session.messages.length > 50) {

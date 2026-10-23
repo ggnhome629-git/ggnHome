@@ -12,6 +12,6 @@ const chatMessageSchema = new mongoose.Schema(
 
 chatMessageSchema.index({ sessionId: 1, createdAt: 1 });
 
-const ChatMessage = require("./overflow")("ChatMessage", chatMessageSchema);
+const ChatMessage = mongoose.model("ChatMessage", chatMessageSchema);
 
 module.exports = ChatMessage;
