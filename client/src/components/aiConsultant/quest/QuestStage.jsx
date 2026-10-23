@@ -275,7 +275,7 @@ export default function QuestStage({
         </div>
       ) : null}
       <button type="button" className="qcta big" onClick={() => setShowMatches(true)}>
-        See all matches →
+        Open Quest Journal →
       </button>
     </>
   );
