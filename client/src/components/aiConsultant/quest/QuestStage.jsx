@@ -210,6 +210,7 @@ export default function QuestStage({
       <section className="qst qst-intro" aria-label="Find your home">
         <QuestScene />
         <div className="qintro">
+          <span className="qintro-v2-tag">✨ GGNHOME QUEST V2</span>
           <div className="qintro-bot">
             <QuestBot mood="happy" size={150} />
           </div>
