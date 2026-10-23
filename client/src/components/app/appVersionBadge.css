@@ -3,7 +3,7 @@
   position: fixed;
   right: 12px;
   bottom: calc(82px + env(safe-area-inset-bottom, 0px));
-  z-index: 1450;
+  z-index: 1200;
   color: #fff;
   font-family: Inter, "Segoe UI", system-ui, sans-serif;
 }
@@ -153,4 +153,23 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .ggn-v2-trigger { scroll-behavior: auto; }
+}
+
+
+/* Small version tag in the game introduction. */
+.qintro-v2-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  align-self: center;
+  margin: 0 0 12px;
+  padding: 6px 11px;
+  border: 1px solid rgba(151, 233, 255, .38);
+  border-radius: 999px;
+  background: linear-gradient(115deg, rgba(24, 49, 105, .94), rgba(94, 47, 180, .94));
+  box-shadow: 0 5px 18px rgba(69, 76, 206, .2);
+  color: #e8fffd;
+  font: 850 10px/1 Inter, "Segoe UI", system-ui, sans-serif;
+  letter-spacing: .13em;
 }
