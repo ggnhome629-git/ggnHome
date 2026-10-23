@@ -156,6 +156,7 @@ export default function QuestStage({
   const [chosen, setChosen] = useState(null); // the card just tapped, while the answer is sent
   const [reaction, setReaction] = useState("");
   const [worldFailed, setWorldFailed] = useState(false);
+  const [showMatches, setShowMatches] = useState(false);
   // warm the 3D map's code while the title screen is up, so "Let's go" lands in the game
   useEffect(() => {
     if (!started) import("./world/QuestWorld").catch(() => {});
@@ -240,6 +241,9 @@ export default function QuestStage({
   }
 
   /* ------------------------------------------------------------ reveal */
+  const filterEntries = Object.entries(req || {}).filter(([key, value]) => value !== undefined && value !== null && value !== "" && !(Array.isArray(value) && !value.length) && typeof value !== "object");
+  const filtersLabel = (key) => key.replace(/([A-Z])/g, " $1").replace(/^./, (s) => s.toUpperCase()).replace(/_/g, " ");
+
   const revealBody = (
     <>
       <p className="qreveal-kicker">🏆 Mission complete!</p>
@@ -268,11 +272,43 @@ export default function QuestStage({
           ))}
         </div>
       ) : null}
-      <button type="button" className="qcta big" onClick={onShowChat}>
-        See my matches →
+      <button type="button" className="qcta big" onClick={() => setShowMatches(true)}>
+        See all matches →
       </button>
     </>
   );
+
+  if (complete && showMatches) {
+    return (
+      <section className="qst qst-reveal qst-match-results" aria-label="Matching properties">
+        <div className="qreveal-panel">
+          <p className="qreveal-kicker">🔎 Your property shortlist</p>
+          <h2>{shortlist.results?.length || 0} matching homes</h2>
+          <p>Showing the preferences used for this search. Matches are based on the listing data available.</p>
+          {filterEntries.length ? (
+            <div className="qmatch-filters">
+              {filterEntries.map(([key, value]) => (
+                <span className="qmatch-filter" key={key}><b>{filtersLabel(key)}:</b> {Array.isArray(value) ? value.join(", ") : String(value)}</span>
+              ))}
+            </div>
+          ) : null}
+          {shortlist.results?.length ? (
+            <div className="qmatch-list">
+              {shortlist.results.map((c, i) => (
+                <a key={c.id || i} className="qmatch-listing" href={c.url} target="_blank" rel="noopener noreferrer">
+                  <span className="qmatch-image">{c.image ? <img src={cloudinaryUrl(c.image, { width: 520 })} alt="" loading="lazy" /> : <span>🏡</span>}</span>
+                  <span className="qmatch-info"><b>{c.priceLabel || "Price on request"}</b><strong>{[c.bhkLabel, c.propertyType, c.sector].filter(Boolean).join(" · ")}</strong><small>{[c.areaSqft ? `${c.areaSqft} sq ft` : null, c.furnishing].filter(Boolean).join(" · ")}</small></span>
+                  <span className="qmatch-open">View ↗</span>
+                </a>
+              ))}
+            </div>
+          ) : <p>{shortlist.state === "loading" ? "Searching listings…" : "No exact matches found for these preferences yet."}</p>}
+          <button type="button" className="qcta big" onClick={onShowChat}>Refine filters in chat →</button>
+          <button type="button" className="qcta" onClick={() => setShowMatches(false)}>← Back to overview</button>
+        </div>
+      </section>
+    );
+  }
 
   if (complete && !worldFailed) {
     return (
