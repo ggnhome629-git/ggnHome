@@ -608,6 +608,88 @@ export default function AiConsultantQuest({ open, minimized = false, onClose, on
     return { slot: m.slot, label: m.label, icon: m.icon, done: answeredNow.includes(m.slot) || (convState?.skipped || []).includes(m.slot), value: row ? row.value : "✓" };
   });
 
+  // Reuse the existing conversation/actions, but render them inside the new quest chat screen.
+  const renderHandoffItem = (it, i) => {
+    if (it.type === "user") {
+      return (
+        <div key={it.id} className="gai-row user">
+          <div className="gai-bubble user">{it.text}</div>
+        </div>
+      );
+    }
+    if (it.type === "typing") {
+      return (
+        <div key={it.id} className="gai-row">
+          <div className="gai-avatar riya" aria-hidden="true"><QuestBot size={28} mood="think" /></div>
+          <div className="gai-bubble bot gai-typing" aria-label="Assistant is typing"><span /><span /><span /></div>
+        </div>
+      );
+    }
+    if (it.type === "scanner") {
+      return <SearchScanner key={it.id} response={it.response} criteria={it.criteria} tips={it.tips} onDone={() => finishScan(it)} />;
+    }
+    if (it.type === "results") {
+      return (
+        <React.Fragment key={it.id}>
+          {it.stats ? (
+            <div className="gai-stats">
+              <span>scanned <b>{Number(it.stats.scanned || 0).toLocaleString("en-IN")}</b></span>
+              <span>passed must-haves <b>{it.stats.afterHardFilters}</b></span>
+              <span>verified distances <b>{it.stats.withVerifiedDistances}</b></span>
+              <span>ranked in <b>{it.stats.tookMs} ms</b></span>
+            </div>
+          ) : null}
+          <div className="gai-results">
+            {it.results.map((card, k) => (
+              <ResultCard
+                key={card.id}
+                card={card}
+                index={(it.startIndex || 0) + k}
+                priorities={priorities}
+                wantCorner={wantCorner}
+                onAsk={(n) => send(`tell me about #${n}`, `Tell me about #${n}`)}
+                onOpen={() => consultantApi.metric("result_clicked")}
+              />
+            ))}
+          </div>
+          <div className="gai-disclaimer">Distances are approximate straight-line estimates from listing and map data, not road distances. “n/a” means not verified yet.</div>
+        </React.Fragment>
+      );
+    }
+    if (it.type === "leadgate") {
+      return gate ? (
+        <LeadGateCard key={it.id} gate={gate} onChange={patchGate} onContinue={continuePhone} onConfirm={confirmGate} onEdit={() => patchGate({ stage: "edit" })} onSave={saveGateEdit} />
+      ) : null;
+    }
+    if (it.type === "review") {
+      return (
+        <ReviewCard
+          key={it.id}
+          summary={summary}
+          contact={ui?.contact || {}}
+          consentText={it.consentText}
+          onEdit={edit}
+          onEditContact={editContact}
+          onSubmit={submitEnquiry}
+          submitting={review.submitting}
+          error={review.error}
+          success={review.success}
+        />
+      );
+    }
+    return (
+      <div key={it.id} className="gai-row">
+        <div className="gai-avatar riya" aria-hidden="true"><QuestBot size={28} mood={busy ? "think" : "idle"} /></div>
+        <div className={`gai-bubble bot${it.kind === "faq" ? " faq" : ""}${it.kind === "error" ? " error" : ""}`}>
+          {it.text}
+          {it.hint && i === lastBotIndex ? <span className="gai-hint">{it.hint}</span> : null}
+          {it.listing ? <span className="gai-hint"><a href={it.listing.url} target="_blank" rel="noopener noreferrer" style={{ color: "#0f766e", fontWeight: 600 }}>Open listing ↗</a></span> : null}
+          {it.retry && i === items.length - 1 ? <span className="gai-hint"><button type="button" className="gai-chip" onClick={() => retry(it.retry)} disabled={busy}>Try again</button></span> : null}
+        </div>
+      </div>
+    );
+  };
+
   const floating = minimized ? (
     <FloatingConsultant
       items={items}
