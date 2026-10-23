@@ -357,6 +357,28 @@ export default function PropertyDetailPage({ type, partnerView = false }) {
                 : undefined,
             })}
           </script>
+          <script type="application/ld+json">
+            {JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "BreadcrumbList",
+              itemListElement: [
+                { "@type": "ListItem", position: 1, name: "Home", item: "https://www.ggnhome.com/" },
+                { "@type": "ListItem", position: 2, name: "Properties", item: "https://www.ggnhome.com/search" },
+                ...(property.sector ? [{
+                  "@type": "ListItem",
+                  position: 3,
+                  name: property.sector,
+                  item: `https://www.ggnhome.com/search/${encodeURIComponent(property.sector)}`,
+                }] : []),
+                {
+                  "@type": "ListItem",
+                  position: property.sector ? 4 : 3,
+                  name: property.title || pageTitle,
+                  item: shareLink,
+                },
+              ],
+            })}
+          </script>
         </Helmet>
       )}
 
