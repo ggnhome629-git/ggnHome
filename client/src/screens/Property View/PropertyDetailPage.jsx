@@ -282,6 +282,11 @@ export default function PropertyDetailPage({ type, partnerView = false }) {
   if (!property) {
     return (
       <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
+        <Helmet>
+          <title>Property unavailable | GgnHome</title>
+          <meta name="robots" content="noindex,follow" />
+          <link rel="canonical" href={`https://www.ggnhome.com${ROUTE_BASE[type]}/${encodeURIComponent(id || "")}`} />
+        </Helmet>
         {topNav}
         <Container maxWidth="sm" sx={{ py: 20, textAlign: "center" }}>
           <Typography variant="h2" sx={{ fontSize: "1.5rem", color: "primary.main", mb: 3 }}>
