@@ -103,9 +103,17 @@ function buildQuery(req, { skip = [] } = {}) {
     const c = bhkClause(req);
     if (c) and.push(c);
   }
-  // A plot request is a different product altogether, so it is always strict.
-  if (!skip.includes("type") && Array.isArray(req.propertyType) && req.propertyType.length === 1 && req.propertyType[0] === "plot") {
-    and.push({ propertyType: "plot" });
+  // Explicit property type and furnishing selections are must-haves, not ranking hints.
+  if (!skip.includes("type") && !req.propertyTypeAny && Array.isArray(req.propertyType) && req.propertyType.length) {
+    const types = req.propertyType.map((t) => t === "apartment" ? ["apartment", "condo"] : [t]).flat();
+    and.push({ propertyType: { $in: types } });
+  }
+  if (!skip.includes("furnishing") && req.mode === "rent" && req.furnishing && req.furnishing !== "any") {
+    const accepted = req.furnishing === "semi-furnished" ? ["semi-furnished"] : [req.furnishing];
+    and.push({ furnishing: { $in: accepted } });
+  }
+  if (!skip.includes("position") && ["corner", "middle"].includes(req.corner)) {
+    and.push({ cornerPosition: req.corner });
   }
   const filter = baseFilter();
   if (and.length) filter.$and = and;
