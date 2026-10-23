@@ -323,7 +323,7 @@ export default function PropertyDetailPage({ type, partnerView = false }) {
             name="description"
             content={`${property.title} — ${property.priceDisplay || "price on request"}${
               property.builtUpAreaDisplay ? `, ${property.builtUpAreaDisplay}` : ""
-            } in ${property.sector || "Gurgaon"}. Verified listing on GgnHome.`}
+            } in ${property.sector || "Gurgaon"}. Property listing on GgnHome.`}
           />
           <meta property="og:title" content={pageTitle} />
           <meta property="og:description" content={property.description?.slice(0, 200) || property.title} />
