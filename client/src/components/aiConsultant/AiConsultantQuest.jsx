@@ -14,9 +14,6 @@ import ResultCard from "./ResultCard";
 import ReviewCard from "./ReviewCard";
 import LeadGateCard from "./LeadGateCard";
 import { useAuth } from "../../Context/AuthContext";
-import { NEARBY_PARAMETERS, POSITION_PARAMETER, formatDistance } from "../../data/propertyParameters";
-
-const PositionIcon = POSITION_PARAMETER.icon;
 
 const STORE_KEY = "ggn_ai_consultant_v1";
 const MAX_ITEMS = 90;
