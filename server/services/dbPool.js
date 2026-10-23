@@ -20,6 +20,7 @@ const MB = 1024 * 1024;
 
 const conns = new Map(); // slot index -> mongoose connection
 const wasFull = new Set();
+const lastObjects = new Map(); // slot -> documents at the last successful check
 let snapshot = { at: 0, slots: [], activeIndex: 0 };
 let inflight = null;
 
@@ -27,7 +28,7 @@ function connectionFor(i) {
   if (i === 0) return mongoose.connection;
   if (!conns.has(i)) {
     const uri = mongoUris()[i];
-    const c = mongoose.createConnection(uri, { maxPoolSize: 3, serverSelectionTimeoutMS: 6000, connectTimeoutMS: 8000 });
+    const c = mongoose.createConnection(uri, { maxPoolSize: 3, serverSelectionTimeoutMS: 3000, connectTimeoutMS: 4000 });
     c.on("error", () => {});
     conns.set(i, c);
   }
@@ -55,6 +56,7 @@ async function refresh() {
     for (let i = 0; i < n; i += 1) rows.push({ slot: i + 1, ...(await measure(i)) });
     const limit = FULL_PERCENT();
     rows.forEach((r, idx) => {
+      if (r.ok) lastObjects.set(idx, r.objects);
       if (!r.ok) return;
       if (r.percent >= limit) wasFull.add(idx);
       else if (r.percent < limit - 5) wasFull.delete(idx);
@@ -94,9 +96,11 @@ const activeIndex = () => {
   const a = snapshot.activeIndex || 0;
   return usableSlots().includes(a) ? a : 0;
 };
+// True only when the last good check showed this database completely empty.
+const knownEmpty = (i) => lastObjects.get(i) === 0;
 const activeConnection = () => connectionFor(snapshot.activeIndex || 0);
 const allConnections = () => mongoUris().map((_, i) => connectionFor(i));
 
 const _forceActive = (i) => { snapshot = { ...snapshot, at: Date.now() + 3600e3, activeIndex: i, slots: [] }; };
 
-module.exports = { _forceActive, markDown, isDown, usableSlots, activeIndex, start, getSnapshot, refresh, activeConnection, allConnections, connectionFor };
+module.exports = { knownEmpty, _forceActive, markDown, isDown, usableSlots, activeIndex, start, getSnapshot, refresh, activeConnection, allConnections, connectionFor };

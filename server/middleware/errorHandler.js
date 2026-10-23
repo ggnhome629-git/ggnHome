@@ -23,6 +23,10 @@ const errorHandler = (err, req, res, _next) => {
   if (err && err.name === "MulterError") {
     return res.status(400).json({ code: "UPLOAD", message: err.message });
   }
+  if (err && err.code === "DB_SLOT_UNAVAILABLE") {
+    res.set({ "Cache-Control": "no-store", "Retry-After": "5" });
+    return res.status(503).json({ code: "DB_UNAVAILABLE", message: "Part of our data is briefly unavailable. Please try again in a moment.", requestId: req.id });
+  }
   const status = err.status || err.statusCode || 500;
   console.error(`[${req.id}] ${req.method} ${req.originalUrl}`, status >= 500 ? err : err.message);
   res.status(status).json({

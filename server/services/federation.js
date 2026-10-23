@@ -45,65 +45,102 @@ async function rawCol(slot, name) {
   return conn.db.collection(name);
 }
 
-/** Run fn on a slot; on connection trouble mark the slot down so it is skipped for a while. */
+const isNetworkError = (err) => !!err && (/Network|ServerSelection|Timeout|PoolCleared|Topology/i.test(err.name || "") || /ECONN|ETIMEDOUT|ENOTFOUND|EAI_AGAIN/.test(err.code || ""));
+function unavailable(slot) {
+  const err = new Error(`Database ${slot + 1} is temporarily unavailable. Please try again in a moment.`);
+  err.code = "DB_SLOT_UNAVAILABLE";
+  err.status = 503;
+  err.slot = slot;
+  return err;
+}
+const isUnavailable = (err) => !!err && err.code === "DB_SLOT_UNAVAILABLE";
+
+function redis() {
+  try {
+    const r = require("../utils/redisCache");
+    return r.isConnected() ? r.getClient() : null;
+  } catch (_) { return null; }
+}
+
+/** Run fn on a slot. A database that does not answer is marked down for all servers and the call fails loudly. */
 async function onSlot(slot, name, fn) {
+  if (slot !== 0 && pool.isDown(slot)) throw unavailable(slot);
   try {
     return await fn(await rawCol(slot, name));
   } catch (err) {
-    if (slot !== 0 && !(err && err.code)) { pool.markDown(slot); warnOnce(`down${slot}`, `Database ${slot + 1} is not answering: ${err.message}`); }
+    if (slot !== 0 && isNetworkError(err)) {
+      pool.markDown(slot);
+      const r = redis();
+      if (r) r.set(`ggn:fed:down:${slot}`, "1", "EX", 30).catch(() => {});
+      warnOnce(`down${slot}`, `Database ${slot + 1} is not answering: ${err.message}`);
+      throw unavailable(slot);
+    }
     throw err;
   }
 }
 
-/** Read from a slot, but tolerate it being down (its rows are missing until it is back). */
-async function readSlot(slot, name, fn, fallback) {
+/** Read from a slot. One quick retry for a blip; never returns a made-up empty answer. */
+async function readSlot(slot, name, fn) {
   try {
     return await onSlot(slot, name, fn);
   } catch (err) {
-    if (slot === 0) throw err;
-    return fallback;
+    if (!isUnavailable(err) || slot === 0) throw err;
+    throw err;
   }
 }
 
+/**
+ * Every database that may hold rows of this collection, INCLUDING ones that are down right now:
+ * asking a down database fails the request instead of silently answering without its rows.
+ * A database is left out only when it is known to be empty.
+ */
 async function holders(name) {
   const hit = holderCache.get(name);
-  if (hit && Date.now() - hit.at < HOLDER_TTL) return liveHolders(hit);
-  const slots = new Set([0]);
-  const unsure = new Set(hit ? hit.unsure : []);
-  const usable = pool.usableSlots();
+  if (hit && Date.now() - hit.at < HOLDER_TTL) return [...hit.slots].sort((a, b) => a - b);
+  const slots = new Set([0, ...(hit ? hit.slots : [])]);
+  const r = redis();
+  if (r) {
+    try { (await r.smembers(`ggn:fed:holders:${name}`)).forEach((x) => slots.add(Number(x))); } catch (_) { /* redis is only a shortcut */ }
+  }
   const all = mongoUris().map((_, i) => i).filter((i) => i !== 0);
+  if (r) {
+    try {
+      const flags = await r.mget(all.map((i) => `ggn:fed:down:${i}`));
+      flags.forEach((f, k) => { if (f) pool.markDown(all[k], 15000); }); // another server already saw it fail
+    } catch (_) { /* redis is only a shortcut */ }
+  }
   await Promise.all(
     all.map(async (i) => {
-      if (!usable.includes(i)) { unsure.add(i); return; }
       try {
-        await onSlot(i, name, async (c) => { if ((await c.estimatedDocumentCount()) > 0) slots.add(i); });
-        unsure.delete(i);
-      } catch (_) { unsure.add(i); }
+        await onSlot(i, name, async (c) => {
+          if ((await c.estimatedDocumentCount()) > 0) {
+            slots.add(i);
+            if (r) r.sadd(`ggn:fed:holders:${name}`, String(i)).catch(() => {});
+          }
+        });
+      } catch (err) {
+        if (!isUnavailable(err)) throw err;
+        if (!pool.knownEmpty(i)) slots.add(i); // might hold rows: treat as a holder we cannot reach
+      }
     })
   );
-  const entry = { at: Date.now(), slots, unsure };
-  holderCache.set(name, entry);
-  return liveHolders(entry);
+  holderCache.set(name, { at: Date.now(), slots });
+  return [...slots].sort((a, b) => a - b);
 }
-function liveHolders(entry) {
-  const usable = pool.usableSlots();
-  return [...entry.slots].filter((i) => usable.includes(i)).sort((a, b) => a - b);
-}
-/** Slots that may hold rows of this collection but cannot be asked right now. */
+/** Holders that cannot be asked right now. */
 async function unreachableHolders(name) {
-  await holders(name);
-  const e = holderCache.get(name);
-  const usable = pool.usableSlots();
-  return [...(e ? [...e.slots, ...e.unsure] : [])].filter((i) => !usable.includes(i) || (e.unsure.has(i)));
+  return (await holders(name)).filter((i) => i !== 0 && pool.isDown(i));
 }
 /** Sync peek used to keep the native fast path while only database 1 holds the collection. */
 const cachedHolders = (name) => {
   const hit = holderCache.get(name);
-  return hit && Date.now() - hit.at < HOLDER_TTL && !hit.unsure.size ? liveHolders(hit) : null;
+  return hit && Date.now() - hit.at < HOLDER_TTL ? [...hit.slots].sort((a, b) => a - b) : null;
 };
 const noteHolder = (name, slot) => {
   const h = holderCache.get(name);
   if (h) h.slots.add(slot);
+  const r = slot !== 0 && redis();
+  if (r) r.sadd(`ggn:fed:holders:${name}`, String(slot)).catch(() => {}); // other servers see it at once
 };
 
 function hintMap(name) {
@@ -164,6 +201,8 @@ async function assertUniqueAcross(name, docs, targetSlot, holderSlots) {
   const others = holderSlots.filter((s) => s !== targetSlot);
   if (!others.length) return;
   const specs = [{ key: { _id: 1 } }, ...(await indexSpecs(name)).filter((ix) => ix.unique && !ix.partialFilterExpression)];
+  const blind = others.filter((s) => pool.isDown(s));
+  if (blind.length && specs.length > 1) throw unavailable(blind[0]); // cannot prove the phone / email is free
   for (const doc of docs) {
     for (const ix of specs) {
       const fields = Object.keys(ix.key);
@@ -176,7 +215,7 @@ async function assertUniqueAcross(name, docs, targetSlot, holderSlots) {
         q[f] = v;
       }
       if (skip) continue;
-      for (const s of others) {
+      for (const s of others.filter((x) => !pool.isDown(x))) {
         const found = await readSlot(s, name, (c) => c.findOne(q, { projection: { _id: 1 } }), null);
         if (found) throw dupError(name, ix.key, q);
       }
@@ -244,7 +283,7 @@ async function fedFind(name, filter, options = {}) {
     const rows = await c.find(filter, optsFor(s, base)).toArray();
     rows.forEach((r) => setHint(name, r._id, s));
     return rows;
-  }, [])));
+  })));
   let rows = mergeRows(lists, sort);
   if (skip) rows = rows.slice(skip);
   if (limit) rows = rows.slice(0, limit);
@@ -257,10 +296,17 @@ async function fedFindOne(name, filter, options = {}) {
     const rows = await fedFind(name, filter, { ...options, limit: 1 });
     return rows[0] || null;
   }
+  let blind = null;
   for (const s of slots) {
-    const row = await readSlot(s, name, (c) => c.findOne(filter, optsFor(s, options)), null);
-    if (row) { setHint(name, row._id, s); return row; }
+    try {
+      const row = await readSlot(s, name, (c) => c.findOne(filter, optsFor(s, options)));
+      if (row) { setHint(name, row._id, s); return row; }
+    } catch (err) {
+      if (!isUnavailable(err)) throw err;
+      blind = err;
+    }
   }
+  if (blind) throw blind; // not found here, but a database we could not ask might have it
   return null;
 }
 
@@ -274,11 +320,23 @@ async function fedInsert(name, docs, options, many = false) {
   const slot = await insertTarget(name, options);
   const hold = await holders(name);
   await assertUniqueAcross(name, docs, slot, hold);
-  await ensureSlot(slot, name);
-  noteHolder(name, slot);
-  const res = await onSlot(slot, name, (c) => (many ? c.insertMany(docs, options) : c.insertOne(docs[0], options)));
-  docs.forEach((d) => setHint(name, d._id, slot));
-  return res;
+  const tryOn = async (target) => {
+    await ensureSlot(target, name);
+    const res = await onSlot(target, name, (c) => (many ? c.insertMany(docs, options) : c.insertOne(docs[0], options)));
+    noteHolder(name, target);
+    docs.forEach((d) => setHint(name, d._id, target));
+    return res;
+  };
+  try {
+    return await tryOn(slot);
+  } catch (err) {
+    if (!isUnavailable(err) || slot === 0 || hasSession(options)) throw err;
+    // The chosen database stopped answering before anything was written: use the next one that is up.
+    const next = pool.usableSlots().find((i) => i !== slot);
+    if (next === undefined) throw err;
+    await assertUniqueAcross(name, docs, next, hold);
+    return tryOn(next);
+  }
 }
 
 /** An upsert must not create a second copy because a database that may hold the row could not be asked. */
@@ -294,10 +352,18 @@ async function refuseIfBlind(name) {
 async function fedUpdateFirst(name, filter, run, options, upsertFallback) {
   const slots = orderSlots(name, filter, await holders(name));
   let last;
+  let blind = null;
   for (const s of slots) {
-    last = await onSlot(s, name, (c) => run(c, { ...optsFor(s, options), upsert: false }));
+    try {
+      last = await onSlot(s, name, (c) => run(c, { ...optsFor(s, options), upsert: false }));
+    } catch (err) {
+      if (!isUnavailable(err)) throw err;
+      blind = err;
+      continue;
+    }
     if (last && (last.matchedCount > 0 || last.deletedCount > 0)) { const id = scalarId(filter); if (id != null) setHint(name, id, s); return last; }
   }
+  if (blind) throw blind; // the row may live on the database that did not answer
   if (options && options.upsert && upsertFallback) {
     await refuseIfBlind(name);
     const slot = await insertTarget(name, options);
@@ -522,11 +588,19 @@ function install() {
     return (async () => {
       const list = orderSlots(name, filter, await holders(name));
       let last = null;
+      let blind = null;
       for (const s of list) {
-        last = await onSlot(s, name, (c) => call(c, filter, { ...optsFor(s, options), upsert: false }));
+        try {
+          last = await onSlot(s, name, (c) => call(c, filter, { ...optsFor(s, options), upsert: false }));
+        } catch (err) {
+          if (!isUnavailable(err)) throw err;
+          blind = err;
+          continue;
+        }
         const doc = last && last.value !== undefined ? last.value : last;
         if (doc) { setHint(name, doc._id, s); return last; }
       }
+      if (blind) throw blind;
       if (options.upsert && hasUpdate) {
         await refuseIfBlind(name);
         const s = await insertTarget(name, options);
