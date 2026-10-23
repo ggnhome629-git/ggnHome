@@ -701,3 +701,52 @@
   .qcompare-launch .qcta { width: 100%; min-height: 44px; }
   .qcompare-row { grid-template-columns: 68px repeat(2,minmax(108px,1fr)); }
 }
+
+/* Property Drive: cinematic listing-by-listing tour and transparent daily-life inputs. */
+.qdrive-launch-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:12px 0; padding:14px; border:1px solid #cce5dc; border-radius:16px; background:linear-gradient(115deg,#effaf5,#f7fbff); }
+.qdrive-launch-row span { display:flex; flex-direction:column; gap:4px; color:#1d4a42; }
+.qdrive-launch-row small { color:#718087; font-size:12px; }
+.qdrive { margin:14px 0 18px; padding:14px; border-radius:22px; background:#10242c; color:#f6fbfc; box-shadow:0 16px 38px rgba(15,34,51,.18); }
+.qdrive-top { display:flex; justify-content:space-between; gap:12px; align-items:flex-start; margin-bottom:12px; }
+.qdrive-kicker { color:#79e0c5; font-size:10px; font-weight:900; letter-spacing:.14em; }
+.qdrive-top h2 { margin:4px 0; font-size:clamp(20px,3vw,28px); color:#fff; }
+.qdrive-top p { margin:0; color:#b8cbd0; font-size:12px; }
+.qdrive-close { width:36px; height:36px; border:1px solid #47616b; border-radius:50%; background:#1b343d; color:#fff; font-size:24px; cursor:pointer; }
+.qdrive-scene { position:relative; isolation:isolate; min-height:340px; overflow:hidden; border-radius:18px; background:linear-gradient(#789db1,#d8e7e8 60%,#42545a); animation:qdrive-arrive .65s cubic-bezier(.2,.8,.2,1) both; }
+.qdrive-photo { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:saturate(.9); }
+.qdrive-windshield { position:absolute; inset:0; z-index:1; background:linear-gradient(180deg,rgba(6,23,32,.08),transparent 35%,rgba(6,23,32,.65)); pointer-events:none; }
+.qdrive-road { position:absolute; z-index:1; left:0; right:0; bottom:0; height:31%; background:linear-gradient(90deg,#27353a,#56636a,#27353a); clip-path:polygon(15% 0,85% 0,100% 100%,0 100%); }
+.qdrive-road i { position:absolute; top:0; left:50%; width:4px; height:100%; background:#f4d47b; transform:translateX(-50%); opacity:.85; }
+.qdrive-road i:nth-child(2) { left:35%; opacity:.4; }.qdrive-road i:nth-child(3) { left:65%; opacity:.4; }
+.qdrive-dash { position:absolute; z-index:2; left:0; right:0; bottom:0; height:24%; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; padding-bottom:8px; background:linear-gradient(180deg,transparent,#13262d 38%); }
+.qdrive-dash span { font-size:clamp(36px,6vw,58px); line-height:1; filter:drop-shadow(0 4px 6px #10242c); }
+.qdrive-dash small { color:#b7d0d2; font-size:9px; letter-spacing:.14em; }
+.qdrive-no-photo { position:absolute; inset:0; display:grid; place-content:center; justify-items:center; gap:10px; color:#fff; font-size:58px; background:linear-gradient(135deg,#6b9d9c,#243e4a); }
+.qdrive-no-photo span { font-size:12px; }
+.qdrive-homecard { position:absolute; z-index:3; top:14px; left:14px; width:min(340px,calc(100% - 28px)); display:flex; flex-direction:column; gap:6px; padding:14px; border:1px solid rgba(255,255,255,.35); border-radius:16px; background:rgba(11,30,39,.78); backdrop-filter:blur(12px); color:#fff; box-shadow:0 8px 26px rgba(0,0,0,.18); }
+.qdrive-price { color:#87f0cf; font-size:clamp(21px,4vw,28px); font-weight:900; }
+.qdrive-homecard b { font-size:14px; }.qdrive-homecard > span:not(.qdrive-price) { color:#d1e1e2; font-size:11px; }
+.qdrive-homecard a { align-self:flex-start; margin-top:4px; color:#9df4d9; font-size:12px; font-weight:800; }
+.qdrive-controls { display:grid; grid-template-columns:1fr 1.25fr 1fr; gap:8px; margin-top:12px; }
+.qdrive-controls button,.qdrive-extra button { min-height:42px; border:1px solid #47616b; border-radius:12px; background:#1b343d; color:#e9f5f4; font-size:12px; font-weight:800; cursor:pointer; }
+.qdrive-controls .qdrive-play { background:#00a79d; color:#062e30; border-color:#00a79d; }
+.qdrive-progress { display:flex; gap:5px; margin-top:9px; }
+.qdrive-progress button { flex:1; height:5px; border:0; border-radius:9px; background:#405760; cursor:pointer; }
+.qdrive-progress button.active { background:#7be3c7; }
+.qdrive-extra { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.qdrive-extra button { padding:0 12px; }
+.qdrive-simulator { margin-top:12px; padding:14px; border:1px solid #38545d; border-radius:16px; background:#172f38; }
+.qdrive-simulator h3 { margin:0 0 12px; color:#fff; font-size:15px; }.qdrive-simulator h3 small { color:#a9c0c4; font-size:11px; font-weight:500; }
+.qdrive-simulator label { display:grid; gap:7px; margin:12px 0; color:#cce0e0; font-size:12px; }
+.qdrive-simulator label b { color:#8be9cd; }.qdrive-simulator input { width:100%; accent-color:#00a79d; }
+.qdrive-simulator p { margin:12px 0 0; color:#b9d0d1; font-size:12px; line-height:1.6; }.qdrive-simulator p b { color:#fff; }
+@keyframes qdrive-arrive { from { opacity:.3; transform:translateX(22px) scale(.985); } to { opacity:1; transform:translateX(0) scale(1); } }
+@media(max-width:520px) {
+ .qdrive-launch-row { align-items:stretch; flex-direction:column; }
+ .qdrive-launch-row .qcta { width:100%; min-height:44px; }
+ .qdrive { padding:10px; border-radius:17px; }
+ .qdrive-scene { min-height:390px; }
+ .qdrive-homecard { top:9px; left:9px; width:calc(100% - 18px); }
+ .qdrive-controls { grid-template-columns:1fr 1fr; }.qdrive-controls .qdrive-play { grid-column:1 / -1; grid-row:1; }
+}
+@media(prefers-reduced-motion:reduce) { .qdrive-scene { animation:none; } }
