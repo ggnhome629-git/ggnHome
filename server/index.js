@@ -232,6 +232,7 @@ if (require.main === module) {
   const server = app.listen(PORT, () => {
     console.log(`API listening on ${PORT}`);
   });
+  require('./services/dbPool').start();
 
   // The host's load balancer keeps connections open ~60 s: stay open a little longer than that, or it will
   // reuse a connection this server just closed and show the visitor a 502.

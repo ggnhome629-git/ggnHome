@@ -7,6 +7,7 @@ import "./admin.css";
 export default function AdminUsageDashboard() {
   const [mongoUsage, setMongoUsage] = useState(null);
   const [gnewsUsage, setGNewsUsage] = useState(null);
+  const [dbAccounts, setDbAccounts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -33,6 +34,13 @@ export default function AdminUsageDashboard() {
       if (!mongoRes.ok || !gnewsRes.ok) throw new Error("Failed to fetch usage data");
       setMongoUsage(await mongoRes.json());
       setGNewsUsage(await gnewsRes.json());
+      try {
+        const dbRes = await fetch(`${process.env.REACT_APP_Base_API}/api/admin/db-accounts?refresh=1`, {
+          credentials: "include",
+          headers: { ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+        });
+        if (dbRes.ok) setDbAccounts(await dbRes.json());
+      } catch (_) { /* board is optional */ }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -83,6 +91,41 @@ export default function AdminUsageDashboard() {
             <span>Error: {error}</span>
           </Box>
         </Alert>
+      )}
+
+      {dbAccounts?.slots?.length > 0 && (
+        <Card className="admin-card" sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h2" sx={{ fontWeight: 700, fontSize: "1.1rem", mb: 0.5 }}>
+              Database accounts
+            </Typography>
+            <Typography color="text.secondary" sx={{ fontSize: 13, mb: 2 }}>
+              A database is marked full at {dbAccounts.limit}% of {dbAccounts.quotaMB} MB. New overflow data goes to the active one.
+            </Typography>
+            {dbAccounts.allFull && <Alert severity="error" sx={{ mb: 2 }}>Every database is full. Add another MONGO_URI.</Alert>}
+            <Stack spacing={1.5}>
+              {dbAccounts.slots.map((d) => {
+                const color = { active: "#16A34A", saved: "#2563EB", full: "#DC2626", waiting: "#6B7280", offline: "#9CA3AF" }[d.state];
+                return (
+                  <Box key={d.slot}>
+                    <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+                      <Typography sx={{ fontWeight: 600 }}>Database {d.slot}</Typography>
+                      <Typography sx={{ fontWeight: 700, color, textTransform: "uppercase", fontSize: 12 }}>
+                        {d.state === "active" ? "Saving data now" : d.state === "saved" ? "Data saved" : d.state}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ height: 8, borderRadius: 4, bgcolor: "action.hover", overflow: "hidden" }}>
+                      <Box sx={{ height: "100%", width: `${Math.min(100, d.percent || 0)}%`, bgcolor: color }} />
+                    </Box>
+                    <Typography color="text.secondary" sx={{ fontSize: 12, mt: 0.5 }}>
+                      {d.ok ? `${d.usedMB} MB used (${d.percent}%) · ${formatNumber(d.objects)} documents` : "Not reachable"}
+                    </Typography>
+                  </Box>
+                );
+              })}
+            </Stack>
+          </CardContent>
+        </Card>
       )}
 
       {/* MongoDB card */}

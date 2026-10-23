@@ -451,3 +451,13 @@ module.exports = {
   getMongoUsage,
   getGNewsUsage,
 };
+// All configured MongoDB databases: which one is saving data now, which hold data, which are full.
+const getDbAccounts = async (req, res) => {
+  try {
+    const snap = await require("../services/dbPool").getSnapshot(req.query.refresh === "1");
+    return res.json({ success: true, ...snap });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err?.message || "Failed to read databases" });
+  }
+};
+module.exports.getDbAccounts = getDbAccounts;

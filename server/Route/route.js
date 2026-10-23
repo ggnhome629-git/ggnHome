@@ -73,7 +73,7 @@ const {getRentalPropertyById , getSalePropertyById , getPropertyById , getAllAct
 const { saveAiResponses, getAiResponses } = require("../controllers/AiAssistant.controller.js");
 const { addView, addSave, addEngagementTime, addRating, getMetrics, getLeadConversion, getSavedProperties , getUserPropertyMetrics } = require("../controllers/PropertyAnalysis.controller.js");
 const { getLocationIQApiKey } = require("../controllers/mapintegration.js");
-const {getAccountsUsage , getBrevoUsage , getLocationIQUsage , getMongoUsage , getGNewsUsage} = require("../controllers/admin.Accountsusage.js");
+const {getAccountsUsage , getBrevoUsage , getLocationIQUsage , getMongoUsage , getGNewsUsage , getDbAccounts} = require("../controllers/admin.Accountsusage.js");
 const { getNews } = require("../controllers/news.controller");
 const {savePreferenceForm, getPreferenceForm , listPreferenceForms , matchPreferencesToUsers , deletePreferenceForm} = require("../controllers/userpreferencesform.controller.js");
 const { createListing, searchListings, getListing, deleteListing, updateListing, incrementView, flatmateListingDetails, flatmateEnquiry, getListingsByUser, getListingsByIds } = require("../controllers/Flatmates.controller.js");
@@ -261,6 +261,7 @@ router.get("/api/properties", verifyToken, checkAdminEmail, getAllProperties);
 router.get('/api/admin/cloudinary/usage', verifyToken, checkAdminEmail, getAccountsUsage);
 router.get('/api/admin/brevo/usage', verifyToken, checkAdminEmail, getBrevoUsage);
 router.get('/api/admin/mongo/usage', verifyToken, checkAdminEmail, getMongoUsage);
+router.get('/api/admin/db-accounts', verifyToken, checkAdminEmail, getDbAccounts);
 router.get('/api/admin/gnews/usage', verifyToken, checkAdminEmail, getGNewsUsage);
 router.get('/api/admin/locationiq/usage', verifyToken, checkAdminEmail, getLocationIQUsage);
 // Admin updates status of any request

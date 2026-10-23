@@ -41,9 +41,10 @@ async function inbox(userIds, { title, body, link }) {
 async function runPopularPush({ dryRun = false } = {}) {
   if (!push.isConfigured()) return { ok: false, reason: "Firebase credentials not configured (FIREBASE_SERVICE_ACCOUNT)" };
 
-  const recentlyPushed = await PushLog.find({ kind: "popular", sentAt: { $gte: new Date(Date.now() - 14 * DAY) } })
-    .select("propertyId")
-    .lean();
+  const recentlyPushed = await PushLog.findAll(
+    { kind: "popular", sentAt: { $gte: new Date(Date.now() - 14 * DAY) } },
+    { select: "propertyId" }
+  );
   const skip = new Set(recentlyPushed.map((r) => String(r.propertyId)));
 
   const popular = await getPopularProperties(15);
@@ -62,7 +63,7 @@ async function runPopularPush({ dryRun = false } = {}) {
   if (dryRun) return { ok: true, dryRun: true, property: pick.id, devices: tokens.length, message };
 
   const result = await push.sendToTokens(tokens, message);
-  await PushLog.create({ propertyId: pick.id, propertyType: pick.type, kind: "popular", sent: result.sent, failed: result.failed });
+  await PushLog.createOverflow({ propertyId: pick.id, propertyType: pick.type, kind: "popular", sent: result.sent, failed: result.failed });
   await inbox(devices.length ? await DeviceToken.distinct("userId", { popularPushes: true, userId: { $ne: null } }) : [], message);
   return { ok: true, property: pick.id, devices: tokens.length, ...result };
 }
