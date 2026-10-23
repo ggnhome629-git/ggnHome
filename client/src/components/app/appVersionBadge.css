@@ -1,0 +1,156 @@
+/* Small, persistent build marker for the public website. Keep it lightweight. */
+.ggn-v2-widget {
+  position: fixed;
+  right: 12px;
+  bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+  z-index: 1450;
+  color: #fff;
+  font-family: Inter, "Segoe UI", system-ui, sans-serif;
+}
+.ggn-v2-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(171, 159, 255, .58);
+  border-radius: 999px;
+  color: #fff;
+  background: linear-gradient(115deg, #4526bc 0%, #782ee8 58%, #b12fcf 100%);
+  box-shadow: 0 5px 18px rgba(57, 35, 145, .28), inset 0 1px rgba(255,255,255,.18);
+  font: 800 12px/1 Inter, "Segoe UI", system-ui, sans-serif;
+  letter-spacing: .025em;
+  cursor: pointer;
+}
+.ggn-v2-trigger:hover { filter: brightness(1.08); }
+.ggn-v2-trigger:focus-visible,
+.ggn-v2-close:focus-visible,
+.ggn-v2-action:focus-visible,
+.ggn-v2-check:focus-visible { outline: 3px solid #60f4e7; outline-offset: 3px; }
+.ggn-v2-star { display: inline-flex; color: #ffe58a; }
+.ggn-v2-live-dot { width: 7px; height: 7px; border-radius: 50%; background: #7cf5b4; box-shadow: 0 0 0 3px rgba(124,245,180,.13); }
+.ggn-v2-trigger.update .ggn-v2-live-dot { background: #ffd166; box-shadow: 0 0 0 3px rgba(255,209,102,.16); }
+.ggn-v2-trigger.unavailable .ggn-v2-live-dot { background: #c1ccd9; box-shadow: none; }
+.ggn-v2-trigger.checking .ggn-v2-live-dot { background: #75d7ff; }
+.ggn-v2-status { font-size: 9px; font-weight: 850; letter-spacing: .1em; opacity: .92; }
+.ggn-v2-panel {
+  position: absolute;
+  right: 0;
+  bottom: 45px;
+  width: min(390px, calc(100vw - 24px));
+  max-height: min(72vh, 660px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid rgba(155, 178, 226, .3);
+  border-radius: 20px;
+  background: #08172d;
+  box-shadow: 0 20px 64px rgba(1, 9, 28, .48);
+  color: #f6f8ff;
+}
+.ggn-v2-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 16px 12px;
+}
+.ggn-v2-title-wrap { display: grid; gap: 4px; min-width: 0; }
+.ggn-v2-eyebrow { display: inline-flex; align-items: center; gap: 6px; color: #b8a8ff; font-size: 10px; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
+.ggn-v2-panel-title { color: #fff; font-size: 17px; font-weight: 850; letter-spacing: -.025em; line-height: 1.2; }
+.ggn-v2-build { color: #aebdd5; font-size: 11px; }
+.ggn-v2-close {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border: 1px solid rgba(176,193,224,.25);
+  border-radius: 50%;
+  background: #152744;
+  color: #dce7ff;
+  cursor: pointer;
+}
+.ggn-v2-art {
+  display: block;
+  width: calc(100% - 20px);
+  height: 130px;
+  margin: 0 10px;
+  border: 1px solid rgba(135, 185, 255, .24);
+  border-radius: 13px;
+  background: #10244a;
+  object-fit: cover;
+}
+.ggn-v2-copy { padding: 13px 16px 16px; }
+.ggn-v2-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 11px;
+  border: 1px solid rgba(111, 224, 176, .22);
+  border-radius: 12px;
+  background: rgba(39, 150, 116, .12);
+  color: #c7ffe7;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.ggn-v2-state svg { margin-top: 1px; flex: 0 0 auto; }
+.ggn-v2-state.update { color: #ffe8b0; border-color: rgba(255,209,102,.25); background: rgba(179,117,21,.14); }
+.ggn-v2-state.unavailable,
+.ggn-v2-state.checking { color: #d2dff3; border-color: rgba(164,188,224,.18); background: rgba(94,126,175,.12); }
+.ggn-v2-section-title { margin: 15px 0 8px; color: #b6c7e5; font-size: 10px; font-weight: 850; letter-spacing: .14em; text-transform: uppercase; }
+.ggn-v2-release-list { display: grid; gap: 10px; }
+.ggn-v2-release { padding: 10px 11px; border: 1px solid rgba(146,168,208,.18); border-radius: 12px; background: rgba(255,255,255,.035); }
+.ggn-v2-release-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.ggn-v2-release-head strong { font-size: 12px; color: #fff; }
+.ggn-v2-release-head span { color: #9eadd0; font-size: 10px; white-space: nowrap; }
+.ggn-v2-release ul { margin: 0; padding-left: 17px; color: #c2cfe5; font-size: 11px; line-height: 1.55; }
+.ggn-v2-release li + li { margin-top: 3px; }
+.ggn-v2-meta { display: grid; gap: 5px; margin-top: 12px; padding-top: 11px; border-top: 1px solid rgba(146,168,208,.18); color: #9eafcf; font: 10px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; overflow-wrap: anywhere; }
+.ggn-v2-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.ggn-v2-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(159,170,255,.4);
+  border-radius: 11px;
+  background: linear-gradient(110deg,#4d33c3,#8236d5);
+  color: #fff;
+  font: 750 11px/1.2 Inter, "Segoe UI", system-ui, sans-serif;
+  cursor: pointer;
+}
+.ggn-v2-action.secondary { background: #132744; border-color: rgba(165,187,226,.24); color: #dce7ff; }
+.ggn-v2-action:disabled { opacity: .65; cursor: wait; }
+.ggn-v2-footnote { display: block; margin-top: 9px; color: #8194b6; font-size: 10px; line-height: 1.45; }
+.gai-v2-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 27px;
+  height: 20px;
+  margin-left: 7px;
+  padding: 0 6px;
+  border: 1px solid rgba(220, 211, 255, .45);
+  border-radius: 999px;
+  background: linear-gradient(120deg, #5132c7, #ac37d3);
+  color: #fff;
+  font: 900 9px/1 Inter, "Segoe UI", system-ui, sans-serif;
+  letter-spacing: .08em;
+  box-shadow: 0 2px 8px rgba(97, 63, 206, .28);
+}
+.gai-launch-label,
+.gai-fab-label-v2 { display: inline-flex; align-items: center; min-width: 0; }
+.gai-launch-label em,
+.gai-fab-label-v2 em { font-style: normal; }
+@media (max-width: 520px) {
+  .ggn-v2-widget { right: 8px; bottom: calc(82px + env(safe-area-inset-bottom, 0px)); }
+  .ggn-v2-trigger { min-height: 34px; padding: 0 10px; }
+  .ggn-v2-panel { bottom: 42px; max-height: min(72vh, 620px); }
+  .ggn-v2-art { height: 112px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ggn-v2-trigger { scroll-behavior: auto; }
+}
