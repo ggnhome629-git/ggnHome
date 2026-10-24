@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Box, Card, CardContent, Container, Grid, Stack, Typography, Tab, Tabs, Chip, LineChart } from "@mui/material";
+import { Box, Card, CardContent, Container, Grid, Stack, Typography, Tab, Tabs, Chip } from "@mui/material";
 import { Eye, Heart, Phone, Share2, TrendingUp, MapPin, Calendar, Home } from "lucide-react";
 import { radii, elevationShadows } from "../../theme/theme";
 import { cacheUtils, CACHE_DURATIONS } from "../../utils/cacheManager";
