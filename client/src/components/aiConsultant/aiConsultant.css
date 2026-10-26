@@ -447,3 +447,21 @@
 .gai-riya-btn { flex-shrink: 0; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; line-height: 0; }
 .gai-riya-btn:focus-visible { outline: 3px solid var(--ai-sun); outline-offset: 2px; }
 .gai-avatar.riya { padding: 0; background: none; overflow: hidden; }
+
+/* Invitation banner — never covers the search bar on phones */
+.gai-banner { position: fixed; z-index: 1250; left: 16px; bottom: 24px; display: flex; align-items: center; gap: 2px; padding: 6px 6px 6px 8px; border-radius: 999px; background: #0f766e; color: #fff; box-shadow: 0 6px 18px rgba(15, 118, 110, 0.3); font-family: "Inter", system-ui, sans-serif; }
+.gai-banner-main { display: inline-flex; align-items: center; gap: 10px; background: none; border: 0; color: inherit; cursor: pointer; padding: 0; text-align: left; font: inherit; }
+.gai-banner-icon { width: 34px; height: 34px; border-radius: 50%; background: #fff; color: #0f766e; display: grid; place-items: center; flex-shrink: 0; }
+.gai-banner-text { display: flex; flex-direction: column; line-height: 1.2; }
+.gai-banner-text strong { font-size: 14px; font-weight: 700; }
+.gai-banner-text small { font-size: 12px; opacity: 0.85; }
+.gai-banner-close { width: 28px; height: 28px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, 0.16); color: #fff; display: grid; place-items: center; cursor: pointer; flex-shrink: 0; }
+.gai-banner-main:focus-visible, .gai-banner-close:focus-visible { outline: 3px solid #c98a1b; outline-offset: 2px; }
+@media (max-width: 599px) {
+  /* Small icon-only pill, sitting above the bottom nav, tucked in the corner */
+  .gai-banner { left: 10px; bottom: 84px; padding: 3px; gap: 0; }
+  .gai-banner-icon { width: 28px; height: 28px; }
+  .gai-banner-text { display: none; }
+  .gai-banner-main { gap: 0; }
+  .gai-banner-close { width: 20px; height: 20px; margin-left: 2px; }
+}

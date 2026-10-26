@@ -16,14 +16,14 @@ import QuickLinks from "./QuickLinks";
 import RecentlyViewed from "../Property View/sections/RecentlyViewed";
 import { getRecentlyViewed } from "../../utils/propertyAnalytics";
 import FloatingActions from "./FloatingActions";
-import AiLaunchButton from "../../components/aiConsultant/AiLaunchButton";
+import AiBanner from "../../components/aiConsultant/AiBanner";
+import DashboardLoader from "../../components/ui/DashboardLoader";
+import { readCache, writeCache } from "../../utils/swrCache";
 import { useAiConsultant } from "../../components/aiConsultant/AiConsultantHost";
 import { useAiConsultantEnabled } from "../../components/aiConsultant/featureFlag";
 
 // Code-split: the consultant (and its styles) only download when it opens.
-// Opens by itself once per browser session, after the launch intro finishes.
-const AI_AUTO_OPEN_KEY = "ggn:aiConsultantAutoOpened";
-const AI_AUTO_OPEN_DELAY_MS = 2600;
+// It never opens on its own: a small banner invites the visitor instead.
 
 // Lazy imports — everything below the hero streams in as the user scrolls.
 const Footer = React.lazy(() => import("./Footer"));
@@ -41,6 +41,11 @@ const ToolsShowcase = React.lazy(() => import("./Tools"));
 const RewardsSteps = React.lazy(() => import("./RewardsSteps"));
 const OffersCarousel = React.lazy(() => import("./OffersCarousel"));
 const HomeServices = React.lazy(() => import("./HomeServices"));
+
+// The cover loader shows on the first dashboard visit of a session only;
+// coming back to the page paints straight from cache.
+let loaderShownThisSession = false;
+const LOADER_MAX_MS = 3000;
 
 const NAV_ITEMS = [
   "For Buyers",
@@ -98,75 +103,16 @@ function LazySection({ fallback, children, sx, rootMargin = "650px" }) {
   );
 }
 
-export default function RealEstateDashboard() {
-  const { scrollYProgress: rawProgress } = useScroll();
-  const scrollYProgress = useSpring(rawProgress, { stiffness: 140, damping: 24, restDelta: 0.001 });
-  const { user } = useAuth();
+/**
+ * Owns the search box state. Typing re-renders only this section, not the
+ * whole dashboard below it.
+ */
+const SearchSection = React.memo(function SearchSection({ user, recentSearches, onOpenPreferences, onOpenAi }) {
   const navigate = useNavigate();
-  // Hybrid authentication: grab token from localStorage for authenticated APIs
-  const userToken = localStorage.getItem("accessToken");
-
   const [searchQuery, setSearchQuery] = useState("");
   const [propertyTypeFilter, setPropertyTypeFilter] = useState("All");
   const [isSearching, setIsSearching] = useState(false);
-  const [recentSearches, setRecentSearches] = useState([]);
   const [areaSuggestions, setAreaSuggestions] = useState([]);
-
-  const [properties, setProperties] = useState([]);
-  const [recommended, setRecommended] = useState([]);
-  // Starts true so the first paint shows card skeletons rather than the
-  // carousel's "nothing to explore" empty state.
-  const [feedLoading, setFeedLoading] = useState(true);
-
-  // The last known area is used straight away, so "properties near you" loads while the phone is
-  // still finding its position. A fresh position replaces it only when the area actually changed.
-  const [userLocation, setUserLocationState] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem("ggn:lastLocation") || "null");
-      return saved && (saved.area || saved.city) ? saved : null;
-    } catch {
-      return null;
-    }
-  });
-  const setUserLocation = useCallback((next) => {
-    const same = (a, b) => ["area", "village", "city_district", "county", "state_district", "state"].every((k) => (a?.[k] || null) === (b?.[k] || null));
-    setUserLocationState((prev) => (prev && same(prev, next) ? prev : next));
-    try {
-      localStorage.setItem("ggn:lastLocation", JSON.stringify(next));
-    } catch {
-      /* storage can be blocked; the location still works for this visit */
-    }
-  }, []);
-  const [propertiesInArea, setPropertiesInArea] = useState([]);
-  const [areaPage, setAreaPage] = useState(1);
-  const [areaLimit] = useState(10);
-  const [areaHasMore, setAreaHasMore] = useState(true);
-  const [areaLoading, setAreaLoading] = useState(false);
-  const [areaError, setAreaError] = useState(false);
-
-  const areaLoadingRef = useRef(false);
-  const aiConsultant = useAiConsultant();
-  const aiEnabled = useAiConsultantEnabled();
-  const [recentlyViewed] = useState(() => getRecentlyViewed().slice(0, 8));
-
-  // ------------------------------------------------------- AI consultant --
-
-  const { open: openAi, isActive: aiActive, onManualSearch } = aiConsultant;
-  useEffect(() => {
-    if (!aiEnabled) return undefined;
-    let seen = false;
-    try {
-      seen = Boolean(sessionStorage.getItem(AI_AUTO_OPEN_KEY));
-      if (!seen) sessionStorage.setItem(AI_AUTO_OPEN_KEY, "1");
-    } catch (_) {
-      seen = true; // storage blocked: don't risk re-opening on every visit
-    }
-    if (seen) return undefined;
-    const t = setTimeout(() => openAi("auto"), AI_AUTO_OPEN_DELAY_MS);
-    return () => clearTimeout(t);
-  }, [openAi, aiEnabled]);
-
-  // ---------------------------------------------------------------- search --
 
   // Debounce autocomplete and cancel stale requests while the user types.
   useEffect(() => {
@@ -222,6 +168,114 @@ export default function RealEstateDashboard() {
     [searchQuery, propertyTypeFilter, navigate]
   );
 
+  return (
+    <>
+      {/* Search feedback: a thread of progress, not a blocking white screen. */}
+      {isSearching && (
+        <LinearProgress
+          color="secondary"
+          sx={{ position: "fixed", top: 0, left: 0, right: 0, height: 3, zIndex: (t) => t.zIndex.tooltip }}
+        />
+      )}
+
+      <HeroSearch
+        user={user}
+        query={searchQuery}
+        onQueryChange={setSearchQuery}
+        onSearch={handleSearch}
+        type={propertyTypeFilter}
+        onTypeChange={setPropertyTypeFilter}
+        recentSearches={recentSearches}
+        suggestions={areaSuggestions}
+        searching={isSearching}
+        onOpenPreferences={onOpenPreferences}
+        onOpenAi={onOpenAi}
+      />
+    </>
+  );
+});
+
+export default function RealEstateDashboard() {
+  const { scrollYProgress: rawProgress } = useScroll();
+  const scrollYProgress = useSpring(rawProgress, { stiffness: 140, damping: 24, restDelta: 0.001 });
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  // Hybrid authentication: grab token from localStorage for authenticated APIs
+  const userToken = localStorage.getItem("accessToken");
+
+  const [recentSearches, setRecentSearches] = useState([]);
+
+  const [properties, setProperties] = useState(() => readCache("dashboard:guest") || []);
+  const [recommended, setRecommended] = useState(() => readCache("dashboard:user")?.recommended || []);
+  // Starts true so the first paint shows card skeletons rather than the
+  // carousel's "nothing to explore" empty state.
+  const [feedLoading, setFeedLoading] = useState(() => !readCache(user ? "dashboard:user" : "dashboard:guest"));
+
+  // Cover loader: the dashboard mounts behind it and it lifts once the first
+  // screen has its data (or after a short cap, whichever comes first).
+  const [coverVisible, setCoverVisible] = useState(!loaderShownThisSession);
+  useEffect(() => {
+    if (!coverVisible) return undefined;
+    const t = setTimeout(() => {
+      loaderShownThisSession = true;
+      setCoverVisible(false);
+    }, LOADER_MAX_MS);
+    return () => clearTimeout(t);
+  }, [coverVisible]);
+  useEffect(() => {
+    if (!feedLoading && coverVisible) {
+      loaderShownThisSession = true;
+      setCoverVisible(false);
+    }
+  }, [feedLoading, coverVisible]);
+  useEffect(() => {
+    if (!coverVisible) return undefined;
+    // Keep the page from scrolling under the cover.
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [coverVisible]);
+
+  // The last known area is used straight away, so "properties near you" loads while the phone is
+  // still finding its position. A fresh position replaces it only when the area actually changed.
+  const [userLocation, setUserLocationState] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("ggn:lastLocation") || "null");
+      return saved && (saved.area || saved.city) ? saved : null;
+    } catch {
+      return null;
+    }
+  });
+  const setUserLocation = useCallback((next) => {
+    const same = (a, b) => ["area", "village", "city_district", "county", "state_district", "state"].every((k) => (a?.[k] || null) === (b?.[k] || null));
+    setUserLocationState((prev) => (prev && same(prev, next) ? prev : next));
+    try {
+      localStorage.setItem("ggn:lastLocation", JSON.stringify(next));
+    } catch {
+      /* storage can be blocked; the location still works for this visit */
+    }
+  }, []);
+  const [propertiesInArea, setPropertiesInArea] = useState([]);
+  const [areaPage, setAreaPage] = useState(1);
+  const [areaLimit] = useState(10);
+  const [areaHasMore, setAreaHasMore] = useState(true);
+  const [areaLoading, setAreaLoading] = useState(false);
+  const [areaError, setAreaError] = useState(false);
+
+  const areaLoadingRef = useRef(false);
+  const aiConsultant = useAiConsultant();
+  const aiEnabled = useAiConsultantEnabled();
+  const [recentlyViewed] = useState(() => getRecentlyViewed().slice(0, 8));
+
+  // ------------------------------------------------------- AI consultant --
+
+  const { open: openAi, isActive: aiActive, onManualSearch } = aiConsultant;
+  const openAiFromHero = useCallback(() => openAi("hero"), [openAi]);
+
+  // ---------------------------------------------------------------- search --
+
   // ------------------------------------------------------- dashboard data --
 
   useEffect(() => {
@@ -254,7 +308,8 @@ export default function RealEstateDashboard() {
     let cancelled = false;
 
     const fetchProperties = async () => {
-      setFeedLoading(true);
+      const cacheKey = user ? "dashboard:user" : "dashboard:guest";
+      if (!readCache(cacheKey)) setFeedLoading(true);
       try {
         if (!user) {
           const res = await fetch(
@@ -265,7 +320,11 @@ export default function RealEstateDashboard() {
 
           if (res.ok) {
             const data = await res.json();
-            if (!cancelled) setProperties(data.slice(0, 15));
+            if (!cancelled) {
+              const next = data.slice(0, 15);
+              setProperties(next);
+              writeCache(cacheKey, next);
+            }
           } else {
             setProperties([]);
           }
@@ -283,7 +342,9 @@ export default function RealEstateDashboard() {
             const data = await res.json();
             if (cancelled) return;
             setRecentSearches(data.recentSearches || []);
-            setRecommended(data.recommendedProperties || data || []);
+            const next = data.recommendedProperties || data || [];
+            setRecommended(next);
+            writeCache(cacheKey, { recommended: next });
           } else {
             setRecentSearches([]);
             setRecommended([]);
@@ -392,7 +453,7 @@ export default function RealEstateDashboard() {
     }
   };
 
-  const goToPreferences = () => navigate("/userpreferenceform");
+  const goToPreferences = useCallback(() => navigate("/userpreferenceform"), [navigate]);
 
   const focusSearch = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -415,6 +476,8 @@ export default function RealEstateDashboard() {
         style={{ scaleX: scrollYProgress, transformOrigin: "0% 50%", position: "fixed", top: 0, left: 0, right: 0, height: 3, zIndex: 1400, background: "linear-gradient(90deg,#003366,#00A79D,#22D3EE)" }}
       />
 
+      <DashboardLoader visible={coverVisible} />
+
       <CrossPromo variant="strip" />
 
       <GiftBanner />
@@ -423,33 +486,11 @@ export default function RealEstateDashboard() {
         <TopNavigationBar navItems={NAV_ITEMS} />
       </Suspense>
 
-      {/* Search feedback: a thread of progress, not a blocking white screen. */}
-      {isSearching && (
-        <LinearProgress
-          color="secondary"
-          sx={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 3,
-            zIndex: (t) => t.zIndex.tooltip,
-          }}
-        />
-      )}
-
-      <HeroSearch
+      <SearchSection
         user={user}
-        query={searchQuery}
-        onQueryChange={setSearchQuery}
-        onSearch={handleSearch}
-        type={propertyTypeFilter}
-        onTypeChange={setPropertyTypeFilter}
         recentSearches={recentSearches}
-        suggestions={areaSuggestions}
-        searching={isSearching}
         onOpenPreferences={goToPreferences}
-        onOpenAi={aiEnabled ? () => openAi("hero") : undefined}
+        onOpenAi={aiEnabled ? openAiFromHero : undefined}
       />
 
       <Box component="nav" aria-label="Popular property searches in Gurgaon" sx={{ py: 2, px: { xs: 3, md: 6 }, backgroundColor: "background.paper", borderBottom: "1px solid", borderColor: "divider" }}>
@@ -589,7 +630,7 @@ export default function RealEstateDashboard() {
           Not your area? Update your location
         </Typography>
         <Suspense fallback={null}>
-          <Location setUserLocation={setUserLocation} />
+          {!coverVisible && <Location setUserLocation={setUserLocation} />}
         </Suspense>
       </Stack>
       <LazySection fallback={<SectionSkeleton variant="band" height={240} />}>
@@ -616,9 +657,9 @@ export default function RealEstateDashboard() {
       {/* Website: "Get the app" · App: "GgnHome on the web" (links set in Admin → Settings) */}
       <CrossPromo variant="section" />
 
-      <FloatingActions onOpenPreferences={goToPreferences} />
+      {!coverVisible && <FloatingActions onOpenPreferences={goToPreferences} />}
 
-      {aiEnabled && !aiActive && <AiLaunchButton floating onClick={() => openAi("fab")} />}
+      {aiEnabled && !aiActive && !coverVisible && <AiBanner onOpen={() => openAi("banner")} />}
 
       <Suspense fallback={null}>
         <Footer user={user} />
