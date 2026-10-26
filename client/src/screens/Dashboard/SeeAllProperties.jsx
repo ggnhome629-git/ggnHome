@@ -4,6 +4,7 @@ import { useLocation, useNavigate  } from 'react-router-dom';
 import TopNavigationBar from './TopNavigationBar';
 import { useAuth } from '../../Context/AuthContext';
 import { StaggerContainer, StaggerItem } from '../../components/motion';
+import { isScrapedProperty, useScrapedContact } from '../../components/property/ScrapedContactDialog';
 
 
 const SeeAllProperties = ({ properties = [] }) => {
@@ -15,6 +16,8 @@ const SeeAllProperties = ({ properties = [] }) => {
 
   const location = useLocation();
   const navigate = useNavigate();
+  // Scraped listings open the contact popup instead of a detail page.
+  const { contactScraped, contactDialog } = useScrapedContact({ user, onLogin: () => navigate('/login') });
 
   // Use recommendedProperties from previous page if passed
   const recommendedProperties = location.state?.recommendedProperties || [];
@@ -160,6 +163,7 @@ const SeeAllProperties = ({ properties = [] }) => {
         border: '1px solid #E8EEF3',
       }}
       onClick={() => {
+        if (isScrapedProperty(property)) return contactScraped(property);
         const t = (property.defaultpropertytype || property.defaultPropertyType || property.propertyCategory || '').toLowerCase();
         if (t === 'rental') {
           navigate(`/Rentaldetails/${property._id}`);
@@ -356,6 +360,7 @@ const SeeAllProperties = ({ properties = [] }) => {
 
   return (
     <div>
+      {contactDialog}
       <TopNavigationBar navItems={navItems} />
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
         {/* Header */}

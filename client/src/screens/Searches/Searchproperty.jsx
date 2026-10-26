@@ -20,6 +20,7 @@ import { useAuth } from "../../Context/AuthContext";
 import { propertyDetailPath } from "../../components/property/PropertyCard";
 import SearchHero from "./SearchHero";
 import SearchToolbar from "./SearchToolbar";
+import { isScrapedProperty, useScrapedContact } from "../../components/property/ScrapedContactDialog";
 import SearchResultCard from "./SearchResultCard";
 import QuickPicks from "./QuickPicks";
 import PromoCard from "../../components/promo/PromoCard";
@@ -365,11 +366,18 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
     }
   };
 
+  // Scraped listings never open a detail page: a quick contact popup (name and
+  // mobile from the signed-in account) replaces it.
+  const { contactScraped, contactDialog } = useScrapedContact({
+    user,
+    onLogin: () => goToLogin(`${window.location.pathname}${window.location.search}`),
+  });
+
   const openProperty = (property) => {
     if (!property?._id) return;
+    if (isScrapedProperty(property)) return contactScraped(property);
     const route = propertyDetailPath(property);
-    // Detail pages are public (the homepage already opens them for guests);
-    // sign-in is only asked for when saving or enquiring.
+    if (!user) return goToLogin(route);
     axios
       .post(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_VIEW, { propertyId: property._id }, { withCredentials: true, headers: authHeaders() })
       .catch(() => {});
@@ -559,6 +567,7 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
         onApply={(next) => updateParams(next)}
       />
 
+      {contactDialog}
       <ShareDialog open={Boolean(shareLink)} onClose={() => setShareLink("")} link={shareLink} title={shareTitle} />
 
       <Container ref={resultsTopRef} maxWidth="xl" sx={{ px: { xs: 4, sm: 6, md: 8 }, py: { xs: 6, md: 8 } }}>

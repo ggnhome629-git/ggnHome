@@ -174,6 +174,32 @@ class CacheManager {
   }
 
   /**
+   * Drop cached listings (search results, property details, SWR snapshots)
+   * without touching anything else in localStorage — logins live there too.
+   * Run when the site cache version changes, e.g. after an admin hides
+   * scraped properties, so no browser keeps showing them from its cache.
+   */
+  async clearListings() {
+    const prefixes = [CACHE_KEYS.SEARCH_FILTERS, CACHE_KEYS.PROPERTIES];
+    const isListing = (key) => prefixes.some((prefix) => key.startsWith(prefix));
+    [...this.memoryCache.keys()].filter(isListing).forEach((key) => this.memoryCache.delete(key));
+    try {
+      Object.keys(localStorage).filter(isListing).forEach((key) => localStorage.removeItem(key));
+      Object.keys(sessionStorage).filter((key) => key.startsWith("ggn:swr:")).forEach((key) => sessionStorage.removeItem(key));
+    } catch (_) {
+      // Storage blocked: nothing persisted to clear.
+    }
+    if (this.db) {
+      // The IndexedDB store only ever holds these cache entries.
+      await new Promise((resolve) => {
+        const request = this.db.transaction(['cache'], 'readwrite').objectStore('cache').clear();
+        request.onsuccess = () => resolve();
+        request.onerror = () => resolve();
+      });
+    }
+  }
+
+  /**
    * Clear expired entries
    */
   async clearExpired() {

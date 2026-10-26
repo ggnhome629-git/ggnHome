@@ -7,6 +7,7 @@ import './admin.css';
 import { ADMIN_NAV } from "./shell/adminNav";
 import { readHiddenTools, writeHiddenTools } from "./shell/hiddenTools";
 import AiAssistantSwitch from "./shell/AiAssistantSwitch";
+import ScrapedListingsSwitch from "./shell/ScrapedListingsSwitch";
 
 // Card icon for each side-nav group on the landing page.
 const GROUP_ICONS = {
@@ -266,8 +267,9 @@ const AdminLandingPage = () => {
           <Typography sx={{ position: 'relative', color: 'rgba(255,255,255,0.85)', fontSize: { xs: '14px', md: '16px' } }}>
             Everything you manage on GgnHome, in one place. Pick a section to get started.
           </Typography>
-          <Box sx={{ position: 'relative', mt: 3 }}>
+          <Box sx={{ position: 'relative', mt: 3, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             <AiAssistantSwitch onDark />
+            <ScrapedListingsSwitch onDark />
           </Box>
           <Box sx={{ position: 'relative', display: 'flex', gap: 1, mt: 2, flexWrap: 'wrap' }}>
             <Chip label={toolsLoading ? "Loading tools…" : (adminGroups.flatMap((group) => group.links).length - hiddenTools.length) + " active tools"} sx={{ bgcolor: 'rgba(255,255,255,.14)', color: '#fff', fontWeight: 800 }} />

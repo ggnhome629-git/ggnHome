@@ -27,6 +27,8 @@ class ScraperService {
    * @returns {Promise<Object>} Job status
    */
   async startScrapingJob(source = "all") {
+    // Every entry point (admin route, cron trigger, schedule) passes through here.
+    await require("../utils/scrapedListings").assertScraperUnlocked();
     if (this.isRunning) {
       throw new ServerError("Scraper is already running");
     }

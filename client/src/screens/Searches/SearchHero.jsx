@@ -17,7 +17,7 @@ import { motionDuration } from "../../theme/motion";
 import { radii } from "../../theme/theme";
 
 const TRUST = [
-  { icon: ShieldCheck, label: "Free to browse, no sign-up" },
+  { icon: ShieldCheck, label: "Listings across Gurgaon" },
   { icon: Gift, label: "Gifts up to ₹1,000" },
   { icon: CalendarCheck, label: "Visits in 24 hours" },
 ];

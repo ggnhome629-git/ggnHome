@@ -6,6 +6,7 @@ import { ChevronLeft, ChevronRight, SearchX } from "lucide-react";
 import { StaggerItem } from "../motion";
 import { staggerContainerVariants } from "../../theme/motion";
 import PropertyCard, { propertyDetailPath } from "./PropertyCard";
+import { isScrapedProperty, useScrapedContact } from "./ScrapedContactDialog";
 import { radii, elevationShadows } from "../../theme/theme";
 
 const CARD_WIDTH = { xs: "82%", sm: "46%", md: "31%", lg: "23%" };
@@ -96,13 +97,17 @@ export default function PropertyCarousel({
     [properties]
   );
 
+  const { contactScraped, contactDialog } = useScrapedContact({ user, onLogin: () => navigate("/login") });
+
   const goToProperty = (property) => {
     if (onPropertyClick) onPropertyClick(property._id);
+    if (isScrapedProperty(property)) return contactScraped(property);
     navigate(!requireAuth || user ? propertyDetailPath(property) : "/login");
   };
 
   return (
     <Container maxWidth="xl" sx={{ px: { xs: 4, sm: 6, md: 8 }, py: { xs: 8, md: 12 } }}>
+      {contactDialog}
       <Stack
         direction={{ xs: "column", sm: "row" }}
         justifyContent="space-between"

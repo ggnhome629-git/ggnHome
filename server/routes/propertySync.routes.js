@@ -5,6 +5,7 @@
 
 const express = require("express");
 const router = express.Router();
+const { requireScraperUnlocked } = require("../utils/scrapedListings");
 const Joi = require("joi");
 
 const propertySyncController = require("../controllers/propertySync.controller");
@@ -59,7 +60,7 @@ const scheduleSchema = Joi.object({
  */
 router.post(
   "/start",
-  verifyToken, checkAdminEmail,
+  verifyToken, checkAdminEmail, requireScraperUnlocked,
   syncLimiter,
   validate(startVerificationSchema, "body"),
   propertySyncController.startVerification
@@ -128,7 +129,7 @@ router.get(
  */
 router.patch(
   "/schedule",
-  verifyToken, checkAdminEmail,
+  verifyToken, checkAdminEmail, requireScraperUnlocked,
   validate(scheduleSchema, "body"),
   propertySyncController.updateSchedule
 );

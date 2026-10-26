@@ -197,4 +197,4 @@ exports.secretPurgeCache = (req, res) => {
 };
 
 exports.autoPurgeOnDeploy = autoPurgeOnDeploy;
-exports._internals = { bumpVersion, readVersion };
+exports._internals = { bumpVersion, readVersion, clearRedisCache };

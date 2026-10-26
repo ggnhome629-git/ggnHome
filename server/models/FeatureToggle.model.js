@@ -7,6 +7,8 @@ const FeatureToggleSchema = new mongoose.Schema(
     agentPortal: { type: Boolean, default: false },
     // The AI assistant (chat and voice) on the public site. Off until an admin turns it on.
     aiAssistant: { type: Boolean, default: false },
+    // Scraped (imported) listings on the public site, and the scraper itself. On by default.
+    scrapedListings: { type: Boolean, default: true },
     updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   },
   { timestamps: true }

@@ -65,7 +65,7 @@ export default function AiAssistantSwitch({ onDark = false }) {
         <Typography variant="caption" sx={{ fontWeight: 700, color: onDark ? "#fff" : on ? "#00796B" : "text.secondary", display: onDark ? "inline" : { xs: "none", sm: "inline" } }}>
           {onDark ? `AI assistant for visitors: ${on ? "ON" : "OFF"}` : "AI assistant"}
         </Typography>
-        {busy ? <CircularProgress size={18} sx={{ mx: 1 }} /> : <Switch size="small" checked={on} onChange={change} disabled={!toggles} inputProps={{ "aria-label": "AI assistant on or off for visitors" }} />}
+        {busy ? <CircularProgress size={18} sx={{ mx: 1 }} /> : <Switch size="small" checked={on} onChange={change} disabled={!toggles} slotProps={{ input: { "aria-label": "AI assistant on or off for visitors" } }} />}
       </Box>
     </Tooltip>
   );

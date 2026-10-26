@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
+import { isScrapedProperty, useScrapedContact } from "../../components/property/ScrapedContactDialog";
 
 // Color palette
 const colors = {
@@ -19,6 +20,8 @@ export default function InvestRealEstatePage() {
   const [user, setUser] = useState(null);
   const [properties, setProperties] = useState([]);
     const navigate = useNavigate();
+    // Scraped listings open the contact popup instead of a detail page.
+    const { contactScraped, contactDialog } = useScrapedContact({ user, onLogin: () => navigate("/login") });
     const isMobile = window.innerWidth < 600;
   const navItems = [
     "For Buyers",
@@ -94,6 +97,7 @@ export default function InvestRealEstatePage() {
             ? `₹ ${Number(p.monthlyRent).toLocaleString()}/mo`
             : "Price on request",
           defaultpropertytype: p.defaultpropertytype,
+          sourcePortal: p.sourcePortal,
         }));
         setProperties(normalized.slice(0, 12));
       } catch (err) {
@@ -111,6 +115,7 @@ export default function InvestRealEstatePage() {
         minHeight: "100vh",
       }}
     >
+      {contactDialog}
       <div
         style={{
           position: "fixed",
@@ -494,7 +499,9 @@ export default function InvestRealEstatePage() {
                   e.currentTarget.style.border = "2px solid transparent";
                 }}
                 onClick={() =>
-                  navigate(
+                  isScrapedProperty(prop)
+                    ? contactScraped(prop)
+                    : navigate(
                     prop.defaultpropertytype === "rental"
                       ? `/Rentaldetails/${prop.id}`
                       : `/Saledetails/${prop.id}`

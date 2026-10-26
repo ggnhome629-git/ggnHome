@@ -1,3 +1,5 @@
+import { cacheManager } from "./cacheManager";
+
 // Site-wide cache refresh. An admin cache clear bumps a version number on the
 // server; each browser compares it with the one it last saw and, when it
 // differs, wipes its own caches (service worker + cache storage) so the next
@@ -31,8 +33,13 @@ export async function fetchServerVersion() {
   return data && data.version != null ? String(data.version) : null;
 }
 
-/** Deletes every Cache Storage entry and unregisters service workers. Never throws. */
+/** Deletes cached listings, every Cache Storage entry and service workers. Never throws. */
 export async function clearBrowserCaches() {
+  try {
+    await cacheManager.clearListings();
+  } catch (_) {
+    // Listing caches are an optimisation; failing to clear them is not fatal.
+  }
   try {
     if ("caches" in window) {
       const names = await caches.keys();

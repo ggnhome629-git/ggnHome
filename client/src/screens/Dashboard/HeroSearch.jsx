@@ -44,7 +44,7 @@ const POPULAR_AREAS = [
 ];
 
 const TRUST_MARKERS = [
-  { icon: ShieldCheck, label: "Free to browse, no sign-up" },
+  { icon: ShieldCheck, label: "Listings across Gurgaon" },
   { icon: Sparkles, label: "AI-matched to you" },
   { icon: CalendarCheck, label: "Visits in 24 hours" },
 ];
@@ -257,7 +257,7 @@ export default function HeroSearch({
                 color: "rgba(255,255,255,0.86)",
               }}
             >
-              Gurgaon homes to rent or buy, free to browse.{" "}
+              Homes to rent or buy across Gurgaon.{" "}
               <Box component="span" sx={{ color: "#F6D58A", fontWeight: 600 }}>
                 Gifts up to ₹1,000
               </Box>{" "}

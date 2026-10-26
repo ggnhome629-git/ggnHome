@@ -59,6 +59,8 @@ class PropertySyncService {
    * Start property verification job
    */
   async startVerificationJob(source = "nobroker") {
+    // Locked with the rest of the scraper by the admin "Scraped properties" switch.
+    await require("../utils/scrapedListings").assertScraperUnlocked();
     if (this.isRunning) {
       throw new Error("Verification already running");
     }

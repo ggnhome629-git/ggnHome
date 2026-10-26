@@ -13,6 +13,21 @@ const PropertyReviewStatus = require("../models/propertyReviewStatus.model.js");
 const cache = require("../config/cache.js");
 
 
+
+// ==============================
+// Scraped listings have no public detail page
+// ==============================
+// Visitors reach them through a contact popup on the listing cards only.
+// Admins (who manage them) still read the full record.
+const isHiddenScrapedDetail = (property, req) =>
+  Boolean(property?.sourcePortal) && req.user?.role !== "admin";
+
+const scrapedDetailResponse = (res) =>
+  res.status(404).json({
+    code: "SCRAPED_DETAILS_UNAVAILABLE",
+    message: "Details for this listing are not available. Please use the contact option on the listing.",
+  });
+
 // ==============================
 // Fetch RentalProperty by ID
 // ==============================
@@ -33,6 +48,7 @@ const getRentalPropertyById = async (req, res) => {
     if (!property) {
       return res.status(404).json({ message: "Rental property not found" });
     }
+    if (isHiddenScrapedDetail(property, req)) return scrapedDetailResponse(res);
 
     // Send successful response with property data
     res.status(200).json(property);
@@ -65,6 +81,7 @@ const getSalePropertyById = async (req, res) => {
     if (!property) {
       return res.status(404).json({ message: "Sale property not found" });
     }
+    if (isHiddenScrapedDetail(property, req)) return scrapedDetailResponse(res);
 
     // Send successful response with property data
     res.status(200).json(property);
@@ -103,8 +120,10 @@ const getPropertyById = async (req, res) => {
     if (!property) {
       return res.status(404).json({ message: "Property not found" });
     }
+    if (isHiddenScrapedDetail(property, req)) return scrapedDetailResponse(res);
 
-    res.set("Cache-Control", "public, max-age=15, stale-while-revalidate=30");
+    // An admin reading a scraped record must never leave it in a shared (CDN) cache.
+    res.set("Cache-Control", property.sourcePortal ? "private, no-store" : "public, max-age=15, stale-while-revalidate=30");
     if (hit) res.set("X-Cache", "HIT");
     return res.status(200).json(property);
   } catch (error) {

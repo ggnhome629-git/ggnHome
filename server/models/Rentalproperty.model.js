@@ -197,6 +197,9 @@ RentalpropertySchema.index({ isActive: 1, monthlyRent: 1, bedrooms: 1, Sector: 1
 // Any write to a listing clears the cached listing feeds.
 RentalpropertySchema.plugin(invalidatePropertyCache);
 
+// Hides scraped rows from public requests when the admin switch is off.
+RentalpropertySchema.plugin(require("../utils/scrapedListings").scrapedListingsPlugin);
+
 const RentalProperty = mongoose.model("RentalProperty", RentalpropertySchema);
 
 module.exports = RentalProperty;

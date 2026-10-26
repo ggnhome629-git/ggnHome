@@ -121,7 +121,8 @@ app.post("/api/cron/scraper-trigger", (req, res) => {
   // Import here to avoid circular dependency
   const scraperService = require('./services/scraper.service');
 
-  scraperService.startScrapingJob('nobroker')
+  require('./utils/scrapedListings').assertScraperUnlocked()
+    .then(() => scraperService.startScrapingJob('nobroker'))
     .then((result) => {
       res.status(202).json({
         status: 'Scraper job started',
@@ -129,7 +130,7 @@ app.post("/api/cron/scraper-trigger", (req, res) => {
       });
     })
     .catch((error) => {
-      res.status(500).json({
+      res.status(error.status || 500).json({
         error: 'Failed to start scraper',
         message: error.message
       });
@@ -180,7 +181,7 @@ app.get("/api/cron/property-sync-trigger", (req, res) => {
       });
     })
     .catch((error) => {
-      res.status(500).json({
+      res.status(error.status || 500).json({
         error: 'Failed to start verification',
         message: error.message
       });
@@ -191,6 +192,8 @@ app.get("/api/cron/property-sync-trigger", (req, res) => {
 // One page can never be bigger than MAX_PAGE_SIZE (default 200).
 app.use(capPagination);
 app.use(apiLimiter);
+// Scraped listings switch: public requests skip scraped rows while it is off.
+app.use(require("./utils/scrapedListings").scrapedVisibilityMiddleware);
 app.use("/", routes);
 app.use(notFound);
 app.use(errorHandler);

@@ -19,6 +19,7 @@ import { Heart, RefreshCw, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../Context/AuthContext";
 import PropertyCard, { isRentalProperty, propertyDetailPath } from "../../components/property/PropertyCard";
+import { isScrapedProperty, useScrapedContact } from "../../components/property/ScrapedContactDialog";
 import ShareDialog from "../../components/ui/ShareDialog";
 import MobileBottomNav from "./MobileBottomNav";
 import SavedFlatmates from "../Flatmates page/SavedFlatmates";
@@ -183,8 +184,13 @@ export default function SavedProperties() {
   const rentCount = properties.filter(isRentalProperty).length;
   const filtered = type !== "all" || sector !== "all" || text.trim();
 
+  // Scraped listings open the contact popup instead of a detail page.
+  const { contactScraped, contactDialog } = useScrapedContact({ user, onLogin: () => navigate("/login") });
+  const openSaved = (property) => (isScrapedProperty(property) ? contactScraped(property) : navigate(propertyDetailPath(property)));
+
   return (
     <Box sx={{ backgroundColor: "background.default", minHeight: "100vh" }}>
+      {contactDialog}
       <Suspense fallback={<Box sx={{ height: 64 }} />}>
         <TopNavigationBar navItems={NAV_ITEMS} />
       </Suspense>
@@ -365,11 +371,11 @@ export default function SavedProperties() {
               <PropertyCard
                 key={property._id}
                 property={property}
-                onClick={() => navigate(propertyDetailPath(property))}
+                onClick={() => openSaved(property)}
                 onSave={handleUnsave}
                 isSaved
                 onShare={(p) => setShareLink(`${window.location.origin}${propertyDetailPath(p)}`)}
-                onContact={(p) => navigate(propertyDetailPath(p))}
+                onContact={openSaved}
               />
             ))}
           </Box>

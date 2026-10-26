@@ -7,6 +7,8 @@ const SETTING_KEY = "nobrokerSync";
 
 // Admin-panel toggle (DB) wins; ENABLE_NOBROKER_CRON=true is only the default before the admin sets it.
 async function isSyncEnabled() {
+  // The admin's "Scraped properties" switch locks the sync as well.
+  if (!(await require("../utils/scrapedListings").isScrapedEnabled())) return false;
   const s = await AppSetting.findOne({ key: SETTING_KEY }).lean();
   if (s && typeof s.value?.enabled === "boolean") return s.value.enabled;
   return process.env.ENABLE_NOBROKER_CRON === "true";

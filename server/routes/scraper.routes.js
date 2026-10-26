@@ -12,6 +12,7 @@ const { verifyToken } = require("../middleware/auth");
 const { validate } = require("../middleware/validate");
 const { apiLimiter } = require("../middleware/rateLimit");
 const User = require("../models/user.model.js");
+const { requireScraperUnlocked } = require("../utils/scrapedListings");
 
 // Admin check middleware
 const checkAdminEmail = async (req, res, next) => {
@@ -64,7 +65,7 @@ const updateScheduleSchema = Joi.object({
  */
 router.post(
   "/run",
-  verifyToken, checkAdminEmail,
+  verifyToken, checkAdminEmail, requireScraperUnlocked,
   scraperLimiter,
   validate(startScraperSchema, "body"),
   scraperController.startScraper
@@ -111,7 +112,7 @@ router.get(
  */
 router.patch(
   "/schedule",
-  verifyToken, checkAdminEmail,
+  verifyToken, checkAdminEmail, requireScraperUnlocked,
   validate(updateScheduleSchema, "body"),
   scraperController.updateSchedule
 );
@@ -127,11 +128,12 @@ router.get("/nobroker-sync", verifyToken, checkAdminEmail, async (req, res, next
     const AppSetting = require("../models/AppSetting.model");
     const { isSyncEnabled, SETTING_KEY } = nbSync();
     const s = await AppSetting.findOne({ key: SETTING_KEY }).lean();
-    res.json({ success: true, data: { enabled: await isSyncEnabled(), running: nbSyncRunning, schedule: "Daily 3:30 AM IST", lastRun: s?.value?.lastRun || null } });
+    const { isScrapedEnabled } = require("../utils/scrapedListings");
+    res.json({ success: true, data: { enabled: await isSyncEnabled(), locked: !(await isScrapedEnabled()), running: nbSyncRunning, schedule: "Daily 3:30 AM IST", lastRun: s?.value?.lastRun || null } });
   } catch (e) { next(e); }
 });
 
-router.put("/nobroker-sync", verifyToken, checkAdminEmail, validate(Joi.object({ enabled: Joi.boolean().required() }), "body"), async (req, res, next) => {
+router.put("/nobroker-sync", verifyToken, checkAdminEmail, requireScraperUnlocked, validate(Joi.object({ enabled: Joi.boolean().required() }), "body"), async (req, res, next) => {
   try {
     const AppSetting = require("../models/AppSetting.model");
     const { SETTING_KEY } = nbSync();
@@ -140,7 +142,7 @@ router.put("/nobroker-sync", verifyToken, checkAdminEmail, validate(Joi.object({
   } catch (e) { next(e); }
 });
 
-router.post("/nobroker-sync/run", verifyToken, checkAdminEmail, scraperLimiter, (req, res) => {
+router.post("/nobroker-sync/run", verifyToken, checkAdminEmail, requireScraperUnlocked, scraperLimiter, (req, res) => {
   if (nbSyncRunning) return res.status(409).json({ success: false, message: "Sync already running" });
   nbSyncRunning = true;
   nbSync().runAndRecord("manual").catch((e) => console.error("[nobrokerSync] manual run failed:", e)).finally(() => { nbSyncRunning = false; });

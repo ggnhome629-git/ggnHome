@@ -168,6 +168,9 @@ SalePropertySchema.index({ isActive: 1, price: 1, bedrooms: 1, Sector: 1 });
 // Any write to a listing clears the cached listing feeds.
 SalePropertySchema.plugin(invalidatePropertyCache);
 
+// Hides scraped rows from public requests when the admin switch is off.
+SalePropertySchema.plugin(require('../utils/scrapedListings').scrapedListingsPlugin);
+
 const SaleProperty = mongoose.model('SaleProperty', SalePropertySchema);
 
 module.exports = SaleProperty;

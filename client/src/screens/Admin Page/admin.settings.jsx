@@ -1,37 +1,46 @@
-import React, { useState } from "react";
-import { Box, Chip, Tab, Tabs, Typography, Stack } from "@mui/material";
-import { NotSetUpBanner } from "./shell/adminUi";
-import { Settings, Globe, Gift, Power, LinkIcon, TrendingUp, Link2, Server, Home, RefreshCw } from "lucide-react";
+import React from "react";
+import { Box, Tab, Tabs, Typography, Stack } from "@mui/material";
+import { useSearchParams } from "react-router-dom";
+import ScraperLock from "./shell/ScraperLock";
+import { Settings, Globe, Gift, Power, Server, RefreshCw } from "lucide-react";
 
 // Lazy load the sub-pages
 const PromoCards = React.lazy(() => import("./admin.promos"));
 const FeatureToggles = React.lazy(() => import("./admin.featureToggles"));
-const AffiliateTracker = React.lazy(() => import("./admin.affiliateTracker"));
-const AffiliateConfig = React.lazy(() => import("./admin.affiliateConfig"));
-const LinkManager = React.lazy(() => import("./admin.linkManager"));
 const ScraperControl = React.lazy(() => import("./admin.scraperControl"));
-const PropertyManager = React.lazy(() => import("./admin.propertyManager.jsx"));
 const PropertySync = React.lazy(() => import("./admin.propertySync"));
 const AppLinks = React.lazy(() => import("./admin.appLinks"));
 
+// Scraper screens go dark while the landing page's "Scraped properties" switch is off.
+const lockedScraper = (Component) => () => (
+  <ScraperLock>
+    <Component />
+  </ScraperLock>
+);
+
+// Grouped so related settings sit together. Removed from here: Property
+// Manager (it has its own page in the side nav) and the affiliate tracker,
+// affiliate config and link manager placeholders (never set up; the
+// affiliate flow is switched off).
 const SETTINGS_TABS = [
-  { id: "scraper", label: "Scraper Control", icon: Server, component: ScraperControl },
-  { id: "properties", label: "Property Manager", icon: Home, component: PropertyManager },
-  { id: "propertySync", label: "Property Sync", icon: RefreshCw, component: PropertySync },
+  { id: "toggles", label: "Feature Toggles", icon: Power, component: FeatureToggles },
   { id: "appLinks", label: "App & Website Links", icon: Globe, component: AppLinks },
-  { id: "toggles", notSetUp: true, label: "Feature Toggles", icon: Power, component: FeatureToggles },
   { id: "promos", label: "Promo Cards", icon: Gift, component: PromoCards },
-  { id: "affiliates", notSetUp: true, label: "Affiliate Tracker", icon: TrendingUp, component: AffiliateTracker },
-  { id: "affiliateConfig", notSetUp: true, label: "Affiliate Config", icon: LinkIcon, component: AffiliateConfig },
-  { id: "linkManager", notSetUp: true, label: "Link Manager", icon: Link2, component: LinkManager },
+  { id: "scraper", label: "Scraper Control", icon: Server, component: lockedScraper(ScraperControl) },
+  { id: "propertySync", label: "Property Sync", icon: RefreshCw, component: lockedScraper(PropertySync) },
 ];
+const TAB_IDS = SETTINGS_TABS.map((tab) => tab.id);
 
 /**
  * Unified Admin Settings Page
  * Central hub for configuring platform features, promotions, and communication channels.
  */
 export default function AdminSettings() {
-  const [activeTab, setActiveTab] = useState("scraper");
+  // The open tab lives in the URL (?tab=) so it survives a reload and can be linked to.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requested = searchParams.get("tab");
+  const activeTab = TAB_IDS.includes(requested) ? requested : TAB_IDS[0];
+  const setActiveTab = (id) => setSearchParams(id === TAB_IDS[0] ? {} : { tab: id }, { replace: true });
 
   const activeConfig = SETTINGS_TABS.find((tab) => tab.id === activeTab);
   const ActiveComponent = activeConfig?.component;
@@ -47,7 +56,7 @@ export default function AdminSettings() {
               Settings
             </Typography>
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              Manage platform features, promotions, and communication channels
+              Platform switches, website links, promotions and the scraper
             </Typography>
           </Box>
         </Stack>
@@ -83,12 +92,10 @@ export default function AdminSettings() {
               <Tab
                 key={tab.id}
                 value={tab.id}
-                sx={tab.notSetUp && activeTab !== tab.id ? { opacity: 0.6 } : undefined}
                 label={
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Icon size={16} />
                     <span>{tab.label}</span>
-                    {tab.notSetUp && <Chip label="Not set up" size="small" sx={{ height: 16, fontSize: "0.58rem", fontWeight: 800, bgcolor: "rgba(100,116,139,0.16)", color: "#64748B" }} />}
                   </Stack>
                 }
               />
@@ -99,11 +106,6 @@ export default function AdminSettings() {
 
       {/* Tab Content */}
       <Box sx={{ p: 0 }}>
-        {activeConfig?.notSetUp && (
-          <Box sx={{ px: { xs: 2, md: 4 }, pt: 3 }}>
-            <NotSetUpBanner feature={activeConfig.label} />
-          </Box>
-        )}
         <React.Suspense
           fallback={
             <Box sx={{ p: 4, textAlign: "center" }}>

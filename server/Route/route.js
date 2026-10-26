@@ -10,7 +10,7 @@ const { servePropertySitemap, serveLocalitySitemap } = require("../controllers/s
 router.get("/sitemap-properties.xml", servePropertySitemap);
 router.get("/sitemap-localities.xml", serveLocalitySitemap);
 const User = require("../models/user.model.js");
-const { getPublicFeatureToggles, getAdminFeatureToggles, updateAdminFeatureToggles } = require("../controllers/featureToggle.controller");
+const { getPublicFeatureToggles, getAdminFeatureToggles, updateAdminFeatureToggles, updateScrapedListingsToggle } = require("../controllers/featureToggle.controller");
 const { getAppDownloads, updateAppDownloads, downloadApk } = require("../controllers/appDownload.controller");
 const { registerPartnerAccess, listPartnerAccess } = require("../controllers/adminPartnerAccess.controller");
 const { getDashboardPreferences, updateDashboardPreferences } = require("../controllers/adminDashboardPreferences.controller");
@@ -142,6 +142,7 @@ router.get("/api/features", getPublicFeatureToggles);
 router.get("/api/cache-version", getCacheVersion);
 router.get("/api/admin/feature-toggles", verifyToken, checkAdminEmail, getAdminFeatureToggles);
 router.put("/api/admin/feature-toggles", verifyToken, checkAdminEmail, updateAdminFeatureToggles);
+router.put("/api/admin/feature-toggles/scraped-listings", verifyToken, checkAdminEmail, updateScrapedListingsToggle);
 router.get("/api/app-downloads", getAppDownloads);
 router.get("/api/admin/app-downloads", verifyToken, checkAdminEmail, getAppDownloads);
 router.put("/api/admin/app-downloads", verifyToken, checkAdminEmail, updateAppDownloads);
