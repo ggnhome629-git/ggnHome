@@ -16,7 +16,6 @@ const STEPS = ["Interest", "Contact method", "Your details"];
 
 const REASSURANCE = [
   "No brokerage charged upfront",
-  "Verified listing, real photos",
   "Response typically within a few hours",
 ];
 

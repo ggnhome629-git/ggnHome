@@ -32,7 +32,7 @@ import {
   Zap,
 } from "lucide-react";
 import { radii } from "../../../theme/theme";
-import { directionsUrl, displayAmount, formatCurrency, locationLine } from "../../../utils/propertyModel";
+import { directionsUrl, displayAmount, formatCurrency, listedByLabel, locationLine } from "../../../utils/propertyModel";
 import { NEARBY_PARAMETERS, POSITION_PARAMETER, formatDistance, nearestByCategory } from "../../../data/propertyParameters";
 
 export function SectionCard({ title, action, children, id, sx }) {
@@ -80,52 +80,14 @@ function Reveal({ delay = 0, children }) {
  * easeInOutQuad) so the stat reads as a measured value rather than a label.
  * Honours prefers-reduced-motion and anything non-numeric renders as-is.
  */
-function useCountUp(target, duration = 800) {
-  const ref = React.useRef(null);
-  const [value, setValue] = React.useState(0);
-
-  React.useEffect(() => {
-    const to = Number(target);
-    const node = ref.current;
-    const reduced = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if (!Number.isFinite(to) || !node || typeof IntersectionObserver === "undefined" || reduced) {
-      setValue(Number.isFinite(to) ? to : 0);
-      return undefined;
-    }
-    let raf = 0;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return;
-        observer.disconnect();
-        const start = performance.now();
-        const step = (now) => {
-          const t = Math.min(1, (now - start) / duration);
-          const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-          setValue(Math.round(to * eased));
-          if (t < 1) raf = requestAnimationFrame(step);
-        };
-        raf = requestAnimationFrame(step);
-      },
-      { threshold: 0.25 }
-    );
-    observer.observe(node);
-    return () => {
-      observer.disconnect();
-      cancelAnimationFrame(raf);
-    };
-  }, [target, duration]);
-
-  return [ref, value];
-}
-
 function StatTile({ icon: Icon, label, caption, badge, animateTo, format, delay = 0 }) {
-  const [ref, count] = useCountUp(animateTo ?? 0);
-  const display = animateTo != null ? format(count) : format;
+  // Facts render at their real value immediately — a count-up starting at 0
+  // showed "0 sq.ft." until the tile scrolled into view.
+  const display = animateTo != null ? format(animateTo) : format;
 
   return (
     <Reveal delay={delay}>
       <Box
-        ref={ref}
         sx={{
           height: "100%",
           borderRadius: `${radii.lg}px`,
@@ -241,7 +203,7 @@ export function OverviewSection({ property }) {
           sx={{
             display: "grid",
             gap: 6,
-            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: `repeat(${Math.min(tiles.length, 4)}, 1fr)` },
+            gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", lg: `repeat(${Math.min(tiles.length, 4)}, 1fr)` },
             mb: specs.length ? 6 : 0,
           }}
         >
@@ -748,9 +710,14 @@ export function ListedBySection({ property, onCall, onWhatsapp, onEnquire, whats
           <Box>
             <Stack direction="row" spacing={2} alignItems="center">
               <Typography variant="h4" sx={{ fontSize: "1rem", color: "primary.main" }}>
-                {property.ownerType === "Agent" ? "Verified agent" : property.ownerType === "Admin" ? "GgnHome team" : "Property owner"}
+                {property.sourcePortal
+                  ? listedByLabel(property)
+                  : property.ownerType === "Agent"
+                  ? "Agent"
+                  : property.ownerType === "Admin"
+                  ? "GgnHome team"
+                  : "Property owner"}
               </Typography>
-              <CheckCircle2 size={15} color="#00A79D" />
             </Stack>
             <Typography variant="body2" sx={{ color: "text.secondary" }}>
               {property.contactNumber ? "Responds to enquiries directly" : "Enquire and our team will connect you"}

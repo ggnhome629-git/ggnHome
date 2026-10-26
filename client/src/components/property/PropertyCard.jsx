@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Heart, ImageIcon, MapPin, Phone, Share2 } from "lucide-react";
 import CardPhotos from "./CardPhotos";
 import { radii, elevationShadows } from "../../theme/theme";
+import { listedByLabel } from "../../utils/propertyModel";
 
 /**
  * True shape of the data: RentalProperty carries `monthlyRent`, SaleProperty
@@ -40,7 +41,6 @@ function formatPrice(property) {
 
 const BADGE_TONES = {
   trending: { bg: "#EF4444" },
-  verified: { bg: "secondary.main" },
   premium: { bg: "#F59E0B" },
   recommended: { bg: "#10B981" },
 };
@@ -69,9 +69,8 @@ export function getPropertyBadge(property, analytics) {
   if ((match >= 85 && viewCount >= 50) || viewCount >= 200 || (daysSinceAdded <= 7 && viewCount >= 30)) {
     return { type: "trending", label: "Trending" };
   }
-  if (match >= 70 && avgRating >= 4) {
-    return { type: "verified", label: "Verified" };
-  }
+  // No "Verified" badge: match score and ratings are not a verification
+  // process, and the listing schemas carry none.
   // ₹3 Cr+: in Gurgaon most resale homes clear ₹50 L, so a lower bar tags nearly everything.
   if (price >= 30000000 || avgRating >= 4.6) {
     return { type: "premium", label: "Premium" };
@@ -140,14 +139,12 @@ export default function PropertyCard({
   ].filter(Boolean);
   const listedLabel = listedAgo(property?.createdAt);
   const isNew = property?.createdAt && Date.now() - new Date(property.createdAt).getTime() < 3 * 86400000;
-  // "By owner / agent / ggnHome" label — hidden for now; restore with the JSX below.
-  // const postedBy =
-  //   property?.ownerType === "Admin" ? "ggnHome" : property?.ownerType === "Agent" ? "Agent" : property?.ownerType === "Owner" ? "Owner" : null;
+  const postedBy = listedByLabel(property);
   const rental = isRentalProperty(property);
 
   const overlayButton = {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
     backgroundColor: "rgba(255,255,255,0.94)",
     boxShadow: elevationShadows[1],
     "&:hover": { backgroundColor: "common.white", transform: "scale(1.06)" },
@@ -162,7 +159,13 @@ export default function PropertyCard({
       tabIndex={0}
       aria-label={`${property?.title || "Property"}, ${price}`}
       onKeyDown={(e) => {
-        if ((e.key === "Enter" || e.key === " ") && onClick) onClick();
+        // Only the card itself — not its nested buttons — and without letting
+        // Space also scroll the page.
+        if (e.target !== e.currentTarget) return;
+        if ((e.key === "Enter" || e.key === " ") && onClick) {
+          e.preventDefault();
+          onClick();
+        }
       }}
       whileHover={{ y: -4 }}
       whileTap={{ scale: 0.995 }}
@@ -382,7 +385,7 @@ export default function PropertyCard({
           </Typography>
         </Stack>
 
-        {(listedLabel || onContact) && (
+        {(postedBy || listedLabel || onContact) && (
           <Stack
             direction="row"
             alignItems="center"
@@ -390,14 +393,12 @@ export default function PropertyCard({
             sx={{ mt: "auto", pt: 3, borderTop: "1px solid", borderColor: "divider" }}
           >
             <Typography variant="caption" sx={{ color: "text.secondary" }} noWrap>
-              {/* Posted-by label, hidden for now:
               {postedBy && (
-                <Box component="span" sx={{ fontWeight: 700, color: postedBy === "ggnHome" ? "secondary.main" : "text.primary" }}>
-                  {postedBy === "ggnHome" ? "By ggnHome" : `By ${postedBy.toLowerCase()}`}
+                <Box component="span" sx={{ fontWeight: 700, color: "text.primary" }}>
+                  {postedBy}
                 </Box>
               )}
               {postedBy && listedLabel ? " · " : ""}
-              */}
               {listedLabel || ""}
             </Typography>
             {onContact && (
@@ -409,7 +410,7 @@ export default function PropertyCard({
                   color: "secondary.main",
                   fontWeight: 700,
                   px: 2,
-                  py: 0.5,
+                  minHeight: 40,
                   minWidth: 0,
                   "&:hover": { backgroundColor: "rgba(0,167,157,0.08)" },
                 }}

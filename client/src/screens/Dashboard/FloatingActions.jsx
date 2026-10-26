@@ -67,9 +67,10 @@ export default function FloatingActions({ onOpenPreferences }) {
         alignItems="flex-end"
         sx={{
           position: "fixed",
-          right: { xs: 4, md: 8 },
-          // Clears the phone bottom nav bar (64px) on xs.
-          bottom: { xs: 20, sm: 4, md: 8 },
+          // Position values are raw px (not theme spacing): clear the 64px
+          // phone bottom nav plus the device safe area on xs.
+          right: { xs: 12, md: 24 },
+          bottom: { xs: "calc(76px + env(safe-area-inset-bottom, 0px))", sm: 24 },
           zIndex: (t) => t.zIndex.speedDial,
         }}
       >

@@ -27,7 +27,6 @@ import usePromos, { dashboardPromoIds } from "../../components/promo/usePromos";
 import { openLink } from "../../components/promo/openLink";
 import RecentlyViewed from "../Property View/sections/RecentlyViewed";
 import { getRecentlyViewed } from "../../utils/propertyAnalytics";
-import AnimatedNumber from "../../components/motion/AnimatedNumber";
 import FilterDrawer from "./FilterDrawer";
 import ShareDialog from "../../components/ui/ShareDialog";
 import MobileBottomNav from "../Dashboard/MobileBottomNav";
@@ -369,7 +368,8 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
   const openProperty = (property) => {
     if (!property?._id) return;
     const route = propertyDetailPath(property);
-    if (!user) return goToLogin(route);
+    // Detail pages are public (the homepage already opens them for guests);
+    // sign-in is only asked for when saving or enquiring.
     axios
       .post(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_VIEW, { propertyId: property._id }, { withCredentials: true, headers: authHeaders() })
       .catch(() => {});
@@ -592,7 +592,7 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
               <Skeleton width={220} height={40} />
             ) : (
               <Typography component="h2" aria-label={countLabel} sx={{ fontSize: { xs: "1.4rem", md: "1.75rem" }, fontWeight: 800, color: "primary.main" }}>
-                <AnimatedNumber value={shownCount} /> {shownCount === 1 ? "Home" : "Homes"}
+                {shownCount.toLocaleString("en-IN")} {shownCount === 1 ? "Home" : "Homes"}
                 {query ? ` In ${where}` : ""}
               </Typography>
             )}

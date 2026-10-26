@@ -1,10 +1,8 @@
 import React, { useState } from "react";
 import { Box, Button, IconButton, Stack, Typography } from "@mui/material";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, ImageIcon, MapPin, ShieldCheck, Video } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageIcon, MapPin, Video } from "lucide-react";
 import { radii, elevationShadows } from "../../theme/theme";
-
-const TRUST_BADGES = ["Verified property", "Trusted listing", "Images verified"];
 
 /**
  * The property detail hero: main image + thumbnail strip, virtual-tour and
@@ -169,23 +167,6 @@ export default function PropertyGallery({ images, hasPanoramas, onOpenVirtualTou
           ))}
         </Stack>
       )}
-
-      <Stack direction="row" spacing={3} justifyContent="center" flexWrap="wrap" useFlexGap sx={{ mt: 4 }}>
-        {TRUST_BADGES.map((label) => (
-          <Stack
-            key={label}
-            direction="row"
-            spacing={1}
-            alignItems="center"
-            sx={{ px: 3, py: 1, borderRadius: 999, border: "1px solid", borderColor: "secondary.main" }}
-          >
-            <ShieldCheck size={13} color="#00A79D" />
-            <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 700 }}>
-              {label}
-            </Typography>
-          </Stack>
-        ))}
-      </Stack>
 
       <Typography
         variant="caption"

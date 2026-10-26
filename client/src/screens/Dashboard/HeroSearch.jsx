@@ -44,7 +44,7 @@ const POPULAR_AREAS = [
 ];
 
 const TRUST_MARKERS = [
-  { icon: ShieldCheck, label: "Verified listings only" },
+  { icon: ShieldCheck, label: "Free to browse, no sign-up" },
   { icon: Sparkles, label: "AI-matched to you" },
   { icon: CalendarCheck, label: "Visits in 24 hours" },
 ];
@@ -257,7 +257,7 @@ export default function HeroSearch({
                 color: "rgba(255,255,255,0.86)",
               }}
             >
-              Verified homes. Hassle-free deals.{" "}
+              Gurgaon homes to rent or buy, free to browse.{" "}
               <Box component="span" sx={{ color: "#F6D58A", fontWeight: 600 }}>
                 Gifts up to ₹1,000
               </Box>{" "}

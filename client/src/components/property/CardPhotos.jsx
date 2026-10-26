@@ -23,8 +23,10 @@ const arrowSx = {
 
 /**
  * Card photo strip: swipe on touch, arrows on hover, dots for position.
- * The first photo uses ImageReveal (skeleton + fade); the rest lazy-load only
- * when scrolled into view, so a card costs one image until someone browses it.
+ * The first photo uses ImageReveal (skeleton + fade). Later photos are only
+ * mounted once the viewer reaches the one before them: `loading="lazy"` alone
+ * still fetched every slide of a card in the vertical viewport, which on a
+ * results page meant ~6 full-size photos per card.
  */
 export default function CardPhotos({ images, alt, aspectRatio, width, widths, sizes, fill }) {
   const photos = (images || []).filter(Boolean).slice(0, MAX_PHOTOS);
@@ -82,7 +84,7 @@ export default function CardPhotos({ images, alt, aspectRatio, width, widths, si
           <Box key={`${src}-${i}`} sx={{ flex: "0 0 100%", height: "100%", scrollSnapAlign: "start", overflow: "hidden" }}>
             {i === 0 ? (
               <ImageReveal src={src} alt={alt} aspectRatio={aspectRatio} width={width} widths={widths} sizes={sizes} sx={{ height: "100%" }} />
-            ) : (
+            ) : i > index + 1 ? null : (
               <Box
                 component="img"
                 src={cloudinaryUrl(src, { width })}

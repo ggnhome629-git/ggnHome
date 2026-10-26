@@ -17,7 +17,7 @@ import { motionDuration } from "../../theme/motion";
 import { radii } from "../../theme/theme";
 
 const TRUST = [
-  { icon: ShieldCheck, label: "Verified listings only" },
+  { icon: ShieldCheck, label: "Free to browse, no sign-up" },
   { icon: Gift, label: "Gifts up to ₹1,000" },
   { icon: CalendarCheck, label: "Visits in 24 hours" },
 ];
@@ -45,7 +45,7 @@ export default function SearchHero({
   headingPrefix,
   place,
   total,
-  overline = "Gurgaon · Verified homes",
+  overline = "Gurgaon · Homes to rent & buy",
   types = TYPES,
   trust = TRUST,
   placeholder = "Sector, locality or “2 BHK in Sector 46”",
@@ -244,7 +244,7 @@ export default function SearchHero({
               {total === undefined
                 ? "Searching listings…"
                 : total === null
-                ? "Live verified listings"
+                ? "Live listings"
                 : `${total.toLocaleString("en-IN")} ${total === 1 ? noun[0] : noun[1]} available`}
             </Box>
             {trust.map(({ icon: Icon, label }, ti) => (

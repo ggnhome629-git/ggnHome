@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Chip, Divider, Stack, Typography } from "@mui/material";
-import { Bath, Bed, Car, ExternalLink, Layers, MapPin, Maximize, ShieldCheck, Sofa } from "lucide-react";
+import { Bath, Bed, Car, ExternalLink, Layers, MapPin, Info, Maximize, Sofa } from "lucide-react";
 import { formatCurrency, locationLine, sourcePortalLabel } from "../../../utils/propertyModel";
 
 const TONE_COLORS = {
@@ -148,7 +148,7 @@ export default function PropertyHero({ property }) {
           <Stack direction="row" spacing={4} flexWrap="wrap" useFlexGap>
             {property.verification.slice(0, 4).map((badge) => (
               <Stack key={badge} direction="row" spacing={1.5} alignItems="center">
-                <ShieldCheck size={15} color="#00A79D" />
+                <Info size={15} color="#00A79D" />
                 <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500 }}>
                   {badge}
                 </Typography>

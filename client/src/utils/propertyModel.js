@@ -21,6 +21,22 @@ export function sourcePortalLabel(portal) {
   return SOURCE_PORTAL_LABELS[key] || String(portal).replace(/^./, (c) => c.toUpperCase());
 }
 
+/**
+ * Who a listing comes from, in words a visitor understands. Imported
+ * (scraped) listings are stored with ownerType "Admin", so the source portal
+ * must win — otherwise a NoBroker listing reads as posted by GgnHome.
+ * Works on raw API rows and normalized properties alike.
+ */
+export function listedByLabel(property) {
+  const portal = sourcePortalLabel(property?.sourcePortal);
+  if (portal) return `Listed on ${portal}`;
+  const type = String(property?.ownerType || "").toLowerCase();
+  if (type === "admin") return "GgnHome";
+  if (type === "agent") return "Agent";
+  if (type === "owner") return "Owner";
+  return null;
+}
+
 const asArray = (value) =>
   Array.isArray(value) ? value.filter((v) => typeof v === "string" && v.trim()) : [];
 
@@ -46,10 +62,19 @@ const clean = (value) => {
  * 112, Gurgaon". Only add a part the address doesn't already mention.
  */
 export function locationLine(property) {
-  const parts = [];
-  const address = property.address;
-  if (address) parts.push(address);
-  const lower = (address || "").toLowerCase();
+  // Scraped addresses also repeat themselves internally ("Sector 57, …,
+  // Sector 57, gurgaon"), so drop comma parts already seen.
+  const seen = new Set();
+  const parts = String(property.address || "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => {
+      const key = part.toLowerCase();
+      if (!part || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  const lower = parts.join(", ").toLowerCase();
   [property.sector, property.city].forEach((part) => {
     if (part && !lower.includes(String(part).toLowerCase())) parts.push(part);
   });
@@ -116,16 +141,19 @@ function deriveStatus(raw, type) {
 }
 
 /**
- * Verification badges are derived only from signals we can actually stand
- * behind — never a hardcoded "RERA verified".
+ * Listing facts shown beside the title. These state what the data actually
+ * says (active, where it came from, when it was last checked) — none of the
+ * schemas carry a verification process, so nothing here may claim one.
  */
 function deriveVerification(raw) {
-  const badges = [];
-  if (raw.isActive) badges.push("Listing active");
-  if (Array.isArray(raw.images) && raw.images.length > 0) badges.push("Photos verified");
-  if (clean(raw.Sector)) badges.push("Location verified");
-  if (clean(raw.ownernumber)) badges.push("Contact verified");
-  return badges;
+  const facts = [];
+  if (raw.isActive) facts.push("Listing active");
+  const portal = sourcePortalLabel(clean(raw.sourcePortal));
+  if (portal) facts.push(`Sourced from ${portal}`);
+  if (raw.sourceCheckedAt && !Number.isNaN(new Date(raw.sourceCheckedAt).getTime())) {
+    facts.push(`Last checked on source ${formatDate(raw.sourceCheckedAt)}`);
+  }
+  return facts;
 }
 
 /** Highlights are pulled from real descriptive fields, not invented copy. */
@@ -200,7 +228,7 @@ export function normaliseProperty(raw, type) {
       ? formatDate(raw.moveInDate)
       : { ready: "Ready to move", "under-construction": "Under construction" }[raw.possessionStatus] || null,
     furnishing: clean(raw.furnishing),
-    ownership: clean(raw.ownerType),
+    ownership: listedByLabel(raw),
 
     // Media
     images: asArray(raw.images),
