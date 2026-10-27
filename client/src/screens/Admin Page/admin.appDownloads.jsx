@@ -1,8 +1,9 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import { Alert, Box, Button, Card, CardContent, CircularProgress, Stack, TextField, Typography } from "@mui/material";
 import { Download, ExternalLink, Save, Smartphone } from "lucide-react";
 
-const API = process.env.REACT_APP_Base_API;
+const API = API_BASE;
 const DEFAULT_APPS = [
   { key: "ggnhome", file: "GgnHome.apk", name: "GgnHome", description: "GgnHome for people who search, rent or buy property", url: "", version: "1.0.0" },
   { key: "partner", file: "GgnHome-Partner.apk", name: "GgnHome Partner", description: "Partner portal: add properties, leads and enquiries", url: "", version: "1.0.0" },

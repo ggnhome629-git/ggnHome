@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import { Alert, Autocomplete, Avatar, Box, Button, ButtonBase, Chip, CircularProgress, Link, Stack, Step, StepLabel, Stepper, TextField, Typography } from "@mui/material";
 import { BadgeCheck, CheckCircle2, Clock, FileText, Home, LayoutDashboard, PhoneCall, Upload } from "lucide-react";
@@ -186,7 +187,7 @@ export default function AgentRegister() {
       body.append("profilePhoto", photo);
       body.append("idProof", idProof);
       const token = localStorage.getItem("accessToken");
-      const res = await fetch(`${process.env.REACT_APP_Base_API || ""}/api/agent/register`, {
+      const res = await fetch(`${API_BASE || ""}/api/agent/register`, {
         method: "POST",
         credentials: "include",
         headers: token ? { Authorization: `Bearer ${token}` } : {},

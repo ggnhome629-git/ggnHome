@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, Clock, Home, User, Phone, Calendar, FileText, Wrench, ChevronLeft } from 'lucide-react';
 import TopNavigationBar from '../Dashboard/TopNavigationBar';
@@ -66,7 +67,7 @@ const ServiceRequestApp = () => {
     setError('');
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/properties/my?page=${currentPage}&limit=10`,
+        `${API_BASE}/api/properties/my?page=${currentPage}&limit=10`,
         {
           method: 'GET',
           credentials: 'include',
@@ -153,7 +154,7 @@ const ServiceRequestApp = () => {
         payload.address = formData.address;
       }
 
-      const response = await fetch(`${process.env.REACT_APP_Base_API}/api/createservices`, {
+      const response = await fetch(`${API_BASE}/api/createservices`, {
         method: 'POST',
         credentials: 'include',
         headers: {

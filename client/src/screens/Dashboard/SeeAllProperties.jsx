@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState , useEffect } from 'react';
 import { MapPin, Bed, Bath, Square, Heart, Share2, TrendingUp, Award, Shield } from 'lucide-react';
 import { useLocation, useNavigate  } from 'react-router-dom';
@@ -69,7 +70,7 @@ const SeeAllProperties = ({ properties = [] }) => {
     if (loading) return;
     setLoading(true);
     try {
-      const url = `${process.env.REACT_APP_Base_API}/api/activeproperties?page=${nextPage}&limit=${limit}`;
+      const url = `${API_BASE}/api/activeproperties?page=${nextPage}&limit=${limit}`;
       const res = await fetch(url, { method: 'GET', credentials: 'include' });
       const data = await res.json();
       const arr = Array.isArray(data) ? data : (Array.isArray(data.properties) ? data.properties : []);

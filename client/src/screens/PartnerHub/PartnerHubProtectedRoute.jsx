@@ -1,8 +1,8 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import PageLoader from '../../components/ui/PageLoader';
 
-const API_BASE = process.env.REACT_APP_Base_API;
 
 // The sign-in check makes network calls, so it is remembered for a few minutes: opening another
 // partner page then shows the page at once instead of a loading screen.

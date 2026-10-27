@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import PropertyCarousel from "../../components/property/PropertyCarousel";
@@ -17,7 +18,7 @@ const SimilarProperties = ({ sector, currentPropertyId }) => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await axios.get(`${process.env.REACT_APP_Base_API}/api/activeproperties?limit=40`);
+        const res = await axios.get(`${API_BASE}/api/activeproperties?limit=40`);
         const all = (res.data || []).filter((p) => String(p._id) !== String(currentPropertyId));
 
         const sameSector = all.filter(

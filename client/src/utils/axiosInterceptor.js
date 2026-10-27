@@ -1,9 +1,10 @@
+import { API_BASE } from "./apiBase";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 // Create a custom axios instance
 const api = axios.create({
-  baseURL: process.env.REACT_APP_Base_API,
+  baseURL: API_BASE,
   withCredentials: true,
 });
 

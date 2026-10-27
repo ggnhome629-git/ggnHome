@@ -1,43 +1,4 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
-import { register as registerServiceWorker } from './serviceWorkerRegistration';
-import { BrowserRouter as Router } from 'react-router-dom';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import theme from './theme/theme';
-import { AuthProvider } from './Context/AuthContext';
-import { AgentAuthProvider } from './Context/AgentAuthContext';
-import AppBridge from './components/app/AppBridge';
-import ErrorBoundary from './components/app/ErrorBoundary';
+// The server address comes from Stashr (see utils/apiBase.js), so it has to be known before any other module reads it.
+import { resolveApiBase } from './utils/apiBase';
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
-        <AgentAuthProvider>
-          <Router>
-            <AppBridge />
-            <ErrorBoundary>
-              <App />
-            </ErrorBoundary>
-          </Router>
-        </AgentAuthProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </React.StrictMode>
-);
-
-// Register service worker for PWA functionality
-registerServiceWorker({
-  onSuccess: () => console.log('App is ready for offline use'),
-  onUpdate: () => console.log('App update available'),
-});
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
+resolveApiBase().finally(() => import('./bootstrap'));

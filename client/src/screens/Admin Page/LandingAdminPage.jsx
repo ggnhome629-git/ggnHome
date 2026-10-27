@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, LayoutDashboard, Users, MessageSquare, Home, ArrowRight, Settings, LockKeyhole, Unlock, EyeOff, Megaphone, CreditCard, RefreshCw } from 'lucide-react';
 import { Box, Button, Card, CardContent, TextField, Typography, Alert, Chip, IconButton, Tooltip, Divider, useMediaQuery, useTheme } from "@mui/material";
@@ -46,7 +47,7 @@ const AdminLandingPage = () => {
   useEffect(() => {
     const fetchAdmins = async () => {
       try {
-        const res = await fetch(`${process.env.REACT_APP_Base_API}/api/users?role=admin`, {
+        const res = await fetch(`${API_BASE}/api/users?role=admin`, {
           credentials: "include",
         });
         const data = await res.json();
@@ -118,7 +119,7 @@ const AdminLandingPage = () => {
     setPurgeStep("busy");
     setPurgeMsg(null);
     try {
-      const response = await fetch((process.env.REACT_APP_Base_API || "") + "/api/admin/cache/purge", {
+      const response = await fetch((API_BASE || "") + "/api/admin/cache/purge", {
         method: "POST",
         credentials: "include",
         headers: authHeaders(true),
@@ -144,7 +145,7 @@ const AdminLandingPage = () => {
     if (cached.length) applyHidden(cached);
     const loadDashboardTools = async () => {
       try {
-        const response = await fetch((process.env.REACT_APP_Base_API || "") + "/api/admin/dashboard-tools", {
+        const response = await fetch((API_BASE || "") + "/api/admin/dashboard-tools", {
           credentials: "include",
           headers: authHeaders(false),
         });
@@ -169,7 +170,7 @@ const AdminLandingPage = () => {
     setToolsSaving(true);
     setToolsError("");
     try {
-      const response = await fetch((process.env.REACT_APP_Base_API || "") + "/api/admin/dashboard-tools", {
+      const response = await fetch((API_BASE || "") + "/api/admin/dashboard-tools", {
         method: "PUT",
         credentials: "include",
         headers: authHeaders(true),
@@ -202,7 +203,7 @@ const AdminLandingPage = () => {
     setLoading(true);
     setMessage("");
     try {
-      const response = await fetch(`${process.env.REACT_APP_Base_API}/api/admin/update-role`, {
+      const response = await fetch(`${API_BASE}/api/admin/update-role`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

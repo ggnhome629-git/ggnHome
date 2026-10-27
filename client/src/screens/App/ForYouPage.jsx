@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Button, Chip, Skeleton, Stack, Typography } from "@mui/material";
 import { BedDouble, Bell, MapPin, RefreshCw, Ruler, Settings, Sparkles, WifiOff } from "lucide-react";
@@ -132,7 +133,7 @@ export default function ForYouPage() {
       .map((r) => `${r.id}:${String(r.type).toLowerCase().includes("rent") ? "rental" : "sale"}`)
       .join(",");
     try {
-      const res = await fetch(`${process.env.REACT_APP_BASE_API || process.env.REACT_APP_Base_API}/api/app/recommendations?type=${filter}&limit=20&recent=${encodeURIComponent(recent)}`, {
+      const res = await fetch(`${API_BASE || API_BASE}/api/app/recommendations?type=${filter}&limit=20&recent=${encodeURIComponent(recent)}`, {
         credentials: "include",
         headers: authHeaders(),
       });

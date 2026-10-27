@@ -1,9 +1,10 @@
+import { API_BASE } from "../../../utils/apiBase";
 import React, { useCallback, useEffect, useState } from "react";
 import { Alert, Box, Button, Chip, MenuItem, Pagination, Skeleton, Stack, TextField, Typography } from "@mui/material";
 import { Bot, Hand, RefreshCw } from "lucide-react";
 import AiLeadCard, { LEAD_STATUS } from "../../../components/aiConsultant/AiLeadCard";
 
-const API = process.env.REACT_APP_Base_API;
+const API = API_BASE;
 const PARTNER_STATUSES = ["contacted", "viewing_scheduled", "converted", "lost"];
 const headers = () => {
   const token = localStorage.getItem("partnerAccessToken");

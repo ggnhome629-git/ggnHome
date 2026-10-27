@@ -1,9 +1,10 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import { Alert, Box, Button, Card, Chip, Stack, TextField, Typography } from "@mui/material";
 import { Globe, Smartphone } from "lucide-react";
 import { useAdminFeedback } from "./shell/adminUi";
 
-const API = process.env.REACT_APP_Base_API || "";
+const API = API_BASE || "";
 const headers = () => {
   const t = localStorage.getItem("accessToken") || localStorage.getItem("token");
   return { "Content-Type": "application/json", ...(t ? { Authorization: `Bearer ${t}` } : {}) };

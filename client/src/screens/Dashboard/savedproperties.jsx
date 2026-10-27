@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -84,7 +85,7 @@ export default function SavedProperties() {
     const controller = new AbortController();
     setLoading(true);
     setError(false);
-    fetch(`${process.env.REACT_APP_Base_API}/api/propertyAanalysis/savedProperties?page=1&limit=100`, {
+    fetch(`${API_BASE}/api/propertyAanalysis/savedProperties?page=1&limit=100`, {
       credentials: "include",
       signal: controller.signal,
       headers: authHeaders(),

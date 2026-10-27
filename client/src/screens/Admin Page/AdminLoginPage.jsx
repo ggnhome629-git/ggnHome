@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import { Alert, Box, Button, Container, Paper, Stack, TextField, Typography } from "@mui/material";
 import { LockKeyhole } from "lucide-react";
@@ -5,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../Context/AuthContext";
 import useResendCooldown from "../../utils/useResendCooldown";
 
-const API = process.env.REACT_APP_Base_API || "";
+const API = API_BASE || "";
 const ADMIN_HOME = "/admin/Landingpage";
 
 /**

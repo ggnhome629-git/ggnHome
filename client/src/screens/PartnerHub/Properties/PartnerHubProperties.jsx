@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../utils/apiBase";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -110,7 +111,7 @@ const PartnerHubProperties = () => {
     setError('');
     try {
       const params = new URLSearchParams({ page: pagination.page, limit: pagination.limit, type: filters.type, status: filters.status });
-      const res = await fetch(`${process.env.REACT_APP_Base_API}/api/partner/properties?${params}`, {
+      const res = await fetch(`${API_BASE}/api/partner/properties?${params}`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         credentials: 'include',
       });

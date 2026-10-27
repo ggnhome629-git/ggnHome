@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Box, Button, Chip, Collapse, Container, LinearProgress, Stack, TextField, Typography } from "@mui/material";
 import { motion } from "framer-motion";
@@ -25,7 +26,7 @@ import {
 // Public, read-only overview of the 1.0.0 release. Mirrors docs/product/PORTALS_OVERVIEW.md.
 // Deliberately outside ProtectedRoutes and AdminLayout: no login or role check.
 
-const API = (process.env.REACT_APP_Base_API || "").replace(/\/+$/, "");
+const API = (API_BASE || "").replace(/\/+$/, "");
 const SITE = "https://www.ggnhome.com";
 const APK_API = "https://api.ggnhome.com/api/app-downloads";
 const VERSION = "1.0.0";

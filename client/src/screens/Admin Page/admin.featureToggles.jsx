@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect } from "react";
 import { Box, Button, Card, CardContent, Divider, Stack, Switch, Typography, CircularProgress, Alert } from "@mui/material";
 import { Settings, RefreshCw } from "lucide-react";
@@ -23,7 +24,7 @@ export default function FeatureTogglesAdmin() {
     let cancelled = false;
     (async () => {
       try {
-        const response = await fetch(`${process.env.REACT_APP_Base_API}/api/admin/feature-toggles`, {
+        const response = await fetch(`${API_BASE}/api/admin/feature-toggles`, {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         });
@@ -55,7 +56,7 @@ export default function FeatureTogglesAdmin() {
     setSaving(true);
     setMessage("");
     try {
-      const response = await fetch(`${process.env.REACT_APP_Base_API}/api/admin/feature-toggles`, {
+      const response = await fetch(`${API_BASE}/api/admin/feature-toggles`, {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -94,7 +95,7 @@ export default function FeatureTogglesAdmin() {
     setSaving(true);
     try {
       const disabled = { flatmates: false, agentPortal: false };
-      const response = await fetch(`${process.env.REACT_APP_Base_API}/api/admin/feature-toggles`, {
+      const response = await fetch(`${API_BASE}/api/admin/feature-toggles`, {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../../utils/apiBase";
 
 import React, { useEffect, useState , useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -115,7 +116,7 @@ export default function RentalPropertyPageAgent() {
     async function fetchProperty() {
       try {
         // First call the central property endpoint to check if property exists and is active
-        const baseApi = process.env.REACT_APP_BASE_API || process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API?.replace(/\/api.*$/,'') || 'http://localhost:2000';
+        const baseApi = API_BASE || process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API?.replace(/\/api.*$/,'') || 'http://localhost:2000';
         console.log('[PropertyPage] Checking active status via:', `${baseApi}/api/properties/${id}`);
         const checkRes = await fetch(`${baseApi}/api/properties/${id}`, {
           credentials: "include",

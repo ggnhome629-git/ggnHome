@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect } from "react";
 import { Box, Button, Card, CardContent, Grid, Typography, TextField, Select, MenuItem, FormControl, InputAdornment, IconButton, Chip, Dialog, DialogContent, DialogActions, Skeleton, Stack, Alert, InputLabel, useMediaQuery, useTheme } from "@mui/material";
 import { Package, Clock, CheckCircle, AlertCircle, Home, Calendar, X, ChevronRight, Filter, Search, Edit, Save, User, Building, RefreshCw, MessageCircle } from "lucide-react";
@@ -71,7 +72,7 @@ export default function AdminServiceTracking() {
       const statusQuery = filterStatus !== "all" ? `&status=${filterStatus}` : "";
       const token = localStorage.getItem("accessToken");
       const res = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/services?page=${currentPage}&limit=12${statusQuery}`,
+        `${API_BASE}/api/services?page=${currentPage}&limit=12${statusQuery}`,
         {
           credentials: "include",
           headers: {
@@ -137,7 +138,7 @@ export default function AdminServiceTracking() {
       }
       const token = localStorage.getItem("accessToken");
       const res = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/admin/services/${selectedRequest._id}/status`,
+        `${API_BASE}/api/admin/services/${selectedRequest._id}/status`,
         {
           method: "PATCH",
           credentials: "include",

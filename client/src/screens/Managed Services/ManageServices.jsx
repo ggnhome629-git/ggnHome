@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useServiceCatalog } from '../../data/useServiceCatalog';
 import { 
@@ -196,7 +197,7 @@ const ServiceTrackingSystem = () => {
       if (filterStatus !== 'all') params.set('status', filterStatus);
       if (options.serviceType) params.set('serviceType', options.serviceType);
 
-      const res = await fetch(`${process.env.REACT_APP_Base_API}/api/services?${params.toString()}`, {
+      const res = await fetch(`${API_BASE}/api/services?${params.toString()}`, {
         method: 'GET',
         credentials: 'include',
         headers: {
@@ -304,7 +305,7 @@ const ServiceTrackingSystem = () => {
 
     try {
       const statusToSend = newStatus;
-      const base = `${process.env.REACT_APP_Base_API}`;
+      const base = `${API_BASE}`;
       const url = isAdmin
         ? `${base}/api/admin/services/${requestId}/status`
         : `${base}/api/services/${requestId}/status`;

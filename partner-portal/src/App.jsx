@@ -1,3 +1,4 @@
+import { API_BASE } from "./apiBase.js";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ArrowDownToLine, ArrowLeft, ArrowRight, BadgeCheck, Building2, CheckCircle2,
@@ -5,7 +6,7 @@ import {
   MessageSquare, Plus, RefreshCw, ShieldCheck, Smartphone, Sparkles, UploadCloud, X,
 } from "lucide-react";
 
-const API = (import.meta.env.VITE_API_BASE || "").replace(/\/+$/, "");
+const API = API_BASE;
 const LOGO = "https://www.ggnhome.com/Logo2.jpg";
 const emptyProperty = {
   purpose: "sale", title: "", propertyType: "apartment", address: "", sector: "",

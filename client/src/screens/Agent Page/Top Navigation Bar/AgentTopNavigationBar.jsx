@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../utils/apiBase";
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -80,7 +81,7 @@ const TopNavigationBar = ({ navItems = [], search = "", onSearchChange, searchPl
     try {
       setEmailSaving(true);
 
-      const BASE_API = process.env.REACT_APP_Base_API || "";
+      const BASE_API = API_BASE || "";
       const url = `${BASE_API.replace(/\/$/, "")}/agent/set-recovery-email`;
 
       const res = await fetch(url, {
@@ -1296,7 +1297,7 @@ const TopNavigationBar = ({ navItems = [], search = "", onSearchChange, searchPl
                   if (newPassword) {
                     setPasswordLoading(true);
 
-                    const BASE_API = process.env.REACT_APP_Base_API || "";
+                    const BASE_API = API_BASE || "";
                     const url = `${BASE_API.replace(/\/$/, "")}/auth/change-password-direct`;
 
                     const res = await fetch(url, {

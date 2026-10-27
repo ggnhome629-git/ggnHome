@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect } from "react";
 import { Box, Button, Card, CardContent, Typography, Skeleton, Stack, Alert } from "@mui/material";
 import { RefreshCw, Database, Activity } from "lucide-react";
@@ -18,13 +19,13 @@ export default function AdminUsageDashboard() {
     setError(null);
     try {
       const [mongoRes, gnewsRes] = await Promise.all([
-        fetch(`${process.env.REACT_APP_Base_API}/api/admin/mongo/usage`, {
+        fetch(`${API_BASE}/api/admin/mongo/usage`, {
           credentials: "include",
           headers: {
             ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           },
         }),
-        fetch(`${process.env.REACT_APP_Base_API}/api/admin/gnews/usage`, {
+        fetch(`${API_BASE}/api/admin/gnews/usage`, {
           credentials: "include",
           headers: {
             ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
@@ -35,7 +36,7 @@ export default function AdminUsageDashboard() {
       setMongoUsage(await mongoRes.json());
       setGNewsUsage(await gnewsRes.json());
       try {
-        const dbRes = await fetch(`${process.env.REACT_APP_Base_API}/api/admin/db-accounts?refresh=1`, {
+        const dbRes = await fetch(`${API_BASE}/api/admin/db-accounts?refresh=1`, {
           credentials: "include",
           headers: { ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
         });

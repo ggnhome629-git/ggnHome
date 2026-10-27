@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -205,7 +206,7 @@ const AdminDashboard = () => {
       // Fetch admin overview data with pagination params for approved payments and recent activity
       const token = localStorage.getItem("accessToken");
       const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/admin/overview?approvedPage=${approvedPage}&recentPage=${recentPage}&limit=${pageSize}`,
+        `${API_BASE}/api/admin/overview?approvedPage=${approvedPage}&recentPage=${recentPage}&limit=${pageSize}`,
         {
           credentials: "include",
           headers: {

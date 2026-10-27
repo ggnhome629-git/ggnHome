@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -162,7 +163,7 @@ export default function UserPreferenceForm() {
     setSubmitting(true);
     setError("");
     try {
-      const res = await fetch(`${process.env.REACT_APP_Base_API}/api/userpreferenceform`, {
+      const res = await fetch(`${API_BASE}/api/userpreferenceform`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, hasLoggedIn: false }),

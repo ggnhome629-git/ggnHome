@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { createContext, lazy, Suspense, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { consultantApi } from "./consultantApi";
 import { useAiConsultantEnabled } from "./featureFlag";
@@ -29,7 +30,7 @@ function AiConsultantSession({ children }) {
   // Free-tier hosting sleeps when idle: wake the API as soon as the site loads,
   // so the consultant (and voice) answer quickly when the visitor opens it.
   useEffect(() => {
-    const base = process.env.REACT_APP_Base_API || "";
+    const base = API_BASE || "";
     fetch(`${base}/api/ai-consultant/config`, { credentials: "omit" }).catch(() => {});
   }, []);
   const [mounted, setMounted] = useState(false);

@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, InputAdornment, Stack, TextField, useMediaQuery } from "@mui/material";
 import { ChoiceChips, FormSection } from "../../components/postForm/ChoiceChips";
@@ -48,7 +49,7 @@ export default function EditFlatmateDialog({ listing, onClose, onSaved, token })
     setError("");
     const lo = Number(f.minRent);
     try {
-      const res = await fetch(`${process.env.REACT_APP_Base_API}/api/flatmates/listings/${listing._id}`, {
+      const res = await fetch(`${API_BASE}/api/flatmates/listings/${listing._id}`, {
         method: "PUT",
         credentials: "include",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },

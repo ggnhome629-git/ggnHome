@@ -1,8 +1,9 @@
+import { API_BASE } from "../../../utils/apiBase";
 import React, { useCallback, useEffect, useState } from "react";
 import { Box, CircularProgress, Switch, Tooltip, Typography } from "@mui/material";
 import { Sparkles } from "lucide-react";
 
-const API = process.env.REACT_APP_Base_API || "";
+const API = API_BASE || "";
 
 /**
  * Top-bar switch for the AI assistant (chat + voice) on the public site.

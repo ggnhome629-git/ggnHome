@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../utils/apiBase";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert, Box, Button, Chip, Container, Paper, Skeleton, Stack,
@@ -28,7 +29,7 @@ export default function PartnerHubLeads() {
         return;
       }
       const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/partner/leads/preferences?page=${page}&limit=${limit}`,
+        `${API_BASE}/api/partner/leads/preferences?page=${page}&limit=${limit}`,
         { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, credentials: "include" }
       );
       if (!response.ok) throw new Error("Could not load preference leads. Please refresh and try again.");
@@ -37,7 +38,7 @@ export default function PartnerHubLeads() {
       setMeta({ total: payload.meta?.total || 0, totalPages: payload.meta?.totalPages || 1 });
 
       const searchResponse = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/partner/leads/searches?page=${page}&limit=${limit}`,
+        `${API_BASE}/api/partner/leads/searches?page=${page}&limit=${limit}`,
         { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, credentials: "include" }
       );
       if (!searchResponse.ok) throw new Error("Could not load AI Assistant search leads.");

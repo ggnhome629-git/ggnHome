@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../utils/apiBase";
 import React, { useEffect, useState } from 'react';
 import { Box, Container, Card, CardContent, Typography, TextField, Button, Stack, Avatar, Skeleton, Alert } from '@mui/material';
 import { User, Mail, Phone, Star } from 'lucide-react';
@@ -25,7 +26,7 @@ const PartnerHubProfile = () => {
       }
 
       setLoading(true);
-      const res = await fetch(`${process.env.REACT_APP_Base_API}/api/partner/profile`, {
+      const res = await fetch(`${API_BASE}/api/partner/profile`, {
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         credentials: 'include',
       });
@@ -53,7 +54,7 @@ const PartnerHubProfile = () => {
   const handleSave = async () => {
     try {
       const token = localStorage.getItem('partnerAccessToken');
-      const res = await fetch(`${process.env.REACT_APP_Base_API}/api/partner/profile`, {
+      const res = await fetch(`${API_BASE}/api/partner/profile`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         credentials: 'include',

@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../utils/apiBase";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert, Box, Button, Chip, Container, Paper, Skeleton, Stack,
@@ -25,7 +26,7 @@ export default function PartnerHubEnquiries() {
         return;
       }
       const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/partner/enquiries?page=${page}&limit=${limit}`,
+        `${API_BASE}/api/partner/enquiries?page=${page}&limit=${limit}`,
         { headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, credentials: "include" }
       );
       if (!response.ok) throw new Error("Could not load enquiries. Please refresh and try again.");

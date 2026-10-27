@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -36,7 +37,7 @@ import { Trash2 } from "lucide-react";
  * phones (which service each one sends for), limits, Shine One sending times, per-sheet message + Auto-send, a log
  * and a test send. GGN Home OTP delivery can be switched between SMS and app display here.
  */
-const BASE = process.env.REACT_APP_Base_API;
+const BASE = API_BASE;
 const TOKEN_KEY = "smsConsoleToken";
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 

@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Box, Button, Snackbar, Typography } from "@mui/material";
 import { Fingerprint, RefreshCw, WifiOff } from "lucide-react";
@@ -163,7 +164,7 @@ export default function AppBridge() {
   const registerToken = async (token) => {
     if (!token) return;
     try {
-      await fetch(`${process.env.REACT_APP_BASE_API || process.env.REACT_APP_Base_API}/api/app/devices`, {
+      await fetch(`${API_BASE || API_BASE}/api/app/devices`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json", ...authHeaders() },

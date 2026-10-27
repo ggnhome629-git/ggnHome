@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../utils/apiBase";
 import React from "react";
 import { Eye, LayoutDashboard, PencilLine, Wallet } from "lucide-react";
 import TopNavigationBar from "../Top Navigation Bar/AgentTopNavigationBar.jsx";
@@ -15,7 +16,7 @@ const AGENT_POINTS = [
 /** /agent/add-property — same form as owners, posted to the agent endpoints. */
 export default function PropertyListingFormAgent() {
   const { agent } = useAgentAuth();
-  const base = process.env.REACT_APP_Base_API;
+  const base = API_BASE;
   return (
     <PropertyPostForm
       mode="agent"

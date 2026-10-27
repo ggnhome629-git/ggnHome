@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Pagination, Skeleton, Snackbar, Stack, Typography } from "@mui/material";
 import {
@@ -112,7 +113,7 @@ export default function ManageProperties({
 }) {
   const aiEnabled = useAiConsultantEnabled();
   const navigate = useNavigate();
-  const base = process.env.REACT_APP_Base_API;
+  const base = API_BASE;
   const authHeaders = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token]);
 
   const [items, setItems] = useState([]);

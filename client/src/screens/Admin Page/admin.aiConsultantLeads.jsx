@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -17,7 +18,7 @@ import { Bot, Cpu, MessageSquareText, Save } from "lucide-react";
 import { PageHeader, useAdminFeedback } from "./shell/adminUi";
 import AiLeadCard, { LEAD_STATUS } from "../../components/aiConsultant/AiLeadCard";
 
-const API = process.env.REACT_APP_Base_API;
+const API = API_BASE;
 const authHeaders = () => {
   const token = localStorage.getItem("accessToken");
   return { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };

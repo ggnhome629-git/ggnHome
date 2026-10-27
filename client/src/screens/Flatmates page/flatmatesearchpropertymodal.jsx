@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
@@ -155,7 +156,7 @@ export default function FlatmateSearchPropertyModal({ isOpen: isOpenProp, listin
     if (!isOpen || !listingId) return;
 
     const abort = new AbortController();
-    const base = process.env.REACT_APP_Base_API || '';
+    const base = API_BASE || '';
     const detailsUrlBase = `${base.replace(/\/$/, '')}/flatmatelistingdetails?id=${encodeURIComponent(listingId)}`;
 
     const viewedKey = `ggn_viewed_${listingId}`;
@@ -307,7 +308,7 @@ export default function FlatmateSearchPropertyModal({ isOpen: isOpenProp, listin
     setModalLoading(true);
     
     try {
-      const base = process.env.REACT_APP_Base_API || '';
+      const base = API_BASE || '';
       const url = `${base.replace(/\/$/, '')}/flatmateenquiry`;
       const payload = { listingId, ...enquiryState };
       

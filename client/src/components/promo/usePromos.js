@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import { useEffect, useState } from "react";
 import { weightedShuffle } from "./promoData";
 
@@ -34,7 +35,7 @@ export default function usePromos(placement, type = "") {
     const key = `${placement}|${audience}`;
     const load = cache.has(key)
       ? Promise.resolve(cache.get(key))
-      : fetch(`${process.env.REACT_APP_Base_API}/api/promos?placement=${placement}${audience ? `&type=${audience}` : ""}`)
+      : fetch(`${API_BASE}/api/promos?placement=${placement}${audience ? `&type=${audience}` : ""}`)
           .then((res) => (res.ok ? res.json() : []))
           .then((list) => {
             const safe = Array.isArray(list) ? list : [];

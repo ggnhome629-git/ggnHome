@@ -1,8 +1,9 @@
+import { API_BASE } from "../../../utils/apiBase";
 import React, { useCallback, useEffect, useState } from "react";
 import { Box, CircularProgress, Switch, Tooltip, Typography } from "@mui/material";
 import { Globe } from "lucide-react";
 
-const API = process.env.REACT_APP_Base_API || "";
+const API = API_BASE || "";
 
 /** Reads the switch state; other admin screens (Scraper Control) use it to lock themselves. */
 export async function fetchScrapedListingsEnabled() {

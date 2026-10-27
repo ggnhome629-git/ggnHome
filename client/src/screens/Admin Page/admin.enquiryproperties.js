@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect } from "react";
 import { Box, Button, Card, Grid, Typography, Chip, IconButton, Skeleton, Stack, Alert } from "@mui/material";
 import { RefreshCw, Mail, Phone, MapPin, Home, Eye, Trash2, Calendar, DollarSign } from "lucide-react";
@@ -25,7 +26,7 @@ export default function AdminEnquiryProperties() {
     try {
       const token = localStorage.getItem("accessToken");
       const res = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/enquiry?page=${page}&limit=${pageSize}`,
+        `${API_BASE}/api/enquiry?page=${page}&limit=${pageSize}`,
         {
           credentials: "include",
           headers: {
@@ -67,7 +68,7 @@ export default function AdminEnquiryProperties() {
     try {
       const token = localStorage.getItem("accessToken");
       const res = await fetch(
-        `${process.env.REACT_APP_Base_API}/admin/api/deleteenquiry/${id}`,
+        `${API_BASE}/admin/api/deleteenquiry/${id}`,
         {
           method: "DELETE",
           credentials: "include",

@@ -1,3 +1,4 @@
+import { API_BASE } from "./apiBase";
 import { cacheManager } from "./cacheManager";
 
 // Site-wide cache refresh. An admin cache clear bumps a version number on the
@@ -5,7 +6,7 @@ import { cacheManager } from "./cacheManager";
 // differs, wipes its own caches (service worker + cache storage) so the next
 // load is fresh. Logins (cookies, localStorage) are never touched.
 
-const API = (process.env.REACT_APP_Base_API || "").replace(/\/+$/, "");
+const API = (API_BASE || "").replace(/\/+$/, "");
 const KEY = "ggn:cacheVersion";
 
 const readStored = () => {

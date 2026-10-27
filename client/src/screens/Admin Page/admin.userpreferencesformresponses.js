@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect } from "react";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
@@ -54,7 +55,7 @@ const AdminPreferencesDashboard = () => {
       }).toString();
 
       const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/admin/preferences-form/list?${queryParams}`,
+        `${API_BASE}/api/admin/preferences-form/list?${queryParams}`,
         {
           credentials: "include",
           headers: {
@@ -85,7 +86,7 @@ const AdminPreferencesDashboard = () => {
     try {
       setAgentsLoading(true);
       const params = new URLSearchParams({ page: page.toString(), limit: '20' }).toString();
-    const res = await fetch(`${process.env.REACT_APP_Base_API}/api/admin/agents?${params}`, {
+    const res = await fetch(`${API_BASE}/api/admin/agents?${params}`, {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
@@ -139,7 +140,7 @@ const AdminPreferencesDashboard = () => {
       setAssigning(true);
       setAssignError("");
       await axios.post(
-        `${process.env.REACT_APP_Base_API}/api/admin/preferences/${leadId}/assign`,
+        `${API_BASE}/api/admin/preferences/${leadId}/assign`,
         { agentId },
         {
           withCredentials: true,
@@ -265,7 +266,7 @@ For assistance, please contact: 9654131789 | support@ggnhome.com`;
     try {
       setMatching(true);
       const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/admin/preferences-form/match-users`,
+        `${API_BASE}/api/admin/preferences-form/match-users`,
         {
           method: "POST",
           credentials: "include",
@@ -312,7 +313,7 @@ For assistance, please contact: 9654131789 | support@ggnhome.com`;
     setDeleting(true);
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/admin/preferences-form/${id}`,
+        `${API_BASE}/api/admin/preferences-form/${id}`,
         {
           method: 'DELETE',
           credentials: 'include',

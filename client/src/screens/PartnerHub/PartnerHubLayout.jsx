@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { Suspense, useEffect, useState } from "react";
 import {
   AppBar, Avatar, Box, Button, Divider, Drawer, IconButton, LinearProgress, List,
@@ -82,7 +83,7 @@ function SidebarContent({ pathname, navigate, onNavigate }) {
           <Typography sx={{ mt: .5, fontSize: 11, lineHeight: 1.6, color: "#668087" }}>Keep your listings up to date to help customers find the right home.</Typography>
           <Button size="small" onClick={() => navigate("/partner/properties/add")} endIcon={<PostPropertyIcon size={14} />}
             sx={{ mt: 1, p: 0, fontWeight: 800, textTransform: "none", color: "#0f766e", fontSize: 12 }}>Add a property</Button>
-          <Button component="a" href={(process.env.REACT_APP_Base_API || "") + "/api/app-downloads/GgnHome-Partner.apk"} download size="small" startIcon={<Download size={14} />}
+          <Button component="a" href={(API_BASE || "") + "/api/app-downloads/GgnHome-Partner.apk"} download size="small" startIcon={<Download size={14} />}
             sx={{ mt: 1, p: 0, fontWeight: 800, textTransform: "none", color: "#0f766e", fontSize: 12, justifyContent: "flex-start" }}>Download Partner APK</Button>
         </Box>
         <Typography sx={{ mt: 2, px: .5, fontSize: 10, color: "#a0aec0" }}>ggnHome Partner Portal</Typography>

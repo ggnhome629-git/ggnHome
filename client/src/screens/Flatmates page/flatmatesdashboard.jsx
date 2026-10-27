@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { Suspense, useEffect, useState } from "react";
 import {
   Box,
@@ -41,7 +42,7 @@ const Footer = React.lazy(() => import("../Dashboard/Footer"));
 const OffersCarousel = React.lazy(() => import("../Dashboard/OffersCarousel"));
 
 const NAV_ITEMS = ["For Buyers", "For Tenants", "For Owners", "For Dealers / Builders", "Insights"];
-const API = (process.env.REACT_APP_Base_API || "").replace(/\/$/, "");
+const API = (API_BASE || "").replace(/\/$/, "");
 
 const GENDERS = [
   { value: "", label: "Anyone" },

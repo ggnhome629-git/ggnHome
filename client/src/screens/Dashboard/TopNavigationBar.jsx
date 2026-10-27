@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect , useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -59,7 +60,7 @@ const TopNavigationBar = ({  navItems = [] }) => {
     let cancelled = false;
     const loadFeatureToggles = async () => {
       try {
-        const response = await fetch(process.env.REACT_APP_Base_API + "/api/features", {
+        const response = await fetch(API_BASE + "/api/features", {
           credentials: "include",
           headers: { "Content-Type": "application/json" },
         });
@@ -190,7 +191,7 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
     try {
       setUpdatingPassword(true);
       const res = await fetch(
-        `${process.env.REACT_APP_Base_API}/auth/change-password-direct`,
+        `${API_BASE}/auth/change-password-direct`,
         {
           method: "POST",
           credentials: "include",
@@ -233,7 +234,7 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
     try {
       setEmailSaving(true);
       const res = await fetch(
-        `${process.env.REACT_APP_Base_API}/auth/set-recovery-email`,
+        `${API_BASE}/auth/set-recovery-email`,
         {
           method: "POST",
           credentials: "include",

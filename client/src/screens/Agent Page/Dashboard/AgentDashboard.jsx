@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../utils/apiBase";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Avatar,
@@ -133,7 +134,7 @@ const AgentDashboard = () => {
   const fetchAgentMe = async () => {
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/agent/me`,
+        `${API_BASE}/agent/me`,
         {
           headers: {
             ...(agentToken ? { Authorization: `Bearer ${agentToken}` } : {}),
@@ -183,7 +184,7 @@ const AgentDashboard = () => {
   const fetchPropertyEnquiries = async () => {
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/agent/propertyEnquiries`,
+        `${API_BASE}/api/agent/propertyEnquiries`,
         {
           headers: {
             ...(agentToken ? { Authorization: `Bearer ${agentToken}` } : {}),
@@ -208,7 +209,7 @@ const AgentDashboard = () => {
       setUnlockingEnquiryId(enquiryId);
 
       const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/agent/enquiries/${enquiryId}/unlock`,
+        `${API_BASE}/api/agent/enquiries/${enquiryId}/unlock`,
         {
           method: "POST",
           headers: {
@@ -245,7 +246,7 @@ const AgentDashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const response = await fetch(
-        process.env.REACT_APP_Base_API + "/api/agent/dashboard",
+        API_BASE + "/api/agent/dashboard",
         {
           headers: {
             ...(agentToken ? { Authorization: `Bearer ${agentToken}` } : {}),
@@ -318,7 +319,7 @@ const AgentDashboard = () => {
 
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_Base_API}/api/agent/leadinfo`,
+        `${API_BASE}/api/agent/leadinfo`,
         {
           method: "POST",
           headers: {
@@ -368,7 +369,7 @@ const AgentDashboard = () => {
 
   const saveSectors = async () => {
     try {
-      await fetch(`${process.env.REACT_APP_Base_API}/api/agent/update-sectors`, {
+      await fetch(`${API_BASE}/api/agent/update-sectors`, {
         method: "POST",
         headers: {
           ...(agentToken ? { Authorization: `Bearer ${agentToken}` } : {}),

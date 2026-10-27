@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import { useState } from "react";
 import { Alert, Box, Button, Paper, Stack, TextField, Typography } from "@mui/material";
 
@@ -11,7 +12,7 @@ import { Alert, Box, Button, Paper, Stack, TextField, Typography } from "@mui/ma
  * Note: a successful verify is a real login (it sets the session cookies),
  * exactly like the login page does.
  */
-const BASE = process.env.REACT_APP_Base_API;
+const BASE = API_BASE;
 
 async function post(path, body) {
   const res = await fetch(`${BASE}${path}`, {

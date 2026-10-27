@@ -1,3 +1,4 @@
+import { API_BASE } from "../utils/apiBase";
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 
 const AgentAuthContext = createContext();
@@ -19,7 +20,7 @@ export function AgentAuthProvider({ children }) {
   const isFetchingRef = useRef(false);
 
   // env or fallback
-  const BASE_API = process.env.REACT_APP_Base_API || "";
+  const BASE_API = API_BASE || "";
   const AGENT_ME_API =
     process.env.REACT_APP_AGENT_ME_API ||
     (BASE_API ? `${String(BASE_API).replace(/\/$/, "")}/agent/me` : "/agent/me");

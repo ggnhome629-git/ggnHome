@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useRef, useState } from "react";
 import { Alert, Box, Button, CircularProgress, InputAdornment, Link, Stack, TextField, Typography } from "@mui/material";
 import { ArrowLeft, MessageSquareText, Smartphone } from "lucide-react";
@@ -10,7 +11,7 @@ const RESEND_AFTER = 30;
  * response (tokens, user, agent status) to onVerified(data, mobile).
  */
 export default function MobileOtpForm({ onVerified, submitLabel = "Verify & Continue", initialMobile = "" }) {
-  const base = process.env.REACT_APP_Base_API || "";
+  const base = API_BASE || "";
   const [step, setStep] = useState("mobile");
   const [mobile, setMobile] = useState(initialMobile);
   const [code, setCode] = useState("");

@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -29,7 +30,7 @@ const SimilarProperties = ({ sector, propertyType }) => {
     const fetchData = async () => {
       try {
         setLoading(true); // show spinner before loading
-        const allRes = await axios.get(process.env.REACT_APP_Base_API + "/api/activeproperties" + `?limit=10`);
+        const allRes = await axios.get(API_BASE + "/api/activeproperties" + `?limit=10`);
         const allData = allRes.data || [];
 
         // 1️⃣ Same sector properties

@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React from "react";
 import { ClipboardList, Eye, PhoneCall, ShieldCheck } from "lucide-react";
 import { useAuth } from "../../Context/AuthContext";
@@ -22,7 +23,7 @@ const ADMIN_POINTS = [
  */
 export default function AdminPropertyListingForm() {
   const { user } = useAuth();
-  const base = process.env.REACT_APP_Base_API;
+  const base = API_BASE;
   return (
     <PropertyPostForm
       mode="admin"

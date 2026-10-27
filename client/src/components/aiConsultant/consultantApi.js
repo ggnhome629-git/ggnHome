@@ -1,5 +1,6 @@
+import { API_BASE } from "../../utils/apiBase";
 /** Thin client for /api/ai-consultant/*. Every call degrades to a readable error. */
-const BASE = process.env.REACT_APP_Base_API || "";
+const BASE = API_BASE || "";
 
 async function post(path, body, { auth = false, timeoutMs = 20000, keepalive = false } = {}) {
   const controller = new AbortController();

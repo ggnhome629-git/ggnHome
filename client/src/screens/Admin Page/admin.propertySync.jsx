@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect } from "react";
 import { Box, Button, Card, CardContent, Grid, Typography, Stack, Alert, Chip, LinearProgress, Paper, Divider, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import { RefreshCw, Play, Square, Eye, TrendingUp, AlertCircle, CheckCircle, Database, Zap, Camera } from "lucide-react";
@@ -11,7 +12,6 @@ const AdminPropertySync = () => {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [showReport, setShowReport] = useState(false);
 
-  const API_BASE = process.env.REACT_APP_Base_API || "";
 
   // Fetch sync status
   const fetchStatus = async () => {

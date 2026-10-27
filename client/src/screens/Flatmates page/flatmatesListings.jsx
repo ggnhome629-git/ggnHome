@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useMemo, useState } from "react";
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Skeleton, Snackbar, Stack, Typography } from "@mui/material";
 import { CheckCircle2, Clock, Eye, LayoutList, LifeBuoy, MessageSquare, PauseCircle, PencilLine, PlayCircle, Share2, Users } from "lucide-react";
@@ -48,7 +49,7 @@ const SORTS = [
 export default function FlatmatesListings() {
   const navigate = useNavigate();
   const token = localStorage.getItem("accessToken");
-  const base = process.env.REACT_APP_Base_API;
+  const base = API_BASE;
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
@@ -174,7 +175,7 @@ export default function FlatmateDiscovery() {
     if (moveInBy) params.set("moveInBy", moveInBy);
     setLoading(true);
     setError(false);
-    fetch(`${(process.env.REACT_APP_Base_API || "").replace(/\/$/, "")}/api/flatmates/listings/search?${params.toString()}`, {
+    fetch(`${(API_BASE || "").replace(/\/$/, "")}/api/flatmates/listings/search?${params.toString()}`, {
       credentials: "include",
     })
       .then((res) => {

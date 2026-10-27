@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   Box,
@@ -41,7 +42,7 @@ const AgentManagement = () => {
     setLoadingViewedLeads(true);
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_Base_API || ''}/api/admin/agentclientviewed`,
+        `${API_BASE || ''}/api/admin/agentclientviewed`,
         {
           method: 'POST',
           headers: {
@@ -78,7 +79,7 @@ const AgentManagement = () => {
         ...(statusFilter && { status: statusFilter })
       });
 
-            const response = await fetch(`${process.env.REACT_APP_Base_API || ''}/api/admin/agents?${params}`, {
+            const response = await fetch(`${API_BASE || ''}/api/admin/agents?${params}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         },
@@ -119,7 +120,7 @@ const AgentManagement = () => {
     try {
       const newStatus = currentStatus === '1' ? '0' : '1';
       
-            const response = await fetch(`${process.env.REACT_APP_Base_API || ''}/api/admin/setvisibility/${agentId}`, {
+            const response = await fetch(`${API_BASE || ''}/api/admin/setvisibility/${agentId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,7 +160,7 @@ const AgentManagement = () => {
   const approveAgent = async (agentId) => {
     try {
 // Approve
-const response = await fetch(`${process.env.REACT_APP_Base_API || ''}/api/admin/approveagent/${agentId}`, {
+const response = await fetch(`${API_BASE || ''}/api/admin/approveagent/${agentId}`, {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
@@ -195,7 +196,7 @@ const response = await fetch(`${process.env.REACT_APP_Base_API || ''}/api/admin/
   const suspendAgent = async (agentId) => {
     try {
       // Suspend
-      const response = await fetch(`${process.env.REACT_APP_Base_API || ''}/api/admin/suspendagent/${agentId}`, {
+      const response = await fetch(`${API_BASE || ''}/api/admin/suspendagent/${agentId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -232,7 +233,7 @@ const response = await fetch(`${process.env.REACT_APP_Base_API || ''}/api/admin/
 
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_Base_API || ''}/api/admin/agents/${agentId}/reset-password`,
+        `${API_BASE || ''}/api/admin/agents/${agentId}/reset-password`,
         {
           method: 'POST',
           headers: {

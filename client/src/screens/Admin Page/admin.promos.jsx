@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -28,7 +29,7 @@ import { PROMO_ICONS, PROMO_THEMES } from "../../components/promo/promoData";
 import PromoJsonImport from "./PromoJsonImport";
 import { useAdminFeedback } from "./shell/adminUi";
 
-const BASE = process.env.REACT_APP_Base_API;
+const BASE = API_BASE;
 
 function authHeaders() {
   const token = localStorage.getItem("accessToken");

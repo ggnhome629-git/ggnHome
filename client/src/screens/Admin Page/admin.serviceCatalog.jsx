@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -21,7 +22,7 @@ import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
 import { PageHeader, useAdminFeedback } from "./shell/adminUi";
 import { invalidateServiceCatalog, priceLabel } from "../../data/useServiceCatalog";
 
-const API = process.env.REACT_APP_Base_API;
+const API = API_BASE;
 const authHeaders = () => {
   const token = localStorage.getItem("accessToken");
   return { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };

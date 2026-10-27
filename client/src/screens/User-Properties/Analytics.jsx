@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect } from "react";
 import { Box, Card, CardContent, Container, Grid, Stack, Typography, Tab, Tabs, Chip } from "@mui/material";
 import { Eye, Heart, Phone, Share2, TrendingUp, MapPin, Calendar, Home } from "lucide-react";
@@ -29,7 +30,7 @@ export default function Analytics() {
       setLoading(true);
       const token = localStorage.getItem("accessToken");
       const userId = localStorage.getItem("userId") || "current";
-      const analyticsApi = process.env.REACT_APP_ANALYTICS_API || `${process.env.REACT_APP_Base_API}/user/analytics`;
+      const analyticsApi = process.env.REACT_APP_ANALYTICS_API || `${API_BASE}/user/analytics`;
 
       // Try to get from cache first (5 minute cache)
       const cached = await cacheUtils.getAnalytics(userId);

@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect } from "react";
 import { Box, Button, Card, CardContent, Grid, Typography, Stack, Switch, TextField, Alert, Chip, LinearProgress, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from "@mui/material";
 import { Play, Square, RefreshCw, Eye, CheckCircle, Server, Zap } from "lucide-react";
@@ -12,7 +13,6 @@ const AdminScraperControl = () => {
   const [stats, setStats] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
 
-  const API_BASE = process.env.REACT_APP_Base_API || "";
 
   // NoBroker daily sync (hides listings NoBroker has rented out / removed)
   const [nbSync, setNbSync] = useState(null);

@@ -1,8 +1,9 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import { Alert, Box, Button, Card, CardContent, Chip, Container, Link as MuiLink, Stack, Typography } from "@mui/material";
 import { Building2, Download, ExternalLink, MessageSquare, Shield, ShieldCheck, Smartphone } from "lucide-react";
 
-const API = (process.env.REACT_APP_Base_API || "").replace(/\/+$/, "");
+const API = (API_BASE || "").replace(/\/+$/, "");
 const SITE = "https://www.ggnhome.com";
 const RELEASE_VERSION = "1.0.0";
 

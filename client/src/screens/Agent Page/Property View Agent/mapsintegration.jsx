@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import L from "leaflet";
@@ -62,7 +63,7 @@ const MapsIntegration = ({ sector, type }) => {
   const fetchApiKey = async () => {
     try {
       const response = await axios.get(
-        `${process.env.REACT_APP_Base_API}/api/locationqapi`
+        `${API_BASE}/api/locationqapi`
       );
       setApiKey(response.data.apiKey);
       

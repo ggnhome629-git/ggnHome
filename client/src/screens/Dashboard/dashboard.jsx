@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import { motion, useScroll, useSpring } from "framer-motion";
 import CrossPromo from "../../components/promo/CrossPromo";
 import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
@@ -313,7 +314,7 @@ export default function RealEstateDashboard() {
       try {
         if (!user) {
           const res = await fetch(
-            `${process.env.REACT_APP_Base_API}/api/activeproperties?limit=12`,
+            `${API_BASE}/api/activeproperties?limit=12`,
             { method: "GET" }
           );
           if (cancelled) return;

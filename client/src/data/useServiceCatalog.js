@@ -1,3 +1,4 @@
+import { API_BASE } from "../utils/apiBase";
 import { useEffect, useState } from "react";
 
 /**
@@ -24,7 +25,7 @@ let inflight = null;
 function load() {
   if (cache) return Promise.resolve(cache);
   if (!inflight) {
-    inflight = fetch(`${process.env.REACT_APP_Base_API || ""}/api/service-catalog`)
+    inflight = fetch(`${API_BASE || ""}/api/service-catalog`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("unavailable"))))
       .then((d) => {
         cache = Array.isArray(d.services) ? d.services : FALLBACK_SERVICES;

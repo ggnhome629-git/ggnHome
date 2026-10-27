@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { CORNER_OPTIONS, emptyNearbyAmenities } from "../../data/propertyParameters";
 import {
@@ -227,7 +228,7 @@ export default function PropertyPostForm({
     if (mode !== "partner") return undefined;
     let cancelled = false;
     const partnerToken = localStorage.getItem("partnerAccessToken") || token;
-    fetch(`${process.env.REACT_APP_Base_API}/api/partner/profile`, {
+    fetch(`${API_BASE}/api/partner/profile`, {
       headers: partnerToken ? { Authorization: `Bearer ${partnerToken}` } : {},
       credentials: "include",
     })
@@ -278,7 +279,7 @@ export default function PropertyPostForm({
     try {
       // Server-side lookup: the map API key never reaches the browser.
       const authToken = mode === "partner" ? localStorage.getItem("partnerAccessToken") || token : token;
-      const response = await fetch(`${process.env.REACT_APP_Base_API}/api/nearby-parameters`, {
+      const response = await fetch(`${API_BASE}/api/nearby-parameters`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json", ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },

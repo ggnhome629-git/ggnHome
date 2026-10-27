@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Bell, Globe, Heart, Laptop, Share2, Smartphone, Sparkles, X, Zap } from "lucide-react";
@@ -26,7 +27,7 @@ function loadLinks() {
     /* ignore */
   }
   if (!inflight) {
-    inflight = fetch(`${process.env.REACT_APP_Base_API || ""}/api/app-links`)
+    inflight = fetch(`${API_BASE || ""}/api/app-links`)
       .then((r) => (r.ok ? r.json() : {}))
       .then((d) => {
         const v = { playStoreUrl: d.playStoreUrl || "", websiteUrl: d.websiteUrl || "" };

@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect } from "react";
 import {
   Alert,
@@ -373,7 +374,7 @@ const CloudinaryDashboard = () => {
   // Get access token from localStorage for all protected admin API calls
   const accessToken = localStorage.getItem("accessToken");
 
-  const BASE_API = process.env.REACT_APP_Base_API || "http://localhost:2000";
+  const BASE_API = API_BASE || "http://localhost:2000";
 
   const fetchUsage = async (force = false) => {
     try {

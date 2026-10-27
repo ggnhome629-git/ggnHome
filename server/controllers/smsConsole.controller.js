@@ -11,7 +11,22 @@ const SmsSetting = require("../models/SmsSetting.model");
 const { getLimits, effectiveLimits, dropLimitsCache, HARD_CAPS, getDeviceKey } = require("./smsGateway.controller");
 
 const ONLINE_WINDOW_MS = 20 * 1000;
-const SHINE_URL = () => (process.env.SHINE_API_URL || "https://we-three-api.onrender.com").replace(/\/+$/, "");
+// SHINE_API_URL wins when set. Otherwise the We Three server is looked up on Stashr (list "wethree"), so a moved server
+// needs no redeploy here; the last known good address is the fallback.
+let shineCache = { url: "", at: 0 };
+const SHINE_FALLBACK = "https://we-three-api-r310.onrender.com/api";
+const SHINE_URL = async () => {
+  if (process.env.SHINE_API_URL) return process.env.SHINE_API_URL.replace(/\/+$/, "");
+  if (shineCache.url && Date.now() - shineCache.at < 5 * 60 * 1000) return shineCache.url;
+  for (const host of ["https://password-manager-server-xxdr.onrender.com", "https://password-manager-server-8gvj.onrender.com"]) {
+    try {
+      const r = await axios.get(`${host}/registry/wethree`, { timeout: 8000 });
+      const url = String((r.data && r.data.urls && r.data.urls[0]) || "").replace(/\/+$/, "");
+      if (/^https?:\/\//i.test(url)) { shineCache = { url, at: Date.now() }; return url; }
+    } catch { /* try the next Stashr server */ }
+  }
+  return shineCache.url || SHINE_FALLBACK;
+};
 // The one shared key (SMS_KEY) is also what you type to open the console.
 const sharedKey = () => getDeviceKey() || "";
 // Sign-ins are signed with a secret derived from that key, so no other env var is needed (changing the key signs everyone out).
@@ -62,7 +77,7 @@ async function shine(method, path, data) {
   try {
     const r = await axios({
       method,
-      url: `${SHINE_URL()}/api/sms-console${path}`,
+      url: `${(await SHINE_URL()).replace(/\/api$/, "")}/api/sms-console${path}`,
       data,
       headers: { "X-Console-Key": sharedKey() },
       timeout: 70 * 1000, // the free Render server can take a minute to wake up

@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useMemo, useState } from "react";
 import { Box, Button, Card, Chip, Collapse, MenuItem, Pagination, Select, Stack, TextField, Typography, InputAdornment } from "@mui/material";
 import { ChevronDown, ChevronUp, ExternalLink, Search } from "lucide-react";
@@ -32,7 +33,7 @@ export default function PropertyListingPage() {
       setLoading(true);
       try {
         const token = localStorage.getItem("accessToken");
-        const res = await fetch(`${process.env.REACT_APP_Base_API}/api/properties?page=${page}&limit=${PER_PAGE}`, {
+        const res = await fetch(`${API_BASE}/api/properties?page=${page}&limit=${PER_PAGE}`, {
           credentials: "include",
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });

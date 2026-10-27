@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
@@ -71,7 +72,7 @@ export default function InvestRealEstatePage() {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const base = process.env.REACT_APP_BASE_API || process.env.REACT_APP_Base_API || "";
+        const base = API_BASE || API_BASE || "";
         const url = `${base}/api/activeproperties?limit=8`;
         const res = await fetch(url, {
           method: "GET",

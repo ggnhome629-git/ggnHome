@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useState, useRef } from "react";
 import { toast } from "react-toastify";
 import {
@@ -251,7 +252,7 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
     setExistingImages([]);
     setNewImages([]);
     const token = localStorage.getItem("accessToken");
-    fetch(`${process.env.REACT_APP_Base_API}/api/getRentalproperties/${propertyId}`, {
+    fetch(`${API_BASE}/api/getRentalproperties/${propertyId}`, {
       credentials: "include",
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -344,7 +345,7 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
       .catch((err) => {
         if (err.message === "not-found-rental") {
           const token = localStorage.getItem("accessToken");
-          fetch(`${process.env.REACT_APP_Base_API}/api/getSaleproperties/${propertyId}`, {
+          fetch(`${API_BASE}/api/getSaleproperties/${propertyId}`, {
             credentials: "include",
             headers: {
               ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -587,7 +588,7 @@ function handlePanoFilesSelected(files) {
         }
         const token = localStorage.getItem("accessToken");
         const res = await fetch(
-          `${process.env.REACT_APP_Base_API}/api/admin/update-property/${propertyId}`,
+          `${API_BASE}/api/admin/update-property/${propertyId}`,
           {
             method: "PUT",
             body: form,
@@ -639,7 +640,7 @@ function handlePanoFilesSelected(files) {
         }
         const token = localStorage.getItem("accessToken");
         const res = await fetch(
-          `${process.env.REACT_APP_Base_API}/api/admin/update-property/${propertyId}`,
+          `${API_BASE}/api/admin/update-property/${propertyId}`,
           {
             method: "PUT",
             credentials: "include",

@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import PageLoader from "../../components/ui/PageLoader";
@@ -14,8 +15,8 @@ export default function ProtectedRoutes({ redirectTo = "/login" }) {
 
   const USER_API =
     process.env.REACT_APP_USER_ME_API ||
-    (process.env.REACT_APP_Base_API
-      ? `${String(process.env.REACT_APP_Base_API).replace(/\/$/, "")}/user/me`
+    (API_BASE
+      ? `${String(API_BASE).replace(/\/$/, "")}/user/me`
       : "/user/me");
 
   useEffect(() => {

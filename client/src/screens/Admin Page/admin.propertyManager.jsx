@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useCallback, useEffect, useState, useRef } from "react";
 import { Box, Button, Card, Checkbox, Chip, Grid, IconButton, InputAdornment, MenuItem, Pagination, Select, Stack, Tab, Tabs, TextField, Tooltip, Typography } from "@mui/material";
 import { CheckCheck, Check, Download, Eye, Home, Pencil, RefreshCw, Search, Trash2 } from "lucide-react";
@@ -6,7 +7,7 @@ import { PageHeader, StatCard, EmptyState, useAdminFeedback } from "./shell/admi
 import EditPropertyModal from "./admin.editpropertymodel";
 import "./admin.css";
 
-const API = process.env.REACT_APP_Base_API || "";
+const API = API_BASE || "";
 const PER_PAGE = 15;
 const authHeaders = () => {
   const t = localStorage.getItem("accessToken") || localStorage.getItem("token");

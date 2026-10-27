@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -342,7 +343,7 @@ const AgentRegistration = () => {
       }
 
       const accessToken = localStorage.getItem("accessToken");
-      const base = process.env.REACT_APP_Base_API || "";
+      const base = API_BASE || "";
 
       const res = await fetch(`${base}/api/agent/register`, {
         method: "POST",
@@ -420,7 +421,7 @@ const AgentRegistration = () => {
 
     try {
       setSettingPassword(true);
-      const base = process.env.REACT_APP_Base_API;
+      const base = API_BASE;
       const accessToken = localStorage.getItem("accessToken");
 
       const res = await fetch(`${base}/auth/set-password`, {

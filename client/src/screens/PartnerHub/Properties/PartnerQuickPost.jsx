@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../utils/apiBase";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Accordion, AccordionDetails, AccordionSummary, Alert, Autocomplete, Box, Button, ButtonBase, Chip, CircularProgress, Container, LinearProgress, Stack, TextField, Typography } from "@mui/material";
 import { ArrowLeft, ArrowRight, Camera, Check, CheckCircle2, ChevronDown, ImagePlus, LocateFixed, MapPin, Search, Send, Star, X } from "lucide-react";
@@ -16,7 +17,7 @@ import {
  * menu), so the partner never has to type them.
  */
 
-const API = process.env.REACT_APP_Base_API || "";
+const API = API_BASE || "";
 const DRAFT_KEY = "partnerQuickPost:v3";
 const MAX_PHOTOS = 10;
 const GREEN = "#0f766e";

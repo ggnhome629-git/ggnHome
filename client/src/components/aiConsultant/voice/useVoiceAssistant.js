@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../utils/apiBase";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Room, RoomEvent, Track } from "livekit-client";
 import { startServerListener } from "./serverListener";
@@ -20,7 +21,6 @@ import { nativeCapabilities, nativeListenOnce, nativeRequestMic, nativeSay, nati
  *   speaking · reconnecting · error
  */
 
-const API_BASE = process.env.REACT_APP_Base_API || "";
 const VOICE_TOPIC = "ggnhome-voice";
 const HELLO_INTERVAL_MS = 1000;
 const AGENT_READY_TIMEOUT_MS = 12000;

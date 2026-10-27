@@ -1,10 +1,11 @@
+import { API_BASE } from "../../utils/apiBase";
 import { useEffect, useState } from "react";
 
 /**
  * Public status page at /admin/ping — no sign-in, no admin gate. It asks the API's own /admin/ping and shows the
  * answer, so a quick visit tells you whether the website and the API server are both up.
  */
-const BASE = process.env.REACT_APP_Base_API;
+const BASE = API_BASE;
 
 export default function AdminPing() {
   const [state, setState] = useState({ loading: true, ok: false, message: "" });

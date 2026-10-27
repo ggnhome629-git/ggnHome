@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import { useEffect, useState } from "react";
 
 /**
@@ -35,7 +36,7 @@ const set = (next) => {
 
 export async function refreshAiConsultantFlag() {
   try {
-    const response = await fetch(`${process.env.REACT_APP_Base_API || ""}/api/features`, { credentials: "include" });
+    const response = await fetch(`${API_BASE || ""}/api/features`, { credentials: "include" });
     if (!response.ok) return;
     const data = await response.json();
     set(data.aiAssistant === true);

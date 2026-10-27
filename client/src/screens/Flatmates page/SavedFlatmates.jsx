@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import { Box, Button, Skeleton, Stack, Typography } from "@mui/material";
 import { Users } from "lucide-react";
@@ -19,7 +20,7 @@ export default function SavedFlatmates({ onCount }) {
       return undefined;
     }
     let cancelled = false;
-    fetch(`${process.env.REACT_APP_Base_API}/api/flatmates/listings/by-ids?ids=${encodeURIComponent(ids)}`)
+    fetch(`${API_BASE}/api/flatmates/listings/by-ids?ids=${encodeURIComponent(ids)}`)
       .then((r) => (r.ok ? r.json() : { data: { items: [] } }))
       .then((d) => !cancelled && setItems(d.data?.items || []))
       .catch(() => !cancelled && setItems([]));

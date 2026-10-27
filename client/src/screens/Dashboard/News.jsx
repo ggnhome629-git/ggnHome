@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import { Box, Button, Container, Skeleton, Stack, Typography } from "@mui/material";
 import { motion } from "framer-motion";
@@ -35,7 +36,7 @@ const PropertyHeroSection = () => {
   const [errorMsg, setErrorMsg] = useState(null);
   const [forceFetchKey, setForceFetchKey] = useState(0);
 
-  const apiBase = (process.env.REACT_APP_Base_API || "").replace(/\/$/, "");
+  const apiBase = (API_BASE || "").replace(/\/$/, "");
 
   useEffect(() => {
     const fetchArticles = async () => {

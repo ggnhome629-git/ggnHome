@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Alert, Autocomplete, Box, Button, Checkbox, Chip, Dialog, DialogContent, FormControlLabel, InputAdornment, Stack, TextField, Typography } from "@mui/material";
 import { motion } from "framer-motion";
@@ -193,7 +194,7 @@ export default function CreateFlatmateListing() {
     setSubmitting(true);
     setSubmitError("");
     try {
-      const res = await fetch(`${process.env.REACT_APP_Base_API}/api/flatmates/listings`, {
+      const res = await fetch(`${API_BASE}/api/flatmates/listings`, {
         method: "POST",
         body: buildFormData(f, photos),
         credentials: "include",

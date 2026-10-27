@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../utils/apiBase";
 import { useEffect, useState } from "react";
 
 /**
@@ -49,7 +50,7 @@ export function useHiddenTools() {
     if (!serverSynced) {
       serverSynced = true;
       const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
-      fetch(`${process.env.REACT_APP_Base_API || ""}/api/admin/dashboard-tools`, {
+      fetch(`${API_BASE || ""}/api/admin/dashboard-tools`, {
         credentials: "include",
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       })

@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Box, Link, Stack, Typography } from "@mui/material";
@@ -72,7 +73,7 @@ export default function LoginModal() {
 
     setBusy(true);
     try {
-      const res = await fetch(`${process.env.REACT_APP_Base_API}/login/password`, {
+      const res = await fetch(`${API_BASE}/login/password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

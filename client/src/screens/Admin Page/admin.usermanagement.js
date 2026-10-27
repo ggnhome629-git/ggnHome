@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useState, useEffect } from "react";
 import {
   Accordion,
@@ -250,7 +251,7 @@ const UserManagementDashboard = () => {
   const fetchUserRewards = async (userId) => {
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_BASE_API}/api/admin/rewards/${userId}`,
+        `${API_BASE}/api/admin/rewards/${userId}`,
         {
           method: "GET",
           credentials: "include",

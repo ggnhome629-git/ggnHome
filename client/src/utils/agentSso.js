@@ -1,8 +1,9 @@
+import { API_BASE } from "./apiBase";
 /**
  * Single sign-on helpers between the main site and the agent area.
  * One mobile + OTP login gives both sessions; these keep them in step.
  */
-const base = () => process.env.REACT_APP_Base_API || "";
+const base = () => API_BASE || "";
 
 /** Store whatever tokens a login returned and tell both auth contexts. */
 export function storeLoginTokens(data) {

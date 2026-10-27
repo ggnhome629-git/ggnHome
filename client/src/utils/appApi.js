@@ -1,6 +1,7 @@
+import { API_BASE } from "./apiBase";
 import { snapshot } from "./nativeApp";
 
-const BASE = () => process.env.REACT_APP_BASE_API || process.env.REACT_APP_Base_API;
+const BASE = () => API_BASE || API_BASE;
 const authHeaders = () => {
   const token = localStorage.getItem("accessToken");
   return token ? { Authorization: `Bearer ${token}` } : {};

@@ -1,3 +1,4 @@
+import { API_BASE } from "../../../utils/apiBase";
 import React, { useEffect, useState, useRef } from "react";
 import { toast } from 'react-toastify';
 
@@ -222,7 +223,7 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
     setFormData(getInitialFormData(GROUPS_RENTAL));
     setExistingImages([]);
     setNewImages([]);
-    fetch(`${process.env.REACT_APP_Base_API}/api/getRentalproperties/${propertyId}`, {
+    fetch(`${API_BASE}/api/getRentalproperties/${propertyId}`, {
       credentials: "include",
       headers: {
         ...(agentToken ? { Authorization: `Bearer ${agentToken}` } : {}),
@@ -314,7 +315,7 @@ export default function EditPropertyModal({ propertyId, isOpen, onClose, onSucce
       })
       .catch((err) => {
         if (err.message === "not-found-rental") {
-          fetch(`${process.env.REACT_APP_Base_API}/api/getSaleproperties/${propertyId}`, {
+          fetch(`${API_BASE}/api/getSaleproperties/${propertyId}`, {
             credentials: "include",
             headers: {
               ...(agentToken ? { Authorization: `Bearer ${agentToken}` } : {}),
@@ -556,7 +557,7 @@ function handlePanoFilesSelected(files) {
           } catch (_) {}
         }
         const res = await fetch(
-          `${process.env.REACT_APP_Base_API}/api/user/update-property/${propertyId}`,
+          `${API_BASE}/api/user/update-property/${propertyId}`,
           {
             method: "PUT",
             body: form,
@@ -607,7 +608,7 @@ function handlePanoFilesSelected(files) {
           payload.panoramas = existingPanos;
         }
         const res = await fetch(
-          `${process.env.REACT_APP_Base_API}/api/user/update-property/${propertyId}`,
+          `${API_BASE}/api/user/update-property/${propertyId}`,
           {
             method: "PUT",
             headers: {

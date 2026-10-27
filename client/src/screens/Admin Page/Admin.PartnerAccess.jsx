@@ -1,3 +1,4 @@
+import { API_BASE } from "../../utils/apiBase";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert, Box, Button, Card, CardContent, CircularProgress, Divider,
@@ -6,7 +7,7 @@ import {
 } from "@mui/material";
 import { CheckCircle2, Phone, RefreshCw, ShieldCheck, UserPlus } from "lucide-react";
 
-const API = process.env.REACT_APP_Base_API || "";
+const API = API_BASE || "";
 const authHeaders = () => {
   const token = localStorage.getItem("accessToken") || localStorage.getItem("token");
   return { "Content-Type": "application/json", ...(token ? { Authorization: "Bearer " + token } : {}) };
