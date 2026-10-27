@@ -11,21 +11,18 @@ const SmsSetting = require("../models/SmsSetting.model");
 const { getLimits, effectiveLimits, dropLimitsCache, HARD_CAPS, getDeviceKey } = require("./smsGateway.controller");
 
 const ONLINE_WINDOW_MS = 20 * 1000;
-// SHINE_API_URL wins when set. Otherwise the We Three server is looked up on Stashr (list "wethree"), so a moved server
-// needs no redeploy here; the last known good address is the fallback.
+// The We Three server is looked up on Stashr (list "wethree"); there is no env override and no fallback address. If
+// everything is switched off there, the console reports that instead of calling some other server.
 let shineCache = { url: "", at: 0 };
-const SHINE_FALLBACK = "https://we-three-api-r310.onrender.com/api";
 const SHINE_URL = async () => {
-  if (process.env.SHINE_API_URL) return process.env.SHINE_API_URL.replace(/\/+$/, "");
-  if (shineCache.url && Date.now() - shineCache.at < 5 * 60 * 1000) return shineCache.url;
-  for (const host of ["https://password-manager-server-xxdr.onrender.com", "https://password-manager-server-8gvj.onrender.com"]) {
-    try {
-      const r = await axios.get(`${host}/registry/wethree`, { timeout: 8000 });
-      const url = String((r.data && r.data.urls && r.data.urls[0]) || "").replace(/\/+$/, "");
-      if (/^https?:\/\//i.test(url)) { shineCache = { url, at: Date.now() }; return url; }
-    } catch { /* try the next Stashr server */ }
-  }
-  return shineCache.url || SHINE_FALLBACK;
+  if (shineCache.at && Date.now() - shineCache.at < 5 * 60 * 1000) return shineCache.url;
+  try {
+    const r = await axios.get("https://password-manager-server-xxdr.onrender.com/registry/wethree", { timeout: 15000 });
+    const url = String((r.data && r.data.urls && r.data.urls[0]) || "").replace(/\/+$/, "");
+    shineCache = { url: /^https?:\/\//i.test(url) ? url : "", at: Date.now() };
+  } catch { /* keep the last answer; with none, report it below */ }
+  if (!shineCache.url) throw new Error("The We Three server is switched off or unknown on Stashr.");
+  return shineCache.url;
 };
 // The one shared key (SMS_KEY) is also what you type to open the console.
 const sharedKey = () => getDeviceKey() || "";

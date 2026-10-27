@@ -1,47 +1,44 @@
-// Where the ggnHome server lives. The address is kept on Stashr (its project "ggnhome" Server URLs), so moving the
-// server needs no rebuild: set it there. REACT_APP_Base_API stays as the fallback if Stashr cannot be reached.
-const REGISTRY_HOSTS = [
-  "https://password-manager-server-xxdr.onrender.com",
-  "https://password-manager-server-8gvj.onrender.com",
-];
+// Where the ggnHome server lives. Stashr is the ONLY source (project "ggnhome" Server URLs): there is no env value and
+// no fallback address. Switch the servers off there and this site stops reaching any server.
+const REGISTRY_HOST = "https://password-manager-server-xxdr.onrender.com";
 const APP = "ggnhome";
 const CACHE_KEY = "stashr.server." + APP;
-const FALLBACK = process.env.REACT_APP_Base_API || process.env.REACT_APP_BASE_API || "";
-
+// Used as the address when Stashr has none (switched off, or never reached): every request then fails at once.
+export const NO_SERVER = "https://stashr-no-server.invalid";
 const clean = (url) => String(url || "").trim().replace(/\/+$/, "");
-const readCache = () => { try { return clean(localStorage.getItem(CACHE_KEY)); } catch { return ""; } };
-const writeCache = (url) => { try { localStorage.setItem(CACHE_KEY, url); } catch { /* private mode */ } };
 
-// A live binding: modules that import it after resolveApiBase() has finished see the Stashr address.
-export let API_BASE = readCache() || clean(FALLBACK);
+// The last answer Stashr gave: { url } or { url: "" } when everything was switched off. Never an env value.
+const readCache = () => { try { const v = JSON.parse(localStorage.getItem(CACHE_KEY)); return v && typeof v.url === "string" ? v : null; } catch { return null; } };
+const writeCache = (url) => { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ url })); } catch { /* private mode */ } };
 
+/** Stashr's answer: { url } (empty = switched off), or null when Stashr cannot be reached. */
 async function fetchFromStashr(timeoutMs) {
-  for (const host of REGISTRY_HOSTS) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const res = await fetch(`${host}/registry/${APP}`, { signal: controller.signal });
-      if (!res.ok) continue;
-      const url = clean(((await res.json()).urls || [])[0]);
-      if (/^https?:\/\//i.test(url)) return url;
-    } catch { /* try the next Stashr server */ }
-    finally { clearTimeout(timer); }
-  }
-  return "";
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${REGISTRY_HOST}/registry/${APP}`, { signal: controller.signal });
+    if (!res.ok) return null;
+    const body = await res.json();
+    const url = clean((body.urls || [])[0]);
+    return { url: /^https?:\/\//i.test(url) ? url : "" };
+  } catch { return null; } finally { clearTimeout(timer); }
 }
 
+// A live binding: modules that import it after resolveApiBase() has finished see the Stashr address.
+export let API_BASE = (() => { const c = readCache(); return c ? c.url || NO_SERVER : NO_SERVER; })();
+
 /**
- * Called once before the app loads. With a saved address from the last visit it returns at once and refreshes in the
- * background; the first ever visit waits a few seconds for Stashr, then falls back to the build-time address.
+ * Called once before the app loads. With a saved answer from the last visit it returns at once and refreshes in the
+ * background; the first ever visit waits for Stashr (a sleeping free server can take a while to wake up).
  */
 export async function resolveApiBase() {
   const cached = readCache();
   if (cached) {
-    API_BASE = cached;
-    fetchFromStashr(60000).then((url) => { if (url) writeCache(url); });
+    API_BASE = cached.url || NO_SERVER;
+    fetchFromStashr(60000).then((answer) => { if (answer) writeCache(answer.url); });
     return API_BASE;
   }
-  const url = await fetchFromStashr(6000);
-  if (url) { API_BASE = url; writeCache(url); }
+  const answer = await fetchFromStashr(30000);
+  if (answer) { writeCache(answer.url); API_BASE = answer.url || NO_SERVER; }
   return API_BASE;
 }
