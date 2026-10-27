@@ -1,3 +1,4 @@
+import { srv } from "../../../utils/apiBase";
 import React, { useState } from 'react';
 import { AnimatedNumber } from '../../../components/motion';
 import { useEffect } from 'react';
@@ -24,7 +25,7 @@ export default function PropertyAnalyticsAgent() {
     const fetchData = async () => {
       try {
         const metricsRes = await axios.get(
-          `${process.env.REACT_APP_PROPERTY_ANALYSIS_GET_METRICS}/${selectedProperty}`,
+          `${srv(process.env.REACT_APP_PROPERTY_ANALYSIS_GET_METRICS)}/${selectedProperty}`,
           {
             withCredentials: true,
             headers: {
@@ -66,7 +67,7 @@ export default function PropertyAnalyticsAgent() {
         console.log('Processed summary:', summary);
 
         const conversionRes = await axios.get(
-          `${process.env.REACT_APP_PROPERTY_ANALYSIS_GET_CONVERSION}/${selectedProperty}/conversion`,
+          `${srv(process.env.REACT_APP_PROPERTY_ANALYSIS_GET_CONVERSION)}/${selectedProperty}/conversion`,
           {
             withCredentials: true,
             headers: {
@@ -120,7 +121,7 @@ export default function PropertyAnalyticsAgent() {
     engagementValue: { fontSize: '22px', fontWeight: '700', color: '#003366' }
   };
   const handleLogout = async () => {
-    await fetch(process.env.REACT_APP_LOGOUT_API, {
+    await fetch(srv(process.env.REACT_APP_LOGOUT_API), {
       method: "POST",
       credentials: "include",
       headers: {
@@ -134,7 +135,7 @@ export default function PropertyAnalyticsAgent() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+        const res = await fetch(srv(process.env.REACT_APP_USER_ME_API), {
           method: "GET",
           credentials: "include",
           headers: {

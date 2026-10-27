@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, Chip, CircularProgress, Stack, Typography } from '@mui/material';
 import { motion } from 'framer-motion';
@@ -41,7 +42,7 @@ export default function Chatbot() {
     const payload = parentId ? { message: question, parentId } : { message: question };
 
     try {
-      const res = await axios.post(`${process.env.REACT_APP_CHATBOT_API}`, payload, {
+      const res = await axios.post(`${srv(process.env.REACT_APP_CHATBOT_API)}`, payload, {
         withCredentials: true,
         headers: {
           ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
@@ -60,7 +61,7 @@ export default function Chatbot() {
   useEffect(() => {
     const loadInitialQuestions = async () => {
       try {
-        const res = await axios.get(`${process.env.REACT_APP_CHATBOT_API}/initial-questions`, {
+        const res = await axios.get(`${srv(process.env.REACT_APP_CHATBOT_API)}/initial-questions`, {
           withCredentials: true,
           headers: {
             ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),

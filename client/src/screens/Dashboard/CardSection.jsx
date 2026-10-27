@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 import React from 'react';
 import { Box, Chip, Stack, Typography } from '@mui/material';
 import { ArrowUpRight } from 'lucide-react';
@@ -19,7 +20,7 @@ const CardSection = ({ user }) => {
   // Helper: fetch random sector from history
   const getRandomSectorFromHistory = async () => {
     try {
-      const res = await fetch(process.env.REACT_APP_SEARCH_HISTORY_API, {
+      const res = await fetch(srv(process.env.REACT_APP_SEARCH_HISTORY_API), {
         method: 'GET',
         credentials: 'include',
       });

@@ -1,3 +1,4 @@
+import { srv } from "../../../utils/apiBase";
 import React, { useState } from "react";
 import { Alert, Box, Button, Dialog, IconButton, Stack, TextField, Typography } from "@mui/material";
 import { PhoneCall, X } from "lucide-react";
@@ -34,7 +35,7 @@ export default function CallbackDialog({ open, onClose, property, onEvent }) {
 
     try {
       const token = localStorage.getItem("accessToken");
-      const res = await fetch(process.env.REACT_APP_CREATE_ENQUIRY_API, {
+      const res = await fetch(srv(process.env.REACT_APP_CREATE_ENQUIRY_API), {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },

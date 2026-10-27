@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 import React from 'react';
 import { Box, Button, Container, Stack, Typography } from '@mui/material';
 import { ArrowRight, BarChart3, Sparkles, Star, Target, TrendingUp } from 'lucide-react';
@@ -168,7 +169,7 @@ export default function ToolsShowcase() {
                   <Button
                     fullWidth
                     endIcon={<ArrowRight size={18} />}
-                    onClick={() => navigate(`${process.env.REACT_APP_PRICE_PREDICTOR_PAGE}`)}
+                    onClick={() => navigate(`${srv(process.env.REACT_APP_PRICE_PREDICTOR_PAGE)}`)}
                     sx={{
                       background: tool.gradient,
                       color: 'common.white',

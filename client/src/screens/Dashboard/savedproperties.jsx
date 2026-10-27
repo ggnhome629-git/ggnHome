@@ -1,4 +1,4 @@
-import { API_BASE } from "../../utils/apiBase";
+import { API_BASE, srv } from "../../utils/apiBase";
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -104,7 +104,7 @@ export default function SavedProperties() {
         if (isNativeApp()) {
           list.slice(0, 12).forEach((p) => {
             const rental = /rent/i.test(p.defaultpropertytype || "") || p.monthlyRent != null;
-            const base = rental ? process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API : process.env.REACT_APP_SALE_PROPERTY_DETAIL_API;
+            const base = rental ? srv(process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API) : srv(process.env.REACT_APP_SALE_PROPERTY_DETAIL_API);
             fetch(`${base}/${p._id}`, { credentials: "include" }).catch(() => {});
           });
         }
@@ -126,7 +126,7 @@ export default function SavedProperties() {
   }, [user, reloadKey]);
 
   const toggleSave = useCallback(async (property) => {
-    const res = await fetch(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE, {
+    const res = await fetch(srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json", ...authHeaders() },

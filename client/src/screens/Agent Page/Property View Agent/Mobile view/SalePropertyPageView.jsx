@@ -1,3 +1,4 @@
+import { srv } from "../../../../utils/apiBase";
 import React, { useEffect, useState , useMemo } from "react";
 import Similarproperties from "../Similarproperties";
 import { useParams, useNavigate } from "react-router-dom";
@@ -32,7 +33,7 @@ const EnquiryPage = ({ propertyId, onClose, context, defaultMessage }) => {
     e.preventDefault();
     try {
       setSubmitting(true);
-      await fetch(process.env.REACT_APP_SUPPORT_ENQUIRY_API || "/api/enquiry", {
+      await fetch(srv(process.env.REACT_APP_SUPPORT_ENQUIRY_API) || "/api/enquiry", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -101,7 +102,7 @@ const EnquiryPage = ({ propertyId, onClose, context, defaultMessage }) => {
 const addEngagementTime = async (propertyId, seconds) => {
   const agentToken = localStorage.getItem("agentAccessToken");
   try {
-    await fetch(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_ENGAGEMENT, {
+    await fetch(srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_ENGAGEMENT), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -118,7 +119,7 @@ const addEngagementTime = async (propertyId, seconds) => {
 const addRating = async (propertyId, rating, comment = "") => {
   const agentToken = localStorage.getItem("agentAccessToken");
   try {
-    await fetch(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_RATING, {
+    await fetch(srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_RATING), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -154,7 +155,7 @@ export default function SalePropertyPageAgent() {
     async function fetchProperty() {
       try {
         const response = await fetch(
-          `${process.env.REACT_APP_SALE_PROPERTY_DETAIL_API}/${id}`,
+          `${srv(process.env.REACT_APP_SALE_PROPERTY_DETAIL_API)}/${id}`,
           {
             credentials: "include",
             headers: {
@@ -239,7 +240,7 @@ export default function SalePropertyPageAgent() {
 
   const handleSave = async () => {
     try {
-      await fetch(`${process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE}`, {
+      await fetch(`${srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE)}`, {
         method: "POST",
         credentials: "include",
         headers: {

@@ -1,3 +1,4 @@
+import { srv } from "./apiBase";
 /**
  * Lead-tracking for the property detail page.
  *
@@ -65,7 +66,7 @@ export function trackEvent(event, { propertyId, userId, source, ...rest } = {}) 
     window.__ggnHomeEvents.push(payload);
   }
 
-  const endpoint = process.env.REACT_APP_ANALYTICS_EVENT_API;
+  const endpoint = srv(process.env.REACT_APP_ANALYTICS_EVENT_API);
   if (!endpoint) return;
 
   try {
@@ -83,9 +84,9 @@ export function trackEvent(event, { propertyId, userId, source, ...rest } = {}) 
 
 /** Existing backend: increments the property's view counter. */
 export async function recordPropertyView(propertyId) {
-  if (!propertyId || !process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_VIEW) return;
+  if (!propertyId || !srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_VIEW)) return;
   try {
-    await fetch(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_VIEW, {
+    await fetch(srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_VIEW), {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -98,9 +99,9 @@ export async function recordPropertyView(propertyId) {
 
 /** Existing backend: records how long the visitor stayed on the listing. */
 export async function recordEngagementTime(propertyId, seconds) {
-  if (!propertyId || !seconds || !process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_ENGAGEMENT) return;
+  if (!propertyId || !seconds || !srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_ENGAGEMENT)) return;
   try {
-    await fetch(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_ENGAGEMENT, {
+    await fetch(srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_ENGAGEMENT), {
       method: "POST",
       credentials: "include",
       keepalive: true,

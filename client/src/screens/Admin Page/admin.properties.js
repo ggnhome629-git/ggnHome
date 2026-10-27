@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Box, Button, Card, CardContent, Grid, Typography, Skeleton, Chip, Alert } from "@mui/material";
@@ -23,7 +24,7 @@ export default function AdminProperties() {
   const fetchApprovedPayments = async () => {
     try {
       const res = await axios.get(
-        `${process.env.REACT_APP_ADMIN_APPROVED_PAYMENTS_API}`,
+        `${srv(process.env.REACT_APP_ADMIN_APPROVED_PAYMENTS_API)}`,
         {
           withCredentials: true,
           headers: {
@@ -57,7 +58,7 @@ export default function AdminProperties() {
   const fetchPendingPayments = async () => {
     try {
       const res = await axios.get(
-        `${process.env.REACT_APP_ADMIN_PENDING_PAYMENTS_API}`,
+        `${srv(process.env.REACT_APP_ADMIN_PENDING_PAYMENTS_API)}`,
         {
           withCredentials: true,
           headers: {
@@ -77,7 +78,7 @@ export default function AdminProperties() {
   const handleApproval = async (id, action) => {
     try {
       await axios.post(
-        `${process.env.REACT_APP_ADMIN_UPDATE_PAYMENT_STATUS_API}`,
+        `${srv(process.env.REACT_APP_ADMIN_UPDATE_PAYMENT_STATUS_API)}`,
         { paymentId: id, status: action },
         {
           withCredentials: true,
@@ -100,7 +101,7 @@ export default function AdminProperties() {
       const selected = rewards.find((r) => r.id === id);
       if (!selected) return;
       await axios.post(
-        `${process.env.REACT_APP_ADMIN_DISTRIBUTE_REWARD_API}`,
+        `${srv(process.env.REACT_APP_ADMIN_DISTRIBUTE_REWARD_API)}`,
         { email: selected.email },
         {
           withCredentials: true,

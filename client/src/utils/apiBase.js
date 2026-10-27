@@ -42,3 +42,67 @@ export async function resolveApiBase() {
   if (answer) { writeCache(answer.url); API_BASE = answer.url || NO_SERVER; }
   return API_BASE;
 }
+
+// ── Endpoint variables ────────────────────────────────────────────────────────────────────────────────────────
+// Many screens call an endpoint through its own build-time variable (REACT_APP_USER_ME_API, ...) that holds a full URL.
+// srv() moves such a URL to the Stashr server: its host is replaced and its path kept. Only addresses that point at
+// the main server are touched (the one most endpoint variables share, or the REACT_APP_Base_API host); anything else,
+// and plain paths, pass through unchanged. The env values are used only to recognise those addresses.
+const ENDPOINT_VARS = [
+  process.env.REACT_APP_ADD_RENT_PROPERTY_API,
+  process.env.REACT_APP_ADD_SALE_PROPERTY_API,
+  process.env.REACT_APP_ADMIN_APPROVED_PAYMENTS_API,
+  process.env.REACT_APP_ADMIN_CALLBACK_REQUESTS_API,
+  process.env.REACT_APP_ADMIN_DISTRIBUTE_REWARD_API,
+  process.env.REACT_APP_ADMIN_GET_USERS_API,
+  process.env.REACT_APP_ADMIN_PENDING_PAYMENTS_API,
+  process.env.REACT_APP_ADMIN_UPDATE_PAYMENT_STATUS_API,
+  process.env.REACT_APP_AGENT_LOGOUT_API,
+  process.env.REACT_APP_AGENT_ME_API,
+  process.env.REACT_APP_AI_ASSISTANT_PAGE,
+  process.env.REACT_APP_ANALYTICS_API,
+  process.env.REACT_APP_ANALYTICS_EVENT_API,
+  process.env.REACT_APP_CHATBOT_API,
+  process.env.REACT_APP_CHECK_ELIGIBILITY_API,
+  process.env.REACT_APP_CREATE_ENQUIRY_API,
+  process.env.REACT_APP_FETCHING_SAVED_PROPERTIES,
+  process.env.REACT_APP_LOGIN_PAGE,
+  process.env.REACT_APP_LOGOUT_API,
+  process.env.REACT_APP_PAYMENT_API,
+  process.env.REACT_APP_PRICE_PREDICTOR_PAGE,
+  process.env.REACT_APP_PRICE_PREDICT_API,
+  process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_ENGAGEMENT,
+  process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_RATING,
+  process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE,
+  process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_VIEW,
+  process.env.REACT_APP_PROPERTY_ANALYSIS_GET_CONVERSION,
+  process.env.REACT_APP_PROPERTY_ANALYSIS_GET_METRICS,
+  process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API,
+  process.env.REACT_APP_RENTAL_PROPERTY_PREFERENCE_ARIA,
+  process.env.REACT_APP_REQUEST_CALLBACK_API,
+  process.env.REACT_APP_REVERSE_GEOCODE_API,
+  process.env.REACT_APP_SALE_PROPERTY_DETAIL_API,
+  process.env.REACT_APP_SALE_PROPERTY_PREFERENCE_ARIA,
+  process.env.REACT_APP_SEARCH_AREAS_API,
+  process.env.REACT_APP_SEARCH_HISTORY_API,
+  process.env.REACT_APP_SEARCH_PROPERTIES_API,
+  process.env.REACT_APP_SEARCH_PROPERTIES_BY_LOCATION_API,
+  process.env.REACT_APP_SUPPORT_ENQUIRY_API,
+  process.env.REACT_APP_USER_DASHBOARD_API,
+  process.env.REACT_APP_USER_ME_API,
+];
+const originOf = (url) => { try { return new URL(url).origin; } catch { return ""; } };
+const BUILD_ORIGIN = originOf(process.env.REACT_APP_Base_API || process.env.REACT_APP_BASE_API);
+const MAIN_ORIGINS = (() => {
+  const counts = new Map();
+  ENDPOINT_VARS.forEach((v) => { const o = originOf(v); if (o) counts.set(o, (counts.get(o) || 0) + 1); });
+  const top = [...counts].sort((a, b) => b[1] - a[1])[0];
+  return new Set([BUILD_ORIGIN, top && top[1] >= 3 ? top[0] : ""].filter(Boolean));
+})();
+
+export function srv(url) {
+  if (!url || typeof url !== "string") return url;
+  const o = originOf(url);
+  if (!o || !MAIN_ORIGINS.has(o)) return url;
+  try { const u = new URL(url); return API_BASE + u.pathname + u.search + u.hash; } catch { return url; }
+}

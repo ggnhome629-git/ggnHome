@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 import React, { useState, useEffect } from "react";
 import { FaMapMarkerAlt } from "react-icons/fa";
 
@@ -21,7 +22,7 @@ const Location = ({ setUserLocation }) => {
         try {
           // The reverse geocoding API URL can be configured via .env file
           const res = await fetch(
-            `${process.env.REACT_APP_REVERSE_GEOCODE_API}?format=jsonv2&lat=${latitude}&lon=${longitude}`
+            `${srv(process.env.REACT_APP_REVERSE_GEOCODE_API)}?format=jsonv2&lat=${latitude}&lon=${longitude}`
           );
           const data = await res.json();
 

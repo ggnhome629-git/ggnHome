@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 import React, { useState, useEffect , useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -535,7 +536,7 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
             }}
             onClick={() => {
   if (!user) {
-    navigate(`${process.env.REACT_APP_LOGIN_PAGE}`);
+    navigate(`${srv(process.env.REACT_APP_LOGIN_PAGE)}`);
     return;
   }
 
@@ -876,7 +877,7 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
                         onClick={() => {
                           setShowMenu(false);
                           navigate(
-                            `${process.env.REACT_APP_AI_ASSISTANT_PAGE}`
+                            `${srv(process.env.REACT_APP_AI_ASSISTANT_PAGE)}`
                           );
                         }}
                       />
@@ -1254,7 +1255,7 @@ const dismissPrefPopup = (durationMs = 10 * 60 * 1000) => {
                 onClick={() => {
   // hide and persist dismissal for a short while to avoid immediate re-show
   dismissPrefPopup(5 * 60 * 1000); // 5 minutes
-  navigate(`${process.env.REACT_APP_AI_ASSISTANT_PAGE}`);
+  navigate(`${srv(process.env.REACT_APP_AI_ASSISTANT_PAGE)}`);
 }}
                 style={{
                   flex: 1,

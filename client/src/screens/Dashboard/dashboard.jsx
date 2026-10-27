@@ -1,4 +1,4 @@
-import { API_BASE } from "../../utils/apiBase";
+import { API_BASE, srv } from "../../utils/apiBase";
 import { motion, useScroll, useSpring } from "framer-motion";
 import CrossPromo from "../../components/promo/CrossPromo";
 import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
@@ -127,7 +127,7 @@ const SearchSection = React.memo(function SearchSection({ user, recentSearches, 
     const timeoutId = setTimeout(async () => {
       try {
         const res = await fetch(
-          `${process.env.REACT_APP_SEARCH_AREAS_API}?query=${encodeURIComponent(query)}`,
+          `${srv(process.env.REACT_APP_SEARCH_AREAS_API)}?query=${encodeURIComponent(query)}`,
           {
             method: "GET",
             credentials: "include",
@@ -284,7 +284,7 @@ export default function RealEstateDashboard() {
 
     const fetchSearchHistory = async () => {
       try {
-        const res = await fetch(`${process.env.REACT_APP_SEARCH_HISTORY_API}`, {
+        const res = await fetch(`${srv(process.env.REACT_APP_SEARCH_HISTORY_API)}`, {
           method: "GET",
           credentials: "include",
           headers: {
@@ -330,7 +330,7 @@ export default function RealEstateDashboard() {
             setProperties([]);
           }
         } else {
-          const res = await fetch(`${process.env.REACT_APP_USER_DASHBOARD_API}`, {
+          const res = await fetch(`${srv(process.env.REACT_APP_USER_DASHBOARD_API)}`, {
             method: "GET",
             credentials: "include",
             headers: {
@@ -387,7 +387,7 @@ export default function RealEstateDashboard() {
         ].filter(Boolean);
 
         const resProps = await fetch(
-          `${process.env.REACT_APP_SEARCH_PROPERTIES_BY_LOCATION_API}?page=${page}&limit=${areaLimit}`,
+          `${srv(process.env.REACT_APP_SEARCH_PROPERTIES_BY_LOCATION_API)}?page=${page}&limit=${areaLimit}`,
           {
             method: "POST",
             credentials: "include",
@@ -440,7 +440,7 @@ export default function RealEstateDashboard() {
   // Track property views
   const handlePropertyClick = async (propertyId) => {
     try {
-      await fetch(`${process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_VIEW}`, {
+      await fetch(`${srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_VIEW)}`, {
         method: "POST",
         credentials: "include",
         headers: {

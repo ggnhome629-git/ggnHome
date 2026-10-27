@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
@@ -216,7 +217,7 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
 
   const fetchAndCacheSearchResults = async (paramsString, signal) => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_SEARCH_PROPERTIES_API}?${paramsString}`, {
+      const res = await axios.get(`${srv(process.env.REACT_APP_SEARCH_PROPERTIES_API)}?${paramsString}`, {
         withCredentials: true,
         headers: authHeaders(),
         signal,
@@ -268,7 +269,7 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
     const timer = setTimeout(async () => {
       try {
         const res = await axios.get(
-          `${process.env.REACT_APP_SEARCH_AREAS_API}?query=${encodeURIComponent(text)}`,
+          `${srv(process.env.REACT_APP_SEARCH_AREAS_API)}?query=${encodeURIComponent(text)}`,
           { withCredentials: true, signal: controller.signal }
         );
         if (!controller.signal.aborted) {
@@ -289,7 +290,7 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
   const fetchSaved = useCallback(async () => {
     if (!user) return setSavedIds(new Set());
     try {
-      const res = await fetch(process.env.REACT_APP_FETCHING_SAVED_PROPERTIES, {
+      const res = await fetch(srv(process.env.REACT_APP_FETCHING_SAVED_PROPERTIES), {
         credentials: "include",
         headers: authHeaders(),
       });
@@ -318,7 +319,7 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
       return next;
     });
     try {
-      const res = await fetch(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE, {
+      const res = await fetch(srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE), {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -379,7 +380,7 @@ export default function Searchproperty({ landingType = "", seoLocalityLanding = 
     const route = propertyDetailPath(property);
     if (!user) return goToLogin(route);
     axios
-      .post(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_VIEW, { propertyId: property._id }, { withCredentials: true, headers: authHeaders() })
+      .post(srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_VIEW), { propertyId: property._id }, { withCredentials: true, headers: authHeaders() })
       .catch(() => {});
     navigate(route);
   };

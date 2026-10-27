@@ -1,4 +1,4 @@
-import { API_BASE } from "../../utils/apiBase";
+import { API_BASE, srv } from "../../utils/apiBase";
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useServiceCatalog } from '../../data/useServiceCatalog';
 import { 
@@ -172,7 +172,7 @@ const ServiceTrackingSystem = () => {
   // Load user & requests from API
   const loadUser = async () => {
     try {
-      const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+      const res = await fetch(srv(process.env.REACT_APP_USER_ME_API), {
         method: 'GET',
         credentials: 'include',
         headers: {

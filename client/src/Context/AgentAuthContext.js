@@ -1,4 +1,4 @@
-import { API_BASE } from "../utils/apiBase";
+import { API_BASE, srv } from "../utils/apiBase";
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 
 const AgentAuthContext = createContext();
@@ -22,10 +22,10 @@ export function AgentAuthProvider({ children }) {
   // env or fallback
   const BASE_API = API_BASE || "";
   const AGENT_ME_API =
-    process.env.REACT_APP_AGENT_ME_API ||
+    srv(process.env.REACT_APP_AGENT_ME_API) ||
     (BASE_API ? `${String(BASE_API).replace(/\/$/, "")}/agent/me` : "/agent/me");
   const AGENT_LOGOUT_API =
-    process.env.REACT_APP_AGENT_LOGOUT_API ||
+    srv(process.env.REACT_APP_AGENT_LOGOUT_API) ||
     (BASE_API ? `${String(BASE_API).replace(/\/$/, "")}/agent/logout` : "/agent/logout");
   const REVALIDATE_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -285,7 +285,7 @@ export function AgentAuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     try {
-      await fetch(`${process.env.REACT_APP_LOGOUT_API}`, {
+      await fetch(`${srv(process.env.REACT_APP_LOGOUT_API)}`, {
         method: "POST",
         credentials: "include",
       });

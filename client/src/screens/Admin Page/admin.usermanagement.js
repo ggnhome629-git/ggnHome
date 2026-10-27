@@ -1,4 +1,4 @@
-import { API_BASE } from "../../utils/apiBase";
+import { API_BASE, srv } from "../../utils/apiBase";
 import React, { useState, useEffect } from "react";
 import {
   Accordion,
@@ -165,7 +165,7 @@ const UserManagementDashboard = () => {
     try {
       setLoading(true);
       const response = await fetch(
-        `${process.env.REACT_APP_ADMIN_GET_USERS_API}?page=${page}&limit=${pageSize}`,
+        `${srv(process.env.REACT_APP_ADMIN_GET_USERS_API)}?page=${page}&limit=${pageSize}`,
         {
           method: "GET",
           credentials: "include",

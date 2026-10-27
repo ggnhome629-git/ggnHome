@@ -1,4 +1,4 @@
-import { API_BASE } from "../../utils/apiBase";
+import { API_BASE, srv } from "../../utils/apiBase";
 import React, { useState , useEffect } from 'react';
 import { MapPin, Bed, Bath, Square, Heart, Share2, TrendingUp, Award, Shield } from 'lucide-react';
 import { useLocation, useNavigate  } from 'react-router-dom';
@@ -93,7 +93,7 @@ const SeeAllProperties = ({ properties = [] }) => {
     if (loading) return;
     setLoading(true);
     try {
-      const url = `${process.env.REACT_APP_SEARCH_PROPERTIES_BY_LOCATION_API}?page=${nextPage}&limit=${limit}`;
+      const url = `${srv(process.env.REACT_APP_SEARCH_PROPERTIES_BY_LOCATION_API)}?page=${nextPage}&limit=${limit}`;
       const res = await fetch(url, {
         method: 'POST',
         credentials: 'include',

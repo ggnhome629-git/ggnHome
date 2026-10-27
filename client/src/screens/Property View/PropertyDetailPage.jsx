@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet";
@@ -227,7 +228,7 @@ export default function PropertyDetailPage({ type, partnerView = false }) {
     emit(EVENTS.SAVE_PROPERTY, { saved: nextSaved });
     try {
       const token = localStorage.getItem("accessToken");
-      const res = await fetch(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE, {
+      const res = await fetch(srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE), {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },

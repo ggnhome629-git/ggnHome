@@ -1,4 +1,4 @@
-import { API_BASE } from "../../utils/apiBase";
+import { API_BASE, srv } from "../../utils/apiBase";
 import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 
@@ -235,7 +235,7 @@ export default function FlatmateSearchPropertyModal({ isOpen: isOpenProp, listin
 
     const fetchUser = async () => {
       try {
-        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+        const res = await fetch(srv(process.env.REACT_APP_USER_ME_API), {
           method: 'GET',
           credentials: 'include',
           headers: {

@@ -1,4 +1,4 @@
-import { API_BASE } from "../../utils/apiBase";
+import { API_BASE, srv } from "../../utils/apiBase";
 import React, { useState, useEffect, useRef } from 'react';
 import { Sparkles, LayoutDashboard, Users, MessageSquare, Home, ArrowRight, Settings, LockKeyhole, Unlock, EyeOff, Megaphone, CreditCard, RefreshCw } from 'lucide-react';
 import { Box, Button, Card, CardContent, TextField, Typography, Alert, Chip, IconButton, Tooltip, Divider, useMediaQuery, useTheme } from "@mui/material";
@@ -60,7 +60,7 @@ const AdminLandingPage = () => {
   }, []);
 
   const handleLogout = async () => {
-    await fetch(process.env.REACT_APP_LOGOUT_API, {
+    await fetch(srv(process.env.REACT_APP_LOGOUT_API), {
       method: "POST",
       credentials: "include",
     });
@@ -71,7 +71,7 @@ const AdminLandingPage = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+        const res = await fetch(srv(process.env.REACT_APP_USER_ME_API), {
           method: "GET",
           credentials: "include",
         });

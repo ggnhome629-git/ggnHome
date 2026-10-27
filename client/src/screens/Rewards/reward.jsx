@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Container, Skeleton, Stack, Typography } from "@mui/material";
 import { motion } from "framer-motion";
@@ -56,7 +57,7 @@ export default function RewardsPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
-    fetch(process.env.REACT_APP_CHECK_ELIGIBILITY_API, { credentials: "include", headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    fetch(srv(process.env.REACT_APP_CHECK_ELIGIBILITY_API), { credentials: "include", headers: token ? { Authorization: `Bearer ${token}` } : {} })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Couldn't load your rewards."))))
       .then((d) => setState({ loading: false, reward: d.reward || null, error: "" }))
       .catch((e) => setState({ loading: false, reward: null, error: e.message }));

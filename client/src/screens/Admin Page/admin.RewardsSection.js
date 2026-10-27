@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 import React, { useState, useEffect } from "react";
 import {
   Alert,
@@ -83,7 +84,7 @@ export default function AdminRewardsSection() {
 
       const accessToken = localStorage.getItem("accessToken");
 
-      const res = await fetch(process.env.REACT_APP_ADMIN_DISTRIBUTE_REWARD_API, {
+      const res = await fetch(srv(process.env.REACT_APP_ADMIN_DISTRIBUTE_REWARD_API), {
         method: "POST",
         credentials: "include",
         headers: {

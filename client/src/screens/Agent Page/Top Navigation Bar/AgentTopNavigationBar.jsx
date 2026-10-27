@@ -1,4 +1,4 @@
-import { API_BASE } from "../../../utils/apiBase";
+import { API_BASE, srv } from "../../../utils/apiBase";
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -1418,7 +1418,7 @@ const TopNavigationBar = ({ navItems = [], search = "", onSearchChange, searchPl
                 onClick={() => {
                   // hide and persist dismissal for a short while to avoid immediate re-show
                   dismissPrefPopup(5 * 60 * 1000); // 5 minutes
-                  navigate(`${process.env.REACT_APP_AI_ASSISTANT_PAGE}`);
+                  navigate(`${srv(process.env.REACT_APP_AI_ASSISTANT_PAGE)}`);
                 }}
                 style={{
                   flex: 1,

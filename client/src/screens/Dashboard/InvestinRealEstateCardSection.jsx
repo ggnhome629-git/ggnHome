@@ -1,4 +1,4 @@
-import { API_BASE } from "../../utils/apiBase";
+import { API_BASE, srv } from "../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
@@ -37,7 +37,7 @@ export default function InvestRealEstatePage() {
 
   // Logout handler
   const handleLogout = async () => {
-    await fetch(process.env.REACT_APP_LOGOUT_API, {
+    await fetch(srv(process.env.REACT_APP_LOGOUT_API), {
       method: "POST",
       credentials: "include",
       headers: {
@@ -52,7 +52,7 @@ export default function InvestRealEstatePage() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+        const res = await fetch(srv(process.env.REACT_APP_USER_ME_API), {
           method: "GET",
           credentials: "include",
           headers: {

@@ -1,4 +1,4 @@
-import { API_BASE } from "../../../utils/apiBase";
+import { API_BASE, srv } from "../../../utils/apiBase";
 import React, { useEffect, useState } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { openAgentSessionFromUser } from "../../../utils/agentSso";
@@ -14,7 +14,7 @@ export default function AgentProtectedRoute({ redirectTo = "/agent/login" }) {
 
   const BASE_API = API_BASE || "";
   const AGENT_ME_API =
-    process.env.REACT_APP_AGENT_ME_API ||
+    srv(process.env.REACT_APP_AGENT_ME_API) ||
     (BASE_API
       ? `${String(BASE_API).replace(/\/$/, "")}/agent/me`
       : "/agent/me");

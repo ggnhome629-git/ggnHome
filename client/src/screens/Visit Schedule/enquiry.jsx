@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 import React, { useState, useEffect } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -49,7 +50,7 @@ const EnquiryPage = ({ propertyId, onClose }) => {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.REACT_APP_CREATE_ENQUIRY_API}`, {
+      const res = await fetch(`${srv(process.env.REACT_APP_CREATE_ENQUIRY_API)}`, {
         method: 'POST',
         credentials: 'include',
         headers: {

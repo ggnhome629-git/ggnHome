@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 import React, { useState } from 'react';
 import { AnimatedNumber } from '../../components/motion';
 import { useEffect } from 'react';
@@ -32,7 +33,7 @@ export default function PropertyAnalytics() {
       try {
         // PATCH 1: metrics fetch with hybrid auth
         const metricsRes = await axios.get(
-          `${process.env.REACT_APP_PROPERTY_ANALYSIS_GET_METRICS}/${selectedProperty}`,
+          `${srv(process.env.REACT_APP_PROPERTY_ANALYSIS_GET_METRICS)}/${selectedProperty}`,
           {
             withCredentials: true,
             headers: {
@@ -75,7 +76,7 @@ export default function PropertyAnalytics() {
 
         // PATCH 2: conversion fetch with hybrid auth
         const conversionRes = await axios.get(
-          `${process.env.REACT_APP_PROPERTY_ANALYSIS_GET_CONVERSION}/${selectedProperty}/conversion`,
+          `${srv(process.env.REACT_APP_PROPERTY_ANALYSIS_GET_CONVERSION)}/${selectedProperty}/conversion`,
           {
             withCredentials: true,
             headers: {
@@ -130,7 +131,7 @@ export default function PropertyAnalytics() {
   };
   const handleLogout = async () => {
     // PATCH 4: logout with hybrid auth
-    await fetch(process.env.REACT_APP_LOGOUT_API, {
+    await fetch(srv(process.env.REACT_APP_LOGOUT_API), {
       method: "POST",
       credentials: "include",
       headers: {
@@ -145,7 +146,7 @@ export default function PropertyAnalytics() {
     const fetchUser = async () => {
       try {
         // PATCH 3: fetchUser with hybrid auth
-        const res = await fetch(process.env.REACT_APP_USER_ME_API, {
+        const res = await fetch(srv(process.env.REACT_APP_USER_ME_API), {
           method: "GET",
           credentials: "include",
           headers: {

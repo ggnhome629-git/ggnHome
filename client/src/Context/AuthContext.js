@@ -1,3 +1,4 @@
+import { srv } from "../utils/apiBase";
 // src/context/AuthContext.js
 import { clearUserCache } from "../utils/nativeApp";
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
@@ -9,7 +10,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const USER_API = process.env.REACT_APP_USER_ME_API || "/user/me";
+  const USER_API = srv(process.env.REACT_APP_USER_ME_API) || "/user/me";
   const REVALIDATE_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes (adjustable)
 
   const fetchUser = useCallback(async (opts = { force: false }) => {
@@ -117,7 +118,7 @@ export function AuthProvider({ children }) {
 
 const logout = useCallback(async () => {
   try {
-    await fetch(`${process.env.REACT_APP_LOGOUT_API}`, {
+    await fetch(`${srv(process.env.REACT_APP_LOGOUT_API)}`, {
       method: "POST",
       credentials: "include",
     });

@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 // import React, { useState } from 'react';
 // import axios from 'axios';
 
@@ -147,7 +148,7 @@ const PricePredictor = () => {
   };
   // Endpoint configurable via .env: LOGOUT_API
   const handleLogout = async () => {
-    await fetch(`${process.env.REACT_APP_LOGOUT_API}`, {
+    await fetch(`${srv(process.env.REACT_APP_LOGOUT_API)}`, {
       method: "POST",
       credentials: "include",
     });
@@ -159,7 +160,7 @@ const PricePredictor = () => {
     // Endpoint configurable via .env: USER_ME_API
     const fetchUser = async () => {
       try {
-        const res = await fetch(`${process.env.REACT_APP_USER_ME_API}`, {
+        const res = await fetch(`${srv(process.env.REACT_APP_USER_ME_API)}`, {
           method: "GET",
           credentials: "include",
         });
@@ -184,7 +185,7 @@ const PricePredictor = () => {
     try {
       // Endpoint configurable via .env: PRICE_PREDICT_API
       const response = await axios.post(
-        `${process.env.REACT_APP_PRICE_PREDICT_API}`,
+        `${srv(process.env.REACT_APP_PRICE_PREDICT_API)}`,
         { city, features },
         { withCredentials: true }
       );

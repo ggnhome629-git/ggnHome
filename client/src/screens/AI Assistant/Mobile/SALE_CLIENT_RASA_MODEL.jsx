@@ -1,3 +1,4 @@
+import { srv } from "../../../utils/apiBase";
 import React, { useEffect, useRef, useState } from "react";
 import TopNavigationBar from "../../Dashboard/TopNavigationBar";
 import { useAuth } from "../../../Context/AuthContext";
@@ -262,7 +263,7 @@ const VoiceAssistantSale = () => {
     // Save to backend
     try {
       const resp = await fetch(
-        process.env.REACT_APP_SALE_PROPERTY_PREFERENCE_ARIA,
+        srv(process.env.REACT_APP_SALE_PROPERTY_PREFERENCE_ARIA),
         {
           method: "POST",
           headers: {

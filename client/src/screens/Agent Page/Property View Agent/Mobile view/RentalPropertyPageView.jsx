@@ -1,3 +1,4 @@
+import { srv } from "../../../../utils/apiBase";
 import React, { useEffect, useState , useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
@@ -39,7 +40,7 @@ const agentToken = localStorage.getItem("agentAccessToken");
 // Engagement and Rating API helpers
 const addEngagementTime = async (propertyId, seconds) => {
   try {
-    await fetch(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_ENGAGEMENT, {
+    await fetch(srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_ENGAGEMENT), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -55,7 +56,7 @@ const addEngagementTime = async (propertyId, seconds) => {
 
 const addRating = async (propertyId, rating, comment = "") => {
   try {
-    await fetch(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_RATING, {
+    await fetch(srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_RATING), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -111,7 +112,7 @@ export default function RentalPropertyPageAgent() {
     async function fetchProperty() {
       try {
         const response = await fetch(
-          `${process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API}/${id}`,
+          `${srv(process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API)}/${id}`,
           {
             credentials: "include",
             headers: {
@@ -147,7 +148,7 @@ export default function RentalPropertyPageAgent() {
   const handleSave = async () => {
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE}`,
+        `${srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE)}`,
         {
           method: "POST",
           headers: {

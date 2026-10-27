@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 // React hooks for state and lifecycle
 import { useState, useEffect } from 'react';
 // React Router hooks for navigation and params
@@ -41,9 +42,9 @@ export default function PropertyCheckout() {
       let res = null;
 
       // First try fetching from RentalProperty API
-      if (process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API) {
+      if (srv(process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API)) {
         try {
-          const rentalRes = await axios.get(`${process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API}/${id}`, { withCredentials: true });
+          const rentalRes = await axios.get(`${srv(process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API)}/${id}`, { withCredentials: true });
           if (rentalRes.data && Object.keys(rentalRes.data).length > 0) {
             res = rentalRes;
           }
@@ -53,9 +54,9 @@ export default function PropertyCheckout() {
       }
 
       // If no rental property found, try SaleProperty API
-      if (!res && process.env.REACT_APP_SALE_PROPERTY_DETAIL_API) {
+      if (!res && srv(process.env.REACT_APP_SALE_PROPERTY_DETAIL_API)) {
         try {
-          const saleRes = await axios.get(`${process.env.REACT_APP_SALE_PROPERTY_DETAIL_API}/${id}`, { withCredentials: true });
+          const saleRes = await axios.get(`${srv(process.env.REACT_APP_SALE_PROPERTY_DETAIL_API)}/${id}`, { withCredentials: true });
           if (saleRes.data && Object.keys(saleRes.data).length > 0) {
             res = saleRes;
           }
@@ -73,7 +74,7 @@ export default function PropertyCheckout() {
   // Logout handler: clears user and redirects to login
   const handleLogout = async () => {
     // Logout endpoint configurable via .env
-    await fetch(`${process.env.REACT_APP_LOGOUT_API}`, {
+    await fetch(`${srv(process.env.REACT_APP_LOGOUT_API)}`, {
       method: "POST",
       credentials: "include",
     });
@@ -86,7 +87,7 @@ export default function PropertyCheckout() {
     const fetchUser = async () => {
       try {
         // User info endpoint configurable via .env
-        const res = await fetch(`${process.env.REACT_APP_USER_ME_API}`, {
+        const res = await fetch(`${srv(process.env.REACT_APP_USER_ME_API)}`, {
           method: "GET",
           credentials: "include",
         });
@@ -632,7 +633,7 @@ export default function PropertyCheckout() {
                   };
                   // Payment endpoint configurable via .env
                   const res = await axios.post(
-                    `${process.env.REACT_APP_PAYMENT_API}`,
+                    `${srv(process.env.REACT_APP_PAYMENT_API)}`,
                     payload,
                     { withCredentials: true }
                   );

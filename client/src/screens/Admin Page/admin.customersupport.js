@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 import React, { useState, useEffect } from 'react';
 import { Box, Button, Card, CardContent, Grid, Typography, TextField, InputAdornment, Avatar, Chip, IconButton, Skeleton, Stack, Alert } from "@mui/material";
 import { Search, RefreshCw, Phone, CheckCircle, Calendar, ArrowUpRight } from "lucide-react";
@@ -46,7 +47,7 @@ export default function CallbackRequestsDashboard() {
 
       const token = localStorage.getItem("accessToken");
       const res = await fetch(
-        `${process.env.REACT_APP_ADMIN_CALLBACK_REQUESTS_API}?${params}`,
+        `${srv(process.env.REACT_APP_ADMIN_CALLBACK_REQUESTS_API)}?${params}`,
         {
           credentials: "include",
           headers: {

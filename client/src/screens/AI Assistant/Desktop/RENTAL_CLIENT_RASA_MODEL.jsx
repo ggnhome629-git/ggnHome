@@ -1,3 +1,4 @@
+import { srv } from "../../../utils/apiBase";
 import { Helmet } from "react-helmet";
 import React, { useEffect, useRef, useState } from "react";
 import TopNavigationBar from "../../Dashboard/TopNavigationBar";
@@ -251,7 +252,7 @@ const VoiceAssistantRent = () => {
           );
           try {
             const resp = await fetch(
-              process.env.REACT_APP_RENTAL_PROPERTY_PREFERENCE_ARIA,
+              srv(process.env.REACT_APP_RENTAL_PROPERTY_PREFERENCE_ARIA),
               {
                 method: "POST",
                 headers: {
@@ -321,7 +322,7 @@ const VoiceAssistantRent = () => {
           // Save to backend
           try {
             const resp = await fetch(
-              process.env.REACT_APP_RENTAL_PROPERTY_PREFERENCE_ARIA,
+              srv(process.env.REACT_APP_RENTAL_PROPERTY_PREFERENCE_ARIA),
               {
                 method: "POST",
                 headers: {

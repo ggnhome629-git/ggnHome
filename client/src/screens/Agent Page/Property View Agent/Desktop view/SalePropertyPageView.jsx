@@ -1,3 +1,4 @@
+import { srv } from "../../../../utils/apiBase";
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useLocation } from "react-router-dom";
@@ -43,7 +44,7 @@ const agentToken = localStorage.getItem("agentAccessToken");
 
 const addEngagementTime = async (propertyId, seconds) => {
   try {
-    await fetch(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_ENGAGEMENT, {
+    await fetch(srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_ENGAGEMENT), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -59,7 +60,7 @@ const addEngagementTime = async (propertyId, seconds) => {
 
 const addRating = async (propertyId, rating, comment = "") => {
   try {
-    await fetch(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_RATING, {
+    await fetch(srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_RATING), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -116,7 +117,7 @@ export default function SalePropertyPageAgent() {
     async function fetchProperty() {
       try {
         const response = await fetch(
-          `${process.env.REACT_APP_SALE_PROPERTY_DETAIL_API}/${id}`,
+          `${srv(process.env.REACT_APP_SALE_PROPERTY_DETAIL_API)}/${id}`,
           {
             credentials: "include",
             headers: {
@@ -160,7 +161,7 @@ export default function SalePropertyPageAgent() {
     const fetchAnalytics = async () => {
       try {
         const metricsRes = await fetch(
-          `${process.env.REACT_APP_PROPERTY_ANALYSIS_GET_METRICS}/${id}`,
+          `${srv(process.env.REACT_APP_PROPERTY_ANALYSIS_GET_METRICS)}/${id}`,
           {
             method: "GET",
             credentials: "include",
@@ -185,7 +186,7 @@ export default function SalePropertyPageAgent() {
         });
 
         const conversionRes = await fetch(
-          `${process.env.REACT_APP_PROPERTY_ANALYSIS_GET_CONVERSION}/${id}/conversion`,
+          `${srv(process.env.REACT_APP_PROPERTY_ANALYSIS_GET_CONVERSION)}/${id}/conversion`,
           {
             method: "GET",
             credentials: "include",
@@ -209,7 +210,7 @@ export default function SalePropertyPageAgent() {
   const handleSave = async () => {
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE}`,
+        `${srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE)}`,
         {
           method: "POST",
           headers: {

@@ -1,4 +1,4 @@
-import { API_BASE } from "../../../../utils/apiBase";
+import { API_BASE, srv } from "../../../../utils/apiBase";
 
 import React, { useEffect, useState , useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
@@ -43,7 +43,7 @@ import { Helmet } from "react-helmet";
 const addEngagementTime = async (propertyId, seconds) => {
   const agentToken = localStorage.getItem("agentAccessToken");
   try {
-    await fetch(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_ENGAGEMENT, {
+    await fetch(srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_ENGAGEMENT), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -59,7 +59,7 @@ const addEngagementTime = async (propertyId, seconds) => {
 const addRating = async (propertyId, rating, comment = "") => {
   const agentToken = localStorage.getItem("agentAccessToken");
   try {
-    await fetch(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_RATING, {
+    await fetch(srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_RATING), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -116,7 +116,7 @@ export default function RentalPropertyPageAgent() {
     async function fetchProperty() {
       try {
         // First call the central property endpoint to check if property exists and is active
-        const baseApi = API_BASE || process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API?.replace(/\/api.*$/,'') || 'http://localhost:2000';
+        const baseApi = API_BASE || srv(process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API)?.replace(/\/api.*$/,'') || 'http://localhost:2000';
         console.log('[PropertyPage] Checking active status via:', `${baseApi}/api/properties/${id}`);
         const checkRes = await fetch(`${baseApi}/api/properties/${id}`, {
           credentials: "include",
@@ -151,8 +151,8 @@ export default function RentalPropertyPageAgent() {
         }
 
         // Property is active (or check passed) — now fetch the detailed rental/sale endpoint
-        console.log('[PropertyPage] fetching detailed property endpoint:', `${process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API}/${id}`);
-        const response = await fetch(`${process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API}/${id}`, {
+        console.log('[PropertyPage] fetching detailed property endpoint:', `${srv(process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API)}/${id}`);
+        const response = await fetch(`${srv(process.env.REACT_APP_RENTAL_PROPERTY_DETAIL_API)}/${id}`, {
           credentials: "include",
           headers: {
             ...(agentToken ? { Authorization: `Bearer ${agentToken}` } : {}),
@@ -218,7 +218,7 @@ const jsonLd = useMemo(() => {
     const fetchAnalytics = async () => {
       try {
         const metricsRes = await fetch(
-          `${process.env.REACT_APP_PROPERTY_ANALYSIS_GET_METRICS}/${id}`,
+          `${srv(process.env.REACT_APP_PROPERTY_ANALYSIS_GET_METRICS)}/${id}`,
           {
             method: "GET",
             credentials: "include",
@@ -243,7 +243,7 @@ const jsonLd = useMemo(() => {
         });
 
         const conversionRes = await fetch(
-          `${process.env.REACT_APP_PROPERTY_ANALYSIS_GET_CONVERSION}/${id}/conversion`,
+          `${srv(process.env.REACT_APP_PROPERTY_ANALYSIS_GET_CONVERSION)}/${id}/conversion`,
           {
             method: "GET",
             credentials: "include",
@@ -265,7 +265,7 @@ const jsonLd = useMemo(() => {
   const handleSave = async () => {
     try {
       const response = await fetch(
-        `${process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE}`,
+        `${srv(process.env.REACT_APP_PROPERTY_ANALYSIS_ADD_SAVE)}`,
         {
           method: "POST",
           headers: {

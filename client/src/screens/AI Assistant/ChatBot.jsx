@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
@@ -12,7 +13,7 @@ const ChatBot = () => {
   useEffect(() => {
     // Fetch user info
     axios
-      .get(`${process.env.REACT_APP_USER_ME_API}`, {
+      .get(`${srv(process.env.REACT_APP_USER_ME_API)}`, {
         withCredentials: true,
         headers: {
           ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
@@ -38,7 +39,7 @@ const ChatBot = () => {
 
     axios
       .post(
-        `${process.env.REACT_APP_CHATBOT_API}`,
+        `${srv(process.env.REACT_APP_CHATBOT_API)}`,
         { message: input },
         {
           withCredentials: true,
@@ -59,7 +60,7 @@ const ChatBot = () => {
   const handleLogout = () => {
     axios
       .post(
-        `${process.env.REACT_APP_LOGOUT_API}`,
+        `${srv(process.env.REACT_APP_LOGOUT_API)}`,
         {},
         {
           withCredentials: true,

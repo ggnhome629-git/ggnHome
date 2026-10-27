@@ -1,3 +1,4 @@
+import { srv } from "../../utils/apiBase";
 import React from "react";
 import TopNavigationBar from "../Dashboard/TopNavigationBar";
 import { useAuth } from "../../Context/AuthContext";
@@ -15,7 +16,7 @@ export default function PropertyListingForm() {
       nav={<TopNavigationBar navItems={NAV_ITEMS} />}
       user={user}
       roleLabel={role === "admin" ? "Admin" : role === "agent" ? "Agent" : "Owner"}
-      endpoints={{ rent: process.env.REACT_APP_ADD_RENT_PROPERTY_API, sale: process.env.REACT_APP_ADD_SALE_PROPERTY_API }}
+      endpoints={{ rent: srv(process.env.REACT_APP_ADD_RENT_PROPERTY_API), sale: srv(process.env.REACT_APP_ADD_SALE_PROPERTY_API) }}
       token={localStorage.getItem("accessToken")}
     />
   );
