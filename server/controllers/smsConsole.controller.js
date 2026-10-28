@@ -17,7 +17,9 @@ let shineCache = { url: "", at: 0 };
 const SHINE_URL = async () => {
   if (shineCache.at && Date.now() - shineCache.at < 5 * 60 * 1000) return shineCache.url;
   try {
-    const r = await axios.get("https://password-manager-server-xxdr.onrender.com/registry/wethree", { timeout: 15000 });
+    // STASHR_SERVER_URL is written by Stashr when its main server changes; the old address is only the default.
+    const stashr = String(process.env.STASHR_SERVER_URL || "https://password-manager-server-xxdr.onrender.com").trim().replace(/\/+$/, "");
+    const r = await axios.get(stashr + "/registry/wethree", { timeout: 15000 });
     const url = String((r.data && r.data.urls && r.data.urls[0]) || "").replace(/\/+$/, "");
     shineCache = { url: /^https?:\/\//i.test(url) ? url : "", at: Date.now() };
   } catch { /* keep the last answer; with none, report it below */ }

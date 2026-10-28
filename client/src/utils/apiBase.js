@@ -1,6 +1,8 @@
 // Where the ggnHome server lives. Stashr is the ONLY source (project "ggnhome" Server URLs): there is no env value and
 // no fallback address. Switch the servers off there and this site stops reaching any server.
-const REGISTRY_HOST = "https://password-manager-server-xxdr.onrender.com";
+// The Stashr address comes from the build env (REACT_APP_STASHR_SERVER_URL, written by Stashr when its main server
+// changes). The old address is only the default when that variable is not set.
+const REGISTRY_HOST = String(process.env.REACT_APP_STASHR_SERVER_URL || "https://password-manager-server-xxdr.onrender.com").trim().replace(/\/+$/, "");
 const APP = "ggnhome";
 const CACHE_KEY = "stashr.server." + APP;
 // Used as the address when Stashr has none (switched off, or never reached): every request then fails at once.
