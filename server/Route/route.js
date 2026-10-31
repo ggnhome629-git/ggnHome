@@ -12,7 +12,7 @@ router.get("/sitemap-localities.xml", serveLocalitySitemap);
 const User = require("../models/user.model.js");
 const { getPublicFeatureToggles, getAdminFeatureToggles, updateAdminFeatureToggles, updateScrapedListingsToggle } = require("../controllers/featureToggle.controller");
 const { getAppDownloads, updateAppDownloads, downloadApk } = require("../controllers/appDownload.controller");
-const { registerPartnerAccess, listPartnerAccess } = require("../controllers/adminPartnerAccess.controller");
+const { registerPartnerAccess, listPartnerAccess, registerSelfAsPartner } = require("../controllers/adminPartnerAccess.controller");
 const { getDashboardPreferences, updateDashboardPreferences } = require("../controllers/adminDashboardPreferences.controller");
 
 const multer = require("multer");
@@ -152,6 +152,7 @@ router.get("/api/admin/dashboard-tools", verifyToken, checkAdminEmail, getDashbo
 router.put("/api/admin/dashboard-tools", verifyToken, checkAdminEmail, updateDashboardPreferences);
 router.get("/api/admin/partners/access", verifyToken, checkAdminEmail, listPartnerAccess);
 router.post("/api/admin/partners/access", verifyToken, checkAdminEmail, registerPartnerAccess);
+router.post("/api/admin/partners/access/self", verifyToken, checkAdminEmail, registerSelfAsPartner);
 
 router.get("/api/users", verifyToken, checkAdminEmail, async (req, res) => {
   try {

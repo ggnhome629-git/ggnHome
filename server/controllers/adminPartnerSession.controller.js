@@ -5,13 +5,7 @@ const Agent = require("../models/Agent.model");
  * This endpoint is admin-only; the returned token is scoped to the normal
  * PartnerHub API and does not expose an impersonation option for other users.
  */
-async function createAdminPartnerSession(req, res) {
-  try {
-    const user = req.user;
-    if (!user || String(user.role || "").toLowerCase() !== "admin") {
-      return res.status(403).json({ message: "Administrator access required." });
-    }
-
+async function ensureAdminAgent(user) {
     let agent = await Agent.findOne({ userId: user._id });
     if (!agent) {
       // The workspace has its own partner identity, separate from any real
@@ -45,7 +39,16 @@ async function createAdminPartnerSession(req, res) {
       if (!agent.email && user.email) agent.email = user.email;
       await agent.save();
     }
+    return agent;
+}
 
+async function createAdminPartnerSession(req, res) {
+  try {
+    const user = req.user;
+    if (!user || String(user.role || "").toLowerCase() !== "admin") {
+      return res.status(403).json({ message: "Administrator access required." });
+    }
+    const agent = await ensureAdminAgent(user);
     const agentAccessToken = agent.getAccessToken();
     agent.AccessTokenAgent = agentAccessToken;
     await agent.save();
@@ -60,4 +63,4 @@ async function createAdminPartnerSession(req, res) {
   }
 }
 
-module.exports = { createAdminPartnerSession };
+module.exports = { createAdminPartnerSession, ensureAdminAgent };

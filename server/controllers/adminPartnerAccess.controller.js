@@ -1,5 +1,6 @@
 const Agent = require("../models/Agent.model");
 const User = require("../models/user.model");
+const { ensureAdminAgent } = require("./adminPartnerSession.controller");
 const mongoose = require("mongoose");
 
 function normalizeMobile(value) {
@@ -96,4 +97,27 @@ async function listPartnerAccess(req, res) {
   }
 }
 
-module.exports = { registerPartnerAccess, listPartnerAccess };
+/** Admin adds their own account as a Partner (listed with other partners). */
+async function registerSelfAsPartner(req, res) {
+  try {
+    const user = req.user;
+    if (!user || String(user.role || "").toLowerCase() !== "admin") {
+      return res.status(403).json({ success: false, message: "Administrator access required." });
+    }
+    const agent = await ensureAdminAgent(user);
+    if (agent.roleType !== "Partner") {
+      agent.roleType = "Partner";
+      await agent.save();
+    }
+    return res.status(201).json({
+      success: true,
+      message: "You are now registered as a Partner.",
+      partner: { id: agent._id, mobileNumber: agent.mobileNumber, status: agent.status },
+    });
+  } catch (error) {
+    console.error("[admin partner access] self add failed:", error.message);
+    return res.status(500).json({ success: false, message: "Could not add admin as Partner." });
+  }
+}
+
+module.exports = { registerSelfAsPartner, registerPartnerAccess, listPartnerAccess };

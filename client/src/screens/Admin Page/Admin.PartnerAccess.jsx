@@ -68,6 +68,23 @@ export default function AdminPartnerAccess() {
     }
   }
 
+  async function addSelf() {
+    setError(""); setNotice(""); setSaving(true);
+    try {
+      const response = await fetch(API + "/api/admin/partners/access/self", {
+        method: "POST", headers: authHeaders(), credentials: "include",
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || "Could not add you as Partner.");
+      setNotice(data.message);
+      await loadPartners();
+    } catch (e3) {
+      setError(e3.message || "Could not add you as Partner.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1100, mx: "auto" }}>
       <Stack spacing={3}>
@@ -106,6 +123,9 @@ export default function AdminPartnerAccess() {
                 />
                 <Button type="submit" variant="contained" disabled={saving} startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <UserPlus size={17} />} sx={{ minHeight: 56, px: 3, whiteSpace: "nowrap", bgcolor: "#0f766e" }}>
                   {saving ? "Registering…" : "Register Partner"}
+                </Button>
+                <Button variant="outlined" disabled={saving} onClick={addSelf} sx={{ minHeight: 56, px: 3, whiteSpace: "nowrap" }}>
+                  Add me (admin) as Partner
                 </Button>
               </Stack>
             </Box>
