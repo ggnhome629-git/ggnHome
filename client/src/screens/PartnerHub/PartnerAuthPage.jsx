@@ -61,7 +61,7 @@ export default function PartnerAuthPage() {
   async function completePartnerLogin(data) {
     // The server only accepts a Partner number here; these checks are a second guard.
     if (data.agent?.role !== "Partner") {
-      throw new Error("This mobile number is not registered for Partner Portal access. Ask a GgnHome administrator to register it.");
+      throw new Error("This mobile number cannot sign in to the Partner Portal.");
     }
     if (data.agent.status === "suspended") throw new Error("This Partner account is suspended. Contact GgnHome support.");
     if (data.agent.status !== "active") throw new Error("This Partner account is not active yet. Contact GgnHome admin.");

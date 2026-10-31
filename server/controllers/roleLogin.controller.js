@@ -10,19 +10,37 @@ const User = require("../models/user.model");
 const Agent = require("../models/Agent.model");
 const SaleProperty = require("../models/SaleProperty.model");
 const RentalProperty = require("../models/Rentalproperty.model");
+const { allocatePartnerCode } = require("../utils/partnerCode");
 const { requestOtp, verifyOtp } = require("./login.controller");
 
 const MOBILE_RE = /^\d{10}$/;
 
 // Returns null when this number may use the Partner Hub, otherwise { status, code, message }.
 async function partnerProblem(mobileNumber) {
-  const agent = await Agent.findOne({ mobileNumber });
+  let agent = await Agent.findOne({ mobileNumber });
   if (!agent) {
-    return {
-      status: 403,
-      code: "NOT_A_PARTNER",
-      message: "This mobile number is not registered as a Partner. Ask a GgnHome administrator to register it.",
-    };
+    // No registration: any new mobile number becomes a Partner on first OTP sign-in.
+    // Admin numbers use their own workspace instead.
+    let user = await User.findOne({ mobileNumber });
+    if (user?.role === "admin") {
+      return { status: 403, code: "NOT_A_PARTNER", message: "Administrators open PartnerHub from the admin panel." };
+    }
+    if (!user) user = await User.create({ mobileNumber, role: "renter", isVerified: false });
+    if (await Agent.exists({ userId: user._id })) {
+      return { status: 403, code: "NOT_A_PARTNER", message: "This account is linked to another Agent/Partner profile. Contact GgnHome support." };
+    }
+    agent = await Agent.create({
+      name: "Partner",
+      mobileNumber,
+      whatsappNumber: mobileNumber,
+      agentCode: await allocatePartnerCode(),
+      roleType: "Partner",
+      userId: user._id,
+      status: "active",
+      isVerified: true,
+      verificationStatus: "approved",
+      agentType: "individual",
+    });
   }
 
   let isPartner = agent.roleType === "Partner";

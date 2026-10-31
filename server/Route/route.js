@@ -12,7 +12,7 @@ router.get("/sitemap-localities.xml", serveLocalitySitemap);
 const User = require("../models/user.model.js");
 const { getPublicFeatureToggles, getAdminFeatureToggles, updateAdminFeatureToggles, updateScrapedListingsToggle } = require("../controllers/featureToggle.controller");
 const { getAppDownloads, updateAppDownloads, downloadApk } = require("../controllers/appDownload.controller");
-const { registerPartnerAccess, listPartnerAccess, registerSelfAsPartner } = require("../controllers/adminPartnerAccess.controller");
+const { listPartnerAccess } = require("../controllers/adminPartnerAccess.controller");
 const { getDashboardPreferences, updateDashboardPreferences } = require("../controllers/adminDashboardPreferences.controller");
 
 const multer = require("multer");
@@ -151,8 +151,6 @@ router.get("/api/app-downloads/:file", downloadApk);
 router.get("/api/admin/dashboard-tools", verifyToken, checkAdminEmail, getDashboardPreferences);
 router.put("/api/admin/dashboard-tools", verifyToken, checkAdminEmail, updateDashboardPreferences);
 router.get("/api/admin/partners/access", verifyToken, checkAdminEmail, listPartnerAccess);
-router.post("/api/admin/partners/access", verifyToken, checkAdminEmail, registerPartnerAccess);
-router.post("/api/admin/partners/access/self", verifyToken, checkAdminEmail, registerSelfAsPartner);
 
 router.get("/api/users", verifyToken, checkAdminEmail, async (req, res) => {
   try {
@@ -594,7 +592,7 @@ router.use("/api/admin/property-sync", propertySyncRoutes);
 router.post("/api/admin/partner-session", verifyToken, checkAdminEmail, createAdminPartnerSession);
 
 // All routes protected by verifyAgentToken
-router.post("/api/partner/register", (req, res) => res.status(410).json({ message: "Partner access must be registered by a GgnHome administrator. Ask the administrator to add your mobile number, then sign in with OTP." }));
+router.post("/api/partner/register", (req, res) => res.status(410).json({ message: "No registration needed. Sign in with your mobile number and OTP." }));
 router.get("/api/partner/dashboard", verifyAgentToken, verifyPartnerAccess, getAgentHubDashboard);
 router.get("/api/partner/properties", verifyAgentToken, verifyPartnerAccess, getAgentProperties);
 router.post("/api/partner/properties", verifyAgentToken, verifyPartnerAccess, upload.array("images", 18), createPartnerProperty);

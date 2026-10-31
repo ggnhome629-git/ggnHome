@@ -3,9 +3,9 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert, Box, Button, Card, CardContent, CircularProgress, Divider,
   Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  TextField, Typography, Chip,
+  Typography, Chip,
 } from "@mui/material";
-import { CheckCircle2, Phone, RefreshCw, ShieldCheck, UserPlus } from "lucide-react";
+import { Phone, RefreshCw, ShieldCheck } from "lucide-react";
 
 const API = API_BASE || "";
 const authHeaders = () => {
@@ -14,12 +14,9 @@ const authHeaders = () => {
 };
 
 export default function AdminPartnerAccess() {
-  const [mobileNumber, setMobileNumber] = useState("");
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
 
   const loadPartners = useCallback(async () => {
     setLoading(true);
@@ -40,51 +37,6 @@ export default function AdminPartnerAccess() {
 
   useEffect(() => { loadPartners(); }, [loadPartners]);
 
-  async function submit(e) {
-    e.preventDefault();
-    setError(""); setNotice("");
-    const mobile = mobileNumber.replace(/\D/g, "").slice(-10);
-    if (!/^[6-9]\d{9}$/.test(mobile)) {
-      setError("Enter a valid 10-digit Indian mobile number.");
-      return;
-    }
-    setSaving(true);
-    try {
-      const response = await fetch(API + "/api/admin/partners/access", {
-        method: "POST",
-        headers: authHeaders(),
-        credentials: "include",
-        body: JSON.stringify({ mobileNumber: mobile }),
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || "Could not register Partner access.");
-      setMobileNumber("");
-      setNotice("Partner access registered. The partner must verify this number by OTP before signing in.");
-      await loadPartners();
-    } catch (e2) {
-      setError(e2.message || "Could not register Partner access.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function addSelf() {
-    setError(""); setNotice(""); setSaving(true);
-    try {
-      const response = await fetch(API + "/api/admin/partners/access/self", {
-        method: "POST", headers: authHeaders(), credentials: "include",
-      });
-      const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || "Could not add you as Partner.");
-      setNotice(data.message);
-      await loadPartners();
-    } catch (e3) {
-      setError(e3.message || "Could not add you as Partner.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
   return (
     <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1100, mx: "auto" }}>
       <Stack spacing={3}>
@@ -94,43 +46,12 @@ export default function AdminPartnerAccess() {
           </Box>
           <Box sx={{ flex: 1 }}>
             <Typography variant="h4" sx={{ fontWeight: 850, color: "#102a43", fontSize: { xs: 24, md: 30 } }}>Partner access</Typography>
-            <Typography color="text.secondary" sx={{ mt: .5 }}>Only admins can register a mobile number for Partner Portal access.</Typography>
+            <Typography color="text.secondary" sx={{ mt: .5 }}>Partners sign in with mobile number and OTP. No registration needed.</Typography>
           </Box>
           <Button onClick={loadPartners} disabled={loading} startIcon={<RefreshCw size={16} />} sx={{ textTransform: "none" }}>Refresh</Button>
         </Stack>
 
-        <Alert severity="info" icon={<ShieldCheck size={20} />}>
-          Adding a number does not log the person in or bypass verification. The partner must request and verify an OTP sent to that mobile number. Self-registration is disabled.
-        </Alert>
         {error && <Alert severity="error">{error}</Alert>}
-        {notice && <Alert severity="success" icon={<CheckCircle2 size={20} />}>{notice}</Alert>}
-
-        <Card variant="outlined" sx={{ borderRadius: 3, borderColor: "#dce7ed" }}>
-          <CardContent sx={{ p: { xs: 2.5, md: 3.5 } }}>
-            <Typography sx={{ fontSize: 17, fontWeight: 800, color: "#102a43" }}>Register a partner mobile number</Typography>
-            <Typography color="text.secondary" variant="body2" sx={{ mt: .5, mb: 2.5 }}>The mobile number is stored in the database as a Partner access record. No password is created.</Typography>
-            <Box component="form" onSubmit={submit}>
-              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ sm: "flex-start" }}>
-                <TextField
-                  fullWidth
-                  label="Indian mobile number"
-                  value={mobileNumber}
-                  onChange={e => setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
-                  placeholder="10-digit mobile number"
-                  inputProps={{ inputMode: "numeric", maxLength: 10, autoComplete: "tel-national" }}
-                  helperText="Only numbers beginning with 6, 7, 8 or 9 are accepted."
-                  disabled={saving}
-                />
-                <Button type="submit" variant="contained" disabled={saving} startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <UserPlus size={17} />} sx={{ minHeight: 56, px: 3, whiteSpace: "nowrap", bgcolor: "#0f766e" }}>
-                  {saving ? "Registering…" : "Register Partner"}
-                </Button>
-                <Button variant="outlined" disabled={saving} onClick={addSelf} sx={{ minHeight: 56, px: 3, whiteSpace: "nowrap" }}>
-                  Add me (admin) as Partner
-                </Button>
-              </Stack>
-            </Box>
-          </CardContent>
-        </Card>
 
         <Card variant="outlined" sx={{ borderRadius: 3, borderColor: "#dce7ed", overflow: "hidden" }}>
           <CardContent sx={{ p: 0 }}>
@@ -147,8 +68,8 @@ export default function AdminPartnerAccess() {
             ) : partners.length === 0 ? (
               <Box sx={{ p: 4, textAlign: "center" }}>
                 <Phone size={26} color="#94a3b8" />
-                <Typography sx={{ mt: 1, fontWeight: 750 }}>No Partner access records yet</Typography>
-                <Typography variant="body2" color="text.secondary">Register a mobile number above to grant Partner Portal access.</Typography>
+                <Typography sx={{ mt: 1, fontWeight: 750 }}>No partners yet</Typography>
+                <Typography variant="body2" color="text.secondary">Partners appear here after their first OTP sign-in.</Typography>
               </Box>
             ) : (
               <TableContainer>
