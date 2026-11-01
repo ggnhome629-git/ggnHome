@@ -114,7 +114,7 @@ export default function PartnerAuthPage() {
               <Typography sx={{ color: "#0f766e", fontWeight: 800, letterSpacing: 1, fontSize: 12, textTransform: "uppercase" }}>GgnHome Partner Portal</Typography>
               <Typography variant="h4" sx={{ fontWeight: 850, color: "#0f172a", mt: 1 }}>Partner login</Typography>
               <Typography color="text.secondary" sx={{ mt: 1 }}>
-                Sign in using the mobile number registered by GgnHome admin. We check the number first, then send an OTP.
+                Sign in with your mobile number. We send an OTP to verify it.
               </Typography>
             </Box>
 
@@ -159,7 +159,7 @@ export default function PartnerAuthPage() {
               </>
             )}
             <Typography variant="body2" color="text.secondary" textAlign="center">
-              Need access? Contact a GgnHome administrator to register your mobile number.
+              New partner? Just enter your mobile number and verify the OTP.
             </Typography>
           </Stack>
         </Paper>

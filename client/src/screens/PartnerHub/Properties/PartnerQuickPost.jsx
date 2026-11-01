@@ -155,7 +155,6 @@ export default function PartnerQuickPost() {
   const [publishing, setPublishing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [done, setDone] = useState(null); // { title }
-  const [typing, setTyping] = useState(false); // a phone keyboard is open: hide the bottom bar
   const [nearby, setNearby] = useState({ status: "idle", items: [] }); // idle | loading | done | failed
   const cameraRef = useRef(null);
   const galleryRef = useRef(null);
@@ -178,18 +177,6 @@ export default function PartnerQuickPost() {
 
   // A new screen always starts at the top (instant: a smooth scroll fights with a touch scroll).
   useEffect(() => { window.scrollTo(0, 0); }, [step]);
-
-  // On phones the keyboard covers half the screen: hide the Back/Next bar while a field is being typed in.
-  useEffect(() => {
-    if (!window.matchMedia || !window.matchMedia("(pointer: coarse)").matches) return undefined;
-    let timer;
-    const isField = (el) => !!el && /^(INPUT|TEXTAREA)$/.test(el.tagName);
-    const onIn = (e) => { clearTimeout(timer); if (isField(e.target)) setTyping(true); };
-    const onOut = () => { timer = setTimeout(() => setTyping(false), 150); };
-    document.addEventListener("focusin", onIn);
-    document.addEventListener("focusout", onOut);
-    return () => { clearTimeout(timer); document.removeEventListener("focusin", onIn); document.removeEventListener("focusout", onOut); };
-  }, []);
 
   // Single-line fields: the keyboard's Done key closes the keyboard.
   const doneKeyDown = (e) => { if (e.key === "Enter") e.target.blur(); };
@@ -418,7 +405,7 @@ export default function PartnerQuickPost() {
   const phoneOk = /^[6-9]\d{9}$/.test(f.ownerMobile);
 
   return (
-    <Box sx={{ minHeight: "100vh", "@supports (height: 100dvh)": { minHeight: "100dvh" }, bgcolor: "#f5f7fb", pb: typing ? 3 : "calc(124px + env(safe-area-inset-bottom))" }}>
+    <Box sx={{ minHeight: "100vh", "@supports (height: 100dvh)": { minHeight: "100dvh" }, bgcolor: "#f5f7fb", pb: "calc(124px + env(safe-area-inset-bottom))" }}>
       <Container maxWidth="sm" sx={{ pt: 2.5, px: 2 }}>
         {/* Progress */}
         <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
@@ -721,8 +708,8 @@ export default function PartnerQuickPost() {
         )}
       </Container>
 
-      {/* Bottom bar: easy to reach with a thumb. Hidden while the phone keyboard is open. */}
-      <Box sx={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 20, bgcolor: "#fff", borderTop: "1px solid #d6dee8", pb: "env(safe-area-inset-bottom)", display: typing && !publishing ? "none" : "block" }}>
+      {/* Bottom bar: easy to reach with a thumb. Always visible. */}
+      <Box sx={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 20, bgcolor: "#fff", borderTop: "1px solid #d6dee8", pb: "env(safe-area-inset-bottom)" }}>
         <Container maxWidth="sm" sx={{ py: 1.5, px: 2 }}>
           {publishing && (
             <Box sx={{ mb: 1.25 }}>

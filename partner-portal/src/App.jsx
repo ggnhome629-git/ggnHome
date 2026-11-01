@@ -50,7 +50,7 @@ function AuthScreen({ onLogin }) {
   function completePartnerLogin(data) {
     if (!data.accessToken) throw new Error("OTP was verified but no login token was returned.");
     if (data.agent?.role === "Agent") throw new Error("This number is registered as a standard Agent, not a Partner. Contact GgnHome admin.");
-    if (data.agent?.role !== "Partner") throw new Error("This mobile number is not registered for Partner Portal access. Ask a GgnHome administrator to register it first.");
+    if (data.agent?.role !== "Partner") throw new Error("This mobile number cannot sign in to the Partner Portal.");
     if (data.agent.status === "suspended") throw new Error("This Partner account is suspended. Contact GgnHome support.");
     if (data.agent.status !== "active") throw new Error("This Partner account is not active yet. Contact GgnHome admin.");
     if (!data.agentAccessToken) throw new Error("OTP was verified, but a Partner session could not be created. Please try again.");
@@ -97,7 +97,7 @@ function AuthScreen({ onLogin }) {
           <Brand small />
           <div className="eyebrow dark">SECURE PARTNER LOGIN</div>
           <h2>Sign in to PartnerHub</h2>
-          <p className="muted">Only mobile numbers registered by GgnHome admin can access this portal. OTP verification is required for every login.</p>
+          <p className="muted">Sign in with your mobile number and OTP. No registration needed.</p>
           {error && <div className="alert error">{error}</div>}
           {notice && <div className="alert info">{notice}</div>}
           <label>Mobile number</label>
@@ -108,7 +108,7 @@ function AuthScreen({ onLogin }) {
             <button className="primary full" onClick={verifyOtp} disabled={busy}>{busy ? "Verifying…" : "Verify OTP and sign in"} <ArrowRight size={17} /></button>
             <button className="text-button" onClick={() => { setSent(false); setOtp(""); setError(""); setNotice(""); }} disabled={busy}>Change mobile number</button>
           </>}
-          <p className="fine-print">Need access? Ask a GgnHome administrator to register your mobile number. Self-registration is disabled.</p>
+          <p className="fine-print">New partner? Just enter your mobile number and verify the OTP.</p>
         </div>
       </section>
     </main>
