@@ -161,6 +161,9 @@ export default function PartnerAuthPage() {
             <Typography variant="body2" color="text.secondary" textAlign="center">
               New partner? Just enter your mobile number and verify the OTP.
             </Typography>
+            <Button onClick={() => navigate("/")} sx={{ textTransform: "none", color: "text.secondary" }}>
+              Back to ggnhome.com
+            </Button>
           </Stack>
         </Paper>
       </Container>

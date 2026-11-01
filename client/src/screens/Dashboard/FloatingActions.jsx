@@ -19,10 +19,9 @@ import { useAiConsultantEnabled } from "../../components/aiConsultant/featureFla
 const Chatbot = React.lazy(() => import("./ChatBot"));
 
 // The nudge is a suggestion, not an alarm: it waits, shows once, and stays
-// gone for a long while — and for good once the user dismisses it.
+// gone for the rest of the visit.
 const NUDGE_FIRST_DELAY = 9000;
 const NUDGE_VISIBLE_MS = 9000;
-const NUDGE_REPEAT_MS = 120000;
 
 /**
  * One floating rail instead of two competing bubbles: assistant on top,
@@ -35,6 +34,13 @@ export default function FloatingActions({ onOpenPreferences }) {
   const [chatOpen, setChatOpen] = useState(false);
   const [nudgeVisible, setNudgeVisible] = useState(false);
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
+  // The hero search already has a Personalise button: show the floating one only after scrolling past it.
+  const [pastHero, setPastHero] = useState(() => typeof window !== "undefined" && window.scrollY > 500);
+  useEffect(() => {
+    const onScroll = () => setPastHero(window.scrollY > 500);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     if (nudgeDismissed) return undefined;
@@ -45,13 +51,12 @@ export default function FloatingActions({ onOpenPreferences }) {
       hideTimer = setTimeout(() => setNudgeVisible(false), NUDGE_VISIBLE_MS);
     };
 
+    // Shown once per visit; never repeats.
     const firstTimer = setTimeout(show, NUDGE_FIRST_DELAY);
-    const repeat = setInterval(show, NUDGE_REPEAT_MS + NUDGE_FIRST_DELAY);
 
     return () => {
       clearTimeout(firstTimer);
       clearTimeout(hideTimer);
-      clearInterval(repeat);
     };
   }, [nudgeDismissed]);
 
@@ -75,7 +80,7 @@ export default function FloatingActions({ onOpenPreferences }) {
         }}
       >
         <AnimatePresence>
-          {nudgeVisible && !chatOpen && (
+          {nudgeVisible && pastHero && !chatOpen && (
             <Stack
               component={motion.div}
               direction="row"
@@ -123,6 +128,7 @@ export default function FloatingActions({ onOpenPreferences }) {
           )}
         </AnimatePresence>
 
+        {pastHero && (
         <Tooltip title="Personalise your feed" placement="left">
           <IconButton
             component={motion.button}
@@ -144,6 +150,7 @@ export default function FloatingActions({ onOpenPreferences }) {
             <SlidersHorizontal size={20} />
           </IconButton>
         </Tooltip>
+        )}
 
         {aiEnabled && (
         <Tooltip title="Ask our assistant" placement="left">
