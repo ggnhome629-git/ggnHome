@@ -559,7 +559,6 @@ For assistance, please contact: 9654131789 | support@ggnhome.com`;
                         bgcolor: pref.hasLoggedIn ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: '0.75rem', fontWeight: 700,
-                        bgcolor: pref.hasLoggedIn ? 'rgba(16,185,129,0.12)' : 'rgba(245,158,11,0.12)',
                         color: pref.hasLoggedIn ? '#10B981' : '#F59E0B',
                       }}
                     >

@@ -171,11 +171,12 @@ describe("matcher scoring", () => {
     expect(verified.reasons.join(" ")).toMatch(/Metro ~600 m/);
   });
 
-  test("hard filters include location, budget and BHK", () => {
+  test("hard filters include location, budget, BHK and corner position", () => {
     const q = matcher.buildQuery(req);
     expect(q.isActive).toBe(true);
     expect(JSON.stringify(q.$and)).toContain("monthlyRent");
-    expect(q.$and).toHaveLength(3);
+    expect(JSON.stringify(q.$and)).toContain("cornerPosition");
+    expect(q.$and).toHaveLength(4);
   });
 });
 
