@@ -30,7 +30,7 @@ jobs:
 
       # Android SDK is preinstalled on ubuntu-latest runners (ANDROID_HOME).
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
         with:
           gradle-version: "8.9"
 
