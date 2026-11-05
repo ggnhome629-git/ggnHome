@@ -41,7 +41,7 @@
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "livekit-server-sdk": "^2.9.0",
-    "mongoose": "^8.19.1",
+    "mongoose": "^9.11.4",
     "multer": "^2.0.2",
     "node-cache": "^5.1.2",
     "node-cron": "^4.6.0",
