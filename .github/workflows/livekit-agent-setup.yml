@@ -33,7 +33,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create and deploy LiveKit Cloud agent
-        uses: livekit/deploy-action@v2.12.2
+        uses: livekit/deploy-action@v2.12.3
         env:
           LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
           LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
@@ -72,7 +72,7 @@ jobs:
           test -f services/livekit-agent/Dockerfile || { echo "::error::Dockerfile is missing."; exit 1; }
 
       - name: Deploy LiveKit Cloud agent
-        uses: livekit/deploy-action@v2.12.2
+        uses: livekit/deploy-action@v2.12.3
         env:
           LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
           LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
