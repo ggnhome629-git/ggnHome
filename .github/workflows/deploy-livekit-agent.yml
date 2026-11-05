@@ -32,7 +32,7 @@ jobs:
           test -f services/livekit-agent/agent.py || { echo "::error::Missing services/livekit-agent/agent.py."; exit 1; }
 
       - name: Deploy to LiveKit Cloud
-        uses: livekit/deploy-action@v2.12.2
+        uses: livekit/deploy-action@v2.12.3
         env:
           LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
           LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
