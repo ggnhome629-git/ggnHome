@@ -195,8 +195,7 @@ const sc = smsConsole.wrap;
 router.post("/api/sms-console/login", smsConsoleLoginLimiter, sc(smsConsole.login));
 router.get("/api/sms-console/overview", smsConsole.verifyConsole, sc(smsConsole.overview));
 router.put("/api/sms-console/ggnhome/settings", smsConsole.verifyConsole, sc(smsConsole.saveGgnhomeSettings));
-router.put("/api/sms-console/shine/settings", smsConsole.verifyConsole, sc(smsConsole.saveShineSettings));
-router.put("/api/sms-console/shine/sheets", smsConsole.verifyConsole, sc(smsConsole.saveShineSheet));
+// Shine One's settings and sheets are managed in Stashr (SMS sender) now; this console no longer changes them.
 router.patch("/api/sms-console/phones/:deviceId", smsConsole.verifyConsole, sc(smsConsole.updatePhone));
 router.delete("/api/sms-console/phones/:deviceId", smsConsole.verifyConsole, sc(smsConsole.deletePhone));
 router.get("/api/sms-console/log", smsConsole.verifyConsole, sc(smsConsole.log));

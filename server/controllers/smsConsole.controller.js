@@ -240,9 +240,7 @@ exports.test = async (req, res) => {
   res.json({ ok: true });
 };
 
-// Shine One: settings and per-sheet message / Auto-send switch (the We Three server holds these).
-exports.saveShineSettings = async (req, res) => res.json(await shine("put", "/settings", req.body || {}));
-exports.saveShineSheet = async (req, res) => res.json(await shine("put", "/sheets", req.body || {}));
+// Shine One's settings and per-sheet messages / Auto-send are managed in Stashr (SMS sender), which talks to the We Three server itself.
 
 // Turns a thrown Shine One error into a clean JSON reply instead of a 500 page.
 exports.wrap = (fn) => (req, res) =>

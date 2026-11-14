@@ -51,7 +51,7 @@ test("shows only a key box until signed in, and rejects a wrong key", async () =
   expect(global.fetch.mock.calls.some(([u]) => String(u).includes("/overview"))).toBe(false);
 });
 
-test("after sign-in lists the phones with a switch per service, and the Shine One times", async () => {
+test("after sign-in lists the phones with a switch per service, and sends Shine One to Stashr", async () => {
   render(<SmsConsole />);
   fireEvent.change(screen.getByLabelText(/sms key/i), { target: { value: "right" } });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
@@ -59,18 +59,10 @@ test("after sign-in lists the phones with a switch per service, and the Shine On
   expect(screen.getByText("1 of 1 phones online")).toBeInTheDocument();
   expect(screen.getByText(/4 today/)).toBeInTheDocument();
 
+  // Shine One's limits, times and sheets are managed in Stashr now: the tab only points there and changes nothing.
   fireEvent.click(screen.getByRole("tab", { name: /Shine One Estate/ }));
-  expect(await screen.findByDisplayValue("13:00")).toBeInTheDocument();
-  expect(screen.getByDisplayValue("21:00")).toBeInTheDocument();
-  expect(screen.getByText("Meta Sheet")).toBeInTheDocument();
-  expect(screen.getByText("Remaining 90")).toBeInTheDocument();
-
-  // Changing a time and saving sends it to the server
-  fireEvent.change(screen.getByDisplayValue("13:00"), { target: { value: "12:30" } });
-  fireEvent.click(screen.getByRole("button", { name: /save times and limits/i }));
-  await waitFor(() => {
-    const call = global.fetch.mock.calls.find(([u, o]) => String(u).endsWith("/shine/settings") && o && o.method === "PUT");
-    expect(call).toBeTruthy();
-    expect(JSON.parse(call[1].body)).toMatchObject({ lunchStart: "12:30", nightStart: "21:00" });
-  });
+  expect(await screen.findByText(/managed in Stashr/)).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: /stashr.tanush.qd.je\/sms/ })).toHaveAttribute("href", "https://stashr.tanush.qd.je/sms");
+  expect(screen.queryByDisplayValue("13:00")).toBeNull();
+  expect(global.fetch.mock.calls.some(([u]) => String(u).includes("/shine/"))).toBe(false);
 });

@@ -4,13 +4,7 @@ import {
   Alert,
   Box,
   Button,
-  Checkbox,
   Chip,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   FormControlLabel,
   IconButton,
   LinearProgress,
@@ -34,12 +28,11 @@ import { Trash2 } from "lucide-react";
 
 /**
  * SMS Service console — hidden page (/sms-service/app/manage). Opened with the shared SMS key; it manages both services:
- * phones (which service each one sends for), limits, Shine One sending times, per-sheet message + Auto-send, a log
- * and a test send. GGN Home OTP delivery can be switched between SMS and app display here.
+ * phones (which service each one sends for), GGN Home limits and a log. Shine One's limits, times and sheets are managed in Stashr → SMS sender.
+ * A test send is on the log tab. GGN Home OTP delivery can be switched between SMS and app display here.
  */
 const BASE = API_BASE;
 const TOKEN_KEY = "smsConsoleToken";
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 // Kept on this device (not just this tab), so the key is typed once.
 const getToken = () => {
@@ -338,209 +331,19 @@ function GgnhomeTab({ data, reload, notify }) {
 
 // --------------------------------------------------------------- Shine One ----
 
-function ShineTab({ data, reload, notify }) {
-  const sh = data.shine;
-  const settings = sh && sh.ok ? sh.settings : null;
-  const [form, setForm] = useState(null);
-  const [drafts, setDrafts] = useState({});
-  const [askNew, setAskNew] = useState(null);
-
-  useEffect(() => {
-    if (!settings) return;
-    const e = settings.effective;
-    setForm({
-      mode: settings.mode,
-      paused: !!settings.paused,
-      dailyLimit: settings.mode === "custom" ? settings.dailyLimit : e.dailyLimit,
-      hourlyLimit: settings.mode === "custom" ? settings.hourlyLimit : e.hourlyLimit,
-      gapMinSec: settings.mode === "custom" ? settings.gapMinSec : e.gapMinSec,
-      gapMaxSec: settings.mode === "custom" ? settings.gapMaxSec : e.gapMaxSec,
-      lunchQuota: settings.mode === "custom" ? settings.lunchQuota : e.lunchQuota,
-      lunchStart: e.lunchStart,
-      lunchEnd: e.lunchEnd,
-      nightStart: e.nightStart,
-      nightEnd: e.nightEnd,
-      days: e.days,
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings && settings.updatedAt]);
-
-  if (!sh) return null;
-  if (!sh.ok) return <Alert severity="error">The Shine One server did not answer: {sh.error}. It may be waking up — try again in a minute.</Alert>;
-  if (!form) return <CircularProgress />;
-
-  const save = async (override) => {
-    try {
-      await api("/shine/settings", { method: "PUT", body: JSON.stringify({ ...form, ...override }) });
-      notify("Shine One settings saved", "success");
-      reload();
-    } catch (e) {
-      notify(e.message, "error");
-    }
-  };
-  const toggleDay = (d) => setForm({ ...form, days: form.days.includes(d) ? form.days.filter((x) => x !== d) : [...form.days, d].sort() });
-  const time = (key, label) => (
-    <TextField size="small" type="time" label={label} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} InputLabelProps={{ shrink: true }} sx={{ width: 140 }} />
-  );
-
-  const saveSheet = async (sheet, body) => {
-    try {
-      await api("/shine/sheets", { method: "PUT", body: JSON.stringify({ sheet, ...body }) });
-      setDrafts((d) => {
-        const { [sheet]: _gone, ...rest } = d;
-        return rest;
-      });
-      notify(body.auto === undefined ? "Message saved" : body.auto ? "Auto-send is on" : "Auto-send is off", "success");
-      reload();
-    } catch (e) {
-      notify(e.message, "error");
-    }
-  };
-  const eff = settings.effective;
-
+// Shine One's SMS (limits, sending times, days, sheets, messages and Auto-send) is managed in Stashr now: Stashr → SMS sender.
+// The We Three server still does the sending; the phones and the log stay here.
+function ShineTab() {
   return (
-    <Stack spacing={3}>
-      <Paper sx={{ p: 2.5 }}>
-        <Stack spacing={2}>
-          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
-            <Typography fontWeight={600}>When to send</Typography>
-            <FormControlLabel control={<Switch checked={form.paused} onChange={(e) => setForm({ ...form, paused: e.target.checked })} />} label={form.paused ? "Paused (nothing is sent)" : "Running"} />
-          </Stack>
-          <Typography variant="body2" color="text.secondary">
-            The lunch batch goes out in the lunch window; the rest of the day's limit goes out at night. Times are India time.
-          </Typography>
-          <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap" alignItems="center">
-            <Typography sx={{ width: 60 }}>Lunch</Typography>
-            {time("lunchStart", "From")}
-            {time("lunchEnd", "To")}
-            <Typography sx={{ width: 60, ml: 2 }}>Night</Typography>
-            {time("nightStart", "From")}
-            {time("nightEnd", "To")}
-          </Stack>
-          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap alignItems="center">
-            <Typography sx={{ mr: 1 }}>Days</Typography>
-            {DAYS.map((d, i) => (
-              <FormControlLabel key={d} control={<Checkbox size="small" checked={form.days.includes(i)} onChange={() => toggleDay(i)} />} label={d} />
-            ))}
-          </Stack>
-        </Stack>
-      </Paper>
-
-      <Paper sx={{ p: 2.5 }}>
-        <Stack spacing={2}>
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Typography fontWeight={600}>Limits</Typography>
-            <ModeSwitch mode={form.mode} setMode={(mode) => setForm({ ...form, mode })} />
-          </Stack>
-          <Typography variant="body2" color="text.secondary">
-            {form.mode === "auto"
-              ? `Auto uses the safe defaults: ${eff.dailyLimit}/day, ${eff.hourlyLimit}/hour, ${eff.lunchQuota} in the lunch window, ${eff.gapMinSec}–${eff.gapMaxSec} s between SMS.`
-              : `Custom values are capped at ${settings.hardCaps.daily}/day and ${settings.hardCaps.hourly}/hour. Limits apply to each phone.`}
-          </Typography>
-          <LimitFields form={form} setForm={setForm} disabled={form.mode === "auto"} withQuota />
-        </Stack>
-      </Paper>
-      <Box>
-        <Button variant="contained" onClick={() => save()}>
-          Save times and limits
-        </Button>
-      </Box>
-
-      <Typography variant="h6">Sheets</Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ mt: -2 }}>
-        Write the message for a sheet and switch Auto-send on. It texts one lead at a time, within the times and limits above, until the sheet is done — even if that takes days. Use {"{name}"} for the lead's name.
+    <Stack spacing={2}>
+      <Alert severity="info">
+        Shine One Estate SMS is now managed in Stashr: open <b>Stashr → SMS sender</b> (
+        <a href="https://stashr.tanush.qd.je/sms" target="_blank" rel="noreferrer noopener">stashr.tanush.qd.je/sms</a>
+        ). The limits, sending times, days, the sheets, their messages and Auto-send are set there.
+      </Alert>
+      <Typography variant="body2" color="text.secondary">
+        Which phones send for Shine One is still chosen on the Phones tab, and its messages still show in Log &amp; test.
       </Typography>
-      {sh.sheets.length === 0 && <Alert severity="info">No lead sheets yet.</Alert>}
-      {sh.sheets.map((s) => {
-        const draft = drafts[s.sheet] ?? s.text;
-        const dirty = draft !== s.text;
-        const done = s.sent + s.failed + s.invalid;
-        return (
-          <Paper key={s.sheet} sx={{ p: 2.5 }}>
-            <Stack spacing={1.5}>
-              <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap" useFlexGap>
-                <Typography fontWeight={600} sx={{ flexGrow: 1 }}>
-                  {s.sheet}
-                </Typography>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={s.auto}
-                      onChange={(e) => {
-                        if (!e.target.checked) return saveSheet(s.sheet, { auto: false });
-                        if (!draft.trim()) return notify("Write the message first", "warning");
-                        setAskNew({ sheet: s.sheet, text: draft, hasOld: s.remaining > 0 });
-                      }}
-                    />
-                  }
-                  label="Auto-send"
-                />
-              </Stack>
-              <LinearProgress variant="determinate" value={s.total ? Math.min(100, (done / s.total) * 100) : 0} />
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                <Chip size="small" color="success" label={`Sent ${s.sent}`} />
-                <Chip size="small" label={`Remaining ${s.remaining}`} />
-                {s.failed > 0 && <Chip size="small" color="error" label={`Failed ${s.failed}`} />}
-                {s.invalid > 0 && <Chip size="small" color="warning" label={`Bad number ${s.invalid}`} />}
-                {s.auto && s.etaDays != null && <Chip size="small" color="info" label={`About ${s.etaDays} day${s.etaDays === 1 ? "" : "s"} left`} />}
-                {s.onlyNewSince && <Chip size="small" variant="outlined" label={`New leads since ${fmt(s.onlyNewSince)}`} />}
-              </Stack>
-              <TextField
-                multiline
-                minRows={2}
-                fullWidth
-                label="Message"
-                value={draft}
-                inputProps={{ maxLength: 600 }}
-                helperText={`${draft.length}/600 · {name} becomes the lead's name`}
-                onChange={(e) => setDrafts({ ...drafts, [s.sheet]: e.target.value })}
-              />
-              {dirty && (
-                <Box>
-                  <Button size="small" variant="outlined" onClick={() => saveSheet(s.sheet, { text: draft })}>
-                    Save message
-                  </Button>
-                </Box>
-              )}
-            </Stack>
-          </Paper>
-        );
-      })}
-
-      <Dialog open={!!askNew} onClose={() => setAskNew(null)}>
-        <DialogTitle>Switch on Auto-send for {askNew && askNew.sheet}?</DialogTitle>
-        <DialogContent>
-          <Typography>
-            {askNew && askNew.hasOld
-              ? "This sheet has leads that have not been texted yet. Text all of them, or only leads that arrive from now on?"
-              : "Leads added to this sheet from now on will be texted."}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setAskNew(null)}>Cancel</Button>
-          {askNew && askNew.hasOld && (
-            <Button
-              onClick={() => {
-                const a = askNew;
-                setAskNew(null);
-                saveSheet(a.sheet, { text: a.text, auto: true, onlyNew: true });
-              }}
-            >
-              Only new leads
-            </Button>
-          )}
-          <Button
-            variant="contained"
-            onClick={() => {
-              const a = askNew;
-              setAskNew(null);
-              saveSheet(a.sheet, { text: a.text, auto: true, onlyNew: false });
-            }}
-          >
-            {askNew && askNew.hasOld ? "All unsent leads" : "Switch on"}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Stack>
   );
 }
@@ -729,7 +532,7 @@ export default function SmsConsole() {
         {!data && !error && <LinearProgress />}
         {data && tab === 0 && <PhonesTab data={data} reload={reload} notify={notify} />}
         {data && tab === 1 && <GgnhomeTab data={data} reload={reload} notify={notify} />}
-        {data && tab === 2 && <ShineTab data={data} reload={reload} notify={notify} />}
+        {tab === 2 && <ShineTab />}
         {tab === 3 && <LogTab notify={notify} />}
       </Box>
       {toast && (
