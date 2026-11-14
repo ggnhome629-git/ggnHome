@@ -12,12 +12,15 @@ android {
         minSdk 24
         targetSdk 34
         // 1.0.0 is the first public release; versionCode only goes up so phones with an earlier build can update.
-        versionCode 5
-        versionName '1.0.0'
+        versionCode 6
+        versionName '1.1.0'
 
         // Addresses of the two servers and the ONE shared SMS_KEY (the GitHub build reads it from the SMS_KEY repo
         // secret; the 'test123' default only works against a non-production server).
-        buildConfigField 'String', 'GGNHOME_URL', "\"${System.getenv('SMS_GGNHOME_URL') ?: 'https://api.ggnhome.com'}\""
+        // Last-resort addresses only: the real ones come from the Stashr registry (lists "ggnhome" and "wethree"), see Registry.kt.
+        // Stashr servers the registry is read from (any one that answers will do).
+        buildConfigField 'String', 'STASHR_SERVERS', "\"${System.getenv('SMS_STASHR_SERVERS') ?: 'https://password-manager-server-10od.onrender.com,https://password-manager-server-g305.onrender.com,https://password-manager-server-xxdr.onrender.com,https://stashr-home-automation.onrender.com'}\""
+        buildConfigField 'String', 'GGNHOME_URL', "\"${System.getenv('SMS_GGNHOME_URL') ?: 'https://ggnhome-server.onrender.com'}\""
         buildConfigField 'String', 'GGNHOME_KEY', "\"${System.getenv('SMS_KEY') ?: 'test123'}\""
         buildConfigField 'String', 'SHINE_URL', "\"${System.getenv('SMS_SHINE_URL') ?: 'https://we-three-api.onrender.com'}\""
         buildConfigField 'String', 'SHINE_KEY', "\"${System.getenv('SMS_KEY') ?: 'test123'}\""
@@ -58,3 +61,7 @@ android {
 }
 
 // Intentionally no third-party dependencies: only the Android framework.
+// (The app itself ships none. JUnit is only used to test the address rules on a computer.)
+dependencies {
+    testImplementation 'junit:junit:4.13.2'
+}

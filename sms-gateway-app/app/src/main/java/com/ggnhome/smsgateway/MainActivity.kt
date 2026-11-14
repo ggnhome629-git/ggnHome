@@ -2,6 +2,7 @@ package com.ggnhome.smsgateway
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -16,7 +17,9 @@ import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.Gravity
+import android.text.InputType
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -39,6 +42,7 @@ class MainActivity : Activity() {
 
     private val views = HashMap<String, SvcViews>()
     private lateinit var bgView: TextView
+    private lateinit var connView: TextView
     private lateinit var logView: TextView
     private lateinit var noteView: TextView
     private lateinit var toggleBtn: Button
@@ -180,6 +184,30 @@ class MainActivity : Activity() {
             ).apply { topMargin = dp(8) }
         })
 
+        // Where the servers are (from the Stashr registry) and the shared SMS key.
+        val conn = card()
+        conn.addView(label("Connection"))
+        connView = value().also { conn.addView(it) }
+        conn.addView(Button(this).apply {
+            text = "Set SMS key"
+            isAllCaps = false
+            setOnClickListener { askKey() }
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(8) }
+        })
+        conn.addView(Button(this).apply {
+            text = "Refresh server addresses"
+            isAllCaps = false
+            setOnClickListener {
+                text = "Reading Stashr…"
+                Thread {
+                    val ok = Registry.refresh(this@MainActivity)
+                    runOnUiThread { text = "Refresh server addresses"; connNote = if (ok) "Addresses updated from Stashr." else "Could not reach Stashr; keeping the last addresses."; refresh() }
+                }.start()
+            }
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(4) }
+        })
+        body.addView(conn)
+
         val device = card()
         device.addView(label("This phone"))
         device.addView(value().apply { text = "${Config.deviceName()}\nID ${Config.deviceId(this@MainActivity).take(8)} · v${Config.APP_VERSION}" })
@@ -210,8 +238,37 @@ class MainActivity : Activity() {
         })
     }
 
+    @Volatile private var connNote = ""
+
+    /** Types (or clears) the shared SMS key; it must be the SMS_KEY set on both servers. */
+    private fun askKey() {
+        val input = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
+            hint = "SMS key"
+            setPadding(dp(20), dp(12), dp(20), dp(12))
+        }
+        AlertDialog.Builder(this)
+            .setTitle("SMS key")
+            .setMessage("The shared key that both servers expect (their SMS_KEY). It is kept only on this phone.")
+            .setView(input)
+            .setPositiveButton("Save") { _, _ ->
+                val v = input.text.toString().trim()
+                if (v.isNotEmpty()) Config.prefs(this).edit().putString(Config.KEY_SMS_KEY, v).apply()
+                connNote = if (v.isNotEmpty()) "Key saved." else ""
+                refresh()
+            }
+            .setNeutralButton("Use the built-in key") { _, _ ->
+                Config.prefs(this).edit().remove(Config.KEY_SMS_KEY).apply()
+                connNote = "Using the key built into the app."
+                refresh()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     override fun onResume() {
         super.onResume()
+        Thread { try { Registry.refreshIfOld(this) } catch (_: Exception) { } }.start()
         handler.post(ticker)
     }
 
@@ -311,6 +368,17 @@ class MainActivity : Activity() {
         }
 
         noteView.text = note
+
+        val regAt = prefs.getLong(Registry.updatedKey(), 0L)
+        val typed = prefs.getString(Config.KEY_SMS_KEY, "").orEmpty().isNotBlank()
+        connView.text = Config.SERVICES.joinToString("\n") { "${it.label}: ${Registry.current(this, it).removePrefix("https://")}" } + "\n" +
+            (if (regAt == 0L) "Addresses: built-in (Stashr not read yet)" else "Addresses from Stashr, read ${hhmmss.format(Date(regAt))}") + "\n" +
+            when {
+                typed -> "SMS key: set on this phone ✔"
+                Config.keyIsPlaceholder(this) -> "SMS key: ✘ not set (the build has only a test key, the servers refuse it): tap “Set SMS key”"
+                else -> "SMS key: built into the app ✔"
+            } + (if (connNote.isNotEmpty()) "\n$connNote" else "")
+        connView.setTextColor(if (!typed && Config.keyIsPlaceholder(this)) Color.parseColor("#C0392B") else Color.parseColor("#1B2A3A"))
 
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         val unrestricted = pm.isIgnoringBatteryOptimizations(packageName)

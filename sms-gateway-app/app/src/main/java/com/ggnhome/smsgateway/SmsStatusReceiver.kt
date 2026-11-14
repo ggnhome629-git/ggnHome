@@ -65,20 +65,23 @@ class SmsStatusReceiver : BroadcastReceiver() {
     }
 
     private fun post(context: Context, svc: Svc, qid: String, status: String, detail: String) {
-        try {
-            val c = URL(svc.url("/$qid/delivery")).openConnection() as HttpURLConnection
-            c.requestMethod = "POST"
-            c.connectTimeout = 10000
-            c.readTimeout = 15000
-            c.setRequestProperty("Authorization", "Bearer ${svc.key}")
-            c.setRequestProperty("X-Device-Id", Config.deviceId(context))
-            c.setRequestProperty("Content-Type", "application/json")
-            c.doOutput = true
-            c.outputStream.use { it.write(JSONObject().put("status", status).put("detail", detail).toString().toByteArray()) }
-            c.responseCode
-            c.disconnect()
-        } catch (_: Exception) {
-            // Local log already has it; the server copy is best-effort.
+        val payload = JSONObject().put("status", status).put("detail", detail).toString().toByteArray()
+        // Tries each address of the service in turn; the local log already has the result, so the server copy is best-effort.
+        for (base in Registry.bases(context, svc)) {
+            try {
+                val c = URL(base + svc.prefix + "/$qid/delivery").openConnection() as HttpURLConnection
+                try {
+                    c.requestMethod = "POST"
+                    c.connectTimeout = 10000
+                    c.readTimeout = 15000
+                    c.setRequestProperty("Authorization", "Bearer ${Config.key(context, svc)}")
+                    c.setRequestProperty("X-Device-Id", Config.deviceId(context))
+                    c.setRequestProperty("Content-Type", "application/json")
+                    c.doOutput = true
+                    c.outputStream.use { it.write(payload) }
+                    if (!Addresses.tryNext(c.responseCode)) return
+                } finally { c.disconnect() }
+            } catch (_: Exception) { }
         }
     }
 }

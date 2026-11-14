@@ -13,6 +13,7 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.telephony.SmsManager
 import org.json.JSONObject
+import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.atomic.AtomicInteger
@@ -35,6 +36,13 @@ class GatewayService : Service() {
             running = true
             val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
             wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "smsservice:gateway").apply { acquire() }
+            // The server addresses come from the Stashr registry: read now, then again every 10 minutes (and when every address fails).
+            workers.add(Thread {
+                while (running) {
+                    try { Registry.refreshIfOld(this) } catch (_: Exception) { }
+                    try { Thread.sleep(60_000L) } catch (_: InterruptedException) { return@Thread }
+                }
+            }.also { it.start() })
             for (svc in Config.SERVICES) {
                 workers.add(Thread { pollLoop(svc) }.also { it.start() })
             }
@@ -101,7 +109,7 @@ class GatewayService : Service() {
                 var allowSmsSend = svc.id != "ggnhome"
                 if (svc.id == "ggnhome") {
                     // This endpoint reports whether the admin selected app-only OTP display.
-                    val preview = request("GET", svc.url("/otp-preview"), svc.key, null, deviceId, deviceName)
+                    val preview = call(svc, "GET", "/otp-preview", null, deviceId, deviceName)
                     if (preview.code == 200) {
                         prefs.edit().putLong(Config.beatKey(svc), System.currentTimeMillis()).apply()
                         val payload = JSONObject(preview.body)
@@ -125,13 +133,13 @@ class GatewayService : Service() {
                             }
                         }
                     } else if (preview.code == 401) {
-                        note(svc, "Wrong device key")
+                        note(svc, "Wrong SMS key: set it on this screen")
                     }
                 }
 
                 // In preview mode, never claim/send GGN Home messages. Otherwise keep the original SMS flow.
                 if (allowSmsSend) {
-                    val next = request("GET", svc.url("/next"), svc.key, null, deviceId, deviceName)
+                    val next = call(svc, "GET", "/next", null, deviceId, deviceName)
                     failures = 0
                     if (next.code == 200 || next.code == 204) {
                         prefs.edit()
@@ -145,18 +153,18 @@ class GatewayService : Service() {
                         val to = job.getString("phoneNumber")
                         try {
                             sendSms(to, job.getString("message"), id, svc.id)
-                            request("POST", svc.url("/$id/result"), svc.key, """{"status":"sent"}""", deviceId, deviceName)
+                            call(svc, "POST", "/$id/result", """{"status":"sent"}""", deviceId, deviceName)
                             prefs.edit().putInt(Config.sentKey(svc), prefs.getInt(Config.sentKey(svc), 0) + 1).apply()
                             note(svc, "Sent to …${to.takeLast(4)}")
                             Config.appendLog(this, svc.id, to, true, "Sent, waiting for delivery report", id)
                         } catch (e: Exception) {
                             val err = JSONObject().put("status", "failed").put("error", e.message ?: "send error")
-                            request("POST", svc.url("/$id/result"), svc.key, err.toString(), deviceId, deviceName)
+                            call(svc, "POST", "/$id/result", err.toString(), deviceId, deviceName)
                             note(svc, "Send failed: ${e.message}")
                             Config.appendLog(this, svc.id, to, false, e.message ?: "send error", id)
                         }
                     }
-                    if (next.code == 401) note(svc, "Wrong device key")
+                    if (next.code == 401) note(svc, "Wrong SMS key: set it on this screen")
                 } else if (previewMode) {
                     note(svc, "App OTP display enabled by admin")
                 } else {
@@ -166,7 +174,7 @@ class GatewayService : Service() {
                 if (System.currentTimeMillis() - lastStatusAt > 20_000L) {
                     lastStatusAt = System.currentTimeMillis()
                     try {
-                        val st = request("GET", svc.url("/status"), svc.key, null, deviceId, deviceName)
+                        val st = call(svc, "GET", "/status", null, deviceId, deviceName)
                         if (st.code == 200) prefs.edit().putString(Config.statusKey(svc), st.body).apply()
                     } catch (_: Exception) { }
                 }
@@ -228,6 +236,25 @@ class GatewayService : Service() {
                 .putExtra("qid", queueId).putExtra("to", to).putExtra("svc", svcId),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
         )
+
+    /**
+     * One request to a service. The addresses of that service are tried in order (best first); one that is down, asleep, or not that
+     * server (HTTP 404 / 408 / 5xx / no connection) passes to the next. When all fail, Stashr is asked for the current list.
+     */
+    private fun call(svc: Svc, method: String, path: String, body: String?, deviceId: String, deviceName: String): Resp {
+        var lastError: IOException? = null
+        var lastResp: Resp? = null
+        for (base in Registry.bases(this, svc)) {
+            try {
+                val r = request(method, base + svc.prefix + path, Config.key(this, svc), body, deviceId, deviceName)
+                if (Addresses.tryNext(r.code)) { lastResp = r; continue }
+                Registry.worked(this, svc, base)
+                return r
+            } catch (e: IOException) { lastError = e }
+        }
+        Registry.refreshSoon(this)
+        return lastResp ?: throw (lastError ?: IOException("No server address"))
+    }
 
     private fun request(method: String, url: String, key: String, body: String?, deviceId: String, deviceName: String): Resp {
         val c = URL(url).openConnection() as HttpURLConnection

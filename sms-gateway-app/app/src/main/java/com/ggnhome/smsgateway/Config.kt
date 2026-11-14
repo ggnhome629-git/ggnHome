@@ -9,22 +9,24 @@ import java.util.UUID
 
 // The two services this phone can send for. Everything about them (limits, times, which phone does what) is managed
 // on the website console; the app only holds the addresses and keys it needs to reach each server.
-class Svc(val id: String, val label: String, val base: String, val prefix: String, val key: String) {
-    fun url(path: String) = "$base$prefix$path"
-}
+// `app` is the name of the service's address list on the Stashr registry; `fallback` is only used when that list was never read.
+class Svc(val id: String, val label: String, val app: String, val fallback: String, val prefix: String, val buildKey: String)
 
 object Config {
-    const val APP_VERSION = "1.0.0"
+    const val APP_VERSION = "1.1.0"
 
     val SERVICES = listOf(
-        Svc("ggnhome", "GGN Home", BuildConfig.GGNHOME_URL.trimEnd('/'), "/sms-gateway", BuildConfig.GGNHOME_KEY),
-        Svc("shine", "Shine One Estate", BuildConfig.SHINE_URL.trimEnd('/'), "/api/sms-gateway", BuildConfig.SHINE_KEY),
+        Svc("ggnhome", "GGN Home", "ggnhome", BuildConfig.GGNHOME_URL.trimEnd('/'), "/sms-gateway", BuildConfig.GGNHOME_KEY),
+        Svc("shine", "Shine One Estate", "wethree", BuildConfig.SHINE_URL.trimEnd('/'), "/api/sms-gateway", BuildConfig.SHINE_KEY),
     )
 
     private const val PREFS = "gateway"
     const val KEY_ENABLED = "enabled"
     const val KEY_DEVICE_ID = "device_id"
     const val KEY_LOG = "log"
+    const val KEY_SMS_KEY = "sms_key"
+    /** The build's placeholder key (a build without the SMS_KEY secret): the production servers refuse it. */
+    const val TEST_KEY = "test123"
     private const val MAX_LOG = 100
 
     // Per-service status written by the service and shown (read-only) on screen.
@@ -48,6 +50,10 @@ object Config {
         val maker = Build.MANUFACTURER.replaceFirstChar { it.uppercase() }
         return "$maker ${Build.MODEL}".take(60)
     }
+
+    /** The shared SMS key: the one typed on this phone, else the one built into the app. */
+    fun key(c: Context, svc: Svc): String = prefs(c).getString(KEY_SMS_KEY, "").orEmpty().trim().ifEmpty { svc.buildKey }
+    fun keyIsPlaceholder(c: Context): Boolean = key(c, SERVICES.first()) == TEST_KEY
 
     fun service(id: String): Svc? = SERVICES.firstOrNull { it.id == id }
 
