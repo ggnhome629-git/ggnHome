@@ -2,7 +2,15 @@
 // no fallback address. Switch the servers off there and this site stops reaching any server.
 // The Stashr address comes from the build env (REACT_APP_STASHR_SERVER_URL, written by Stashr when its main server
 // changes). The old address is only the default when that variable is not set.
-const REGISTRY_HOST = String(process.env.REACT_APP_STASHR_SERVER_URL || "https://password-manager-server-xxdr.onrender.com").trim().replace(/\/+$/, "");
+const DEFAULT_HOSTS = [
+  "https://password-manager-server-xxdr.onrender.com",
+  "https://stashr-home-automation.onrender.com",
+  "https://stashr-home-automation-gk9p.onrender.com",
+  "https://password-manager-server-10od.onrender.com",
+  "https://password-manager-server-g305.onrender.com",
+];
+// The env value may be one address or a comma-separated list; the defaults follow it. Suspended servers just fail and are skipped.
+const REGISTRY_HOSTS = [...new Set(String(process.env.REACT_APP_STASHR_SERVER_URL || "").split(",").concat(DEFAULT_HOSTS).map((h) => h.trim().replace(/\/+$/, "")).filter(Boolean))];
 const APP = "ggnhome";
 const CACHE_KEY = "stashr.server." + APP;
 // Used as the address when Stashr has none (switched off, or never reached): every request then fails at once.
@@ -13,17 +21,28 @@ const clean = (url) => String(url || "").trim().replace(/\/+$/, "");
 const readCache = () => { try { const v = JSON.parse(localStorage.getItem(CACHE_KEY)); return v && typeof v.url === "string" ? v : null; } catch { return null; } };
 const writeCache = (url) => { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ url })); } catch { /* private mode */ } };
 
+// Stashr may list several server addresses (api.ggnhome.com, Render URLs, ...). Any of them is fine: the first one whose
+// /health answers wins. If none answers (or only one is listed) the first listed address is used.
+async function pickLive(urls, signal) {
+  if (urls.length < 2) return urls[0] || "";
+  const probe = async (u) => { const r = await fetch(u + "/health", { signal }); if (!r.ok) throw new Error("down"); return u; };
+  try { return await Promise.any(urls.map(probe)); } catch { return urls[0]; }
+}
+
 /** Stashr's answer: { url } (empty = switched off), or null when Stashr cannot be reached. */
 async function fetchFromStashr(timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const res = await fetch(`${REGISTRY_HOST}/registry/${APP}`, { signal: controller.signal });
-    if (!res.ok) return null;
+  // Ask every Stashr server at once; the first one that answers wins (a suspended one fails at once with no CORS headers).
+  const ask = async (host) => {
+    const res = await fetch(`${host}/registry/${APP}`, { signal: controller.signal });
+    if (!res.ok) throw new Error("registry " + res.status);
     const body = await res.json();
-    const url = clean((body.urls || [])[0]);
-    return { url: /^https?:\/\//i.test(url) ? url : "" };
-  } catch { return null; } finally { clearTimeout(timer); }
+    const urls = (body.urls || []).map(clean).filter((u) => /^https?:\/\//i.test(u));
+    return { url: await pickLive(urls, controller.signal) };
+  };
+  try { return await Promise.any(REGISTRY_HOSTS.map(ask)); }
+  catch { return null; } finally { clearTimeout(timer); controller.abort(); }
 }
 
 // A live binding: modules that import it after resolveApiBase() has finished see the Stashr address.

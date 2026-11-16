@@ -17,9 +17,15 @@ let shineCache = { url: "", at: 0 };
 const SHINE_URL = async () => {
   if (shineCache.at && Date.now() - shineCache.at < 5 * 60 * 1000) return shineCache.url;
   try {
-    // STASHR_SERVER_URL is written by Stashr when its main server changes; the old address is only the default.
-    const stashr = String(process.env.STASHR_SERVER_URL || "https://password-manager-server-xxdr.onrender.com").trim().replace(/\/+$/, "");
-    const r = await axios.get(stashr + "/registry/wethree", { timeout: 15000 });
+    // STASHR_SERVER_URL (one address or a comma list) comes first; the other Stashr servers follow. The first that answers wins.
+    const hosts = [...new Set(String(process.env.STASHR_SERVER_URL || "").split(",").concat([
+      "https://password-manager-server-xxdr.onrender.com",
+      "https://stashr-home-automation.onrender.com",
+      "https://stashr-home-automation-gk9p.onrender.com",
+      "https://password-manager-server-10od.onrender.com",
+      "https://password-manager-server-g305.onrender.com",
+    ]).map((h) => h.trim().replace(/\/+$/, "")).filter(Boolean))];
+    const r = await Promise.any(hosts.map((h) => axios.get(h + "/registry/wethree", { timeout: 15000 })));
     const url = String((r.data && r.data.urls && r.data.urls[0]) || "").replace(/\/+$/, "");
     shineCache = { url: /^https?:\/\//i.test(url) ? url : "", at: Date.now() };
   } catch { /* keep the last answer; with none, report it below */ }

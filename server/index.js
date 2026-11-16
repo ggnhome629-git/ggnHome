@@ -34,7 +34,7 @@ const app = express();
 let shuttingDown = false;
 // Health check for uptime monitors (added by Stashr)
 // Liveness: the process is up. Never touches the database, so a database outage does not make the host kill the server.
-app.get("/health", (req, res) => res.status(200).json({ status: "ok", uptime: process.uptime() }));
+app.get("/health", cors(), (req, res) => res.status(200).json({ status: "ok", uptime: process.uptime() }));
 // Readiness: can this server take traffic? Use this as the host's health check path and in a load balancer.
 // 503 until MongoDB answers, and while the server is shutting down (so it is taken out of rotation first).
 app.get("/health/ready", async (req, res) => {
