@@ -240,88 +240,41 @@ function PhonesTab({ data, reload, notify }) {
   );
 }
 
-// ----------------------------------------------------------------- limits ----
+// ----------------------------------------------------------------- GGN Home ----
 
-const num = (v) => (v === "" || v === undefined || v === null ? "" : String(v));
-
-function LimitFields({ form, setForm, disabled, withQuota }) {
-  const field = (key, label, help) => (
-    <TextField
-      key={key}
-      size="small"
-      type="number"
-      label={label}
-      helperText={help}
-      value={num(form[key])}
-      disabled={disabled}
-      onChange={(e) => setForm({ ...form, [key]: e.target.value === "" ? "" : Number(e.target.value) })}
-      sx={{ width: 190 }}
-    />
-  );
-  return (
-    <Stack direction="row" spacing={2} useFlexGap flexWrap="wrap">
-      {field("dailyLimit", "SMS per day", "per phone")}
-      {field("hourlyLimit", "SMS per hour", "per phone")}
-      {field("gapMinSec", "Gap min (sec)", "between two SMS")}
-      {field("gapMaxSec", "Gap max (sec)", "random between min & max")}
-      {withQuota && field("lunchQuota", "Lunch batch", "SMS in the lunch window")}
-    </Stack>
-  );
-}
-
-function ModeSwitch({ mode, setMode }) {
-  return (
-    <ToggleButtonGroup exclusive size="small" value={mode} onChange={(e, v) => v && setMode(v)}>
-      <ToggleButton value="auto">Auto</ToggleButton>
-      <ToggleButton value="custom">Custom</ToggleButton>
-    </ToggleButtonGroup>
-  );
-}
-
+// GGN Home's SMS limits (per day, per hour, the gap between two SMS) are not set here: they are managed in Stashr → SMS sender.
+// This tab only keeps the OTP delivery switch.
 function GgnhomeTab({ data, reload, notify }) {
   const s = data.ggnhome.settings;
-  const [form, setForm] = useState(null);
-  useEffect(() => {
-    setForm({ showOtpOnAndroid: !!s.showOtpOnAndroid, mode: s.mode, dailyLimit: s.dailyLimit ?? s.effective.dailyLimit, hourlyLimit: s.hourlyLimit ?? s.effective.hourlyLimit, gapMinSec: s.gapMinSec ?? s.effective.gapMinSec, gapMaxSec: s.gapMaxSec ?? s.effective.gapMaxSec });
-  }, [s.showOtpOnAndroid, s.mode, s.dailyLimit, s.hourlyLimit, s.gapMinSec, s.gapMaxSec, s.effective]);
-  if (!form) return null;
+  const [showOtp, setShowOtp] = useState(!!s.showOtpOnAndroid);
+  useEffect(() => { setShowOtp(!!s.showOtpOnAndroid); }, [s.showOtpOnAndroid]);
   const save = async () => {
     try {
-      await api("/ggnhome/settings", { method: "PUT", body: JSON.stringify(form) });
-      notify("GGN Home limits saved", "success");
+      await api("/ggnhome/settings", { method: "PUT", body: JSON.stringify({ showOtpOnAndroid: showOtp }) });
+      notify("Saved", "success");
       reload();
     } catch (e) {
       notify(e.message, "error");
     }
   };
-  const eff = s.effective;
   return (
     <Stack spacing={2}>
+      <Alert severity="info">
+        The SMS limits (per day, per hour, gap between SMS) are managed in <b>Stashr → SMS sender</b>. Nothing is limited from here.
+      </Alert>
       <Typography color="text.secondary">Choose how GGN Home login codes are delivered. SMS mode keeps the existing SMS gateway and SIM sending. App mode shows OTPs in the Android app instead of sending SMS.</Typography>
       <Paper sx={{ p: 2.5 }}>
         <Stack spacing={2}>
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
             <Typography fontWeight={600}>OTP delivery</Typography>
             <FormControlLabel
-              control={<Switch checked={!!form.showOtpOnAndroid} onChange={(e) => setForm({ ...form, showOtpOnAndroid: e.target.checked })} />}
-              label={form.showOtpOnAndroid ? "Show OTP in app (no SMS)" : "Send OTP as SMS"}
+              control={<Switch checked={showOtp} onChange={(e) => setShowOtp(e.target.checked)} />}
+              label={showOtp ? "Show OTP in app (no SMS)" : "Send OTP as SMS"}
             />
-          </Stack>
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Typography fontWeight={600}>Limits</Typography>
-            <ModeSwitch mode={form.mode} setMode={(mode) => setForm({ ...form, mode })} />
             {data.ggnhome.pending > 0 && <Chip size="small" color="warning" label={`${data.ggnhome.pending} waiting to be sent`} />}
           </Stack>
-          <Typography variant="body2" color="text.secondary">
-            {form.mode === "auto"
-              ? `Auto uses the safe defaults: ${eff.dailyLimit}/day, ${eff.hourlyLimit}/hour, ${eff.gapMinSec}–${eff.gapMaxSec} s between SMS.`
-              : `Custom values are capped at ${s.hardCaps.daily}/day and ${s.hardCaps.hourly}/hour.`}
-          </Typography>
-          <LimitFields form={form} setForm={setForm} disabled={form.mode === "auto"} />
           <Box>
-            <Button variant="contained" onClick={save}>
-              Save
-            </Button>
+            <Button variant="contained" onClick={save}>Save</Button>
           </Box>
         </Stack>
       </Paper>

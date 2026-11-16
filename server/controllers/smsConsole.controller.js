@@ -8,7 +8,7 @@ const SmsDevice = require("../models/SmsDevice.model");
 const SmsLog = require("../models/SmsLog.model");
 const SmsQueue = require("../models/SmsQueue.model");
 const SmsSetting = require("../models/SmsSetting.model");
-const { getLimits, effectiveLimits, dropLimitsCache, HARD_CAPS, getDeviceKey } = require("./smsGateway.controller");
+const { getLimits, effectiveLimits, dropLimitsCache, getDeviceKey } = require("./smsGateway.controller");
 
 const ONLINE_WINDOW_MS = 20 * 1000;
 // The We Three server is looked up on Stashr (list "wethree"); there is no env override and no fallback address. If
@@ -60,6 +60,9 @@ exports.login = async (req, res) => {
 };
 
 exports.verifyConsole = (req, res, next) => {
+  // Stashr's SMS sender manages GGN Home with the shared key in X-Console-Key (server to server, never a browser).
+  const given = req.headers["x-console-key"];
+  if (given && sharedKey() && safeEqual(given, sharedKey())) return next();
   try {
     const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
     if (!token || !tokenSecret() || !sharedKey()) throw new Error("no token");
@@ -111,7 +114,7 @@ async function ggnhomeOverview() {
   }).select("phoneNumber message createdAt").sort({ createdAt: -1 }).limit(50).lean();
   const today = todayKey();
   return {
-    settings: { showOtpOnAndroid: !!(doc && doc.showOtpOnAndroid), mode: (doc && doc.mode) || "auto", dailyLimit: doc && doc.dailyLimit, hourlyLimit: doc && doc.hourlyLimit, gapMinSec: doc && doc.gapMinSec, gapMaxSec: doc && doc.gapMaxSec, effective: limits, hardCaps: HARD_CAPS },
+    settings: { showOtpOnAndroid: !!(doc && doc.showOtpOnAndroid), dailyLimit: doc ? doc.dailyLimit ?? null : null, hourlyLimit: doc ? doc.hourlyLimit ?? null : null, gapMinSec: doc ? doc.gapMinSec ?? null : null, gapMaxSec: doc ? doc.gapMaxSec ?? null : null, effective: limits },
     pending,
     previewMessages: previews.map((p) => ({ id: String(p._id), phoneNumber: p.phoneNumber, message: p.message, createdAt: p.createdAt })),
     devices: devices.map((d) => ({
@@ -163,21 +166,22 @@ exports.overview = async (req, res) => {
   res.json({ phones: [...phones.values()], ggnhome: { settings: gg.settings, pending: gg.pending }, shine: sh });
 };
 
-// PUT /api/sms-console/ggnhome/settings { mode, dailyLimit, hourlyLimit, gapMinSec, gapMaxSec }
+// PUT /api/sms-console/ggnhome/settings { showOtpOnAndroid?, dailyLimit, hourlyLimit, gapMinSec, gapMaxSec }
+// Called by Stashr's SMS sender (with the shared key). A limit sent as null is switched off. Nothing is capped or defaulted here.
 exports.saveGgnhomeSettings = async (req, res) => {
   const b = req.body || {};
   const update = {};
   if (typeof b.showOtpOnAndroid === "boolean") update.showOtpOnAndroid = b.showOtpOnAndroid;
-  if (b.mode === "auto" || b.mode === "custom") update.mode = b.mode;
   for (const k of ["dailyLimit", "hourlyLimit", "gapMinSec", "gapMaxSec"]) {
     if (b[k] === undefined) continue;
+    if (b[k] === null || b[k] === "") { update[k] = null; continue; }
     const n = Number(b[k]);
     if (!Number.isFinite(n) || n < 1) return res.status(400).json({ message: `${k} must be a positive number` });
     update[k] = Math.round(n);
   }
   const doc = await SmsSetting.findOneAndUpdate({ key: "ggnhome" }, { $set: update, $setOnInsert: { key: "ggnhome" } }, { upsert: true, new: true });
   dropLimitsCache();
-  res.json({ settings: { showOtpOnAndroid: !!doc.showOtpOnAndroid, mode: doc.mode, dailyLimit: doc.dailyLimit, hourlyLimit: doc.hourlyLimit, gapMinSec: doc.gapMinSec, gapMaxSec: doc.gapMaxSec, effective: effectiveLimits(doc), hardCaps: HARD_CAPS } });
+  res.json({ settings: { showOtpOnAndroid: !!doc.showOtpOnAndroid, dailyLimit: doc.dailyLimit ?? null, hourlyLimit: doc.hourlyLimit ?? null, gapMinSec: doc.gapMinSec ?? null, gapMaxSec: doc.gapMaxSec ?? null, effective: effectiveLimits(doc) } });
 };
 
 // PATCH /api/sms-console/phones/:deviceId { name?, ggnhome?: bool, shine?: bool }
